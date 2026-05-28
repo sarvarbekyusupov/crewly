@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>my-hr · AI-native recruiting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  body { background: var(--bg); }
+
+  .landing {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* === Top nav === */
+  .lnav {
+    height: 64px;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .lnav .brand { gap: 10px; display: flex; align-items: center; }
+  .lnav .brand-name { font-family: 'Fraunces', serif; font-size: 21px; letter-spacing: -0.04em; }
+  .lnav .brand-name em { font-style: italic; color: var(--accent); }
+  .lnav .brand-mark {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: var(--ink); color: var(--bg);
+    display: grid; place-items: center;
+    font-family: 'Fraunces', serif; font-size: 17px; font-style: italic;
+  }
+  .lnav .links { display: flex; gap: 22px; }
+  .lnav .links a {
+    font-size: 13px; color: var(--ink-muted);
+    transition: color 0.12s;
+  }
+  .lnav .links a:hover { color: var(--ink); }
+  .lnav .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .lnav .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-muted);
+    padding: 4px 10px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--bg-elevated);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .lnav .pill .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  /* === Hero === */
+  .hero-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 60px 32px 40px;
+  }
+  .hero-wrap::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+  .hero-wrap::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 80% at center, transparent 0%, var(--bg) 75%);
+    pointer-events: none;
+  }
+  .hero {
+    position: relative; z-index: 2;
+    max-width: 1100px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .eyebrow-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-muted);
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+    display: inline-flex; align-items: center; gap: 8px;
+    letter-spacing: 0.06em;
+  }
+  .eyebrow-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  }
+
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(56px, 8vw, 112px);
+    line-height: 0.96;
+    letter-spacing: -0.045em;
+    color: var(--ink);
+    max-width: 14ch;
+    text-wrap: balance;
+  }
+  .headline em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .subhead {
+    font-size: 19px;
+    color: var(--ink-muted);
+    max-width: 560px;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  /* === Two doors === */
+  .doors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    max-width: 880px;
+    width: 100%;
+    margin-top: 16px;
+  }
+  .door {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 30px 28px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .door:hover {
+    border-color: var(--ink);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.10);
+  }
+  .door .ribbon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-subtle);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .door h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 34px;
+    letter-spacing: -0.028em;
+    line-height: 1.05;
+  }
+  .door h2 em { font-style: italic; color: var(--accent); }
+  .door p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.55;
+  }
+  .door .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .door .arrow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .door:hover .arrow-btn { background: var(--accent); }
+  .door .stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-subtle);
+  }
+  .door .stat strong { color: var(--ink); font-weight: 500; }
+
+  /* === Belief strip === */
+  .belief {
+    border-top: 1px solid var(--line);
+    padding: 48px 40px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    gap: 36px;
+    align-items: start;
+    background: var(--bg);
+  }
+  .belief h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .belief h3 em { font-style: italic; color: var(--accent); }
+  .belief .pillar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .belief .pillar .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-subtle);
+  }
+  .belief .pillar .big {
+    font-family: 'Fraunces', serif;
+    font-size: 44px;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .belief .pillar .big em { color: var(--accent); font-style: italic; }
+  .belief .pillar p {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  /* === Footer === */
+  .lfoot {
+    border-top: 1px solid var(--line-soft);
+    padding: 22px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-subtle);
+  }
+  .lfoot a { color: var(--ink-muted); }
+  .lfoot a:hover { color: var(--accent); }
+
+  @media (max-width: 760px) {
+    .doors { grid-template-columns: 1fr; }
+    .belief { grid-template-columns: 1fr; gap: 22px; }
+    .lnav .links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="landing">
+
+  <!-- Nav -->
+  <nav class="lnav">
+    <a href="#" class="brand">
+      <div class="brand-mark">m</div>
+      <div class="brand-name">my<em>-hr</em></div>
+    </a>
+    <div class="links">
+      <a href="#">How it works</a>
+      <a href="#">For companies</a>
+      <a href="#">For candidates</a>
+      <a href="#">Pricing</a>
+      <a href="#">Manifesto</a>
+    </div>
+    <div class="right">
+      <span class="pill"><span class="dot"></span> Agent · live</span>
+      <a href="company.html" class="pill" style="background: var(--ink); color: var(--bg); border-color: var(--ink);">Sign in →</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero-wrap">
+    <div class="hero">
+      <span class="eyebrow-pill"><span class="dot"></span> AI-NATIVE RECRUITING · SINCE 2025</span>
+
+      <h1 class="headline">
+        Hire faster.<br />
+        Find work <em>worth your time.</em>
+      </h1>
+
+      <p class="subhead">
+        my-hr is a recruiting agency made of software. AI agents source, screen, and write outreach on
+        both sides &mdash; so companies meet better people, and candidates meet roles that fit.
+      </p>
+
+      <!-- Two doors -->
+      <div class="doors">
+        <a class="door" href="company.html">
+          <span class="ribbon">FOR COMPANIES</span>
+          <h2>I'm hiring &mdash;<br /><em>find me people.</em></h2>
+          <p>
+            Spin up a role and an agent starts sourcing within minutes. Review only the candidates
+            your team will actually want to meet. Time-to-hire: <strong>21 days median.</strong>
+          </p>
+          <div class="foot">
+            <span class="stat"><strong>312</strong> companies hiring · <strong>14d</strong> avg first-interview</span>
+            <span class="arrow-btn">Open company portal →</span>
+          </div>
+        </a>
+
+        <a class="door" href="candidate.html">
+          <span class="ribbon">FOR CANDIDATES</span>
+          <h2>I'm open &mdash;<br /><em>find me work.</em></h2>
+          <p>
+            Connect your work (GitHub, folio, LinkedIn) and an agent builds a private profile. It only
+            shows you roles that fit, and writes the warm intros for you. <strong>Free for candidates, always.</strong>
+          </p>
+          <div class="foot">
+            <span class="stat"><strong>14,200</strong> candidates · <strong>4.6h</strong> avg agent reply</span>
+            <span class="arrow-btn">Open candidate portal →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Belief / proof -->
+  <section class="belief">
+    <h3>
+      Built on one belief:<br />
+      <em>recruiting is a writing job,</em> not a logistics job.
+    </h3>
+    <div class="pillar">
+      <span class="label">Hires this quarter</span>
+      <span class="big"><em>312</em></span>
+      <p>Across 47 companies in 14 countries. Median tenure of hires made via my-hr: 2.8 years.</p>
+    </div>
+    <div class="pillar">
+      <span class="label">Cost vs. an agency</span>
+      <span class="big">&minus;71%</span>
+      <p>Fixed subscription instead of placement fees. The agent does the hours; humans do the judgement.</p>
+    </div>
+    <div class="pillar">
+      <span class="label">Outreach reply rate</span>
+      <span class="big">38<span style="font-size: 22px;">%</span></span>
+      <p>Because letters are written from your actual work &mdash; not a template with your name spliced in.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="lfoot">
+    <span>© 2026 my-hr · made in Tashkent &amp; Berlin</span>
+    <div style="display: flex; gap: 22px;">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Status</a>
+      <a href="#">Contact</a>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

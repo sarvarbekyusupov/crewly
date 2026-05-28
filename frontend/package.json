@@ -1,0 +1,39 @@
+{
+  "name": "my-hr-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3001",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@my-hr/types": "workspace:*",
+    "@nuxt/ui": "^3.0.0",
+    "@nuxtjs/i18n": "^9.0.0",
+    "@pinia/nuxt": "^0.9.0",
+    "@sentry/nuxt": "^10.54.0",
+    "nuxt": "^3.15.0",
+    "pinia": "^2.3.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.15.2",
+    "@nuxt/fonts": "^0.11.0",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "happy-dom": "^17.4.4",
+    "prettier": "^3.8.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.9"
+  }
+}

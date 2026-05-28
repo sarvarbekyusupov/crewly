@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* ============ Nuxt UI primary color mapping (terracotta) ============ */
+/* Required: Nuxt UI v3 looks for --ui-color-primary-* and --ui-primary */
+:root {
+  --ui-primary: #c84a1f;
+  --ui-color-primary-50: #fdf4f0;
+  --ui-color-primary-100: #f9e4d8;
+  --ui-color-primary-200: #f4ddd2;
+  --ui-color-primary-300: #edbfa8;
+  --ui-color-primary-400: #df9070;
+  --ui-color-primary-500: #c84a1f;
+  --ui-color-primary-600: #a83d18;
+  --ui-color-primary-700: #8a3214;
+  --ui-color-primary-800: #6b2610;
+  --ui-color-primary-900: #4d1b0c;
+  --ui-color-primary-950: #3a1f12;
+}
+
+/* ============ Design tokens ============ */
+:root {
+  --bg: #F5F1EA;
+  --bg-elevated: #FAF8F4;
+  --bg-deep: #EFE9DD;
+  --paper: #FDFCF8;
+  --ink: #1A1A1A;
+  --ink-strong: #0A0A0A;
+  --ink-muted: #6B6760;
+  --ink-subtle: #A8A39A;
+  --line: #D9D3C7;
+  --line-soft: #E8E2D5;
+  --accent: #C84A1F;
+  --accent-soft: #F4DDD2;
+  --positive: #2F6B3F;
+  --positive-soft: rgba(47,107,63,0.10);
+  --warn: #B57A1F;
+  --grid-color: rgba(0,0,0,0.06);
+  --status-outreach: #4A7CC8;
+  --status-responded: #0EA5E9;
+  --status-interview: #8B5CF6;
+  --status-interviewed: #6366F1;
+  --status-offered: #A855F7;
+}
+
+.dark {
+  --bg: #15140F;
+  --bg-elevated: #1C1B16;
+  --bg-deep: #232118;
+  --paper: #1A1813;
+  --ink: #F5F1EA;
+  --ink-strong: #FFFFFF;
+  --ink-muted: #A8A39A;
+  --ink-subtle: #6B6760;
+  --line: #2C2A22;
+  --line-soft: #24221C;
+  --accent-soft: #3A1F12;
+  --grid-color: rgba(255,255,255,0.04);
+  --positive-soft: rgba(47,107,63,0.15);
+  --status-outreach: #6B9EE0;
+  --status-responded: #38BDF8;
+  --status-interview: #A78BFA;
+  --status-interviewed: #818CF8;
+  --status-offered: #C084FC;
+}
+
+/* ============ Tailwind custom colors ============ */
+@theme {
+  --color-terracotta-50: #fdf4f0;
+  --color-terracotta-100: #f9e4d8;
+  --color-terracotta-200: #f4ddd2;
+  --color-terracotta-300: #edbfa8;
+  --color-terracotta-400: #df9070;
+  --color-terracotta-500: #c84a1f;
+  --color-terracotta-600: #a83d18;
+  --color-terracotta-700: #8a3214;
+  --color-terracotta-800: #6b2610;
+  --color-terracotta-900: #4d1b0c;
+  --color-terracotta-950: #3a1f12;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Fraunces', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Semantic design token aliases — enables bg-paper, text-ink, border-line, etc. */
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-deep: var(--bg-deep);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-positive: var(--positive);
+  --color-warn: var(--warn);
+}
+
+/* ============ Base ============ */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ============ UCard global override ============ */
+/* Nuxt UI v3 card tokens */
+:root {
+  --ui-card-background: var(--paper);
+  --ui-card-border: var(--line);
+  --ui-card-rounded: 14px;
+  --ui-card-shadow: none;
+  --ui-card-divide: var(--line-soft);
+  --ui-card-header-background: var(--bg-elevated);
+  --ui-card-header-border: var(--line-soft);
+  --ui-card-footer-background: var(--bg-elevated);
+  --ui-card-footer-border: var(--line-soft);
+}
+
+/* ============ UTable global override ============ */
+/* Row hover */
+tbody tr:hover td {
+  background: var(--bg-elevated) !important;
+}
+/* Header row */
+thead th {
+  background: var(--bg-elevated) !important;
+  color: var(--ink-subtle) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
+/* Divide lines */
+tbody tr {
+  border-color: var(--line-soft) !important;
+}
+
+/* ============ Shared utilities ============ */
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+  display: inline-block;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-subtle);
+  margin-bottom: 12px;
+}
+
+/* ============ Page transitions ============ */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ============ Print ============ */
+@media print {
+  aside,
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+}

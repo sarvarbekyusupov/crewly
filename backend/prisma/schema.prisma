@@ -1,0 +1,726 @@
+// This is your Prisma schema file
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Company {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  legalName            String?   @map("legal_name")
+  taxId                String?   @map("tax_id")
+  website              String?
+  industry             String?
+  size                 String?
+  contactEmail         String    @map("contact_email")
+  contactPhone         String?   @map("contact_phone")
+  address              String?
+  status               String    @default("active")
+  pricingTier          String    @default("standard") @map("pricing_tier")
+  defaultFeePercentage Decimal   @default(12.00) @map("default_fee_percentage") @db.Decimal(5, 2)
+  paymentTermsDays     Int       @default(30) @map("payment_terms_days")
+  guaranteePeriodDays  Int       @default(90) @map("guarantee_period_days")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz
+
+  users        User[]
+  jobs         Job[]
+  applications Application[]
+  placements   Placement[]
+  invoices     Invoice[]
+  llmCalls     LlmCall[]
+
+  @@index([status], map: "idx_companies_status")
+  @@map("companies")
+}
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId       String    @map("company_id") @db.Uuid
+  email           String
+  emailVerified   Boolean   @default(false) @map("email_verified")
+  passwordHash    String?   @map("password_hash")
+  fullName        String    @map("full_name")
+  role            String
+  phone           String?
+  telegramUsername String?  @map("telegram_username")
+  telegramChatId   String?  @map("telegram_chat_id")
+  locale           String    @default("ru")
+  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
+
+  company    Company     @relation(fields: [companyId], references: [id])
+  sessions   Session[]
+  jobs       Job[]
+  authTokens AuthToken[]
+
+  @@index([companyId], map: "idx_users_company")
+  @@map("users")
+}
+
+model Session {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash], map: "idx_sessions_token_hash")
+  @@index([expiresAt], map: "idx_sessions_expires")
+  @@index([userId], map: "idx_sessions_user")
+  @@map("sessions")
+}
+
+model AuthToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  type      String
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash], map: "idx_auth_tokens_hash")
+  @@index([userId, type], map: "idx_auth_tokens_user_type")
+  @@map("auth_tokens")
+}
+
+model Staff {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  sessions StaffSession[]
+
+  @@map("staff")
+}
+
+model StaffSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  staffId   String   @map("staff_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash], map: "idx_staff_sessions_token_hash")
+  @@index([staffId], map: "idx_staff_sessions_staff")
+  @@map("staff_sessions")
+}
+
+model Job {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId           String    @map("company_id") @db.Uuid
+  createdByUserId     String    @map("created_by_user_id") @db.Uuid
+  title               String
+  description         String
+  status              String    @default("draft")
+  priority            String?   @default("normal")
+  parsedRequirements  Json?     @map("parsed_requirements")
+  requiredSkills      String[]  @map("required_skills")
+  niceToHaveSkills    String[]  @map("nice_to_have_skills")
+  minExperienceYears  Int?      @map("min_experience_years")
+  maxExperienceYears  Int?      @map("max_experience_years")
+  hiringManagerFeedbackContext String? @map("hiring_manager_feedback_context")
+  sourcingStrategy    Json?     @map("sourcing_strategy")
+  salaryMinUzs        BigInt?   @map("salary_min_uzs")
+  salaryMaxUzs        BigInt?   @map("salary_max_uzs")
+  salaryCurrency      String?   @default("UZS") @map("salary_currency")
+  employmentType      String?   @map("employment_type")
+  workMode            String?   @map("work_mode")
+  officeLocation      String?   @map("office_location")
+  feePercentage       Decimal   @map("fee_percentage") @db.Decimal(5, 2)
+  feeBasis            String    @default("annual") @map("fee_basis")
+  estimatedFeeUzs     BigInt?   @map("estimated_fee_uzs")
+  embeddingModel      String?   @map("embedding_model")
+  embeddingGeneratedAt DateTime? @map("embedding_generated_at") @db.Timestamptz
+  openedAt            DateTime? @map("opened_at") @db.Timestamptz
+  closedAt            DateTime? @map("closed_at") @db.Timestamptz
+  filledAt            DateTime? @map("filled_at") @db.Timestamptz
+  targetCandidatesCount Int     @default(5) @map("target_candidates_count")
+  hhVacancyId         String?   @map("hh_vacancy_id")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz
+
+  company      Company           @relation(fields: [companyId], references: [id])
+  createdBy    User              @relation(fields: [createdByUserId], references: [id])
+  applications Application[]
+  campaigns    OutreachCampaign[]
+  placements   Placement[]
+  llmCalls     LlmCall[]
+
+  @@index([companyId], map: "idx_jobs_company")
+  @@index([status], map: "idx_jobs_status")
+  @@index([createdByUserId], map: "idx_jobs_created_by")
+  @@map("jobs")
+}
+
+model CandidateSource {
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String  @unique
+  config Json?
+
+  candidates      Candidate[]
+  rawPayloads     CandidateRawPayload[]
+  ingestionRuns   IngestionRun[]
+
+  @@map("candidate_sources")
+}
+
+model Candidate {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId               String?   @map("source_id") @db.Uuid
+  externalId             String?   @map("external_id")
+  sourceUrl              String?   @map("source_url")
+  fullName               String?   @map("full_name")
+  fullNameNormalized     String?   @map("full_name_normalized")
+  email                  String?
+  phone                  String?
+  telegramUserId         BigInt?   @map("telegram_user_id")
+  telegramUsername       String?   @map("telegram_username")
+  linkedinUrl            String?   @map("linkedin_url")
+  githubUrl              String?   @map("github_url")
+  city                   String?
+  country                String?   @default("UZ")
+  currentPosition        String?   @map("current_position")
+  currentCompany         String?   @map("current_company")
+  yearsExperience        Decimal?  @map("years_experience") @db.Decimal(4, 1)
+  expectedSalaryUzs      BigInt?   @map("expected_salary_uzs")
+  expectedSalaryCurrency String?   @default("UZS") @map("expected_salary_currency")
+  noticePeriodDays       Int?      @map("notice_period_days")
+  willingToRelocate      Boolean?  @map("willing_to_relocate")
+  preferredWorkMode      String?   @map("preferred_work_mode")
+  languages              Json?
+  rawResumeText          String?   @map("raw_resume_text")
+  resumeFileUrl          String?   @map("resume_file_url")
+  parsedResume           Json?     @map("parsed_resume")
+  socialProof            Json?     @map("social_proof")
+  agentSettings          Json?     @map("agent_settings")
+  skills                 String[]
+  embeddingModel         String?   @map("embedding_model")
+  embeddingGeneratedAt   DateTime? @map("embedding_generated_at") @db.Timestamptz
+  consentStatus          String    @default("implied") @map("consent_status")
+  consentSource          String?   @map("consent_source")
+  consentGivenAt         DateTime? @map("consent_given_at") @db.Timestamptz
+  consentWithdrawnAt     DateTime? @map("consent_withdrawn_at") @db.Timestamptz
+  doNotContact           Boolean   @default(false) @map("do_not_contact")
+  qualityScore           Decimal?  @map("quality_score") @db.Decimal(4, 2)
+  lastActiveAt           DateTime? @map("last_active_at") @db.Timestamptz
+  lastContactedAt        DateTime? @map("last_contacted_at") @db.Timestamptz
+  googleId               String?   @unique @map("google_id")
+  emailVerified          Boolean   @default(false) @map("email_verified")
+  lastLoginAt            DateTime? @map("last_login_at") @db.Timestamptz
+  passwordHash           String?   @map("password_hash")
+  // Seeker preferences (2.3/2.4)
+  minMatchScore          Int?      @map("min_match_score")
+  blacklistedCompanies   String[]  @map("blacklisted_companies")
+  maxApplicationsPerDay  Int       @default(5) @map("max_applications_per_day")
+  hhOauthToken           String?   @map("hh_oauth_token")
+  hhRefreshToken         String?   @map("hh_refresh_token")
+  hhTokenExpiresAt       DateTime? @map("hh_token_expires_at") @db.Timestamptz
+  hhResumeId             String?   @map("hh_resume_id")
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt              DateTime? @map("deleted_at") @db.Timestamptz
+
+  source             CandidateSource?      @relation(fields: [sourceId], references: [id])
+  rawPayloads        CandidateRawPayload[]
+  applications       Application[]
+  conversations      Conversation[]
+  consentRecords     ConsentRecord[]
+  placements         Placement[]
+  candidateSessions  CandidateSession[]
+  seekerJobMatches   SeekerJobMatch[]
+  seekerApplications SeekerApplication[]
+
+  @@unique([sourceId, externalId])
+  @@index([email], map: "idx_candidates_email")
+  @@index([telegramUserId], map: "idx_candidates_telegram_id")
+  @@index([doNotContact], map: "idx_candidates_dnc")
+  @@index([googleId], map: "idx_candidates_google_id")
+  @@map("candidates")
+}
+
+model CandidateSession {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateId String    @map("candidate_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash], map: "idx_candidate_sessions_token_hash")
+  @@index([candidateId], map: "idx_candidate_sessions_candidate")
+  @@index([expiresAt], map: "idx_candidate_sessions_expires")
+  @@map("candidate_sessions")
+}
+
+model CandidateRawPayload {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateId String   @map("candidate_id") @db.Uuid
+  sourceId    String?  @map("source_id") @db.Uuid
+  payload     Json
+  fetchedAt   DateTime @default(now()) @map("fetched_at") @db.Timestamptz
+
+  candidate Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  source    CandidateSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([candidateId], map: "idx_raw_payloads_candidate")
+  @@map("candidate_raw_payloads")
+}
+
+model Application {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId                String    @map("job_id") @db.Uuid
+  candidateId          String    @map("candidate_id") @db.Uuid
+  companyId            String    @map("company_id") @db.Uuid
+  matchScore           Decimal?  @map("match_score") @db.Decimal(5, 2)
+  vectorSimilarity     Decimal?  @map("vector_similarity") @db.Decimal(6, 5)
+  rerankScore          Decimal?  @map("rerank_score") @db.Decimal(5, 2)
+  matchReasons         Json?     @map("match_reasons")
+  matchRecommendation  String?   @map("match_recommendation")
+  status               String    @default("matched")
+  hiringManagerDecision String?  @map("hiring_manager_decision")
+  hiringManagerNotes   String?   @map("hiring_manager_notes")
+  rejectionReason      String?   @map("rejection_reason")
+  withdrawalReason     String?   @map("withdrawal_reason")
+  googleCalendarEventId String?  @map("google_calendar_event_id")
+  googleMeetLink       String?  @map("google_meet_link")
+  interviewScheduledAt DateTime? @map("interview_scheduled_at") @db.Timestamptz
+  matchedAt            DateTime? @default(now()) @map("matched_at") @db.Timestamptz
+  outreachSentAt       DateTime? @map("outreach_sent_at") @db.Timestamptz
+  respondedAt          DateTime? @map("responded_at") @db.Timestamptz
+  screenedAt           DateTime? @map("screened_at") @db.Timestamptz
+  deliveredAt          DateTime? @map("delivered_at") @db.Timestamptz
+  interviewedAt        DateTime? @map("interviewed_at") @db.Timestamptz
+  hiredAt              DateTime? @map("hired_at") @db.Timestamptz
+  rejectedAt           DateTime? @map("rejected_at") @db.Timestamptz
+  interviewDebriefedAt DateTime? @map("interview_debriefed_at") @db.Timestamptz
+  interviewTranscript  String?   @map("interview_transcript")
+  shadowAnalysis       Json?     @map("shadow_analysis")
+  hhNegotiationId      String?   @map("hh_negotiation_id")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  job           Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate     Candidate      @relation(fields: [candidateId], references: [id])
+  company       Company        @relation(fields: [companyId], references: [id])
+  conversations Conversation[]
+  screenings    Screening[]
+  outreachAttempts OutreachAttempt[]
+  placement     Placement?
+
+  @@unique([jobId, candidateId])
+  @@index([jobId, status], map: "idx_applications_job_status")
+  @@index([candidateId], map: "idx_applications_candidate")
+  @@index([companyId], map: "idx_applications_company")
+  @@index([status], map: "idx_applications_status")
+  @@map("applications")
+}
+
+model OutreachCampaign {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId           String    @map("job_id") @db.Uuid
+  messageTemplate String    @map("message_template")
+  promptVersion   String    @map("prompt_version")
+  status          String    @default("active")
+  totalSent       Int       @default(0) @map("total_sent")
+  totalResponded  Int       @default(0) @map("total_responded")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("outreach_campaigns")
+}
+
+model Conversation {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId  String    @map("application_id") @db.Uuid
+  candidateId    String    @map("candidate_id") @db.Uuid
+  channel        String
+  channelThreadId String?  @map("channel_thread_id")
+  state          String    @default("initiated")
+  language       String    @default("ru")
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  lastMessageAt  DateTime? @map("last_message_at") @db.Timestamptz
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  candidate   Candidate   @relation(fields: [candidateId], references: [id])
+  messages    Message[]
+  screenings  Screening[]
+
+  @@index([applicationId], map: "idx_conversations_application")
+  @@index([state], map: "idx_conversations_state")
+  @@index([channel, channelThreadId], map: "idx_conversations_thread")
+  @@map("conversations")
+}
+
+model Message {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId   String    @map("conversation_id") @db.Uuid
+  direction        String
+  sender           String
+  content          String
+  contentTranslated Json?    @map("content_translated")
+  channelMessageId String?  @map("channel_message_id")
+  llmCallId        String?  @map("llm_call_id") @db.Uuid
+  delivered        Boolean  @default(false)
+  readAt           DateTime? @map("read_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  llmCall      LlmCall?     @relation(fields: [llmCallId], references: [id])
+
+  @@index([conversationId, createdAt], map: "idx_messages_conversation")
+  @@index([channelMessageId], map: "idx_messages_channel_id")
+  @@map("messages")
+}
+
+model OutreachAttempt {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId   String    @map("application_id") @db.Uuid
+  channel         String
+  attemptNumber   Int       @map("attempt_number")
+  status          String
+  resendEmailId   String?   @map("resend_email_id")
+  errorCode       String?   @map("error_code")
+  errorMessage    String?   @map("error_message")
+  sentAt          DateTime  @default(now()) @map("sent_at") @db.Timestamptz
+  openedAt        DateTime? @map("opened_at") @db.Timestamptz
+  repliedAt       DateTime? @map("replied_at") @db.Timestamptz
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId], map: "idx_outreach_attempts_application")
+  @@index([resendEmailId], map: "idx_outreach_attempts_resend_email_id")
+  @@map("outreach_attempts")
+}
+
+model Screening {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId String    @map("application_id") @db.Uuid
+  conversationId String?  @map("conversation_id") @db.Uuid
+  promptVersion String    @map("prompt_version")
+  language      String    @default("ru")
+  status        String    @default("in_progress")
+  questionsAsked Int      @default(0) @map("questions_asked")
+  aiAssessment  Json?     @map("ai_assessment")
+  fullTranscript Json?    @map("full_transcript")
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz
+  escalatedAt   DateTime? @map("escalated_at") @db.Timestamptz
+  escalationReason String? @map("escalation_reason")
+
+  application  Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([applicationId], map: "idx_screenings_application")
+  @@index([status], map: "idx_screenings_status")
+  @@map("screenings")
+}
+
+model Placement {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId           String    @unique @map("application_id") @db.Uuid
+  jobId                   String    @map("job_id") @db.Uuid
+  candidateId             String    @map("candidate_id") @db.Uuid
+  companyId               String    @map("company_id") @db.Uuid
+  agreedSalaryUzs         BigInt    @map("agreed_salary_uzs")
+  feePercentage           Decimal   @map("fee_percentage") @db.Decimal(5, 2)
+  feeBasis                String    @map("fee_basis")
+  totalFeeUzs             BigInt    @map("total_fee_uzs")
+  startDate               DateTime  @map("start_date") @db.Date
+  guaranteePeriodDays     Int       @default(90) @map("guarantee_period_days")
+  guaranteeExpiresAt      DateTime? @map("guarantee_expires_at") @db.Date
+  candidateStillEmployed  Boolean   @default(true) @map("candidate_still_employed")
+  separationDate          DateTime? @map("separation_date") @db.Date
+  replacementRequired     Boolean   @default(false) @map("replacement_required")
+  replacementApplicationId String?  @map("replacement_application_id") @db.Uuid
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  application Application @relation(fields: [applicationId], references: [id])
+  job         Job         @relation(fields: [jobId], references: [id])
+  candidate   Candidate   @relation(fields: [candidateId], references: [id])
+  company     Company     @relation(fields: [companyId], references: [id])
+  invoices    Invoice[]
+
+  @@index([companyId], map: "idx_placements_company")
+  @@index([guaranteeExpiresAt], map: "idx_placements_guarantee")
+  @@map("placements")
+}
+
+model Invoice {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceNumber    String    @unique @map("invoice_number")
+  companyId        String    @map("company_id") @db.Uuid
+  placementId      String?   @map("placement_id") @db.Uuid
+  amountUzs        BigInt    @map("amount_uzs")
+  vatUzs           BigInt    @default(0) @map("vat_uzs")
+  totalUzs         BigInt    @map("total_uzs")
+  currency         String    @default("UZS")
+  issuedDate       DateTime  @map("issued_date") @db.Date
+  dueDate          DateTime  @map("due_date") @db.Date
+  status           String    @default("issued")
+  paidAt           DateTime? @map("paid_at") @db.Timestamptz
+  paymentReference String?   @map("payment_reference")
+  pdfUrl           String?   @map("pdf_url")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  company            Company            @relation(fields: [companyId], references: [id])
+  placement          Placement?         @relation(fields: [placementId], references: [id])
+  paymeTransactions  PaymeTransaction[]
+
+  @@index([companyId], map: "idx_invoices_company")
+  @@index([status], map: "idx_invoices_status")
+  @@index([dueDate], map: "idx_invoices_due_date")
+  @@index([placementId], map: "idx_invoices_placement")
+  @@map("invoices")
+}
+
+model PaymeTransaction {
+  id          String   @id // Payme transaction ID
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  time        BigInt   // Payme time
+  amount      BigInt
+  state       Int
+  createTime  BigInt   @map("create_time")
+  performTime BigInt   @default(0) @map("perform_time")
+  cancelTime  BigInt   @default(0) @map("cancel_time")
+  reason      Int?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payme_transactions")
+}
+
+model LlmCall {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purpose           String
+  relatedEntityType String?   @map("related_entity_type")
+  relatedEntityId   String?   @map("related_entity_id") @db.Uuid
+  companyId         String?   @map("company_id") @db.Uuid
+  jobId             String?   @map("job_id") @db.Uuid
+  agentName         String?   @map("agent_name")
+  promptName        String    @map("prompt_name")
+  promptVersion     String    @map("prompt_version")
+  model             String
+  provider          String
+  temperature       Decimal?  @db.Decimal(3, 2)
+  maxTokens         Int?      @map("max_tokens")
+  requestPayload    Json?     @map("request_payload")
+  responsePayload   Json?     @map("response_payload")
+  outputText        String?   @map("output_text")
+  finishReason      String?   @map("finish_reason")
+  promptTokens      Int?      @map("prompt_tokens")
+  completionTokens  Int?      @map("completion_tokens")
+  totalTokens       Int?      @map("total_tokens")
+  costUsd           Decimal?  @map("cost_usd") @db.Decimal(10, 6)
+  latencyMs         Int?      @map("latency_ms")
+  error             String?
+  httpStatus        Int?      @map("http_status")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  company  Company?  @relation(fields: [companyId], references: [id])
+  job      Job?      @relation(fields: [jobId], references: [id])
+  messages Message[]
+
+  @@index([purpose, createdAt(sort: Desc)], map: "idx_llm_calls_purpose")
+  @@index([relatedEntityType, relatedEntityId], map: "idx_llm_calls_entity")
+  @@index([companyId], map: "idx_llm_calls_company")
+  @@index([createdAt(sort: Desc)], map: "idx_llm_calls_created")
+  @@map("llm_calls")
+}
+
+model IngestionRun {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId        String    @map("source_id") @db.Uuid
+  trigger         String
+  triggerMetadata Json?     @map("trigger_metadata")
+  status          String    @default("running")
+  candidatesFetched Int     @default(0) @map("candidates_fetched")
+  candidatesNew   Int       @default(0) @map("candidates_new")
+  candidatesUpdated Int     @default(0) @map("candidates_updated")
+  candidatesFailed Int      @default(0) @map("candidates_failed")
+  error           String?
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz
+
+  source CandidateSource @relation(fields: [sourceId], references: [id])
+
+  @@index([sourceId, startedAt(sort: Desc)], map: "idx_ingestion_runs_source")
+  @@map("ingestion_runs")
+}
+
+model ConsentRecord {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateId String   @map("candidate_id") @db.Uuid
+  action      String
+  basis       String
+  scope       Json?
+  evidenceUrl String?  @map("evidence_url")
+  ipAddress   String?  @map("ip_address")
+  recordedAt  DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, recordedAt(sort: Desc)], map: "idx_consent_candidate")
+  @@map("consent_records")
+}
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  actorType    String   @map("actor_type")
+  actorId      String?  @map("actor_id") @db.Uuid
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id") @db.Uuid
+  companyId    String?  @map("company_id") @db.Uuid
+  metadata     Json?
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([actorId, createdAt(sort: Desc)], map: "idx_audit_log_actor")
+  @@index([resourceType, resourceId], map: "idx_audit_log_resource")
+  @@index([createdAt(sort: Desc)], map: "idx_audit_log_created")
+  @@map("audit_log")
+}
+
+model IdempotencyKey {
+  key       String   @id
+  response  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt], map: "idx_idempotency_expires")
+  @@map("idempotency_keys")
+}
+
+model FeatureFlag {
+  name             String   @id
+  enabled          Boolean  @default(false)
+  rolloutPercentage Int     @default(0) @map("rollout_percentage")
+  companyOverrides Json?    @map("company_overrides")
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("feature_flags")
+}
+
+model SeekerJobMatch {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateId     String    @map("candidate_id") @db.Uuid
+  discoveredJobId String    @map("discovered_job_id") @db.Uuid
+  score           Int
+  explanation     String?
+  strengths       String[]
+  gaps            String[]
+  scoredAt        DateTime  @default(now()) @map("scored_at") @db.Timestamptz
+
+  candidate     Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  discoveredJob DiscoveredJob @relation(fields: [discoveredJobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, discoveredJobId])
+  @@index([candidateId, score(sort: Desc)], map: "idx_seeker_job_matches_candidate")
+  @@map("seeker_job_matches")
+}
+
+model SeekerApplication {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  candidateId     String    @map("candidate_id") @db.Uuid
+  discoveredJobId String    @map("discovered_job_id") @db.Uuid
+  status          String    @default("queued")
+  source          String
+  coverLetter     String?   @map("cover_letter")
+  hhNegotiationId String?   @map("hh_negotiation_id")
+  error           String?
+  appliedAt       DateTime? @map("applied_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  candidate     Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  discoveredJob DiscoveredJob @relation(fields: [discoveredJobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, discoveredJobId])
+  @@index([candidateId], map: "idx_seeker_applications_candidate")
+  @@index([status], map: "idx_seeker_applications_status")
+  @@map("seeker_applications")
+}
+
+model DiscoveredJob {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source         String
+  externalId     String?   @map("external_id")
+  sourceUrl      String    @unique @map("source_url")
+  title          String
+  company        String
+  location       String?
+  description    String?
+  skills         String[]
+  salaryMinUzs   BigInt?   @map("salary_min_uzs")
+  salaryMaxUzs   BigInt?   @map("salary_max_uzs")
+  employmentType String?   @map("employment_type")
+  workMode       String?   @map("work_mode")
+  status         String    @default("active")
+  postedAt       DateTime? @map("posted_at") @db.Timestamptz
+  rawPayload     Json      @map("raw_payload")
+  discoveredAt   DateTime  @default(now()) @map("discovered_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  seekerJobMatches   SeekerJobMatch[]
+  seekerApplications SeekerApplication[]
+
+  @@index([source, discoveredAt(sort: Desc)], map: "idx_discovered_jobs_source")
+  @@index([status], map: "idx_discovered_jobs_status")
+  @@map("discovered_jobs")
+}
+
+model JobDiscoveryRun {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source      String
+  trigger     String
+  query       String?
+  location    String?
+  status      String    @default("running")
+  jobsFetched Int       @default(0) @map("jobs_fetched")
+  jobsNew     Int       @default(0) @map("jobs_new")
+  jobsUpdated Int       @default(0) @map("jobs_updated")
+  error       String?
+  startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  @@index([source, startedAt(sort: Desc)], map: "idx_job_discovery_runs_source")
+  @@map("job_discovery_runs")
+}

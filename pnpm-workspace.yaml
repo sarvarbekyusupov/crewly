@@ -1,0 +1,21 @@
+packages:
+  - 'packages/*'
+  - 'frontend'
+  - 'backend'
+
+# Merged allowBuilds from frontend and backend (root workspace is authoritative)
+allowBuilds:
+  # backend native builds
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  argon2: true
+  msgpackr-extract: true
+  prisma: true
+  unrs-resolver: true
+  # frontend native builds
+  '@parcel/watcher': true
+  esbuild: true
+  vue-demi: true
+  '@sentry/cli': true

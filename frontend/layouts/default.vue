@@ -1,0 +1,737 @@
+<script setup lang="ts">
+const { t } = useI18n()
+const auth = useAuthStore()
+const router = useRouter()
+const route = useRoute()
+const api = useApi()
+const toast = useToast()
+
+const { data: counts } = await useAsyncData(
+  'nav-counts',
+  async () => {
+    try {
+      const [jobs, apps, conversations] = await Promise.all([
+        api
+          .get<{ total: number }>('/api/v1/jobs', { status: 'active', limit: 1 })
+          .catch(() => ({ total: 0 })),
+        api
+          .get<{ total: number }>('/api/v1/applications', { limit: 1 })
+          .catch(() => ({ total: 0 })),
+        api
+          .get<{ total: number }>('/api/v1/conversations', { limit: 1 })
+          .catch(() => ({ total: 0 })),
+      ])
+      return {
+        jobs: jobs.total ?? 0,
+        applications: apps.total ?? 0,
+        conversations: conversations.total ?? 0,
+      }
+    } catch {
+      return { jobs: 0, applications: 0, conversations: 0 }
+    }
+  },
+  { server: false, maxAge: 60 },
+)
+
+const sseState = useSseConnectionState()
+
+const navGroups = computed(() => [
+  {
+    label: t('nav.workspace'),
+    items: [
+      { label: t('nav.dashboard'), to: '/dashboard', icon: 'i-heroicons-home' },
+      {
+        label: t('nav.jobs'),
+        to: '/jobs',
+        icon: 'i-heroicons-briefcase',
+        count: counts.value?.jobs,
+      },
+      {
+        label: t('nav.applications'),
+        to: '/applications',
+        icon: 'i-heroicons-users',
+        count: counts.value?.applications,
+      },
+      {
+        label: t('nav.conversations'),
+        to: '/conversations',
+        icon: 'i-heroicons-chat-bubble-left-right',
+        count: counts.value?.conversations,
+      },
+    ],
+  },
+  {
+    label: t('nav.talent'),
+    items: [
+      { label: t('nav.candidates'), to: '/candidates', icon: 'i-heroicons-user-circle' },
+      { label: t('nav.placements'), to: '/placements', icon: 'i-heroicons-check-badge' },
+    ],
+  },
+  {
+    label: t('nav.finance'),
+    items: [{ label: t('nav.invoices'), to: '/invoices', icon: 'i-heroicons-document-text' }],
+  },
+  {
+    label: t('nav.intelligence') || 'Intelligence',
+    items: [
+      { label: 'Analytics', to: '/analytics', icon: 'i-heroicons-chart-bar' },
+      ...(auth.can('admin')
+        ? [{ label: t('nav.sourcing'), to: '/sourcing', icon: 'i-heroicons-magnifying-glass' }]
+        : []),
+    ],
+  },
+])
+
+const { breadcrumbLabel, clearBreadcrumbLabel } = useBreadcrumb()
+watch(() => route.path, () => clearBreadcrumbLabel())
+
+const crumbs = computed(() => {
+  const parts = route.path.split('/').filter(Boolean)
+  if (!parts.length) return []
+  return parts.map((p, i) => {
+    const isLast = i === parts.length - 1
+    const rawLabel = p.charAt(0).toUpperCase() + p.slice(1).replace(/-/g, ' ')
+    const label = isLast && breadcrumbLabel.value ? breadcrumbLabel.value : rawLabel
+    return { label, to: '/' + parts.slice(0, i + 1).join('/'), current: isLast }
+  })
+})
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
+}
+
+const { locale, locales, setLocale } = useI18n()
+const availableLocales = computed(() => locales.value as Array<{ code: string; name: string }>)
+const colorMode = useColorMode()
+const sidebarOpen = ref(false)
+router.afterEach(() => {
+  sidebarOpen.value = false
+})
+
+const { connect: connectSSE, disconnect: disconnectSSE } = useEventStream()
+const { eventCount } = useSseEventCount()
+watch(eventCount, () => refreshNuxtData('nav-counts'))
+onMounted(() => connectSSE())
+onUnmounted(() => disconnectSSE())
+
+// ── Command palette ──
+const { paletteOpen, open: openPalette, close: closePalette } = useCommandPalette()
+const searchTerm = ref('')
+const searchResults = ref<{ jobs: any[]; candidates: any[] }>({ jobs: [], candidates: [] })
+
+watchDebounced(
+  searchTerm,
+  async (q) => {
+    if (q.length < 2) {
+      searchResults.value = { jobs: [], candidates: [] }
+      return
+    }
+    const [jobsRes, candidatesRes] = await Promise.all([
+      api.get<any>('/api/v1/jobs', { search: q, limit: 5 }).catch(() => ({ data: [] })),
+      api.get<any>('/api/v1/candidates', { search: q, limit: 5 }).catch(() => ({ data: [] })),
+    ])
+    searchResults.value = {
+      jobs: jobsRes.data ?? [],
+      candidates: candidatesRes.data ?? [],
+    }
+  },
+  { debounce: 250 },
+)
+
+const commandGroups = computed(() => [
+  {
+    id: 'nav',
+    label: t('nav.commandGroupNav'),
+    items: navGroups.value
+      .flatMap((g) => g.items)
+      .map((item) => ({ id: item.to, label: item.label, icon: item.icon, to: item.to })),
+  },
+  ...(searchTerm.value.length >= 2
+    ? [
+        {
+          id: 'jobs',
+          label: t('nav.commandGroupJobs'),
+          items: searchResults.value.jobs.map((j: any) => ({
+            id: j.id,
+            label: j.title,
+            icon: 'i-heroicons-briefcase',
+            to: `/jobs/${j.id}`,
+            suffix: j.status,
+          })),
+        },
+        {
+          id: 'candidates',
+          label: t('nav.commandGroupCandidates'),
+          items: searchResults.value.candidates.map((c: any) => ({
+            id: c.id,
+            label: c.fullName,
+            icon: 'i-heroicons-user-circle',
+            to: `/candidates/${c.id}`,
+          })),
+        },
+      ]
+    : []),
+])
+
+function onCommandSelect(item: { to: string }) {
+  router.push(item.to)
+  closePalette()
+}
+
+const handleKbd = (e: KeyboardEvent) => {
+  if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault()
+    openPalette()
+  }
+}
+onMounted(() => document.addEventListener('keydown', handleKbd))
+onUnmounted(() => document.removeEventListener('keydown', handleKbd))
+</script>
+
+<template>
+  <a href="#main-content" class="skip-link">{{ t('nav.skipToContent') }}</a>
+  <div style="background: var(--bg); color: var(--ink); min-height: 100vh; display: flex">
+    <!-- Mobile backdrop -->
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 z-30 lg:hidden"
+      style="background: rgba(0, 0, 0, 0.35)"
+      @click="sidebarOpen = false"
+    />
+
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
+      <!-- Brand -->
+      <NuxtLink to="/dashboard" class="brand-row">
+        <div class="brand-mark">m</div>
+        <div class="brand-name">my<em>-hr</em></div>
+      </NuxtLink>
+
+      <!-- Portal indicator -->
+      <div class="portal-indicator">
+        <span class="live-dot" />
+        <span>{{ t('nav.companyPortal') }}</span>
+      </div>
+
+      <!-- Nav -->
+      <nav class="sidebar-nav">
+        <div v-for="group in navGroups" :key="group.label" class="nav-group">
+          <div class="nav-label">{{ group.label }}</div>
+          <NuxtLink
+            v-for="item in group.items"
+            :key="item.to"
+            :to="item.to"
+            class="nav-item"
+            active-class="nav-item-active"
+          >
+            <span class="nav-ico">
+              <UIcon :name="item.icon" style="width: 15px; height: 15px" />
+            </span>
+            <span class="nav-text">{{ item.label }}</span>
+            <span v-if="item.count" class="nav-count">{{ item.count }}</span>
+          </NuxtLink>
+        </div>
+      </nav>
+
+      <!-- Agent status card -->
+      <div class="agent-card">
+        <div class="agent-head">
+          <div class="agent-live">
+            <span class="live-dot" />
+            <span>{{ t('agent.live') }}</span>
+          </div>
+          <span class="agent-ver">v0.8</span>
+        </div>
+        <div class="agent-label">
+          {{ t('agent.sourcing', { count: counts?.jobs ?? 0 }) }}
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <!-- Topbar -->
+      <header class="topbar">
+        <!-- Mobile hamburger -->
+        <button
+          type="button"
+          class="lg:hidden"
+          style="
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            color: var(--ink-muted);
+            border: none;
+            cursor: pointer;
+            background: none;
+            margin-right: 8px;
+          "
+          :aria-label="sidebarOpen ? 'Close menu' : 'Open menu'"
+          :aria-expanded="sidebarOpen"
+          @click="sidebarOpen = !sidebarOpen"
+        >
+          <UIcon name="i-heroicons-bars-3" style="width: 18px; height: 18px" />
+        </button>
+
+        <!-- Breadcrumbs -->
+        <div class="crumbs hidden lg:flex">
+          <template v-for="(c, i) in crumbs" :key="i">
+            <span v-if="i > 0" class="crumb-sep" aria-hidden="true">/</span>
+            <NuxtLink v-if="!c.current" :to="c.to" class="crumb-link">{{ c.label }}</NuxtLink>
+            <span v-else class="crumb-here">{{ c.label }}</span>
+          </template>
+        </div>
+
+        <!-- Search -->
+        <button
+          type="button"
+          role="search"
+          class="topbar-search hidden xl:flex"
+          @click="openPalette()"
+        >
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            style="width: 14px; height: 14px; color: var(--ink-subtle); flex-shrink: 0"
+          />
+          <span style="flex: 1; font-size: 13px; color: var(--ink-subtle)">{{ t('nav.commandPlaceholder') }}</span>
+          <span class="search-kbd">⌘ K</span>
+        </button>
+
+        <!-- Actions -->
+        <div class="topbar-actions ml-auto">
+          <span
+            v-if="sseState !== 'idle'"
+            class="sse-pill hidden md:inline-flex"
+            :class="{ 'sse-pill-connected': sseState === 'connected', 'sse-pill-warn': sseState === 'reconnecting' }"
+            role="status"
+          >
+            <span class="live-dot" />
+            {{ sseState === 'connected' ? t('nav.sseConnected') : t('nav.sseReconnecting') }}
+          </span>
+          <USelect
+            :model-value="locale"
+            :options="availableLocales.map((l) => ({ label: l.name, value: l.code }))"
+            size="xs"
+            class="hidden md:block w-28"
+            @update:model-value="setLocale($event)"
+          />
+          <button
+            type="button"
+            class="icon-btn hidden sm:grid"
+            :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
+            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+          >
+            <UIcon
+              :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+              style="width: 15px; height: 15px"
+            />
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            :aria-label="t('nav.notifications')"
+            @click="toast.add({ title: t('nav.notificationsSoon'), color: 'neutral' })"
+          >
+            <UIcon name="i-heroicons-bell" style="width: 15px; height: 15px" />
+          </button>
+          <!-- User avatar + settings + logout -->
+          <div class="topbar-user">
+            <div
+              class="topbar-avatar hidden xs:grid"
+              :title="auth.user?.fullName"
+              :aria-label="auth.user?.fullName ?? t('nav.settings')"
+              role="img"
+            >
+              {{ auth.user?.fullName?.[0] ?? '?' }}
+            </div>
+            <NuxtLink to="/settings" class="icon-btn" :aria-label="t('nav.settings')">
+              <UIcon name="i-heroicons-cog-6-tooth" style="width: 15px; height: 15px" />
+            </NuxtLink>
+            <button
+              type="button"
+              class="icon-btn"
+              :aria-label="t('nav.logout')"
+              @click="handleLogout"
+            >
+              <UIcon
+                name="i-heroicons-arrow-right-on-rectangle"
+                style="width: 15px; height: 15px"
+              />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page -->
+      <main id="main-content" class="page-main" tabindex="-1">
+        <slot />
+      </main>
+    </div>
+  </div>
+
+  <!-- Command palette -->
+  <UModal v-model:open="paletteOpen" :ui="{ width: 'max-w-xl' }">
+    <UCommandPalette
+      v-model:search-term="searchTerm"
+      :groups="commandGroups"
+      :placeholder="t('nav.commandPlaceholder')"
+      @update:model-value="onCommandSelect"
+    />
+  </UModal>
+</template>
+
+<style scoped>
+/* ── Sidebar ── */
+.sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: transform 0.2s;
+  z-index: 40;
+}
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    inset-y: 0;
+    left: 0;
+  }
+  .sidebar-open {
+    transform: translateX(0);
+  }
+  .sidebar-closed {
+    transform: translateX(-100%);
+  }
+}
+@media (min-width: 1024px) {
+  .sidebar-closed {
+    transform: translateX(0);
+  }
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.brand-row:hover {
+  background: var(--bg-elevated);
+}
+
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.brand-name em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.portal-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-subtle);
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nav-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+  padding: 6px 10px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.nav-item:hover {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+.nav-item-active {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+.nav-ico {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.nav-text {
+  flex: 1;
+}
+.nav-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+}
+.nav-item-active .nav-count {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+/* ── Agent card ── */
+.agent-card {
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+.agent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.agent-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.agent-ver {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+}
+.agent-label {
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+/* ── Topbar ── */
+.topbar {
+  height: 56px;
+  border-bottom: 1px solid var(--line);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+.crumb-sep {
+  opacity: 0.4;
+  margin: 0 8px;
+}
+.crumb-link {
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+.crumb-link:hover {
+  color: var(--accent);
+}
+.crumb-here {
+  color: var(--ink);
+}
+
+.topbar-search {
+  flex: 1;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-left: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s;
+}
+.topbar-search:hover {
+  border-color: var(--ink-muted);
+}
+.search-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  white-space: nowrap;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--ink-muted);
+  transition:
+    background 0.12s,
+    color 0.12s;
+  border: none;
+  cursor: pointer;
+  background: none;
+  text-decoration: none;
+}
+.icon-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+.topbar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  font-style: italic;
+  border: 1px solid var(--line);
+  margin-right: 4px;
+}
+
+/* ── Page main ── */
+.page-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px 80px;
+}
+@media (max-width: 768px) {
+  .page-main {
+    padding: 20px 16px 60px;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 8px 16px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 0 0 8px 0;
+  font-size: 13px;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+.sse-pill {
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+  padding: 4px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+}
+.sse-pill-warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.sse-pill-connected {
+  color: var(--positive);
+  border-color: var(--positive);
+}
+.sse-pill-connected .live-dot {
+  background: var(--positive);
+}
+</style>
