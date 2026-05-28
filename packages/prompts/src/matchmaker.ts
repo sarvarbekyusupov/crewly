@@ -48,7 +48,7 @@ Job: ${job.title}
 Required skills: ${job.requiredSkills.join(', ')}
 Min experience: ${job.minExperienceYears ?? 'N/A'} years
 
-${job.hiringManagerFeedbackContext ? `IMPORTANT HIRING MANAGER PREFERENCES (Learn from these!):\n${job.hiringManagerFeedbackContext}\n` : ''}
+${job.hiringManagerFeedbackContext ? `IMPORTANT HIRING MANAGER PREFERENCES (Learn from these!):\n<preferences>\n${job.hiringManagerFeedbackContext}\n</preferences>\n` : ''}
 Candidates:
 ${candidates.map((c, i) => `${i + 1}. [ID:${c.id}] ${c.fullName} | ${c.currentPosition} | ${c.yearsExperience}yr | Skills: ${c.skills.slice(0, 8).join(', ')}`).join('\n')}
 

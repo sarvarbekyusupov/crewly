@@ -48,14 +48,18 @@ export class S3Service {
 
     const buf = typeof body === 'string' ? Buffer.from(body, 'utf8') : body;
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: buf,
-        ContentType: contentType,
-      }),
-    );
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: buf,
+          ContentType: contentType,
+        }),
+      );
+    } catch (err: any) {
+      throw new Error(`S3 upload failed for key "${key}": ${err.message}`);
+    }
 
     return `${this.endpoint}/${this.bucket}/${key}`;
   }

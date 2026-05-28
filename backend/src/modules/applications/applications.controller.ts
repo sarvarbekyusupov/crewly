@@ -26,6 +26,10 @@ import {
   BulkRejectDto,
   BulkApproveSchema,
   BulkApproveDto,
+  SubmitDebriefSchema,
+  SubmitDebriefDto,
+  UploadTranscriptSchema,
+  UploadTranscriptDto,
 } from './dto/application.dto';
 import {
   ScheduleInterviewSchema,
@@ -127,7 +131,7 @@ export class ApplicationsController {
   submitDebrief(
     @CurrentUser() user: any,
     @Param('id') id: string,
-    @Body() body: { feedback: string },
+    @Body(new ZodValidationPipe(SubmitDebriefSchema)) body: SubmitDebriefDto,
   ) {
     return this.svc.submitInterviewDebrief(
       user.companyId,
@@ -142,7 +146,7 @@ export class ApplicationsController {
   uploadTranscript(
     @CurrentUser() user: any,
     @Param('id') id: string,
-    @Body() body: { transcript: string },
+    @Body(new ZodValidationPipe(UploadTranscriptSchema)) body: UploadTranscriptDto,
   ) {
     return this.svc.uploadAndAnalyzeTranscript(
       user.companyId,

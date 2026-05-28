@@ -94,6 +94,15 @@ describe('S3Service', () => {
       expect(result).toContain('folder/file.pdf');
     });
 
+    it('upload throws when S3 send fails', async () => {
+      const { __mockSend } = require('@aws-sdk/client-s3');
+      __mockSend.mockRejectedValueOnce(new Error('AccessDenied'));
+
+      await expect(
+        service.upload('fail/key.txt', 'data', 'text/plain'),
+      ).rejects.toThrow('S3 upload failed for key "fail/key.txt": AccessDenied');
+    });
+
     it('upload accepts string body', async () => {
       const result = await service.upload(
         'file.txt',

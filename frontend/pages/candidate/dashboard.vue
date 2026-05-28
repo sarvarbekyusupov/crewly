@@ -104,7 +104,8 @@ async function triggerScoring() {
       description: 'Scores ready in ~1 minute',
       color: 'success',
     })
-  } catch {
+  } catch (err: any) {
+    toast.add({ title: 'Error', description: err?.data?.message ?? err?.message, color: 'error' })
   } finally {
     scoringInProgress.value = false
   }

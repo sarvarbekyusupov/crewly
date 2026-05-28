@@ -188,10 +188,17 @@ export class AutoApplyProcessor {
         );
       }
     } catch (err: any) {
-      await this.db.seekerApplication.update({
-        where: { id: seekerApplicationId },
-        data: { status: 'failed', error: err.message },
-      });
+      try {
+        await this.db.seekerApplication.update({
+          where: { id: seekerApplicationId },
+          data: { status: 'failed', error: err.message },
+        });
+      } catch (dbErr: any) {
+        this.logger.error(
+          { seekerApplicationId, dbErr: dbErr.message },
+          'Failed to mark seekerApplication as failed',
+        );
+      }
       throw err;
     }
   }

@@ -162,7 +162,12 @@ export class WebhooksController implements OnModuleInit {
     }
 
     const expectedAuth = `Basic ${Buffer.from(`Paycom:${merchantKey}`).toString('base64')}`;
-    if (auth !== expectedAuth) {
+    const authBuf = Buffer.from(auth ?? '');
+    const expectedBuf = Buffer.from(expectedAuth);
+    const valid =
+      authBuf.length === expectedBuf.length &&
+      timingSafeEqual(authBuf, expectedBuf);
+    if (!valid) {
       throw new ForbiddenException('Invalid credentials');
     }
 

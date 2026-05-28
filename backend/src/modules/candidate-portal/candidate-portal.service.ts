@@ -239,7 +239,9 @@ export class CandidatePortalService {
         orderBy:
           filters?.sortBy === 'score' ? undefined : { discoveredAt: 'desc' },
         skip: filters?.sortBy === 'score' ? 0 : skip,
-        take: filters?.sortBy === 'score' ? 1000 : limit, // score sort: fetch all, sort in memory
+        // score sort requires in-memory sort because AI score lives in a joined relation;
+        // cap at 500 to bound memory — proper fix needs a denormalized score column
+        take: filters?.sortBy === 'score' ? 500 : limit,
       }),
       this.db.discoveredJob.count({ where }),
     ]);

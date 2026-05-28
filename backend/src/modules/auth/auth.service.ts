@@ -144,7 +144,7 @@ export class AuthService {
       include: { user: { include: { company: true } } },
     });
 
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    if (!session || session.revokedAt || session.expiresAt <= new Date()) {
       if (session) {
         this.db.session.delete({ where: { id: session.id } }).catch(() => {});
       }
@@ -224,7 +224,7 @@ export class AuthService {
       !record ||
       record.type !== 'password_reset' ||
       record.usedAt ||
-      record.expiresAt < new Date()
+      record.expiresAt <= new Date()
     ) {
       throw new BadRequestException('Invalid or expired reset token');
     }
@@ -251,7 +251,7 @@ export class AuthService {
       !record ||
       record.type !== 'email_verify' ||
       record.usedAt ||
-      record.expiresAt < new Date()
+      record.expiresAt <= new Date()
     ) {
       throw new BadRequestException('Invalid or expired verification link');
     }

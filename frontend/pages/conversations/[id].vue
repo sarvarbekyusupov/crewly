@@ -33,7 +33,8 @@ async function sendReply() {
     await api.post(`/api/v1/conversations/${id}/messages`, { content: replyContent.value })
     replyContent.value = ''
     refresh()
-  } catch {
+  } catch (err: any) {
+    toast.add({ title: t('common.error'), description: err?.data?.message ?? err?.message, color: 'error' })
   } finally {
     replySending.value = false
   }

@@ -90,7 +90,9 @@ export class SendOutreachProcessor {
     });
 
     const channelThreadId =
-      channel === 'telegram' ? String(app.candidate.telegramUserId) : null;
+      channel === 'telegram' && app.candidate.telegramUserId != null
+        ? String(app.candidate.telegramUserId)
+        : null;
 
     const existing = await this.db.conversation.findFirst({
       where: { applicationId, channel },

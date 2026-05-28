@@ -10,12 +10,16 @@ export function debriefSynthesizeFeedbackPrompt(
   return `Synthesize new hiring manager feedback into the current "Ideal Candidate Profile" for the role: ${jobTitle}.
 
 CURRENT IDEAL PROFILE CONTEXT (Learning from past decisions):
+<context>
 ${currentContext || 'None yet. This is the first feedback.'}
+</context>
 
 NEW FEEDBACK:
 Candidate: ${newFeedback.candidateName}
 Decision: ${newFeedback.decision}
-Feedback: ${newFeedback.rawFeedback}
+Feedback: <user_feedback>
+${newFeedback.rawFeedback}
+</user_feedback>
 
 GOAL:
 Update the "Ideal Profile" context to include new insights.
@@ -44,7 +48,9 @@ AI SCREENING BOT ASSESSMENT:
 ${JSON.stringify(aiScreeningAssessment || 'No prior AI screening.')}
 
 TRANSCRIPT:
+<transcript>
 ${transcript.slice(0, 15000)}
+</transcript>
 
 GOAL:
 Provide a multi-dimensional assessment of the candidate based on the interview.

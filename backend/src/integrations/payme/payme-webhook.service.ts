@@ -59,7 +59,10 @@ export class PaymeWebhookService {
 
   private async checkPerformTransaction(params: any) {
     const { amount, account } = params;
-    const invoiceId = account.invoice_id;
+    if (!account?.invoice_id) {
+      throw { code: PaymeError.OrderNotFound, message: 'Missing account.invoice_id' };
+    }
+    const invoiceId = account.invoice_id as string;
 
     const invoice = await this.db.invoice.findUnique({ where: { id: invoiceId } });
     if (!invoice) {
@@ -79,7 +82,10 @@ export class PaymeWebhookService {
 
   private async createTransaction(params: any) {
     const { id, time, amount, account } = params;
-    const invoiceId = account.invoice_id;
+    if (!account?.invoice_id) {
+      throw { code: PaymeError.OrderNotFound, message: 'Missing account.invoice_id' };
+    }
+    const invoiceId = account.invoice_id as string;
 
     const existing = await this.db.paymeTransaction.findUnique({ where: { id } });
     if (existing) {

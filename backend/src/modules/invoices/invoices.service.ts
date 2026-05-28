@@ -120,24 +120,25 @@ export class InvoicesService {
       );
     }
 
-    const invoice = await this.db.invoice.findUnique({ where: { id } });
-
-    if (!invoice || invoice.companyId !== companyId) {
-      throw new NotFoundException('Invoice not found');
-    }
-    if (invoice.status === 'paid') {
-      throw new BadRequestException('Invoice already paid');
-    }
-
-    const updated = await this.db.invoice.update({
-      where: { id },
+    const result = await this.db.invoice.updateMany({
+      where: { id, companyId, status: { notIn: ['paid', 'cancelled'] } },
       data: {
         status: 'paid',
         paidAt: new Date(),
         paymentReference: dto.paymentReference ?? null,
-        notes: dto.notes ?? invoice.notes,
+        notes: dto.notes ?? undefined,
       },
     });
+
+    if (result.count === 0) {
+      const invoice = await this.db.invoice.findUnique({ where: { id } });
+      if (!invoice || invoice.companyId !== companyId) {
+        throw new NotFoundException('Invoice not found');
+      }
+      throw new BadRequestException('Invoice already paid or cancelled');
+    }
+
+    const updated = await this.db.invoice.findUniqueOrThrow({ where: { id } });
 
     // Fire-and-forget: notify owner that payment is recorded
     this.db.user
@@ -149,8 +150,8 @@ export class InvoicesService {
         if (cu?.email) {
           return this.email.send({
             to: cu.email,
-            subject: `Оплата ${invoice.invoiceNumber} получена`,
-            html: `<p>Счёт <strong>${invoice.invoiceNumber}</strong> отмечен как оплаченный.</p>${dto.paymentReference ? `<p>Реквизиты: ${dto.paymentReference}</p>` : ''}`,
+            subject: `Оплата ${updated.invoiceNumber} получена`,
+            html: `<p>Счёт <strong>${updated.invoiceNumber}</strong> отмечен как оплаченный.</p>${dto.paymentReference ? `<p>Реквизиты: ${dto.paymentReference}</p>` : ''}`,
           });
         }
       })

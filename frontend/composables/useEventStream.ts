@@ -26,6 +26,7 @@ export function useEventStream() {
   const { t } = useI18n()
   let es: EventSource | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let reconnectAttempt = 0
 
   function eventsUrl() {
     const base = (config.public.apiBase as string).replace(/\/$/, '')
@@ -64,6 +65,7 @@ export function useEventStream() {
 
     es.onopen = () => {
       connectionState.value = 'connected'
+      reconnectAttempt = 0
     }
 
     es.onmessage = (e) => {
@@ -114,7 +116,9 @@ export function useEventStream() {
       connectionState.value = 'reconnecting'
       es?.close()
       es = null
-      reconnectTimer = setTimeout(connect, 5000)
+      const delay = Math.min(30_000, 1_000 * Math.pow(2, reconnectAttempt))
+      reconnectAttempt++
+      reconnectTimer = setTimeout(connect, delay)
     }
   }
 

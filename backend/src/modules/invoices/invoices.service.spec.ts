@@ -21,6 +21,8 @@ describe('InvoicesService', () => {
       invoice: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         count: jest.fn(),
         update: jest.fn(),
         aggregate: jest
@@ -113,6 +115,7 @@ describe('InvoicesService', () => {
     });
 
     it('throws NotFoundException when invoice not found', async () => {
+      db.invoice.updateMany.mockResolvedValue({ count: 0 });
       db.invoice.findUnique.mockResolvedValue(null);
       await expect(
         service.markPaid(companyId, invoiceId, 'owner', {}),
@@ -120,6 +123,7 @@ describe('InvoicesService', () => {
     });
 
     it('throws BadRequestException when invoice already paid', async () => {
+      db.invoice.updateMany.mockResolvedValue({ count: 0 });
       db.invoice.findUnique.mockResolvedValue({
         id: invoiceId,
         companyId,
@@ -130,23 +134,37 @@ describe('InvoicesService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('concurrent markPaid — second call throws BadRequestException', async () => {
+      // First call succeeds (updateMany returns count: 1)
+      // Second call fails because status already changed (updateMany returns count: 0)
+      db.invoice.updateMany
+        .mockResolvedValueOnce({ count: 1 })
+        .mockResolvedValueOnce({ count: 0 });
+      db.invoice.findUniqueOrThrow.mockResolvedValue({ id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-001' });
+      db.invoice.findUnique.mockResolvedValue({ id: invoiceId, companyId, status: 'paid' });
+
+      await service.markPaid(companyId, invoiceId, 'owner', {});
+      await expect(
+        service.markPaid(companyId, invoiceId, 'owner', {}),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('marks invoice as paid for owner', async () => {
-      const invoice = {
-        id: invoiceId,
-        companyId,
-        status: 'issued',
-        invoiceNumber: 'INV-001',
-        notes: null,
-      };
-      db.invoice.findUnique.mockResolvedValue(invoice);
-      db.invoice.update.mockResolvedValue({ ...invoice, status: 'paid' });
+      const paid = { id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-001' };
+      db.invoice.updateMany.mockResolvedValue({ count: 1 });
+      db.invoice.findUniqueOrThrow.mockResolvedValue(paid);
 
       const result = await service.markPaid(companyId, invoiceId, 'owner', {
         paymentReference: 'REF-123',
       });
 
-      expect(db.invoice.update).toHaveBeenCalledWith(
+      expect(db.invoice.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          where: expect.objectContaining({
+            id: invoiceId,
+            companyId,
+            status: expect.objectContaining({ notIn: ['paid', 'cancelled'] }),
+          }),
           data: expect.objectContaining({
             status: 'paid',
             paymentReference: 'REF-123',
@@ -157,18 +175,12 @@ describe('InvoicesService', () => {
     });
 
     it('marks invoice as paid for admin', async () => {
-      const invoice = {
-        id: invoiceId,
-        companyId,
-        status: 'overdue',
-        invoiceNumber: 'INV-002',
-        notes: null,
-      };
-      db.invoice.findUnique.mockResolvedValue(invoice);
-      db.invoice.update.mockResolvedValue({ ...invoice, status: 'paid' });
+      const paid = { id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-002' };
+      db.invoice.updateMany.mockResolvedValue({ count: 1 });
+      db.invoice.findUniqueOrThrow.mockResolvedValue(paid);
 
       await service.markPaid(companyId, invoiceId, 'admin', {});
-      expect(db.invoice.update).toHaveBeenCalled();
+      expect(db.invoice.updateMany).toHaveBeenCalled();
     });
   });
 

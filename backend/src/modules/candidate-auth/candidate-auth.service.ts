@@ -175,7 +175,7 @@ export class CandidateAuthService {
       include: { candidate: true },
     });
 
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    if (!session || session.revokedAt || session.expiresAt <= new Date()) {
       if (session) {
         this.db.candidateSession
           .delete({ where: { id: session.id } })

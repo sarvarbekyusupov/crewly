@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { LogLevel } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/nestjs';
 import { AppModule } from './app.module';
@@ -59,7 +60,7 @@ async function bootstrap() {
   );
 
   // Bull Board — queue inspector at /admin/queues (basic auth protected)
-  const bullBoardPassword = process.env.BULL_BOARD_PASSWORD ?? 'admin';
+  const bullBoardPassword = app.get(ConfigService).get<string>('BULL_BOARD_PASSWORD')!;
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
 

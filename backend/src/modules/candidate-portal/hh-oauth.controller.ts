@@ -61,7 +61,7 @@ export class HhOAuthController {
 
     try {
       await this.hhOAuth.exchangeCodeAndStore(code, state);
-      res.redirect(successUrl);
+      return res.redirect(successUrl);
     } catch (err: any) {
       const reason =
         err?.response?.status === 400 ? 'invalid_code' : 'exchange_failed';

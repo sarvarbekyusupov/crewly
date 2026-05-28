@@ -113,7 +113,8 @@ async function triggerIngestion() {
     )
     toast.add({ title: 'Ingestion queued', description: `Job ID: ${res.jobId}`, color: 'success' })
     setTimeout(() => refresh(), 2000)
-  } catch {
+  } catch (err: any) {
+    toast.add({ title: t('common.error'), description: err?.data?.message ?? err?.message, color: 'error' })
   } finally {
     triggering.value = false
   }
@@ -137,7 +138,8 @@ async function triggerJobDiscovery() {
       color: 'success',
     })
     setTimeout(() => refreshJobRuns(), 2000)
-  } catch {
+  } catch (err: any) {
+    toast.add({ title: t('common.error'), description: err?.data?.message ?? err?.message, color: 'error' })
   } finally {
     triggeringJobs.value = false
   }

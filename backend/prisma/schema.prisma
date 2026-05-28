@@ -446,6 +446,7 @@ model Screening {
 
   @@index([applicationId], map: "idx_screenings_application")
   @@index([status], map: "idx_screenings_status")
+  @@index([conversationId], map: "idx_screenings_conversation")
   @@map("screenings")
 }
 
@@ -524,6 +525,7 @@ model PaymeTransaction {
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
 
+  @@index([invoiceId, state], map: "idx_payme_tx_invoice_state")
   @@map("payme_transactions")
 }
 

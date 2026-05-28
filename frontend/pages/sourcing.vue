@@ -5,12 +5,14 @@ definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const router = useRouter()
 const api = useApi()
 
-// Redirect if not admin/owner
-if (!auth.can('admin')) {
-  useRouter().push('/dashboard')
-}
+onMounted(() => {
+  if (!auth.can('admin')) {
+    router.push('/dashboard')
+  }
+})
 
 useHead({ title: t('nav.sourcing') })
 

@@ -35,9 +35,9 @@ services:
       DATABASE_URL: postgresql://myhr:myhr@postgres:5432/myhr
       DIRECT_URL: postgresql://myhr:myhr@postgres:5432/myhr
       REDIS_URL: redis://redis:6379
-      SESSION_SECRET: ${SESSION_SECRET:-change_me_in_production_min_32_chars_xx}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_jwt_access_secret_min_32_chars_xxx}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_jwt_refresh_secret_min_32_chars_xx}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set (min 32 chars)}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET must be set (min 32 chars)}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set (min 32 chars)}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-placeholder}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-placeholder}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:4000/api/v1/candidate-auth/google/callback}
