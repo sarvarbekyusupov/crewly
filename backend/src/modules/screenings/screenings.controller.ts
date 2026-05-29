@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { ScreeningsService } from './screenings.service';
 
 @Controller('api/v1')
@@ -10,26 +11,26 @@ export class ScreeningsController {
 
   @Get('applications/:applicationId/screenings')
   findByApplication(
-    @CurrentUser() user: any,
-    @Param('applicationId') appId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('applicationId', ParseUUIDPipe) appId: string,
   ) {
     return this.svc.findByApplication(appId, user.companyId);
   }
 
   @Post('applications/:applicationId/screenings')
-  create(@CurrentUser() user: any, @Param('applicationId') appId: string) {
+  create(@CurrentUser() user: AuthUser, @Param('applicationId', ParseUUIDPipe) appId: string) {
     return this.svc.create(appId, user.companyId);
   }
 
   @Get('screenings/:id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.findOne(id, user.companyId);
   }
 
   @Post('screenings/:id/escalate')
   escalate(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { reason: string },
   ) {
     return this.svc.escalate(id, user.companyId, body.reason);

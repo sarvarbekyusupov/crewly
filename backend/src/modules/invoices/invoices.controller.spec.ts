@@ -11,7 +11,7 @@ describe('InvoicesController', () => {
     markPaid: jest.Mock;
   };
 
-  const user = { id: 'user-1', companyId: 'company-1', role: 'owner' };
+  const user = { id: 'user-1', companyId: 'company-1', role: 'owner' as const };
 
   beforeEach(async () => {
     svc = {

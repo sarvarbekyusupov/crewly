@@ -86,7 +86,7 @@ export class LinkedInJobsAdapter extends JobSourceAdapter {
         { page: params.page, error: err.message },
         'JSearch fetch failed',
       );
-      return { jobs: [], hasMore: false };
+      throw err;
     }
 
     const data = response.data;

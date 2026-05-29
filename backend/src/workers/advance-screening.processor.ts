@@ -88,26 +88,28 @@ export class AdvanceScreeningProcessor {
       const appStatus = isReject ? 'screened_fail' : 'screened_pass';
       const needsReview = recommendation === 'maybe';
 
-      await this.db.screening.update({
-        where: { id: screeningId },
-        data: {
-          status: 'completed',
-          aiAssessment: parsed.assessment as any,
-          completedAt: new Date(),
-          fullTranscript: messages as any,
-        },
-      });
-      await this.db.application.update({
-        where: { id: screening.applicationId },
-        data: {
-          status: appStatus,
-          screenedAt: new Date(),
-          ...(needsReview && {
-            hiringManagerNotes:
-              '[AI: needs manual review — borderline candidate]',
-          }),
-        },
-      });
+      await this.db.$transaction([
+        this.db.screening.update({
+          where: { id: screeningId },
+          data: {
+            status: 'completed',
+            aiAssessment: parsed.assessment as any,
+            completedAt: new Date(),
+            fullTranscript: messages as any,
+          },
+        }),
+        this.db.application.update({
+          where: { id: screening.applicationId },
+          data: {
+            status: appStatus,
+            screenedAt: new Date(),
+            ...(needsReview && {
+              hiringManagerNotes:
+                '[AI: needs manual review — borderline candidate]',
+            }),
+          },
+        }),
+      ]);
       if (!isReject) {
         await this.dossierQueue.add({ screeningId }, LLM_JOB_OPTIONS);
       }

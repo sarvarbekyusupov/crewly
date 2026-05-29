@@ -103,7 +103,7 @@ describe('ParseCandidateProcessor', () => {
     );
   });
 
-  it('handles agent failure gracefully', async () => {
+  it('handles agent failure gracefully by throwing error to trigger Bull retry', async () => {
     db.candidate.findUnique.mockResolvedValue({
       id: candidateId,
       rawResumeText: 'some resume',
@@ -112,8 +112,6 @@ describe('ParseCandidateProcessor', () => {
     agent.parseResume.mockRejectedValue(new Error('Parse error'));
     db.candidate.update.mockResolvedValue({});
 
-    await processor.handle(makeJob({ candidateId }));
-
-    expect(db.candidate.update).toHaveBeenCalled();
+    await expect(processor.handle(makeJob({ candidateId }))).rejects.toThrow('Parse error');
   });
 });

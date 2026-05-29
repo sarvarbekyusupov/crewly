@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,6 +16,8 @@ interface MarkPaidDto {
 
 @Injectable()
 export class InvoicesService {
+  private readonly logger = new Logger(InvoicesService.name);
+
   constructor(
     private readonly db: PrismaService,
     private readonly email: EmailService,
@@ -155,7 +158,7 @@ export class InvoicesService {
           });
         }
       })
-      .catch(() => {});
+      .catch((e) => this.logger.error({ err: e.message }, 'markPaid notification failed'));
 
     return updated;
   }

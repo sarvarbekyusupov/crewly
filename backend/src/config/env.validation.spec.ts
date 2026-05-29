@@ -4,6 +4,7 @@ const minimalEnv = {
   DATABASE_URL: 'postgresql://localhost/test',
   SESSION_SECRET: 'a'.repeat(32),
   JWT_ACCESS_SECRET: 'b'.repeat(32),
+  JWT_CANDIDATE_SECRET: 'd'.repeat(32),
   JWT_REFRESH_SECRET: 'c'.repeat(32),
 };
 

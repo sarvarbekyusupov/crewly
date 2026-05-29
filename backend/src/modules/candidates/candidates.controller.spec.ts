@@ -13,7 +13,7 @@ describe('CandidatesController', () => {
     uploadResume: jest.Mock;
   };
 
-  const user = { id: 'user-1', companyId: 'company-1' };
+  const user = { id: 'user-1', companyId: 'company-1', role: 'admin' as const };
 
   beforeEach(async () => {
     svc = {

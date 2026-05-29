@@ -3,12 +3,14 @@ import { BullModule } from '@nestjs/bull';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationsService } from './applications.service';
 import { SchedulingModule } from '../scheduling/scheduling.module';
+import { AgentsModule } from '../agents/agents.module';
 import { QUEUES } from '../../workers/queue-names';
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: QUEUES.SEND_OUTREACH }),
     SchedulingModule,
+    AgentsModule,
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],

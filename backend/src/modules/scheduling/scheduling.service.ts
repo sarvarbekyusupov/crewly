@@ -74,7 +74,7 @@ export class SchedulingService {
             companyId,
           },
         })
-        .catch(() => {});
+        .catch((e) => console.error('Background task error:', e));
     }
 
     return {

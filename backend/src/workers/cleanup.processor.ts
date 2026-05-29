@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Process, Processor } from '@nestjs/bull';
+import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../integrations/email/email.service';
@@ -48,7 +48,19 @@ export class CleanupProcessor {
         replacementRequired: false,
       },
       include: {
-        job: { select: { title: true, companyId: true } },
+        job: {
+          include: {
+            company: {
+              include: {
+                users: {
+                  where: { role: 'owner', deletedAt: null },
+                  select: { email: true },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
         candidate: { select: { fullName: true } },
       },
     });
@@ -61,22 +73,15 @@ export class CleanupProcessor {
     });
 
     for (const placement of expiredPlacements) {
-      const owner = await this.db.user.findFirst({
-        where: {
-          companyId: placement.job.companyId,
-          role: 'owner',
-          deletedAt: null,
-        },
-        select: { email: true },
-      });
-      if (owner?.email) {
+      const ownerEmail = placement.job.company?.users[0]?.email;
+      if (ownerEmail) {
         await this.email
           .sendGuaranteeExpired(
-            owner.email,
+            ownerEmail,
             placement.candidate.fullName ?? '',
             placement.job.title,
           )
-          .catch(() => {});
+          .catch((e) => this.logger.error({ err: e.message }, 'sendGuaranteeExpired failed'));
       }
     }
     this.logger.log(
@@ -143,10 +148,18 @@ export class CleanupProcessor {
             invoice.amountUzs,
             invoice.dueDate,
           )
-          .catch(() => {});
+          .catch((e) => this.logger.error({ err: e.message }, 'sendInvoice reminder failed'));
         sent++;
       }
     }
     this.logger.log({ count: sent }, 'Invoice reminders sent');
+  }
+
+  @OnQueueFailed()
+  onFailed(job: Job, err: Error) {
+    this.logger.error(
+      { jobName: job.name, error: err.message },
+      'cleanup job failed',
+    );
   }
 }

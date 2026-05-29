@@ -4,6 +4,7 @@ import { Observable, fromEvent, interval, merge } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 
 @Controller('api/v1/events')
 @UseGuards(AuthGuard)
@@ -11,7 +12,7 @@ export class EventsController {
   constructor(private readonly emitter: EventEmitter2) {}
 
   @Sse()
-  stream(@CurrentUser() user: any): Observable<MessageEvent> {
+  stream(@CurrentUser() user: AuthUser): Observable<MessageEvent> {
     const companyId: string = user.companyId;
 
     const keepalive$ = interval(30_000).pipe(

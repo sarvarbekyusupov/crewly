@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
+import { Prisma, DiscoveredJob } from '@prisma/client';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
@@ -10,6 +11,21 @@ import { HhTokenService } from '../integrations/hh/hh-token.service';
 import { LinkedInApplyService } from '../integrations/apply/linkedin-apply.service';
 import { QUEUES } from './queue-names';
 import { ConfigService } from '@nestjs/config';
+
+type AutoApplyCandidate = {
+  id: string;
+  fullName: string | null;
+  currentPosition: string | null;
+  skills: string[];
+  yearsExperience: Prisma.Decimal | null;
+  city: string | null;
+  email: string | null;
+  phone: string | null;
+  hhResumeId: string | null;
+  hhOauthToken: string | null;
+  agentSettings: Prisma.JsonValue | null;
+  socialProof: Prisma.JsonValue | null;
+};
 
 interface AutoApplyPayload {
   seekerApplicationId: string;
@@ -205,8 +221,8 @@ export class AutoApplyProcessor {
 
   private async applyHh(
     seekerApplicationId: string,
-    candidate: any,
-    discoveredJob: any,
+    candidate: AutoApplyCandidate,
+    discoveredJob: DiscoveredJob,
     coverLetter: string,
   ) {
     // Get a fresh token (auto-refreshes if near expiry)
@@ -257,8 +273,8 @@ export class AutoApplyProcessor {
 
   private async applyLinkedIn(
     seekerApplicationId: string,
-    candidate: any,
-    discoveredJob: any,
+    candidate: AutoApplyCandidate,
+    discoveredJob: DiscoveredJob,
     coverLetter: string,
   ) {
     const linkedinEmail = this.config.get<string>('LINKEDIN_EMAIL');
@@ -268,7 +284,7 @@ export class AutoApplyProcessor {
       jobUrl: discoveredJob.sourceUrl,
       candidateName: candidate.fullName ?? '',
       email: candidate.email ?? '',
-      phone: candidate.phone,
+      phone: candidate.phone ?? undefined,
       coverLetter,
       linkedinEmail,
       linkedinPassword,

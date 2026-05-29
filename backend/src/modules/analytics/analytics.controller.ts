@@ -1,7 +1,23 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { PrismaService } from '../../prisma/prisma.service';
+
+const STAGES = [
+  'matched',
+  'outreach_sent',
+  'responded',
+  'screening',
+  'screened_pass',
+  'delivered',
+  'interview_scheduled',
+  'interviewed',
+  'offered',
+  'hired',
+] as const;
+
+type Stage = (typeof STAGES)[number];
 
 @Controller('api/v1/analytics')
 @UseGuards(AuthGuard)
@@ -12,99 +28,72 @@ export class AnalyticsController {
    * Pipeline funnel: count of applications per status + conversion rates.
    */
   @Get('pipeline')
-  async pipeline(@CurrentUser() user: any, @Query('jobId') jobId?: string) {
+  async pipeline(@CurrentUser() user: AuthUser, @Query('jobId') jobId?: string) {
     const companyId: string = user.companyId;
-
-    const STAGES = [
-      'matched',
-      'outreach_sent',
-      'responded',
-      'screening',
-      'screened_pass',
-      'delivered',
-      'interview_scheduled',
-      'interviewed',
-      'offered',
-      'hired',
-    ] as const;
 
     const where = {
       companyId,
       ...(jobId && { jobId }),
     };
 
-    const counts = await Promise.all(
-      STAGES.map((status) =>
-        this.db.application.count({ where: { ...where, status } }),
-      ),
+    const grouped = await this.db.application.groupBy({
+      by: ['status'],
+      where,
+      _count: { _all: true },
+    });
+
+    const countMap = new Map<string, number>(
+      grouped.map((g) => [g.status, g._count._all]),
     );
 
-    const total = counts[0] ?? 1;
-    return STAGES.map((stage, i) => ({
-      stage,
-      count: counts[i],
-      rate: total > 0 ? Math.round((counts[i] / total) * 100) : 0,
-    }));
+    const total = countMap.get('matched') ?? 1;
+    return STAGES.map((stage) => {
+      const count = countMap.get(stage) ?? 0;
+      return {
+        stage,
+        count,
+        rate: total > 0 ? Math.round((count / total) * 100) : 0,
+      };
+    });
   }
 
   /**
-   * Avg time (hours) between pipeline stage transitions.
+   * Avg time (hours) between pipeline stage transitions — computed in the DB.
    */
   @Get('timing')
-  async timing(@CurrentUser() user: any) {
+  async timing(@CurrentUser() user: AuthUser) {
     const companyId: string = user.companyId;
 
-    const apps = await this.db.application.findMany({
-      where: { companyId },
-      select: {
-        matchedAt: true,
-        outreachSentAt: true,
-        respondedAt: true,
-        screenedAt: true,
-        deliveredAt: true,
-        interviewedAt: true,
-        hiredAt: true,
-        rejectedAt: true,
-      },
-    });
-
-    const avgHours = (
-      getA: (a: (typeof apps)[0]) => Date | null,
-      getB: (a: (typeof apps)[0]) => Date | null,
-    ) => {
-      const diffs = apps
-        .map((a) => {
-          const a1 = getA(a);
-          const b1 = getB(a);
-          if (!a1 || !b1) return null;
-          return (b1.getTime() - a1.getTime()) / 3_600_000;
-        })
-        .filter((d): d is number => d !== null && d > 0);
-      if (!diffs.length) return null;
-      return Math.round(diffs.reduce((s, v) => s + v, 0) / diffs.length);
+    type TimingRow = {
+      matchToOutreach: number | null;
+      outreachToResponse: number | null;
+      responseToDelivery: number | null;
+      deliveryToInterview: number | null;
+      interviewToHire: number | null;
     };
 
+    const [row] = await this.db.$queryRaw<TimingRow[]>`
+      SELECT
+        ROUND(AVG(EXTRACT(EPOCH FROM (outreach_sent_at - matched_at)) / 3600))::int  AS "matchToOutreach",
+        ROUND(AVG(EXTRACT(EPOCH FROM (responded_at   - outreach_sent_at)) / 3600))::int AS "outreachToResponse",
+        ROUND(AVG(EXTRACT(EPOCH FROM (delivered_at   - responded_at)) / 3600))::int     AS "responseToDelivery",
+        ROUND(AVG(EXTRACT(EPOCH FROM (interviewed_at - delivered_at)) / 3600))::int     AS "deliveryToInterview",
+        ROUND(AVG(EXTRACT(EPOCH FROM (hired_at       - interviewed_at)) / 3600))::int   AS "interviewToHire"
+      FROM applications
+      WHERE company_id = ${companyId}
+        AND outreach_sent_at > matched_at
+        AND (responded_at IS NULL   OR responded_at   > outreach_sent_at)
+        AND (delivered_at IS NULL   OR delivered_at   > responded_at)
+        AND (interviewed_at IS NULL OR interviewed_at > delivered_at)
+        AND (hired_at IS NULL       OR hired_at       > interviewed_at)
+    `;
+
     return {
-      matchToOutreach: avgHours(
-        (a) => a.matchedAt,
-        (a) => a.outreachSentAt,
-      ),
-      outreachToResponse: avgHours(
-        (a) => a.outreachSentAt,
-        (a) => a.respondedAt,
-      ),
-      responseToDelivery: avgHours(
-        (a) => a.respondedAt,
-        (a) => a.deliveredAt,
-      ),
-      deliveryToInterview: avgHours(
-        (a) => a.deliveredAt,
-        (a) => a.interviewedAt,
-      ),
-      interviewToHire: avgHours(
-        (a) => a.interviewedAt,
-        (a) => a.hiredAt,
-      ),
+      matchToOutreach: row?.matchToOutreach ?? null,
+      outreachToResponse: row?.outreachToResponse ?? null,
+      responseToDelivery: row?.responseToDelivery ?? null,
+      deliveryToInterview: row?.deliveryToInterview ?? null,
+      interviewToHire: row?.interviewToHire ?? null,
     };
   }
 
@@ -112,7 +101,7 @@ export class AnalyticsController {
    * Candidates sourced per CandidateSource name.
    */
   @Get('sourcing')
-  async sourcing(@CurrentUser() user: any) {
+  async sourcing(@CurrentUser() user: AuthUser) {
     const companyId: string = user.companyId;
 
     const rows = await this.db.application.groupBy({
@@ -142,7 +131,7 @@ export class AnalyticsController {
    * Hired vs rejected this month + running totals.
    */
   @Get('outcomes')
-  async outcomes(@CurrentUser() user: any) {
+  async outcomes(@CurrentUser() user: AuthUser) {
     const companyId: string = user.companyId;
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -172,10 +161,9 @@ export class AnalyticsController {
    * Agent performance and activity.
    */
   @Get('agents')
-  async agents(@CurrentUser() user: any) {
+  async agents(@CurrentUser() user: AuthUser) {
     const companyId: string = user.companyId;
 
-    // Get aggregated stats per agent
     const stats = await this.db.llmCall.groupBy({
       by: ['agentName'],
       where: { companyId },
@@ -183,7 +171,6 @@ export class AnalyticsController {
       _sum: { costUsd: true },
     });
 
-    // Get 15 most recent activities across all agents for this company
     const recentCalls = await this.db.llmCall.findMany({
       where: { companyId },
       orderBy: { createdAt: 'desc' },

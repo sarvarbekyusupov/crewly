@@ -21,7 +21,7 @@ export class CandidateAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwt.verify(token, {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET'),
+        secret: this.config.get<string>('JWT_CANDIDATE_SECRET'),
       });
       if (payload.type !== 'candidate_access' || !payload.sub)
         throw new UnauthorizedException();

@@ -8,7 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createHash } from 'crypto';
+import { hashToken } from '../utils/token.utils';
 
 @Injectable()
 export class StaffOrAdminGuard implements CanActivate {
@@ -25,12 +25,12 @@ export class StaffOrAdminGuard implements CanActivate {
 
     // 1. Try Staff session
     if (staffToken) {
-      const tokenHash = createHash('sha256').update(staffToken).digest('hex');
+      const tokenHash = hashToken(staffToken);
       const session = await this.db.staffSession.findUnique({
         where: { tokenHash },
         include: { staff: true },
       });
-      if (session && session.expiresAt >= new Date()) {
+      if (session && session.expiresAt > new Date()) {
         request.staff = session.staff;
         return true;
       }
@@ -42,7 +42,7 @@ export class StaffOrAdminGuard implements CanActivate {
         const payload = this.jwt.verify(userToken, {
           secret: this.config.get<string>('JWT_ACCESS_SECRET'),
         });
-        if (payload.type === 'access') {
+        if (payload.type === 'access' && payload.sub) {
           // Verify admin or owner role
           if (['owner', 'admin'].includes(payload.role)) {
             request.user = {

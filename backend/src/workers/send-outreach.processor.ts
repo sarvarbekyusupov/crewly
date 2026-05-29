@@ -94,33 +94,38 @@ export class SendOutreachProcessor {
         ? String(app.candidate.telegramUserId)
         : null;
 
-    const existing = await this.db.conversation.findFirst({
-      where: { applicationId, channel },
-    });
-    if (existing) return;
-
-    const conversation = await this.db.conversation.create({
-      data: {
-        applicationId,
-        candidateId: app.candidate.id,
-        channel,
-        channelThreadId,
-        state: 'initiated',
-      },
-    });
+    let conversation: Awaited<ReturnType<typeof this.db.conversation.create>>;
+    try {
+      conversation = await this.db.conversation.create({
+        data: {
+          applicationId,
+          candidateId: app.candidate.id,
+          channel,
+          channelThreadId,
+          state: 'initiated',
+        },
+      });
+    } catch (err: any) {
+      // P2002 = unique constraint violation → duplicate outreach already in flight
+      if (err?.code === 'P2002') {
+        this.logger.warn({ applicationId, channel }, 'Duplicate outreach detected — skipping');
+        return;
+      }
+      throw err;
+    }
 
     const message = await this.agent.generatePersonalizedMessage(
       {
         name: app.candidate.fullName ?? 'кандидат',
         currentPosition: app.candidate.currentPosition,
         skills: app.candidate.skills,
-        socialProof: app.candidate.socialProof,
+        socialProof: (app.candidate.socialProof ?? undefined) as Record<string, unknown> | undefined,
       },
       {
         title: app.job.title,
         requiredSkills: app.job.requiredSkills,
       },
-      app.matchReasons as any,
+      (app.matchReasons ?? {}) as Record<string, unknown>,
       applicationId,
     );
 

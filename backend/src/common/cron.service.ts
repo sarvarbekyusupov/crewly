@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { ConfigService } from '@nestjs/config';
 import { QUEUES } from '../workers/queue-names';
 import { INGEST_JOB_OPTIONS } from '../workers/queue-options';
 
@@ -12,11 +13,12 @@ export class CronService implements OnModuleInit {
     @InjectQueue(QUEUES.INGEST_CANDIDATES) private readonly ingestQueue: Queue,
     @InjectQueue(QUEUES.CLEANUP) private readonly cleanupQueue: Queue,
     @InjectQueue(QUEUES.SYNC_HH_STATUS) private readonly syncHhQueue: Queue,
+    private readonly config: ConfigService,
   ) {}
 
   async onModuleInit() {
     try {
-      const specializations = (process.env.HH_SPECIALIZATIONS ?? '1.221')
+      const specializations = (this.config.get<string>('HH_SPECIALIZATIONS') ?? '1.221')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);

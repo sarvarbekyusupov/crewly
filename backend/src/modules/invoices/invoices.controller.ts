@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -10,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { InvoicesService } from './invoices.service';
 import { z } from 'zod';
@@ -26,7 +28,7 @@ export class InvoicesController {
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -40,19 +42,19 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.findOne(user.companyId, id);
   }
 
   @Post(':id/pay')
-  getPaymentLink(@CurrentUser() user: any, @Param('id') id: string) {
+  getPaymentLink(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.getPaymentLink(user.companyId, id);
   }
 
   @Patch(':id/paid')
   markPaid(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(MarkPaidSchema))
     dto: z.infer<typeof MarkPaidSchema>,
   ) {

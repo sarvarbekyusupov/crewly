@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -11,6 +12,7 @@ import {
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { RequireRole } from '../../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
@@ -27,28 +29,28 @@ export class CompaniesController {
   constructor(private readonly svc: CompaniesService) {}
 
   @Get('me')
-  getMe(@CurrentUser() user: any) {
+  getMe(@CurrentUser() user: AuthUser) {
     return this.svc.getMe(user.companyId);
   }
 
   @Patch('me')
   @RequireRole('admin')
   updateMe(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(UpdateCompanySchema)) dto: UpdateCompanyDto,
   ) {
     return this.svc.updateMe(user.companyId, dto);
   }
 
   @Get('me/users')
-  getUsers(@CurrentUser() user: any) {
+  getUsers(@CurrentUser() user: AuthUser) {
     return this.svc.getUsers(user.companyId);
   }
 
   @Post('me/users')
   @RequireRole('admin')
   inviteUser(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(InviteUserSchema)) dto: InviteUserDto,
   ) {
     return this.svc.inviteUser(user.companyId, dto);
@@ -56,7 +58,7 @@ export class CompaniesController {
 
   @Delete('me/users/:id')
   @RequireRole('admin')
-  removeUser(@CurrentUser() user: any, @Param('id') id: string) {
+  removeUser(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.removeUser(user.companyId, id);
   }
 }

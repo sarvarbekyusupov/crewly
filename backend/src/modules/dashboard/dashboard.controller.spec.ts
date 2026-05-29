@@ -40,7 +40,7 @@ describe('DashboardController', () => {
       .mockResolvedValueOnce(1) // pendingInvoices
       .mockResolvedValueOnce(4); // totalInvoices
 
-    const user = { companyId: 'co-1' };
+    const user = { id: 'user-1', companyId: 'co-1', role: 'admin' as const };
     const result = await controller.stats(user);
 
     expect(result).toEqual({

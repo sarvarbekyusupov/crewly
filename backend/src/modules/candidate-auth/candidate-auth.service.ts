@@ -7,7 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { randomBytes, createHash } from 'crypto';
+import { hashToken, generateRawToken, REFRESH_TOKEN_TTL_MS } from '../../common/utils/token.utils';
+import { DUMMY_HASH } from '../../common/auth.constants';
 import * as argon2 from 'argon2';
 import type {
   CandidateSignupDto,
@@ -29,14 +30,10 @@ export class CandidateAuthService {
     private readonly config: ConfigService,
   ) {}
 
-  private hashToken(token: string): string {
-    return createHash('sha256').update(token).digest('hex');
-  }
-
   private issueAccessToken(candidateId: string): string {
     return this.jwt.sign(
       { sub: candidateId, type: 'candidate_access' },
-      { secret: this.config.get<string>('JWT_ACCESS_SECRET') },
+      { secret: this.config.get<string>('JWT_CANDIDATE_SECRET') },
     );
   }
 
@@ -45,15 +42,15 @@ export class CandidateAuthService {
     ip?: string,
     ua?: string,
   ): Promise<string> {
-    const rawToken = randomBytes(32).toString('hex');
-    const tokenHash = this.hashToken(rawToken);
+    const rawToken = generateRawToken();
+    const tokenHash = hashToken(rawToken);
     await this.db.candidateSession.create({
       data: {
         candidateId,
         tokenHash,
         ipAddress: ip,
         userAgent: ua,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });
     return rawToken;
@@ -143,14 +140,10 @@ export class CandidateAuthService {
       where: { email: dto.email, deletedAt: null },
     });
 
-    if (!candidate || !(candidate as any).passwordHash)
+    const hashToVerify = (candidate as any)?.passwordHash ?? DUMMY_HASH;
+    const valid = await argon2.verify(hashToVerify, dto.password).catch(() => false);
+    if (!candidate || !(candidate as any).passwordHash || !valid)
       throw new UnauthorizedException('Invalid credentials');
-
-    const valid = await argon2.verify(
-      (candidate as any).passwordHash,
-      dto.password,
-    );
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     await this.db.candidate.update({
       where: { id: candidate.id },
@@ -169,7 +162,7 @@ export class CandidateAuthService {
   }
 
   async refreshTokens(rawToken: string) {
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     const session = await this.db.candidateSession.findUnique({
       where: { tokenHash },
       include: { candidate: true },
@@ -185,8 +178,8 @@ export class CandidateAuthService {
     }
     if (session.candidate.deletedAt) throw new UnauthorizedException();
 
-    const newRawToken = randomBytes(32).toString('hex');
-    const newTokenHash = this.hashToken(newRawToken);
+    const newRawToken = generateRawToken();
+    const newTokenHash = hashToken(newRawToken);
 
     await this.db.$transaction([
       this.db.candidateSession.delete({ where: { id: session.id } }),
@@ -196,7 +189,7 @@ export class CandidateAuthService {
           tokenHash: newTokenHash,
           ipAddress: session.ipAddress,
           userAgent: session.userAgent,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
         },
       }),
     ]);
@@ -207,7 +200,7 @@ export class CandidateAuthService {
 
   async logout(rawToken: string) {
     if (!rawToken) return;
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     await this.db.candidateSession.deleteMany({ where: { tokenHash } });
   }
 

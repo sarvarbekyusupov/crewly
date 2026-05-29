@@ -2,6 +2,15 @@ export function outreachFallback(candidateName: string | undefined, jobTitle: st
   return `Здравствуйте, ${candidateName ?? 'кандидат'}!\n\nУ нас есть интересная позиция: ${jobTitle}.\n\nХотите узнать подробнее?`;
 }
 
+const MAX_SOCIAL_PROOF_CHARS = 500;
+const MAX_TALK_TITLE_CHARS = 100;
+const MAX_NOTES_CHARS = 500;
+
+function cap(text: string | undefined | null, max: number): string {
+  if (!text) return '';
+  return text.slice(0, max);
+}
+
 export function outreachPersonalizedPrompt(
   candidate: {
     name: string;
@@ -15,6 +24,13 @@ export function outreachPersonalizedPrompt(
   job: { title: string; requiredSkills: string[] },
   matchAnalysis?: { strengths?: string[]; notes?: string },
 ): string {
+  const safeSocialProof = cap(candidate.socialProof?.social_proof_summary, MAX_SOCIAL_PROOF_CHARS);
+  const safeTalks = (candidate.socialProof?.tech_talks ?? [])
+    .slice(0, 5)
+    .map((t) => cap(t.title, MAX_TALK_TITLE_CHARS))
+    .join(', ');
+  const safeNotes = cap(matchAnalysis?.notes, MAX_NOTES_CHARS);
+
   return `Write a hyper-personalized outreach message in Russian to this candidate.
 
 JOB:
@@ -27,12 +43,12 @@ Role: ${candidate.currentPosition ?? 'unknown'}
 Skills: ${candidate.skills.slice(0, 8).join(', ')}
 
 SOCIAL PROOF (Use this to personalize the hook!):
-${candidate.socialProof?.social_proof_summary ? `Summary: ${candidate.socialProof.social_proof_summary}` : 'None provided'}
-${candidate.socialProof?.tech_talks?.length ? `Talks: ${candidate.socialProof.tech_talks.map((t) => t.title).join(', ')}` : ''}
+${safeSocialProof ? `Summary: ${safeSocialProof}` : 'None provided'}
+${safeTalks ? `Talks: ${safeTalks}` : ''}
 
 AI MATCH ANALYSIS (Why they fit):
 Strengths: ${(matchAnalysis?.strengths ?? []).join(', ')}
-Notes: ${matchAnalysis?.notes ?? ''}
+Notes: ${safeNotes}
 
 RULES:
 1. Write 3-4 sentences max.

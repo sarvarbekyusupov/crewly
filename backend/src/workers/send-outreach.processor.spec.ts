@@ -8,6 +8,31 @@ import { HhClientService } from '../integrations/hh/hh-client.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
 import { NonRetryableError } from './errors';
 
+const HH_APP = {
+  id: 'app-1',
+  status: 'matched',
+  candidateId: 'c1',
+  matchReasons: {},
+  candidate: {
+    id: 'c1',
+    telegramUserId: null,
+    email: null,
+    externalId: 'ext-resume-42',
+    fullName: 'Carol',
+    currentPosition: 'Engineer',
+    currentCompany: 'OldCo',
+    skills: ['Java'],
+    socialProof: null,
+  },
+  job: {
+    id: 'j1',
+    title: 'Java Dev',
+    companyId: 'co1',
+    requiredSkills: ['Java'],
+    hhVacancyId: 'vac-777',
+  },
+};
+
 const makeJob = (data: object) =>
   ({ data, opts: { attempts: 3 }, attemptsMade: 0 }) as any;
 
@@ -49,8 +74,17 @@ describe('SendOutreachProcessor', () => {
         { provide: TelegramBotService, useValue: telegram },
         { provide: EmailService, useValue: email },
         { provide: OutreachAgent, useValue: agent },
-        { provide: HhClientService, useValue: { getPotentialResumes: jest.fn() } },
-        { provide: HhNegotiationsService, useValue: { submitNegotiation: jest.fn() } },
+        {
+          provide: HhClientService,
+          useValue: {
+            getPotentialResumes: jest.fn(),
+            checkSuitableResume: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: HhNegotiationsService,
+          useValue: { inviteCandidate: jest.fn().mockResolvedValue('neg-001') },
+        },
       ],
     }).compile();
 
@@ -179,5 +213,111 @@ describe('SendOutreachProcessor', () => {
 
     await processor.handle(makeJob({ applicationId }));
     expect(db.conversation.create).not.toHaveBeenCalled();
+  });
+
+  describe('HH invite path', () => {
+    it('invites candidate via HH when externalId and hhVacancyId are set', async () => {
+      db.application.findUnique.mockResolvedValue(HH_APP);
+      let hhNegotiations: HhNegotiationsService;
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SendOutreachProcessor,
+          { provide: PrismaService, useValue: db },
+          { provide: TelegramBotService, useValue: telegram },
+          { provide: EmailService, useValue: email },
+          { provide: OutreachAgent, useValue: agent },
+          {
+            provide: HhClientService,
+            useValue: { checkSuitableResume: jest.fn().mockResolvedValue(true) },
+          },
+          {
+            provide: HhNegotiationsService,
+            useValue: { inviteCandidate: jest.fn().mockResolvedValue('neg-hh-1') },
+          },
+        ],
+      }).compile();
+
+      const proc = module.get(SendOutreachProcessor);
+      hhNegotiations = module.get(HhNegotiationsService);
+
+      await proc.handle(makeJob({ applicationId }));
+
+      expect(hhNegotiations.inviteCandidate).toHaveBeenCalledWith(
+        expect.objectContaining({ vacancyId: 'vac-777', resumeId: 'ext-resume-42' }),
+      );
+      expect(db.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ hhNegotiationId: 'neg-hh-1' }),
+        }),
+      );
+    });
+
+    it('skips invite when checkSuitableResume returns false', async () => {
+      db.application.findUnique.mockResolvedValue(HH_APP);
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SendOutreachProcessor,
+          { provide: PrismaService, useValue: db },
+          { provide: TelegramBotService, useValue: telegram },
+          { provide: EmailService, useValue: email },
+          { provide: OutreachAgent, useValue: agent },
+          {
+            provide: HhClientService,
+            useValue: { checkSuitableResume: jest.fn().mockResolvedValue(false) },
+          },
+          {
+            provide: HhNegotiationsService,
+            useValue: { inviteCandidate: jest.fn() },
+          },
+        ],
+      }).compile();
+
+      const proc = module.get(SendOutreachProcessor);
+      const hhNeg = module.get(HhNegotiationsService);
+
+      await proc.handle(makeJob({ applicationId }));
+
+      expect(hhNeg.inviteCandidate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onFailed', () => {
+    it('discards job for NonRetryableError', () => {
+      const job = {
+        data: { applicationId },
+        opts: { attempts: 3 },
+        attemptsMade: 1,
+        discard: jest.fn().mockReturnValue(Promise.resolve()),
+      } as any;
+
+      processor.onFailed(job, new NonRetryableError('bad'));
+
+      expect(job.discard).toHaveBeenCalled();
+    });
+
+    it('marks no_contact when max attempts exceeded', async () => {
+      const job = {
+        data: { applicationId },
+        opts: { attempts: 3 },
+        attemptsMade: 3,
+        discard: jest.fn(),
+      } as any;
+
+      await processor.onFailed(job, new Error('network'));
+
+      expect(db.outreachAttempt.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ applicationId, status: 'sent' }),
+          data: { status: 'failed' },
+        }),
+      );
+      expect(db.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'no_contact' },
+        }),
+      );
+    });
   });
 });

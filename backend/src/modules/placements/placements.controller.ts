@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -10,6 +11,7 @@ import {
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { RequireRole } from '../../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { PlacementsService } from './placements.service';
@@ -25,7 +27,7 @@ export class PlacementsController {
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -37,15 +39,15 @@ export class PlacementsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.findOne(user.companyId, id);
   }
 
   @Post(':id/separation')
   @RequireRole('hiring_manager')
   recordSeparation(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(RecordSeparationSchema))
     body: RecordSeparationDto,
   ) {

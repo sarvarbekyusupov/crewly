@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { HhClientService } from './hh-client.service';
 import {
   CandidateSourceAdapter,
@@ -10,6 +10,7 @@ import {
 @Injectable()
 export class HhAdapter extends CandidateSourceAdapter {
   readonly sourceName = 'hh.ru';
+  private readonly logger = new Logger(HhAdapter.name);
 
   constructor(private readonly hh: HhClientService) {
     super();
@@ -30,8 +31,8 @@ export class HhAdapter extends CandidateSourceAdapter {
         null;
       try {
         detail = await this.hh.getResume(item.id);
-      } catch {
-        // Skip profiles that can't be fetched
+      } catch (err: any) {
+        this.logger.warn({ resumeId: item.id, error: err.message }, 'Failed to fetch resume detail from HH');
       }
       // Respect hh.ru rate limit
       await new Promise((r) => setTimeout(r, 300));

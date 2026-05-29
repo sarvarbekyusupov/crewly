@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationsService } from './applications.service';
+import { SchedulingService } from '../scheduling/scheduling.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -16,14 +17,14 @@ describe('ApplicationsController', () => {
     markInterviewed: jest.Mock;
     makeOffer: jest.Mock;
     hire: jest.Mock;
-    scheduleInterview: jest.Mock;
     getDossier: jest.Mock;
     retryOutreach: jest.Mock;
     bulkReject: jest.Mock;
     bulkApprove: jest.Mock;
   };
+  let schedulingSvc: { scheduleInterview: jest.Mock };
 
-  const user = { id: 'user-1', companyId: 'company-1', role: 'hiring_manager' };
+  const user = { id: 'user-1', companyId: 'company-1', role: 'hiring_manager' as const };
 
   beforeEach(async () => {
     svc = {
@@ -35,16 +36,19 @@ describe('ApplicationsController', () => {
       markInterviewed: jest.fn(),
       makeOffer: jest.fn(),
       hire: jest.fn(),
-      scheduleInterview: jest.fn(),
       getDossier: jest.fn(),
       retryOutreach: jest.fn(),
       bulkReject: jest.fn(),
       bulkApprove: jest.fn(),
     };
+    schedulingSvc = { scheduleInterview: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ApplicationsController],
-      providers: [{ provide: ApplicationsService, useValue: svc }],
+      providers: [
+        { provide: ApplicationsService, useValue: svc },
+        { provide: SchedulingService, useValue: schedulingSvc },
+      ],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
@@ -128,9 +132,9 @@ describe('ApplicationsController', () => {
       attendeeEmails: ['a@test.com'],
       timeZone: 'UTC',
     };
-    svc.scheduleInterview.mockResolvedValue({});
+    schedulingSvc.scheduleInterview.mockResolvedValue({});
     controller.scheduleInterview(user, 'app-1', dto);
-    expect(svc.scheduleInterview).toHaveBeenCalledWith(
+    expect(schedulingSvc.scheduleInterview).toHaveBeenCalledWith(
       'company-1',
       'app-1',
       dto,

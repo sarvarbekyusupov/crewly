@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Controller('api/v1/dashboard')
@@ -9,7 +10,7 @@ export class DashboardController {
   constructor(private readonly db: PrismaService) {}
 
   @Get('stats')
-  async stats(@CurrentUser() user: any) {
+  async stats(@CurrentUser() user: AuthUser) {
     const companyId: string = user.companyId;
 
     const [

@@ -1,4 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
+import { applyDecorators, UseGuards } from '@nestjs/common';
+import { StaffGuard } from '../guards/staff.guard';
 
-export const IS_STAFF_ONLY_KEY = 'isStaffOnly';
-export const StaffOnly = () => SetMetadata(IS_STAFF_ONLY_KEY, true);
+export const StaffOnly = () => applyDecorators(UseGuards(StaffGuard));

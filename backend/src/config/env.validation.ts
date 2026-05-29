@@ -15,6 +15,7 @@ export const EnvSchema = z.object({
   SESSION_SECRET: z.string().min(32),
 
   JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_CANDIDATE_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().default(900),
 
@@ -38,7 +39,7 @@ export const EnvSchema = z.object({
 
   RESEND_API_KEY: z.string().optional().or(z.literal('')),
   FROM_EMAIL: z.string().email().default('noreply@myhr.uz'),
-  BULL_BOARD_PASSWORD: z.string().min(8).default('changeme_board'),
+  BULL_BOARD_PASSWORD: z.string().min(16),
 
   S3_ENDPOINT: z.string().optional().or(z.literal('')),
   S3_ACCESS_KEY: z.string().optional().or(z.literal('')),

@@ -23,13 +23,13 @@ export class OutreachAgent extends BaseAgent {
       name: string;
       currentPosition: string | null;
       skills: string[];
-      socialProof?: any;
+      socialProof?: Record<string, unknown>;
     },
     job: {
       title: string;
       requiredSkills: string[];
     },
-    matchAnalysis?: any,
+    matchAnalysis?: Record<string, unknown>,
     applicationId?: string,
   ): Promise<string> {
     const fallback = outreachFallback(candidate.name, job.title);

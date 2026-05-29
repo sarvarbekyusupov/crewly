@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
+import { ConfigService } from '@nestjs/config';
 import { CronService } from './cron.service';
 import { QUEUES } from '../workers/queue-names';
 
@@ -8,11 +9,13 @@ describe('CronService', () => {
   let ingestQueue: { add: jest.Mock };
   let cleanupQueue: { add: jest.Mock };
   let syncHhQueue: { add: jest.Mock };
+  let configGet: jest.Mock;
 
   beforeEach(async () => {
     ingestQueue = { add: jest.fn().mockResolvedValue({}) };
     cleanupQueue = { add: jest.fn().mockResolvedValue({}) };
     syncHhQueue = { add: jest.fn().mockResolvedValue({}) };
+    configGet = jest.fn().mockReturnValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -25,6 +28,10 @@ describe('CronService', () => {
         {
           provide: getQueueToken(QUEUES.SYNC_HH_STATUS),
           useValue: syncHhQueue,
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: configGet },
         },
       ],
     }).compile();
@@ -45,11 +52,9 @@ describe('CronService', () => {
     await expect(service.onModuleInit()).resolves.toBeUndefined();
   });
 
-  it('uses HH_SPECIALIZATIONS env var when set', async () => {
-    const old = process.env.HH_SPECIALIZATIONS;
-    process.env.HH_SPECIALIZATIONS = '1.221,2.34';
+  it('uses HH_SPECIALIZATIONS config when set', async () => {
+    configGet.mockReturnValue('1.221,2.34');
     await service.onModuleInit();
     expect(ingestQueue.add).toHaveBeenCalledTimes(2);
-    process.env.HH_SPECIALIZATIONS = old;
   });
 });

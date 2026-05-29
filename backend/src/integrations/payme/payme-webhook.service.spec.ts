@@ -104,7 +104,7 @@ describe('PaymeWebhookService', () => {
         params: { amount: 10000, account: { invoice_id: invoiceId } },
         id: 1,
       });
-      expect(res.result?.allow).toBe(true);
+      expect((res.result as any)?.allow).toBe(true);
     });
   });
 
@@ -129,8 +129,8 @@ describe('PaymeWebhookService', () => {
         params: { id: txId, time: 1000, amount: 10000, account: { invoice_id: invoiceId } },
         id: 2,
       });
-      expect(res.result?.transaction).toBe(txId);
-      expect(res.result?.state).toBe(PaymeState.Pending);
+      expect((res.result as any)?.transaction).toBe(txId);
+      expect((res.result as any)?.state).toBe(PaymeState.Pending);
     });
   });
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const UpdateApplicationSchema = z.object({
-  hiringManagerNotes: z.string().optional(),
+  hiringManagerNotes: z.string().max(10_000).optional(),
 });
 
 export const RejectApplicationSchema = z.object({

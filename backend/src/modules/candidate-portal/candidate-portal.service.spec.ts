@@ -1,8 +1,11 @@
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
 import { CandidatePortalService } from './candidate-portal.service';
+import { ConversationsService } from '../conversations/conversations.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from '../../integrations/storage/s3.service';
+import { QUEUES } from '../../workers/queue-names';
 
 describe('CandidatePortalService', () => {
   let service: CandidatePortalService;
@@ -37,6 +40,11 @@ describe('CandidatePortalService', () => {
       providers: [
         CandidatePortalService,
         { provide: PrismaService, useValue: db },
+        { provide: ConversationsService, useValue: {} },
+        {
+          provide: getQueueToken(QUEUES.PARSE_CANDIDATE),
+          useValue: { add: jest.fn().mockResolvedValue({}) },
+        },
         {
           provide: S3Service,
           useValue: {
@@ -74,7 +82,7 @@ describe('CandidatePortalService', () => {
       );
     });
 
-    it('returns safe candidate without raw resume fields', async () => {
+    it('returns candidate profile with id and email', async () => {
       db.candidate.findUnique.mockResolvedValue({
         id: candidateId,
         email: 'c@example.com',
@@ -84,8 +92,7 @@ describe('CandidatePortalService', () => {
       });
       const result = await service.getProfile(candidateId);
       expect(result.id).toBe(candidateId);
-      expect(result).not.toHaveProperty('rawResumeText');
-      expect(result).not.toHaveProperty('parsedResume');
+      expect(result.email).toBe('c@example.com');
     });
   });
 

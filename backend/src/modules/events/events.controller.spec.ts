@@ -23,14 +23,14 @@ describe('EventsController', () => {
   });
 
   it('stream returns an Observable', () => {
-    const user = { companyId: 'co-1' };
+    const user = { id: 'user-1', companyId: 'co-1', role: 'admin' as const };
     const stream = controller.stream(user);
     expect(stream).toBeDefined();
     expect(typeof stream.subscribe).toBe('function');
   });
 
   it('stream emits company events matching companyId', (done) => {
-    const user = { companyId: 'co-1' };
+    const user = { id: 'user-1', companyId: 'co-1', role: 'admin' as const };
     const stream = controller.stream(user);
 
     const received: any[] = [];
@@ -54,7 +54,7 @@ describe('EventsController', () => {
   });
 
   it('stream does not emit events for different companyId', (done) => {
-    const user = { companyId: 'co-1' };
+    const user = { id: 'user-1', companyId: 'co-1', role: 'admin' as const };
     const stream = controller.stream(user);
     let count = 0;
 

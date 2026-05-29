@@ -65,11 +65,9 @@ describe('HhJobsAdapter', () => {
     expect(result.hasMore).toBe(false);
   });
 
-  it('returns empty jobs and hasMore=false on API error', async () => {
+  it('throws error on API error', async () => {
     httpGet.mockReturnValue(throwError(() => new Error('Network error')));
-    const result = await adapter.fetchPage({ page: 0 });
-    expect(result.jobs).toHaveLength(0);
-    expect(result.hasMore).toBe(false);
+    await expect(adapter.fetchPage({ page: 0 })).rejects.toThrow('Network error');
   });
 
   it('hasMore is true when more pages available', async () => {

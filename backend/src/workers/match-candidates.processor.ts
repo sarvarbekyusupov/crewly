@@ -4,7 +4,7 @@ import { Job } from 'bull';
 import { NonRetryableError } from './errors';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
+import { MatchmakerAgent, MatchmakerResult } from '../modules/agents/matchmaker.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { QUEUES } from './queue-names';
 import { stripLlmJson } from './utils';
@@ -68,19 +68,17 @@ export class MatchCandidatesProcessor {
 
     // Vector similarity search — top 50 candidates
     const vectorCandidates: Array<{ id: string; similarity: number }> =
-      await this.db.$queryRawUnsafe(
-        `SELECT c.id, 1 - (c.embedding <=> j.embedding) AS similarity
-         FROM candidates c
-         CROSS JOIN jobs j
-         WHERE j.id = $1
-           AND c.embedding IS NOT NULL
-           AND c.do_not_contact = false
-           AND c.consent_status != 'withdrawn'
-           AND c.deleted_at IS NULL
-         ORDER BY c.embedding <=> j.embedding
-         LIMIT 50`,
-        jobId,
-      );
+      await this.db.$queryRaw`
+        SELECT c.id, 1 - (c.embedding <=> j.embedding) AS similarity
+        FROM candidates c
+        CROSS JOIN jobs j
+        WHERE j.id = ${jobId}
+          AND c.embedding IS NOT NULL
+          AND c.do_not_contact = false
+          AND c.consent_status != 'withdrawn'
+          AND c.deleted_at IS NULL
+        ORDER BY c.embedding <=> j.embedding
+        LIMIT 50`;
 
     const vectorIds = new Set(vectorCandidates.map((c) => c.id));
     const candidates = [
@@ -145,7 +143,7 @@ export class MatchCandidatesProcessor {
       )
       .join('\n');
 
-    let ranked: any[];
+    let ranked: MatchmakerResult[];
     try {
       ranked = await this.agent.rankCandidates(
         {

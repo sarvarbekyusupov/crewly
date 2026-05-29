@@ -19,6 +19,7 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { LoginDto, LoginSchema, SignupDto, SignupSchema } from './dto/auth.dto';
 
@@ -118,7 +119,7 @@ export class AuthController {
   }
 
   @Get('me')
-  async me(@CurrentUser() user: any) {
+  async me(@CurrentUser() user: AuthUser) {
     return this.authService.getMe(user.id);
   }
 

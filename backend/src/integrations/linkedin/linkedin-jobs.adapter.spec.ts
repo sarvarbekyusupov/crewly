@@ -39,15 +39,16 @@ describe('LinkedInJobsAdapter', () => {
     expect(httpGet).not.toHaveBeenCalled();
   });
 
-  it('returns empty on HTTP error', async () => {
+  it('throws error on HTTP error', async () => {
     configGet.mockReturnValue('rapidapi-key');
     httpGet.mockReturnValue(throwError(() => new Error('Network error')));
-    const result = await adapter.fetchPage({
-      query: 'engineer',
-      location: '',
-      page: 0,
-    });
-    expect(result).toEqual({ jobs: [], hasMore: false });
+    await expect(
+      adapter.fetchPage({
+        query: 'engineer',
+        location: '',
+        page: 0,
+      }),
+    ).rejects.toThrow('Network error');
   });
 
   it('returns empty when status not OK', async () => {

@@ -7,6 +7,7 @@ import { IdempotencyService } from '../common/services/idempotency.service';
 import { ConversationsService } from '../modules/conversations/conversations.service';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaymeWebhookService } from '../integrations/payme/payme-webhook.service';
 
 describe('WebhooksController', () => {
   let controller: WebhooksController;
@@ -34,6 +35,7 @@ describe('WebhooksController', () => {
             setWebhook: jest.fn().mockResolvedValue(undefined),
           },
         },
+        { provide: PaymeWebhookService, useValue: { handleRpc: jest.fn() } },
         { provide: IdempotencyService, useValue: idempotency },
         {
           provide: PrismaService,

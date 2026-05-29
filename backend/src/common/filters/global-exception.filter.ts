@@ -9,6 +9,7 @@ import {
 import * as Sentry from '@sentry/nestjs';
 import { ZodError } from 'zod';
 import { Response } from 'express';
+import { Prisma } from '@prisma/client';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -40,6 +41,34 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           })),
         },
       });
+    }
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (exception.code === 'P2002') {
+        return response.status(HttpStatus.CONFLICT).json({
+          error: {
+            code: 'CONFLICT_ERROR',
+            message: 'A record with this value already exists.',
+            target: exception.meta?.target,
+          },
+        });
+      }
+      if (exception.code === 'P2025') {
+        return response.status(HttpStatus.NOT_FOUND).json({
+          error: {
+            code: 'NOT_FOUND_ERROR',
+            message: 'The requested record was not found.',
+          },
+        });
+      }
+      if (exception.code === 'P2003') {
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          error: {
+            code: 'BAD_REQUEST_ERROR',
+            message: 'Foreign key constraint failed.',
+          },
+        });
+      }
     }
 
     this.logger.error(exception);

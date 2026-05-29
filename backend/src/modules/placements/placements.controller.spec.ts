@@ -12,7 +12,7 @@ describe('PlacementsController', () => {
     recordSeparation: jest.Mock;
   };
 
-  const user = { id: 'user-1', companyId: 'company-1', role: 'hiring_manager' };
+  const user = { id: 'user-1', companyId: 'company-1', role: 'hiring_manager' as const };
 
   beforeEach(async () => {
     svc = {

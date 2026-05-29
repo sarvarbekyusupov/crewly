@@ -14,7 +14,7 @@ describe('CompaniesController', () => {
     removeUser: jest.Mock;
   };
 
-  const user = { id: 'user-1', companyId: 'company-1', role: 'admin' };
+  const user = { id: 'user-1', companyId: 'company-1', role: 'admin' as const };
 
   beforeEach(async () => {
     svc = {

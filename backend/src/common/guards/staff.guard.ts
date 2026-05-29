@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createHash } from 'crypto';
+import { hashToken } from '../utils/token.utils';
 
 @Injectable()
 export class StaffGuard implements CanActivate {
@@ -16,13 +16,13 @@ export class StaffGuard implements CanActivate {
     const token = request.cookies?.['staff_session'];
     if (!token) throw new UnauthorizedException();
 
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const tokenHash = hashToken(token);
     const session = await this.db.staffSession.findUnique({
       where: { tokenHash },
       include: { staff: true },
     });
 
-    if (!session || session.expiresAt < new Date()) {
+    if (!session || session.expiresAt <= new Date()) {
       if (session)
         this.db.staffSession
           .delete({ where: { id: session.id } })

@@ -74,7 +74,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
         { page: params.page, error: err.message },
         'HH vacancies fetch failed',
       );
-      return { jobs: [], hasMore: false };
+      throw err;
     }
 
     const data = response.data;

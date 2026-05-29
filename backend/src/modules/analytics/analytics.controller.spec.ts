@@ -8,7 +8,7 @@ describe('AnalyticsController', () => {
   let db: any;
 
   const companyId = 'company-1';
-  const user = { companyId };
+  const user = { id: 'user-1', companyId, role: 'admin' as const };
 
   beforeEach(async () => {
     db = {

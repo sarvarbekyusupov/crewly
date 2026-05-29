@@ -29,14 +29,14 @@ import {
 const C_ACCESS_COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   maxAge: 15 * 60 * 1000,
 };
 
 const C_REFRESH_COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/api/v1/candidate-auth/refresh',
 };

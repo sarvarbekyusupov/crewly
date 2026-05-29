@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { UserThrottlerGuard } from './common/guards/user-throttler.guard';
 import { BullModule } from '@nestjs/bull';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
@@ -39,12 +40,13 @@ import { SourcingModule } from './modules/sourcing/sourcing.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { HealthController } from './common/health.controller';
-import { CronService } from './common/cron.service';
-import { QUEUES } from './workers/queue-names';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
+    ThrottlerModule.forRoot([
+      { name: 'auth', ttl: 60_000, limit: 5 },
+      { name: 'default', ttl: 60_000, limit: 100 },
+    ]),
     EventEmitterModule.forRoot({ wildcard: false, delimiter: '.' }),
     AppConfigModule,
     CommonModule,
@@ -69,12 +71,6 @@ import { QUEUES } from './workers/queue-names';
         },
       }),
     }),
-
-    BullModule.registerQueue(
-      { name: QUEUES.INGEST_CANDIDATES },
-      { name: QUEUES.CLEANUP },
-      { name: QUEUES.SYNC_HH_STATUS },
-    ),
 
     AuthModule,
     StaffAuthModule,
@@ -101,6 +97,9 @@ import { QUEUES } from './workers/queue-names';
     WebhooksModule,
   ],
   controllers: [HealthController],
-  providers: [CronService, { provide: APP_GUARD, useClass: AuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
+  ],
 })
 export class AppModule {}

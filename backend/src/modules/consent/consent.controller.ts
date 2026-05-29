@@ -1,6 +1,7 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { ConsentService } from './consent.service';
 
 @Controller('api/v1/candidates/:candidateId/consent')
@@ -10,8 +11,8 @@ export class ConsentController {
 
   @Get()
   findForCandidate(
-    @CurrentUser() user: any,
-    @Param('candidateId') candidateId: string,
+    @CurrentUser() user: AuthUser,
+    @Param('candidateId', ParseUUIDPipe) candidateId: string,
   ) {
     return this.svc.findForCandidate(user.companyId, candidateId);
   }

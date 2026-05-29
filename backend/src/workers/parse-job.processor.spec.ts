@@ -115,7 +115,7 @@ describe('ParseJobProcessor', () => {
     expect(matchQueue.add).not.toHaveBeenCalled();
   });
 
-  it('handles agent failure gracefully', async () => {
+  it('handles agent failure gracefully by throwing error to trigger Bull retry', async () => {
     const dbJob = {
       id: jobId,
       title: 'Dev',
@@ -127,7 +127,7 @@ describe('ParseJobProcessor', () => {
     db.job.findUnique.mockResolvedValue(dbJob);
     agent.parseJobDescription.mockRejectedValue(new Error('Parse error'));
 
-    await processor.handle(makeJob({ jobId }));
-    expect(db.$executeRaw).toHaveBeenCalled();
+    await expect(processor.handle(makeJob({ jobId }))).rejects.toThrow('Parse error');
+    expect(db.$executeRaw).not.toHaveBeenCalled();
   });
 });

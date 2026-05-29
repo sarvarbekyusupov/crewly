@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -10,6 +11,7 @@ import {
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { RequireRole } from '../../common/decorators/roles.decorator';
 import { ConversationsService } from './conversations.service';
 
@@ -20,7 +22,7 @@ export class ConversationsController {
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Query('applicationId') applicationId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -34,15 +36,15 @@ export class ConversationsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.findOne(user.companyId, id);
   }
 
   @Post(':id/messages')
   @RequireRole('hiring_manager')
   sendMessage(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('content') content: string,
   ) {
     return this.svc.sendRecruiterMessage(user.companyId, id, content);

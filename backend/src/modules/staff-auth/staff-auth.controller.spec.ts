@@ -238,7 +238,7 @@ describe('StaffAuthController', () => {
   describe('consent', () => {
     it('delegates to consentService.findAllForStaff', async () => {
       await controller.consent('cand-1');
-      expect(consentService.findAllForStaff).toHaveBeenCalledWith('cand-1');
+      expect(consentService.findAllForStaff).toHaveBeenCalledWith('cand-1', 1, 50);
     });
   });
 

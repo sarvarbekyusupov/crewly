@@ -13,7 +13,12 @@ export class PrismaService
 {
   static readonly tenantContext = new AsyncLocalStorage<TenantContext>();
 
-  // Tables that must be filtered by company_id in tenant context
+  // Models auto-filtered by companyId in tenant context (set by TenantInterceptor).
+  // Intentionally limited to core company-owned records. Models NOT listed here
+  // (Candidate, Conversation, Screening, OutreachAttempt) have no cross-company
+  // risk because they are accessed only via an Application which IS filtered.
+  // If you add a model that can be queried directly without going through an
+  // Application, add it here.
   private static readonly TENANT_TABLES = new Set([
     'Job',
     'Application',

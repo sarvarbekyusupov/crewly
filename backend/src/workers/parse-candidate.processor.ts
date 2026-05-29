@@ -2,8 +2,20 @@ import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
+import { Prisma } from '@prisma/client';
 import { stripLlmJson } from './utils';
 import { NonRetryableError } from './errors';
+
+interface ParsedResume {
+  skills?: (string | { name: string })[];
+  full_name?: string;
+  positions?: { title?: string; company?: string }[];
+  total_years?: number;
+  preferred_salary_uzs?: string | number;
+  preferred_work_mode?: string;
+  city?: string;
+  languages?: Prisma.JsonValue;
+}
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
 import { SourcingAgent } from '../modules/agents/sourcing.agent';
@@ -44,20 +56,20 @@ export class ParseCandidateProcessor {
       return;
     }
 
-    let parsed: any;
+    let parsed: ParsedResume;
     try {
       parsed = await this.agent.parseResume(candidate.rawResumeText, candidateId);
-    } catch (err) {
-      this.logger.warn({ candidateId, error: err.message }, 'Failed to parse resume');
-      parsed = {};
+    } catch (err: any) {
+      this.logger.error({ candidateId, error: err.message }, 'Failed to parse resume');
+      throw err;
     }
 
-    const skills = (parsed.skills ?? []).map((s: any) =>
+    const skills = (parsed.skills ?? []).map((s) =>
       typeof s === 'string' ? s : s.name,
     );
 
     // Deep Web Sourcing enrichment
-    let socialProof: any = null;
+    let socialProof: Record<string, unknown> | null = null;
     try {
       socialProof = await this.sourcingAgent.enrichCandidateProfile(
         parsed.full_name || candidate.fullName || '',
@@ -71,8 +83,8 @@ export class ParseCandidateProcessor {
     await this.db.candidate.update({
       where: { id: candidateId },
       data: {
-        parsedResume: parsed,
-        socialProof: socialProof || undefined,
+        parsedResume: parsed as Prisma.InputJsonValue,
+        socialProof: (socialProof as Prisma.InputJsonValue) || undefined,
         skills,
         yearsExperience: parsed.total_years ? parsed.total_years : undefined,
         currentPosition: parsed.positions?.[0]?.title,

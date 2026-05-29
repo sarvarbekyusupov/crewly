@@ -15,19 +15,19 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { PrismaService } from '../../prisma/prisma.service';
 import { StaffGuard } from '../../common/guards/staff.guard';
 import { CandidatesService } from '../candidates/candidates.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import { ConsentService } from '../consent/consent.service';
+import { StaffService } from './staff.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { StaffOnly } from '../../common/decorators/staff-only.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { z } from 'zod';
-import * as argon2 from 'argon2';
-import { randomBytes, createHash } from 'crypto';
 import { QUEUES } from '../../workers/queue-names';
 import { INGEST_JOB_OPTIONS } from '../../workers/queue-options';
+
+const COOKIE_NAME = 'staff_session';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 const TriggerDiscoverJobsSchema = z.object({
   source: z.enum(['hh.ru', 'linkedin']),
@@ -41,10 +41,6 @@ const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
-// Pre-hashed dummy password used to keep timing constant when staff email not found
-const DUMMY_HASH =
-  '$argon2id$v=19$m=65536,t=3,p=4$dummysaltdummysaltdummysa$dummyhashvaluetopreventtimingattacks00000';
-
 const TriggerIngestSchema = z.object({
   source: z.enum(['hh.ru', 'linkedin']),
   specialization: z.string().optional(),
@@ -55,58 +51,37 @@ const TriggerIngestSchema = z.object({
 });
 
 @Controller('api/v1/staff')
-@StaffOnly()
 @Public()
 export class StaffAuthController {
   constructor(
-    private readonly db: PrismaService,
+    private readonly staffService: StaffService,
     private readonly candidatesService: CandidatesService,
     private readonly invoicesService: InvoicesService,
     private readonly consentService: ConsentService,
     @InjectQueue(QUEUES.INGEST_CANDIDATES) private readonly ingestQueue: Queue,
-    @InjectQueue(QUEUES.DISCOVER_JOBS)
-    private readonly discoverJobsQueue: Queue,
+    @InjectQueue(QUEUES.DISCOVER_JOBS) private readonly discoverJobsQueue: Queue,
   ) {}
 
   @Post('login')
   @Public()
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ auth: { ttl: 60_000, limit: 5 } })
   @HttpCode(200)
   async login(
     @Body(new ZodValidationPipe(LoginSchema))
     dto: { email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const staff = await this.db.staff.findUnique({
-      where: { email: dto.email },
-    });
-    const hashToVerify = staff?.passwordHash ?? DUMMY_HASH;
-    const valid = await argon2
-      .verify(hashToVerify, dto.password)
-      .catch(() => false);
-    if (!staff || !valid)
-      throw new UnauthorizedException('Invalid credentials');
+    const { token, staff } = await this.staffService.login(dto.email, dto.password);
 
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = createHash('sha256').update(token).digest('hex');
-
-    await this.db.staffSession.create({
-      data: {
-        staffId: staff.id,
-        tokenHash,
-        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000),
-      },
-    });
-
-    res.cookie('staff_session', token, {
+    res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000,
+      maxAge: SESSION_TTL_MS,
     });
 
-    return { staff: { id: staff.id, email: staff.email, role: staff.role } };
+    return { staff };
   }
 
   @Get('me')
@@ -119,34 +94,7 @@ export class StaffAuthController {
   @Get('dashboard')
   @UseGuards(StaffGuard)
   async dashboard() {
-    const [
-      totalCompanies,
-      totalCandidates,
-      totalJobs,
-      totalApplications,
-      llmCostToday,
-    ] = await Promise.all([
-      this.db.company.count({ where: { deletedAt: null } }),
-      this.db.candidate.count({ where: { deletedAt: null } }),
-      this.db.job.count({ where: { deletedAt: null, status: 'active' } }),
-      this.db.application.count({
-        where: { status: { in: ['outreach_sent', 'screening', 'delivered'] } },
-      }),
-      this.db.llmCall.aggregate({
-        _sum: { costUsd: true },
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-        },
-      }),
-    ]);
-
-    return {
-      totalCompanies,
-      totalCandidates,
-      activeJobs: totalJobs,
-      activeApplications: totalApplications,
-      llmCostTodayUsd: llmCostToday._sum.costUsd ?? 0,
-    };
+    return this.staffService.getDashboard();
   }
 
   @Get('companies')
@@ -157,30 +105,13 @@ export class StaffAuthController {
   ) {
     const p = page ? parseInt(page, 10) : 1;
     const l = limit ? Math.min(parseInt(limit, 10), 100) : 50;
-    const skip = (p - 1) * l;
-    const where = { deletedAt: null };
-    const [data, total] = await Promise.all([
-      this.db.company.findMany({
-        where,
-        include: { _count: { select: { users: true, jobs: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: l,
-      }),
-      this.db.company.count({ where }),
-    ]);
-    return { data, total, page: p, limit: l };
+    return this.staffService.getCompanies(p, l);
   }
 
   @Get('llm-costs')
   @UseGuards(StaffGuard)
   async llmCosts() {
-    return this.db.llmCall.groupBy({
-      by: ['purpose', 'model'],
-      _sum: { costUsd: true, totalTokens: true },
-      _count: true,
-      orderBy: { _sum: { costUsd: 'desc' } },
-    });
+    return this.staffService.getLlmCosts();
   }
 
   @Get('candidates')
@@ -227,11 +158,7 @@ export class StaffAuthController {
   @Get('ingestion-runs')
   @UseGuards(StaffGuard)
   async ingestionRuns() {
-    return this.db.ingestionRun.findMany({
-      include: { source: { select: { name: true } } },
-      orderBy: { startedAt: 'desc' },
-      take: 50,
-    });
+    return this.staffService.getIngestionRuns();
   }
 
   @Post('job-discovery-runs')
@@ -255,10 +182,7 @@ export class StaffAuthController {
   @Get('job-discovery-runs')
   @UseGuards(StaffGuard)
   async jobDiscoveryRuns() {
-    return this.db.jobDiscoveryRun.findMany({
-      orderBy: { startedAt: 'desc' },
-      take: 50,
-    });
+    return this.staffService.getJobDiscoveryRuns();
   }
 
   @Get('invoices')
@@ -295,35 +219,45 @@ export class StaffAuthController {
   ) {
     const p = page ? parseInt(page, 10) : 1;
     const l = limit ? Math.min(parseInt(limit, 10), 100) : 50;
-    const skip = (p - 1) * l;
-    
-    const [data, total] = await Promise.all([
-      this.db.auditLog.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: l,
-      }),
-      this.db.auditLog.count(),
-    ]);
+    return this.staffService.getAuditLogs(p, l);
+  }
 
-    return {
-      data: data.map(d => ({ ...d, id: d.id.toString() })),
-      total,
-      page: p,
-      limit: l,
-    };
+  @Post('refresh')
+  @Public()
+  @HttpCode(200)
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const rawToken = req.cookies?.[COOKIE_NAME];
+    if (!rawToken) throw new UnauthorizedException();
+
+    const newToken = await this.staffService.refresh(rawToken);
+
+    res.cookie(COOKIE_NAME, newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: SESSION_TTL_MS,
+    });
+
+    return { ok: true };
   }
 
   @Post('logout')
   @UseGuards(StaffGuard)
   @HttpCode(200)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const token = req.cookies?.['staff_session'];
-    if (token) {
-      const tokenHash = createHash('sha256').update(token).digest('hex');
-      await this.db.staffSession.deleteMany({ where: { tokenHash } });
-    }
-    res.clearCookie('staff_session');
+    const token = req.cookies?.[COOKIE_NAME];
+    if (token) await this.staffService.logout(token);
+    res.clearCookie(COOKIE_NAME);
+    return { ok: true };
+  }
+
+  @Post('logout-all')
+  @UseGuards(StaffGuard)
+  @HttpCode(200)
+  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const staff = (req as any).staff;
+    await this.staffService.logoutAll(staff.id);
+    res.clearCookie(COOKIE_NAME);
     return { ok: true };
   }
 }

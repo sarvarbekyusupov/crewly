@@ -1,3 +1,11 @@
+const MAX_CONTEXT_CHARS = 3_000;
+const MAX_FEEDBACK_CHARS = 10_000;
+const MAX_NAME_CHARS = 200;
+
+function sanitizeUserText(text: string, maxChars: number): string {
+  return text.slice(0, maxChars).replace(/<\/?[a-zA-Z][^>]*>/g, '');
+}
+
 export function debriefSynthesizeFeedbackPrompt(
   jobTitle: string,
   currentContext: string | null,
@@ -7,18 +15,24 @@ export function debriefSynthesizeFeedbackPrompt(
     decision: string;
   },
 ): string {
+  const safeContext = currentContext
+    ? sanitizeUserText(currentContext, MAX_CONTEXT_CHARS)
+    : null;
+  const safeFeedback = sanitizeUserText(newFeedback.rawFeedback, MAX_FEEDBACK_CHARS);
+  const safeName = sanitizeUserText(newFeedback.candidateName, MAX_NAME_CHARS);
+
   return `Synthesize new hiring manager feedback into the current "Ideal Candidate Profile" for the role: ${jobTitle}.
 
 CURRENT IDEAL PROFILE CONTEXT (Learning from past decisions):
 <context>
-${currentContext || 'None yet. This is the first feedback.'}
+${safeContext || 'None yet. This is the first feedback.'}
 </context>
 
 NEW FEEDBACK:
-Candidate: ${newFeedback.candidateName}
+Candidate: ${safeName}
 Decision: ${newFeedback.decision}
 Feedback: <user_feedback>
-${newFeedback.rawFeedback}
+${safeFeedback}
 </user_feedback>
 
 GOAL:

@@ -35,9 +35,9 @@ export class ParseJobProcessor {
     let parsed: any;
     try {
       parsed = await this.agent.parseJobDescription(dbJob.title, dbJob.description, jobId);
-    } catch (err) {
-      this.logger.warn({ jobId, error: err.message }, 'Failed to parse job description');
-      parsed = {};
+    } catch (err: any) {
+      this.logger.error({ jobId, error: err.message }, 'Failed to parse job description');
+      throw err;
     }
 
     // Generate embedding from requirements text

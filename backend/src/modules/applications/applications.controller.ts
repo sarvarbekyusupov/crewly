@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -11,6 +12,7 @@ import {
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthUser } from '../../common/types/auth-user';
 import { RequireRole } from '../../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { ApplicationsService } from './applications.service';
@@ -46,7 +48,7 @@ export class ApplicationsController {
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Query('jobId') jobId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,
@@ -61,15 +63,15 @@ export class ApplicationsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.findOne(user.companyId, id);
   }
 
   @Patch(':id')
   @RequireRole('hiring_manager')
   update(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(UpdateApplicationSchema))
     dto: UpdateApplicationDto,
   ) {
@@ -78,15 +80,15 @@ export class ApplicationsController {
 
   @Post(':id/approve')
   @RequireRole('hiring_manager')
-  approve(@CurrentUser() user: any, @Param('id') id: string) {
+  approve(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.approve(user.companyId, id, user.id);
   }
 
   @Post(':id/reject')
   @RequireRole('hiring_manager')
   reject(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(RejectApplicationSchema))
     dto: RejectApplicationDto,
   ) {
@@ -95,21 +97,21 @@ export class ApplicationsController {
 
   @Post(':id/mark-interviewed')
   @RequireRole('hiring_manager')
-  markInterviewed(@CurrentUser() user: any, @Param('id') id: string) {
+  markInterviewed(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.markInterviewed(user.companyId, id, user.id);
   }
 
   @Post(':id/make-offer')
   @RequireRole('hiring_manager')
-  makeOffer(@CurrentUser() user: any, @Param('id') id: string) {
+  makeOffer(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.makeOffer(user.companyId, id, user.id);
   }
 
   @Post(':id/hire')
   @RequireRole('hiring_manager')
   hire(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(HireApplicationSchema)) dto: HireApplicationDto,
   ) {
     return this.svc.hire(user.companyId, id, dto, user.id);
@@ -118,8 +120,8 @@ export class ApplicationsController {
   @Post(':id/schedule-interview')
   @RequireRole('hiring_manager')
   scheduleInterview(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(ScheduleInterviewSchema))
     dto: ScheduleInterviewDto,
   ) {
@@ -129,8 +131,8 @@ export class ApplicationsController {
   @Post(':id/debrief')
   @RequireRole('hiring_manager')
   submitDebrief(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(SubmitDebriefSchema)) body: SubmitDebriefDto,
   ) {
     return this.svc.submitInterviewDebrief(
@@ -144,8 +146,8 @@ export class ApplicationsController {
   @Post(':id/transcript')
   @RequireRole('hiring_manager')
   uploadTranscript(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(UploadTranscriptSchema)) body: UploadTranscriptDto,
   ) {
     return this.svc.uploadAndAnalyzeTranscript(
@@ -157,20 +159,20 @@ export class ApplicationsController {
   }
 
   @Get(':id/dossier')
-  getDossier(@CurrentUser() user: any, @Param('id') id: string) {
+  getDossier(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.getDossier(user.companyId, id);
   }
 
   @Post(':id/retry-outreach')
   @RequireRole('hiring_manager')
-  retryOutreach(@CurrentUser() user: any, @Param('id') id: string) {
+  retryOutreach(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.retryOutreach(user.companyId, id);
   }
 
   @Post('bulk-reject')
   @RequireRole('hiring_manager')
   bulkReject(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(BulkRejectSchema)) body: BulkRejectDto,
   ) {
     return this.svc.bulkReject(user.companyId, body.ids, body.reason, user.id);
@@ -179,7 +181,7 @@ export class ApplicationsController {
   @Post('bulk-approve')
   @RequireRole('hiring_manager')
   bulkApprove(
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(BulkApproveSchema)) body: BulkApproveDto,
   ) {
     return this.svc.bulkApprove(user.companyId, body.ids, user.id);

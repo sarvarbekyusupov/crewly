@@ -401,7 +401,7 @@ export class ApplicationsService {
         const lastSeq = lastInvoice
           ? parseInt(lastInvoice.invoiceNumber.slice(`INV-${year}-`.length), 10)
           : 0;
-        const invoiceNumber = `INV-${year}-${String(lastSeq + 1).padStart(4, '0')}`;
+        const invoiceNumber = `INV-${year}-${String(lastSeq + 1).padStart(6, '0')}`;
 
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + paymentTermsDays);

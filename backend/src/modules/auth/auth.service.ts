@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -10,20 +11,19 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../integrations/email/email.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import * as argon2 from 'argon2';
-import { randomBytes, createHash } from 'crypto';
+import { hashToken, generateRawToken, REFRESH_TOKEN_TTL_MS } from '../../common/utils/token.utils';
+import { DUMMY_HASH } from '../../common/auth.constants';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly db: PrismaService,
     private readonly email: EmailService,
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
   ) {}
-
-  private hashToken(token: string): string {
-    return createHash('sha256').update(token).digest('hex');
-  }
 
   private issueAccessToken(user: {
     id: string;
@@ -46,15 +46,15 @@ export class AuthService {
     ip?: string,
     ua?: string,
   ): Promise<string> {
-    const rawToken = randomBytes(32).toString('hex');
-    const tokenHash = this.hashToken(rawToken);
+    const rawToken = generateRawToken();
+    const tokenHash = hashToken(rawToken);
     await this.db.session.create({
       data: {
         userId,
         tokenHash,
         ipAddress: ip,
         userAgent: ua,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });
     return rawToken;
@@ -85,8 +85,8 @@ export class AuthService {
       },
     });
 
-    const verifyToken = randomBytes(32).toString('hex');
-    const verifyTokenHash = this.hashToken(verifyToken);
+    const verifyToken = generateRawToken();
+    const verifyTokenHash = hashToken(verifyToken);
     await this.db.authToken.create({
       data: {
         userId: user.id,
@@ -101,7 +101,7 @@ export class AuthService {
         user.email,
         `${frontendUrl}/verify-email?token=${verifyToken}`,
       )
-      .catch(() => {});
+      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
 
     const { passwordHash: _, ...safeUser } = user;
     return { user: safeUser, company };
@@ -113,11 +113,10 @@ export class AuthService {
       include: { company: true },
     });
 
-    if (!user || !user.passwordHash)
+    const hashToVerify = user?.passwordHash ?? DUMMY_HASH;
+    const valid = await argon2.verify(hashToVerify, dto.password).catch(() => false);
+    if (!user || !user.passwordHash || !valid)
       throw new UnauthorizedException('Invalid credentials');
-
-    const valid = await argon2.verify(user.passwordHash, dto.password);
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     if (!user.emailVerified) {
       throw new UnauthorizedException(
@@ -138,7 +137,7 @@ export class AuthService {
   }
 
   async refreshTokens(rawToken: string) {
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     const session = await this.db.session.findUnique({
       where: { tokenHash },
       include: { user: { include: { company: true } } },
@@ -146,14 +145,14 @@ export class AuthService {
 
     if (!session || session.revokedAt || session.expiresAt <= new Date()) {
       if (session) {
-        this.db.session.delete({ where: { id: session.id } }).catch(() => {});
+        this.db.session.delete({ where: { id: session.id } }).catch((e) => this.logger.error({ err: e.message }, 'Session cleanup failed'));
       }
       throw new UnauthorizedException('Refresh token invalid or expired');
     }
     if (session.user.deletedAt) throw new UnauthorizedException();
 
-    const newRawToken = randomBytes(32).toString('hex');
-    const newTokenHash = this.hashToken(newRawToken);
+    const newRawToken = generateRawToken();
+    const newTokenHash = hashToken(newRawToken);
 
     await this.db.$transaction([
       this.db.session.delete({ where: { id: session.id } }),
@@ -163,7 +162,7 @@ export class AuthService {
           tokenHash: newTokenHash,
           ipAddress: session.ipAddress,
           userAgent: session.userAgent,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
         },
       }),
     ]);
@@ -174,7 +173,7 @@ export class AuthService {
 
   async logout(rawToken: string) {
     if (!rawToken) return;
-    const tokenHash = this.hashToken(rawToken);
+    const tokenHash = hashToken(rawToken);
     await this.db.session.deleteMany({ where: { tokenHash } });
   }
 
@@ -199,8 +198,8 @@ export class AuthService {
       data: { usedAt: new Date() },
     });
 
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = this.hashToken(token);
+    const token = generateRawToken();
+    const tokenHash = hashToken(token);
     await this.db.authToken.create({
       data: {
         userId: user.id,
@@ -213,16 +212,16 @@ export class AuthService {
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
     this.email
       .sendPasswordReset(email, `${frontendUrl}/reset-password?token=${token}`)
-      .catch(() => {});
+      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const tokenHash = this.hashToken(token);
+    const tokenHash = hashToken(token);
     const record = await this.db.authToken.findUnique({ where: { tokenHash } });
 
     if (
       !record ||
-      record.type !== 'password_reset' ||
+      !['password_reset', 'invite'].includes(record.type) ||
       record.usedAt ||
       record.expiresAt <= new Date()
     ) {
@@ -233,7 +232,10 @@ export class AuthService {
     await this.db.$transaction([
       this.db.user.update({
         where: { id: record.userId },
-        data: { passwordHash },
+        data: {
+          passwordHash,
+          ...(record.type === 'invite' ? { emailVerified: true } : {}),
+        },
       }),
       this.db.authToken.update({
         where: { id: record.id },
@@ -244,7 +246,7 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const tokenHash = this.hashToken(token);
+    const tokenHash = hashToken(token);
     const record = await this.db.authToken.findUnique({ where: { tokenHash } });
 
     if (
@@ -279,8 +281,8 @@ export class AuthService {
       data: { usedAt: new Date() },
     });
 
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = this.hashToken(token);
+    const token = generateRawToken();
+    const tokenHash = hashToken(token);
     await this.db.authToken.create({
       data: {
         userId: user.id,
@@ -296,6 +298,6 @@ export class AuthService {
         email,
         `${frontendUrl}/verify-email?token=${token}`,
       )
-      .catch(() => {});
+      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
   }
 }

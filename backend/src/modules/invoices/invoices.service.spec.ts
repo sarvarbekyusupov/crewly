@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { InvoicesService } from './invoices.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../integrations/email/email.service';
@@ -40,6 +41,7 @@ describe('InvoicesService', () => {
         InvoicesService,
         { provide: PrismaService, useValue: db },
         { provide: EmailService, useValue: email },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 

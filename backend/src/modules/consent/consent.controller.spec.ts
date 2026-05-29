@@ -22,7 +22,7 @@ describe('ConsentController', () => {
   });
 
   it('delegates to service with companyId and candidateId', async () => {
-    const user = { companyId: 'co-1' };
+    const user = { id: 'user-1', companyId: 'co-1', role: 'admin' as const };
     await controller.findForCandidate(user, 'cand-1');
     expect(svc.findForCandidate).toHaveBeenCalledWith('co-1', 'cand-1');
   });

@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { LogLevel } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -51,10 +51,11 @@ async function bootstrap() {
   });
 
   const prisma = app.get(PrismaService);
+  const reflector = app.get(Reflector);
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(
-    new TenantInterceptor(prisma),
+    new TenantInterceptor(prisma, reflector),
     new BigIntInterceptor(),
     new AuditInterceptor(prisma),
   );

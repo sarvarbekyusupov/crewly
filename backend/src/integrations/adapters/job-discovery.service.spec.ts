@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JobDiscoveryService } from './job-discovery.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const makeAdapter = (sourceName: string, jobs: any[], hasMore = false) => ({
@@ -41,6 +42,7 @@ describe('JobDiscoveryService', () => {
       providers: [
         JobDiscoveryService,
         { provide: PrismaService, useValue: db },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

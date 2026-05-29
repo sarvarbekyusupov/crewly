@@ -5,6 +5,7 @@ import { LinkedInModule } from '../integrations/linkedin/linkedin.module';
 import { EmailModule } from '../integrations/email/email.module';
 import { LlmModule } from '../integrations/llm/llm.module';
 import { AgentsModule } from '../modules/agents/agents.module';
+import { CronService } from '../common/cron.service';
 import { AdapterIngestService } from '../integrations/adapters/adapter-ingest.service';
 import { JobDiscoveryService } from '../integrations/adapters/job-discovery.service';
 import { DiscoverJobsProcessor } from './discover-jobs.processor';
@@ -38,6 +39,7 @@ const allQueues = Object.values(QUEUES).map((name) =>
     ApplyModule,
   ],
   providers: [
+    CronService,
     AdapterIngestService,
     JobDiscoveryService,
     DiscoverJobsProcessor,

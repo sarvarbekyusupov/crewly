@@ -123,9 +123,13 @@ export class CompaniesService {
     if (user.role === 'owner')
       throw new ForbiddenException('Cannot remove company owner');
 
-    return this.db.user.update({
-      where: { id: userId },
-      data: { deletedAt: new Date() },
-    });
+    const [updated] = await this.db.$transaction([
+      this.db.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date() },
+      }),
+      this.db.session.deleteMany({ where: { userId } }),
+    ]);
+    return updated;
   }
 }
