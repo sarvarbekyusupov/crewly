@@ -1,13 +1,7 @@
-const paletteOpen = ref(false)
-
 export function useCommandPalette() {
+  const ui = useUIStore()
   return {
-    paletteOpen,
-    open: () => {
-      paletteOpen.value = true
-    },
-    close: () => {
-      paletteOpen.value = false
-    },
+    open: ui.openPalette,
+    close: ui.closePalette,
   }
 }

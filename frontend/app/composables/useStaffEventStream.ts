@@ -1,37 +1,21 @@
-import { readonly, ref } from 'vue'
+import type { StaffSseEventPayload, IngestionProgressPayload } from '~/types/sse'
 
-export type IngestionProgressPayload = {
-  runId: string
-  status: string
-  fetched: number
-  created: number
-  updated: number
-  failed: number
-}
-
-export type StaffSseEventPayload = {
-  type: string
-  payload: IngestionProgressPayload & Record<string, unknown>
-  timestamp?: string
-}
-
-const connectionState = ref<'connected' | 'reconnecting' | 'idle'>('idle')
-const eventCount = ref(0)
-const lastEvent = ref<StaffSseEventPayload | null>(null)
+export type { StaffSseEventPayload, IngestionProgressPayload }
 
 export function useStaffSseConnectionState() {
-  return connectionState
+  return storeToRefs(useStaffEventsStore()).connectionState
 }
 
 export function useLastStaffSseEvent() {
-  return lastEvent
+  return storeToRefs(useStaffEventsStore()).lastEvent
 }
 
 export function useStaffSseEventCount() {
-  return { eventCount: readonly(eventCount) }
+  return { eventCount: readonly(storeToRefs(useStaffEventsStore()).eventCount) }
 }
 
 export function useStaffEventStream() {
+  const store = useStaffEventsStore()
   const config = useRuntimeConfig()
   let es: EventSource | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -49,28 +33,28 @@ export function useStaffEventStream() {
     if (typeof EventSource === 'undefined') return
     if (es) return
 
-    connectionState.value = 'reconnecting'
+    store.connectionState = 'reconnecting'
     es = new EventSource(eventsUrl(), { withCredentials: true })
 
     es.onopen = () => {
-      connectionState.value = 'connected'
+      store.connectionState = 'connected'
       reconnectAttempt = 0
     }
 
     es.onmessage = (e) => {
       if (!e.data) return
-      connectionState.value = 'connected'
-      eventCount.value++
+      store.connectionState = 'connected'
+      store.eventCount++
       try {
         const data = JSON.parse(e.data) as StaffSseEventPayload
-        lastEvent.value = { ...data, timestamp: new Date().toISOString() }
+        store.lastEvent = { ...data, timestamp: new Date().toISOString() }
       } catch {
         /* ignore parse errors */
       }
     }
 
     es.onerror = () => {
-      connectionState.value = 'reconnecting'
+      store.connectionState = 'reconnecting'
       es?.close()
       es = null
       const delay = Math.min(30_000, 1_000 * Math.pow(2, reconnectAttempt))
@@ -86,7 +70,7 @@ export function useStaffEventStream() {
     }
     es?.close()
     es = null
-    connectionState.value = 'idle'
+    store.connectionState = 'idle'
   }
 
   return { connect, disconnect }

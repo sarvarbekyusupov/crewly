@@ -1,10 +1,5 @@
 import { defineStore } from 'pinia'
-
-interface StaffUser {
-  id: string
-  email: string
-  role: string
-}
+import type { StaffUser } from '~/types/api'
 
 export const useStaffStore = defineStore('staff', () => {
   const staff = ref<StaffUser | null>(null)

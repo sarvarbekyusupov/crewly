@@ -1,13 +1,8 @@
-const breadcrumbLabel = ref('')
-
 export function useBreadcrumb() {
+  const ui = useUIStore()
   return {
-    breadcrumbLabel: readonly(breadcrumbLabel),
-    setBreadcrumbLabel: (label: string) => {
-      breadcrumbLabel.value = label
-    },
-    clearBreadcrumbLabel: () => {
-      breadcrumbLabel.value = ''
-    },
+    breadcrumbLabel: computed(() => ui.breadcrumbLabel),
+    setBreadcrumbLabel: ui.setBreadcrumbLabel,
+    clearBreadcrumbLabel: ui.clearBreadcrumbLabel,
   }
 }

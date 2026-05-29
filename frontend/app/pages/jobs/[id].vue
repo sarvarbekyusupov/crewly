@@ -89,6 +89,7 @@ async function prolongOnHh() {
   try {
     await api.post(`/api/v1/jobs/${jobId}/prolong-hh`, {})
     toast.add({ title: 'Prolonged on HH', color: 'success' })
+    refreshJob()
   } catch (e) {
     toast.add({ title: extractApiErrorMessage(e), color: 'error' })
   }
@@ -114,6 +115,7 @@ async function activate() {
   await api.post(`/api/v1/jobs/${jobId}/activate`)
   toast.add({ title: t('common.success'), color: 'success' })
   refreshJob()
+  refreshNuxtData('nav-counts')
 }
 
 async function startOutreach() {
@@ -133,12 +135,14 @@ async function pause() {
   await api.post(`/api/v1/jobs/${jobId}/pause`)
   toast.add({ title: t('common.success'), color: 'success' })
   refreshJob()
+  refreshNuxtData('nav-counts')
 }
 
 async function close() {
   await api.post(`/api/v1/jobs/${jobId}/close`)
   toast.add({ title: t('common.success'), color: 'success' })
   refreshJob()
+  refreshNuxtData('nav-counts')
 }
 
 const appColumns: any[] = [

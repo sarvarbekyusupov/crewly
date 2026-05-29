@@ -120,7 +120,8 @@ onMounted(() => connectSSE())
 onUnmounted(() => disconnectSSE())
 
 // ── Command palette ──
-const { paletteOpen, open: openPalette, close: closePalette } = useCommandPalette()
+const { open: openPalette, close: closePalette } = useCommandPalette()
+const ui = useUIStore()
 const searchTerm = ref('')
 const searchResults = ref<{ jobs: any[]; candidates: any[] }>({ jobs: [], candidates: [] })
 
@@ -382,7 +383,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
   </div>
 
   <!-- Command palette -->
-  <UModal v-model:open="paletteOpen" :ui="{ /* width removed */ }">
+  <UModal v-model:open="ui.paletteOpen" :ui="{ /* width removed */ }">
     <UCommandPalette
       v-model:search-term="searchTerm"
       :groups="commandGroups"

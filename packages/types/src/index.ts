@@ -520,6 +520,12 @@ export interface PaginatedAuditLogs {
   limit: number;
 }
 
+export interface StaffUser {
+  id: string
+  email: string
+  role: string
+}
+
 export interface ConsentRecord {
   id: string;
   candidateId: string;

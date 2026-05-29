@@ -1,25 +1,21 @@
-export type SseEventPayload = {
-  type: string
-  payload: Record<string, unknown>
-}
+import type { SseEventPayload } from '~/types/sse'
 
-const connectionState = ref<'connected' | 'reconnecting' | 'idle'>('idle')
-const eventCount = ref(0)
-const lastEvent = ref<SseEventPayload | null>(null)
+export type { SseEventPayload }
 
 export function useSseConnectionState() {
-  return connectionState
+  return storeToRefs(useEventsStore()).connectionState
 }
 
 export function useLastSseEvent() {
-  return lastEvent
+  return storeToRefs(useEventsStore()).lastEvent
 }
 
 export function useSseEventCount() {
-  return { eventCount: readonly(eventCount) }
+  return { eventCount: readonly(storeToRefs(useEventsStore()).eventCount) }
 }
 
 export function useEventStream() {
+  const store = useEventsStore()
   const config = useRuntimeConfig()
   const toast = useToast()
   const router = useRouter()
@@ -60,20 +56,20 @@ export function useEventStream() {
     if (typeof EventSource === 'undefined') return
     if (es) return
 
-    connectionState.value = 'reconnecting'
+    store.connectionState = 'reconnecting'
     es = new EventSource(eventsUrl(), { withCredentials: true })
 
     es.onopen = () => {
-      connectionState.value = 'connected'
+      store.connectionState = 'connected'
       reconnectAttempt = 0
     }
 
     es.onmessage = (e) => {
-      connectionState.value = 'connected'
-      eventCount.value++
+      store.connectionState = 'connected'
+      store.eventCount++
       try {
         const data = JSON.parse(e.data) as SseEventPayload
-        lastEvent.value = { ...data, timestamp: new Date().toISOString() } as SseEventPayload & {
+        store.lastEvent = { ...data, timestamp: new Date().toISOString() } as SseEventPayload & {
           timestamp: string
         }
         const { type, payload } = data
@@ -115,7 +111,7 @@ export function useEventStream() {
     }
 
     es.onerror = () => {
-      connectionState.value = 'reconnecting'
+      store.connectionState = 'reconnecting'
       es?.close()
       es = null
       const delay = Math.min(30_000, 1_000 * Math.pow(2, reconnectAttempt))
@@ -131,7 +127,7 @@ export function useEventStream() {
     }
     es?.close()
     es = null
-    connectionState.value = 'idle'
+    store.connectionState = 'idle'
   }
 
   return { connect, disconnect }

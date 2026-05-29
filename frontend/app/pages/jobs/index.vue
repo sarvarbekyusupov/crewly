@@ -67,6 +67,7 @@ async function activateJob(id: string) {
     await api.post(`/api/v1/jobs/${id}/activate`)
     toast.add({ title: t('common.success'), color: 'success' })
     refresh()
+    refreshNuxtData('nav-counts')
   } catch {
     /* useApi already shows error toast */
   }
@@ -77,6 +78,7 @@ async function pauseJob(id: string) {
     await api.post(`/api/v1/jobs/${id}/pause`)
     toast.add({ title: t('common.success'), color: 'success' })
     refresh()
+    refreshNuxtData('nav-counts')
   } catch {
     /* useApi already shows error toast */
   }
@@ -87,6 +89,7 @@ async function closeJob(id: string) {
     await api.post(`/api/v1/jobs/${id}/close`)
     toast.add({ title: t('common.success'), color: 'success' })
     refresh()
+    refreshNuxtData('nav-counts')
   } catch {
     /* useApi already shows error toast */
   }
