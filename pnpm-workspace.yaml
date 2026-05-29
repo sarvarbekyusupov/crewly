@@ -3,6 +3,9 @@ packages:
   - 'frontend'
   - 'backend'
 
+overrides:
+  vue-router: ^5.0.0
+
 # Merged allowBuilds from frontend and backend (root workspace is authoritative)
 allowBuilds:
   # backend native builds
@@ -19,3 +22,12 @@ allowBuilds:
   esbuild: true
   vue-demi: true
   '@sentry/cli': true
+
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+    - arm64

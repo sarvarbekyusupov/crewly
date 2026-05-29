@@ -5,7 +5,14 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
   },
 
-  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxtjs/i18n', '@nuxt/fonts', '@nuxt/eslint', '@sentry/nuxt/module'],
+  modules: [
+    '@nuxt/ui',
+    '@pinia/nuxt',
+    '@nuxtjs/i18n',
+    '@nuxt/fonts',
+    '@nuxt/eslint',
+    '@sentry/nuxt/module',
+  ],
 
   sentry: {
     sourceMapsUploadOptions: {
@@ -37,17 +44,16 @@ export default defineNuxtConfig({
       { code: 'uz', file: 'uz.json', name: "O'zbek" },
     ],
     defaultLocale: 'en',
-    lazy: true,
-    langDir: 'locales/',
-    restructureDir: '',
+    langDir: 'locales',
     strategy: 'no_prefix',
   },
 
   imports: {
-    dirs: ['stores'],
+    dirs: ['app/stores'],
   },
 
   typescript: {
+    strict: false,
     tsConfig: {
       compilerOptions: {
         paths: {
@@ -58,13 +64,12 @@ export default defineNuxtConfig({
   },
 
   devtools: { enabled: false },
-  compatibilityDate: '2024-12-01',
+  compatibilityDate: '2026-05-30',
 
   nitro: {
-    devProxy: {
-      '/api': {
-        target: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:3000',
-        changeOrigin: true,
+    routeRules: {
+      '/api/**': {
+        proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/**`,
       },
     },
   },

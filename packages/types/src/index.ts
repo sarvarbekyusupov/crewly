@@ -13,6 +13,7 @@ export interface PaginatedResponse<T> {
   total: number
   page?: number
   limit?: number
+  [key: string]: unknown
 }
 
 export interface Company {
@@ -84,6 +85,12 @@ export interface Job {
     tech_stack?: string[]
     key_responsibilities?: string[]
     soft_skills?: string[]
+  } | null
+  sourcingStrategy?: {
+    approach_summary?: string
+    target_companies?: string[]
+    niche_sources?: string[]
+    [key: string]: unknown
   } | null
 }
 
@@ -167,6 +174,23 @@ export interface Application {
   job?: { id: string; title: string; requiredSkills?: string[] }
   screenings?: Screening[]
   googleMeetLink?: string
+  shadowAnalysis?: {
+    overall_score?: number
+    score?: number
+    sentiment?: string
+    summary?: string
+    confirmations?: string[]
+    discrepancies?: string[]
+    red_flags?: string[]
+    recruiter_advice?: string
+    dimensions?: {
+      technical_depth?: number
+      communication?: number
+      cultural_fit?: number
+      experience_relevance?: number
+      enthusiasm?: number
+    }
+  } | null
 }
 
 export type OutreachAttemptStatus = 'sent' | 'opened' | 'replied' | 'failed' | 'rejected'
@@ -228,7 +252,9 @@ export interface Conversation {
   startedAt: string
   lastMessageAt?: string
   completedAt?: string
+  createdAt: string
   messages?: Message[]
+  candidate?: { id: string; fullName?: string }
 }
 
 export interface Message {
