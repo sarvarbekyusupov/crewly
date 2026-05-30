@@ -3,7 +3,7 @@ import type { LinkedInSearchResponse, LinkedInProfile } from '~/types/api'
 
 definePageMeta({ middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 useHead({ title: 'LinkedIn Sourcing' })
 
 const toast = useToast()

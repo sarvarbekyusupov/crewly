@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 const toast = useToast()
 const { t } = useI18n()
 

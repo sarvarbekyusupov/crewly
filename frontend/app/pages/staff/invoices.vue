@@ -3,7 +3,7 @@ import type { Invoice } from '~/types/api'
 
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 const statusFilter = ref('')
 
 const {

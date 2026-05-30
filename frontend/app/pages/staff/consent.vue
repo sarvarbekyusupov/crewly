@@ -3,7 +3,7 @@ import type { PaginatedConsentRecords, ConsentRecord } from '~/types/api'
 
 definePageMeta({ middleware: 'staff-auth', layout: 'staff' })
 
-const api = useApi()
+const api = useStaffApi()
 useHead({ title: 'Consent Records' })
 
 const page = ref(1)

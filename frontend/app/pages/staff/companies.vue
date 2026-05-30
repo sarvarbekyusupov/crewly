@@ -3,7 +3,7 @@ import type { Company } from '~/types/api'
 
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 const search = ref('')
 
 const { data: companies, pending } = await useAsyncData('staff-companies', () =>

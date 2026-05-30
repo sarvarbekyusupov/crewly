@@ -4,7 +4,7 @@ import type { Candidate } from '~/types/api'
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
 const { t } = useI18n()
-const api = useApi()
+const api = useStaffApi()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()

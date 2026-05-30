@@ -3,7 +3,7 @@ import type { StaffDashboard } from '~/types/api'
 
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 
 const { data: stats } = await useAsyncData('staff-dashboard', () =>
   api.get<StaffDashboard>('/api/v1/staff/dashboard'),

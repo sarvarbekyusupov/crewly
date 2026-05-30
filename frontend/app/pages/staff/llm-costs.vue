@@ -3,7 +3,7 @@ import type { LlmCall, LlmCallSummary, PaginatedResponse } from '~/types/api'
 
 definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
 
-const api = useApi()
+const api = useStaffApi()
 
 const { data: summary } = await useAsyncData('llm-summary', () =>
   api.get<LlmCallSummary>('/api/v1/llm-calls/summary'),
