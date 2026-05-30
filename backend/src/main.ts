@@ -1,5 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { LogLevel } from '@nestjs/common';
+import { LogLevel, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/nestjs';
@@ -54,6 +54,9 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
 
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
   app.useGlobalInterceptors(
     new TenantInterceptor(prisma, reflector),
     new BigIntInterceptor(),

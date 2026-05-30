@@ -3,6 +3,8 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/types/auth-user';
 import { ScreeningsService } from './screenings.service';
+import { z } from 'zod';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 @Controller('api/v1')
 @UseGuards(AuthGuard)
@@ -31,7 +33,8 @@ export class ScreeningsController {
   escalate(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { reason: string },
+    @Body(new ZodValidationPipe(z.object({ reason: z.string().min(1).max(1000) })))
+    body: { reason: string },
   ) {
     return this.svc.escalate(id, user.companyId, body.reason);
   }

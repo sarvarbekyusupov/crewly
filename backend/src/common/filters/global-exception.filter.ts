@@ -11,6 +11,17 @@ import { ZodError } from 'zod';
 import { Response } from 'express';
 import { Prisma } from '@prisma/client';
 
+const STATUS_CODES: Record<number, string> = {
+  400: 'BAD_REQUEST',
+  401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
+  404: 'NOT_FOUND',
+  409: 'CONFLICT',
+  422: 'UNPROCESSABLE_ENTITY',
+  429: 'TOO_MANY_REQUESTS',
+  503: 'SERVICE_UNAVAILABLE',
+};
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
@@ -25,7 +36,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return response.status(status).json({
         error:
           typeof exceptionResponse === 'string'
-            ? { code: 'HTTP_ERROR', message: exceptionResponse }
+            ? { code: STATUS_CODES[status] ?? 'HTTP_ERROR', message: exceptionResponse }
             : exceptionResponse,
       });
     }
@@ -66,6 +77,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           error: {
             code: 'BAD_REQUEST_ERROR',
             message: 'Foreign key constraint failed.',
+          },
+        });
+      }
+      if (exception.code === 'P2014') {
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          error: {
+            code: 'BAD_REQUEST_ERROR',
+            message: 'Required relation is missing or invalid.',
+          },
+        });
+      }
+      if (exception.code === 'P2019') {
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          error: {
+            code: 'BAD_REQUEST_ERROR',
+            message: 'Input value is invalid or exceeds the allowed length.',
           },
         });
       }

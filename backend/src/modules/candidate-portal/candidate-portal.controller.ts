@@ -147,7 +147,8 @@ export class CandidatePortalController {
   async postMessage(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body() body: { content: string },
+    @Body(new ZodValidationPipe(z.object({ content: z.string().min(1).max(4000) })))
+    body: { content: string },
   ) {
     return this.portalService.postMessage(candidate.id, id, body.content);
   }
@@ -195,7 +196,8 @@ export class CandidatePortalController {
   @HttpCode(HttpStatus.CREATED)
   async applyToJob(
     @CurrentCandidate() candidate: { id: string },
-    @Body() body: { discoveredJobId: string },
+    @Body(new ZodValidationPipe(z.object({ discoveredJobId: z.string().uuid() })))
+    body: { discoveredJobId: string },
   ) {
     const seekerApp = await this.portalService.queueApplication(
       candidate.id,
@@ -213,7 +215,8 @@ export class CandidatePortalController {
   async updateApplicationStatus(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body() body: { status: string },
+    @Body(new ZodValidationPipe(z.object({ status: z.string().min(1).max(50) })))
+    body: { status: string },
   ) {
     return this.portalService.updateSeekerApplicationStatus(
       candidate.id,

@@ -32,7 +32,7 @@ describe('GlobalExceptionFilter', () => {
 
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({
-      error: { code: 'HTTP_ERROR', message: 'Not found' },
+      error: { code: 'NOT_FOUND', message: 'Not found' },
     });
   });
 
