@@ -4,7 +4,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import type { CandidatePreferences } from '~/types/api'
 import { candidatePreferencesSchema } from '~/schemas/candidate'
 
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
@@ -42,8 +42,13 @@ const { errors, handleSubmit, defineField, setValues } = useForm({
   },
 })
 
-const [minMatchScore, minMatchScoreProps] = defineField('minMatchScore') as unknown as [import('vue').Ref<number>, object]
-const [maxApplicationsPerDay, maxApplicationsPerDayProps] = defineField('maxApplicationsPerDay') as unknown as [import('vue').Ref<number>, object]
+const [minMatchScore, minMatchScoreProps] = defineField('minMatchScore') as unknown as [
+  import('vue').Ref<number>,
+  object,
+]
+const [maxApplicationsPerDay, maxApplicationsPerDayProps] = defineField(
+  'maxApplicationsPerDay',
+) as unknown as [import('vue').Ref<number>, object]
 const [preferredWorkMode] = defineField('preferredWorkMode')
 const [expectedSalaryUzs, expectedSalaryUzsProps] = defineField('expectedSalaryUzs')
 const [hhResumeId, hhResumeIdProps] = defineField('hhResumeId')

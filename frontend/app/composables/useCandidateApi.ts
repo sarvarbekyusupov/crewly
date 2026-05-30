@@ -10,7 +10,6 @@ export function useCandidateApi() {
     tryRefresh: () => tryRefreshCandidateToken(baseURL),
     onUnauth: async () => {
       useCandidateAuthStore().clearCandidate()
-      await navigateTo('/candidate/login')
     },
   })
 }

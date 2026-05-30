@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LlmCall, LlmCallSummary, PaginatedResponse } from '~/types/api'
 
-definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 

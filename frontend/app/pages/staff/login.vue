@@ -87,7 +87,10 @@ onMounted(() => {
       </UCard>
 
       <p class="text-center mt-4">
-        <NuxtLink to="/login" class="text-sm hover:underline" style="color: var(--ink-muted)"
+        <NuxtLink
+          to="/employer/login"
+          class="text-sm hover:underline"
+          style="color: var(--ink-muted)"
           >← Client portal</NuxtLink
         >
       </p>

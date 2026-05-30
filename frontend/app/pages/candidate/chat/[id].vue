@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
@@ -116,7 +116,7 @@ function formatTime(dateStr: string) {
         icon="i-heroicons-arrow-left"
         variant="ghost"
         color="neutral"
-        to="/candidate/applications"
+        to="/candidate/offers"
       />
       <div>
         <h1 class="text-xl font-medium" style="color: var(--ink)">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveredJob, SeekerApplication, PaginatedResponse } from '~/types/api'
 
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const store = useCandidateAuthStore()
 const api = useCandidateApi()
@@ -72,15 +72,22 @@ const completeness = computed(() => {
   return Math.round(((fields.filter(Boolean).length + hasSkills) / (fields.length + 1)) * 100)
 })
 
-function scoreColor(score: number | null | undefined): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
+function scoreColor(
+  score: number | null | undefined,
+): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
   if (score == null) return 'neutral'
   if (score >= 70) return 'success'
   if (score >= 40) return 'warning'
   return 'error'
 }
 
-function seekerStatusColor(status: string): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  const map: Record<string, 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'> = {
+function seekerStatusColor(
+  status: string,
+): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
+  const map: Record<
+    string,
+    'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
+  > = {
     queued: 'warning',
     applied: 'primary',
     viewed: 'info',
@@ -331,7 +338,7 @@ async function triggerScoring() {
       <div class="lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="section-label">Recent applications</h2>
-          <UButton variant="ghost" size="xs" to="/candidate/seeker-applications">See all →</UButton>
+          <UButton variant="ghost" size="xs" to="/candidate/tracker">See all →</UButton>
         </div>
 
         <div
@@ -420,7 +427,7 @@ async function triggerScoring() {
           {
             label: 'My Applications',
             icon: 'i-heroicons-paper-airplane',
-            to: '/candidate/seeker-applications',
+            to: '/candidate/tracker',
           },
           { label: 'Edit Profile', icon: 'i-heroicons-user', to: '/candidate/profile' },
           {

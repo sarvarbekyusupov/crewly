@@ -14,9 +14,7 @@ export function useApi() {
     shouldAttemptRefresh: () => useAuthStore().isAuthenticated,
     onUnauth: async () => {
       const auth = useAuthStore()
-      const wasAuthenticated = auth.isAuthenticated
       auth.clearUser()
-      if (wasAuthenticated) await navigateTo('/login')
     },
     onForbidden: () => {
       toast.add({ title: t('common.error'), description: t('common.accessDenied'), color: 'error' })

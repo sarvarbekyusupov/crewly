@@ -61,7 +61,13 @@ const items = computed(() => {
             <span style="font-size: 13px; color: var(--ink); line-height: 1.4; font-weight: 500">
               {{ item.agentName }}
             </span>
-            <UBadge v-if="item.cost" size="xs" variant="soft" color="neutral" style="font-size: 9px">
+            <UBadge
+              v-if="item.cost"
+              size="xs"
+              variant="soft"
+              color="neutral"
+              style="font-size: 9px"
+            >
               {{ item.cost }}
             </UBadge>
           </div>

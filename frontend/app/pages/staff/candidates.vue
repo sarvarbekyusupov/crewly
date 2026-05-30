@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Candidate } from '~/types/api'
 
-definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const { t } = useI18n()
 const api = useStaffApi()

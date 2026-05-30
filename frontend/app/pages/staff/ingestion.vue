@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IngestionRun } from '~/types/api'
 
-definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const { t } = useI18n()
 const api = useStaffApi()
@@ -277,7 +277,12 @@ const jobColumns: any[] = [
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="section-label">Recent ingestion runs</h2>
-          <UButton variant="ghost" size="xs" icon="i-heroicons-arrow-path" @click="() => refresh()" />
+          <UButton
+            variant="ghost"
+            size="xs"
+            icon="i-heroicons-arrow-path"
+            @click="() => refresh()"
+          />
         </div>
       </template>
       <UTable

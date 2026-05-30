@@ -9,7 +9,7 @@ const toast = useToast()
 onErrorCaptured((err) => {
   console.error('[layout] unhandled error:', err)
   toast.add({ title: 'Something went wrong', description: String(err), color: 'error' })
-  return false
+  return true
 })
 
 const { data: counts } = await useAsyncData(
@@ -36,7 +36,7 @@ const { data: counts } = await useAsyncData(
       return { jobs: 0, applications: 0, conversations: 0 }
     }
   },
-  { server: false,  },
+  { server: false },
 )
 
 const sseState = useSseConnectionState()
@@ -45,22 +45,22 @@ const navGroups = computed(() => [
   {
     label: t('nav.workspace'),
     items: [
-      { label: t('nav.dashboard'), to: '/dashboard', icon: 'i-heroicons-home' },
+      { label: t('nav.dashboard'), to: '/employer/dashboard', icon: 'i-heroicons-home' },
       {
         label: t('nav.jobs'),
-        to: '/jobs',
+        to: '/employer/jobs',
         icon: 'i-heroicons-briefcase',
         count: counts.value?.jobs,
       },
       {
         label: t('nav.applications'),
-        to: '/applications',
+        to: '/employer/applications',
         icon: 'i-heroicons-users',
         count: counts.value?.applications,
       },
       {
         label: t('nav.conversations'),
-        to: '/conversations',
+        to: '/employer/conversations',
         icon: 'i-heroicons-chat-bubble-left-right',
         count: counts.value?.conversations,
       },
@@ -69,20 +69,28 @@ const navGroups = computed(() => [
   {
     label: t('nav.talent'),
     items: [
-      { label: t('nav.candidates'), to: '/candidates', icon: 'i-heroicons-user-circle' },
-      { label: t('nav.placements'), to: '/placements', icon: 'i-heroicons-check-badge' },
+      { label: t('nav.candidates'), to: '/employer/candidates', icon: 'i-heroicons-user-circle' },
+      { label: t('nav.placements'), to: '/employer/placements', icon: 'i-heroicons-check-badge' },
     ],
   },
   {
     label: t('nav.finance'),
-    items: [{ label: t('nav.invoices'), to: '/invoices', icon: 'i-heroicons-document-text' }],
+    items: [
+      { label: t('nav.invoices'), to: '/employer/invoices', icon: 'i-heroicons-document-text' },
+    ],
   },
   {
     label: t('nav.intelligence') || 'Intelligence',
     items: [
-      { label: 'Analytics', to: '/analytics', icon: 'i-heroicons-chart-bar' },
+      { label: 'Analytics', to: '/employer/analytics', icon: 'i-heroicons-chart-bar' },
       ...(auth.can('admin')
-        ? [{ label: t('nav.sourcing'), to: '/sourcing', icon: 'i-heroicons-magnifying-glass' }]
+        ? [
+            {
+              label: t('nav.sourcing'),
+              to: '/employer/sourcing',
+              icon: 'i-heroicons-magnifying-glass',
+            },
+          ]
         : []),
     ],
   },
@@ -95,19 +103,29 @@ watch(
 )
 
 const crumbs = computed(() => {
-  const parts = route.path.split('/').filter(Boolean)
+  const parts = route.path
+    .split('/')
+    .filter(Boolean)
+    .filter((p) => p !== 'employer')
   if (!parts.length) return []
   return parts.map((p, i) => {
     const isLast = i === parts.length - 1
     const rawLabel = p.charAt(0).toUpperCase() + p.slice(1).replace(/-/g, ' ')
     const label = isLast && breadcrumbLabel.value ? breadcrumbLabel.value : rawLabel
-    return { label, to: '/' + parts.slice(0, i + 1).join('/'), current: isLast }
+    // Reconstruct route using 'parts' before filtering or adjust path relative to employer namespace
+    const fullParts = route.path.split('/').filter(Boolean)
+    const employerIndex = fullParts.indexOf('employer')
+    const actualIndex =
+      employerIndex >= 0 && fullParts.indexOf(p) > employerIndex
+        ? fullParts.indexOf(p)
+        : fullParts.indexOf(p)
+    return { label, to: '/' + fullParts.slice(0, actualIndex + 1).join('/'), current: isLast }
   })
 })
 
 async function handleLogout() {
   await auth.logout()
-  router.push('/login')
+  router.push('/employer/login')
 }
 
 const { locale, locales, setLocale } = useI18n()
@@ -126,7 +144,8 @@ onUnmounted(() => disconnectSSE())
 
 // ── Command palette ──
 const ui = useUIStore()
-const { searchTerm, commandGroups, onCommandSelect, openPalette } = useCommandPaletteSearch(navGroups)
+const { searchTerm, commandGroups, onCommandSelect, openPalette } =
+  useCommandPaletteSearch(navGroups)
 </script>
 
 <template>
@@ -318,7 +337,12 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } = useCommandPa
   </div>
 
   <!-- Command palette -->
-  <UModal v-model:open="ui.paletteOpen" :ui="{ /* width removed */ }">
+  <UModal
+    v-model:open="ui.paletteOpen"
+    :ui="{
+      /* width removed */
+    }"
+  >
     <UCommandPalette
       v-model:search-term="searchTerm"
       :groups="commandGroups"

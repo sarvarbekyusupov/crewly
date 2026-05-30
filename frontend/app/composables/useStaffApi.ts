@@ -13,9 +13,7 @@ export function useStaffApi() {
     shouldAttemptRefresh: () => useStaffStore().isAuthenticated,
     onUnauth: async () => {
       const staff = useStaffStore()
-      const wasAuthenticated = staff.isAuthenticated
       staff.clear()
-      if (wasAuthenticated) await navigateTo('/staff/login')
     },
     onForbidden: () => {
       toast.add({ title: t('common.error'), description: t('common.accessDenied'), color: 'error' })

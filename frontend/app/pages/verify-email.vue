@@ -17,7 +17,7 @@ onMounted(async () => {
     const api = useApi()
     await api.get('/api/v1/auth/verify-email', { token })
     status.value = 'success'
-    setTimeout(() => router.push('/login'), 3000)
+    setTimeout(() => router.push('/employer/login'), 3000)
   } catch {
     status.value = 'error'
   }
@@ -28,7 +28,7 @@ onMounted(async () => {
   <div class="grid-hero min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md" style="position: relative; z-index: 2">
       <div class="text-center mb-8">
-        <NuxtLink to="/login">
+        <NuxtLink to="/employer/login">
           <h1
             class="font-serif text-4xl font-normal"
             style="letter-spacing: -0.04em; color: var(--ink)"
@@ -64,7 +64,10 @@ onMounted(async () => {
             {{ t('auth.emailVerified') }}
           </h2>
           <p class="text-sm" style="color: var(--ink-muted)">Redirecting to login...</p>
-          <NuxtLink to="/login" class="block text-primary-600 hover:underline text-sm mt-4">
+          <NuxtLink
+            to="/employer/login"
+            class="block text-primary-600 hover:underline text-sm mt-4"
+          >
             {{ t('auth.backToLogin') }}
           </NuxtLink>
         </template>
@@ -77,7 +80,10 @@ onMounted(async () => {
           >
             {{ t('auth.emailVerifyFailed') }}
           </h2>
-          <NuxtLink to="/login" class="block text-primary-600 hover:underline text-sm mt-4">
+          <NuxtLink
+            to="/employer/login"
+            class="block text-primary-600 hover:underline text-sm mt-4"
+          >
             {{ t('auth.backToLogin') }}
           </NuxtLink>
         </template>

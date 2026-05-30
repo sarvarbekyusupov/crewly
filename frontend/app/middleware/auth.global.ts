@@ -24,12 +24,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  // 3. HR / Employer / Corporate Routes (All other routes)
+  // 3. HR / Employer / Corporate Routes (All other routes default to employer check)
   const store = useAuthStore()
   if (!store.isAuthenticated) {
     await store.fetchMe()
   }
   if (!store.isAuthenticated) {
-    return navigateTo('/login')
+    return navigateTo('/employer/login')
   }
 })

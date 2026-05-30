@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { StaffDashboard } from '~/types/api'
 
-definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 

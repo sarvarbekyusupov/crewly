@@ -7,7 +7,7 @@ const toast = useToast()
 onErrorCaptured((err) => {
   console.error('[layout:staff] unhandled error:', err)
   toast.add({ title: 'Something went wrong', description: String(err), color: 'error' })
-  return false
+  return true
 })
 
 const nav = computed(() => [

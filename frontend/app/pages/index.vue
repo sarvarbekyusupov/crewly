@@ -7,7 +7,7 @@ if (!store.isAuthenticated) {
   await store.fetchMe()
 }
 if (store.isAuthenticated) {
-  await navigateTo('/dashboard', { replace: true })
+  await navigateTo('/employer/dashboard', { replace: true })
 }
 </script>
 
@@ -200,7 +200,7 @@ if (store.isAuthenticated) {
       <span>© 2025 my-hr</span>
       <div style="display: flex; gap: 22px">
         <NuxtLink to="/terms">{{ t('landing.navPricing') }}</NuxtLink>
-        <NuxtLink to="/login">{{ t('auth.login') }}</NuxtLink>
+        <NuxtLink to="/employer/login">{{ t('auth.login') }}</NuxtLink>
         <NuxtLink to="/candidate/login">{{ t('landing.navForCandidates') }}</NuxtLink>
       </div>
     </footer>

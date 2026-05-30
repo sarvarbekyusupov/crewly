@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { candidateProfileSchema } from '~/schemas/candidate'
 
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const store = useCandidateAuthStore()
 const api = useCandidateApi()
@@ -429,9 +429,16 @@ const completeness = computed(() => {
     </UCard>
 
     <div class="flex justify-end">
-      <UButton :loading="saving" icon="i-heroicons-check" @click="async () => { await save() }">{{
-        t('candidate.profile.saveChanges')
-      }}</UButton>
+      <UButton
+        :loading="saving"
+        icon="i-heroicons-check"
+        @click="
+          async () => {
+            await save()
+          }
+        "
+        >{{ t('candidate.profile.saveChanges') }}</UButton
+      >
     </div>
   </div>
 </template>

@@ -1,4 +1,11 @@
-export type BadgeColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
+export type BadgeColor =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'neutral'
 
 export function jobStatusColor(s: string): BadgeColor {
   const map: Record<string, BadgeColor> = {

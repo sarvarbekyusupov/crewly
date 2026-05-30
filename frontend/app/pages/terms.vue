@@ -10,7 +10,9 @@ const { t } = useI18n()
         <div class="brand-mark">m</div>
         <div class="brand-name">my<em>-hr</em></div>
       </NuxtLink>
-      <NuxtLink to="/login?mode=signup" class="cta-btn">{{ t('landing.doorCompanyCta') }}</NuxtLink>
+      <NuxtLink to="/employer/login?mode=signup" class="cta-btn">{{
+        t('landing.doorCompanyCta')
+      }}</NuxtLink>
     </nav>
 
     <main class="terms-main">

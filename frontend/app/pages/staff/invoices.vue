@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types/api'
 
-definePageMeta({ layout: 'staff', middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 const statusFilter = ref('')

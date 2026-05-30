@@ -6,17 +6,17 @@ const toast = useToast()
 onErrorCaptured((err) => {
   console.error('[layout:candidate] unhandled error:', err)
   toast.add({ title: 'Something went wrong', description: String(err), color: 'error' })
-  return false
+  return true
 })
 
 const nav = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
-  { label: 'Applications', to: '/candidate/applications', icon: 'i-heroicons-briefcase' },
+  { label: 'Offers', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
   { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
   { label: 'Job Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   {
-    label: 'My Applications',
-    to: '/candidate/seeker-applications',
+    label: 'Job Tracker',
+    to: '/candidate/tracker',
     icon: 'i-heroicons-paper-airplane',
   },
   {

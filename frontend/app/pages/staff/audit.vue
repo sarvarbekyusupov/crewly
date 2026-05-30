@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PaginatedAuditLogs, AuditLog } from '~/types/api'
 
-definePageMeta({ middleware: 'staff-auth', layout: 'staff' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 useHead({ title: 'Audit Log' })

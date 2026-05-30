@@ -2,7 +2,7 @@
 import { watchDebounced } from '@vueuse/core'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
@@ -99,15 +99,22 @@ async function applyToJob(job: DiscoveredJob) {
   }
 }
 
-function scoreColor(score: number | null | undefined): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
+function scoreColor(
+  score: number | null | undefined,
+): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
   if (score == null) return 'neutral'
   if (score >= 70) return 'success'
   if (score >= 40) return 'warning'
   return 'error'
 }
 
-function appStatusColor(status: string): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  const map: Record<string, 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'> = {
+function appStatusColor(
+  status: string,
+): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
+  const map: Record<
+    string,
+    'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
+  > = {
     queued: 'warning',
     applied: 'primary',
     viewed: 'info',

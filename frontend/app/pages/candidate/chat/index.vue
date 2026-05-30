@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'candidate-auth', layout: 'candidate' })
+definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 

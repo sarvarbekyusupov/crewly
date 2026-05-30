@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LinkedInSearchResponse, LinkedInProfile } from '~/types/api'
 
-definePageMeta({ middleware: 'staff-auth' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 useHead({ title: 'LinkedIn Sourcing' })

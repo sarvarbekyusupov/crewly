@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PaginatedConsentRecords, ConsentRecord } from '~/types/api'
 
-definePageMeta({ middleware: 'staff-auth', layout: 'staff' })
+definePageMeta({ layout: 'staff' })
 
 const api = useStaffApi()
 useHead({ title: 'Consent Records' })
