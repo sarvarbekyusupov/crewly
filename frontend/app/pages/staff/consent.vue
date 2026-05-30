@@ -71,7 +71,7 @@ function formatDateTime(d?: string) {
     </div>
 
     <UCard :ui="{ body: 'p-0' }">
-      <UTable :data="(rows) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="rows" :columns="columns" :loading="pending">
         <template #recordedAt-cell="{ row: { original: row } }">
           <span class="text-xs" style="color: var(--ink)">{{
             formatDateTime(row.recordedAt)

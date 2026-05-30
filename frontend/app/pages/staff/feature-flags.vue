@@ -134,7 +134,7 @@ const columns: any[] = [
 
     <UCard :ui="{ body: 'p-0' }">
       <UTable
-        :data="(flags ?? []) as any[]"
+        :data="flags ?? []"
         :columns="columns"
         :loading="pending"
         :empty-state="{ icon: 'i-heroicons-flag', label: 'No feature flags defined' }"

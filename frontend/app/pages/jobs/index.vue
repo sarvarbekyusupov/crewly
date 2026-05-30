@@ -116,7 +116,7 @@ async function closeJob(id: string) {
     </CommonPageHead>
 
     <UCard :ui="{ body: 'p-0' }">
-      <UTable :data="(jobs) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="jobs" :columns="columns" :loading="pending">
         <template #empty>
           <div class="flex flex-col items-center py-14 gap-3">
             <UIcon

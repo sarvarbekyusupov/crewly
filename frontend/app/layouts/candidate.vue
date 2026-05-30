@@ -1,6 +1,13 @@
 <script setup lang="ts">
 const store = useCandidateAuthStore()
 const router = useRouter()
+const toast = useToast()
+
+onErrorCaptured((err) => {
+  console.error('[layout:candidate] unhandled error:', err)
+  toast.add({ title: 'Something went wrong', description: String(err), color: 'error' })
+  return false
+})
 
 const nav = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },

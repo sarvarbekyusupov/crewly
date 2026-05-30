@@ -140,7 +140,7 @@ const columns: any[] = [
       <template #header>
         <h2 class="section-label">Recent calls ({{ calls?.total ?? 0 }})</h2>
       </template>
-      <UTable :data="(calls?.data ?? []) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="calls?.data ?? []" :columns="columns" :loading="pending">
         <template #purpose-cell="{ row: { original: row } }">
           <span class="font-mono text-xs" style="color: var(--ink)">{{ row.purpose }}</span>
         </template>

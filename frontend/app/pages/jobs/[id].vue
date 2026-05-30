@@ -683,7 +683,7 @@ const appColumns: any[] = [
       <template #header>
         <h2 class="section-label">{{ t('applications.title') }} ({{ appsResult?.total ?? 0 }})</h2>
       </template>
-      <UTable :data="(applications) as any[]" :columns="appColumns">
+      <UTable :data="applications" :columns="appColumns">
         <template #empty>
           <div class="py-10 text-center" style="color: var(--ink-subtle); font-size: 13px">
             {{ t('applications.empty') }}

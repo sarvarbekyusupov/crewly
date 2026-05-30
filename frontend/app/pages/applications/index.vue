@@ -246,7 +246,7 @@ const tableColumns: any[] = [
 
       <CommonListSkeleton v-if="pending" variant="table" />
       <UCard v-else :ui="{ body: 'p-0' }">
-        <UTable v-if="applications.length" :data="(applications) as any[]" :columns="tableColumns">
+        <UTable v-if="applications.length" :data="applications" :columns="tableColumns">
           <template #select-header>
             <input
               type="checkbox"

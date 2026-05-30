@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'empty' })
+definePageMeta({ layout: 'empty', auth: false })
 
 const staffStore = useStaffStore()
 const router = useRouter()

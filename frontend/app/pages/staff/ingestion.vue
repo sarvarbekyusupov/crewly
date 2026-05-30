@@ -53,8 +53,9 @@ watch(lastEvent, (event) => {
     if (!runs.value) return
     const idx = runs.value.findIndex((r) => r.id === payload.runId)
     if (idx !== -1) {
+      const current = runs.value[idx]!
       runs.value[idx] = {
-        ...runs.value[idx],
+        ...current,
         status: payload.status,
         candidatesFetched: payload.fetched,
         candidatesNew: payload.created,
@@ -63,7 +64,7 @@ watch(lastEvent, (event) => {
         completedAt:
           payload.status === 'completed' || payload.status === 'failed'
             ? new Date().toISOString()
-            : runs.value[idx].completedAt,
+            : current.completedAt,
       }
     } else if (payload.status === 'running') {
       // Optional: refresh to get the new run if we missed the trigger callback
@@ -280,7 +281,7 @@ const jobColumns: any[] = [
         </div>
       </template>
       <UTable
-        :data="(runs ?? []) as any[]"
+        :data="runs ?? []"
         :columns="columns"
         :loading="pending"
         :empty-state="{ icon: 'i-heroicons-arrow-down-tray', label: 'No ingestion runs' }"
@@ -371,7 +372,7 @@ const jobColumns: any[] = [
         </div>
       </template>
       <UTable
-        :data="(jobRuns ?? []) as any[]"
+        :data="jobRuns ?? []"
         :columns="jobColumns"
         :loading="jobRunsPending"
         :empty-state="{ icon: 'i-heroicons-briefcase', label: 'No job discovery runs' }"

@@ -100,7 +100,7 @@ const columns: any[] = [
 
     <UCard :ui="{ body: 'p-0' }">
       <UTable
-        :data="(filtered) as any[]"
+        :data="filtered"
         :columns="columns"
         :loading="pending"
         :empty-state="{ icon: 'i-heroicons-users', label: 'No candidates' }"
@@ -138,7 +138,7 @@ const columns: any[] = [
         </template>
         <template #lastActive-cell="{ row: { original: row } }">
           <span class="text-sm" style="color: var(--ink-muted)">{{
-            formatDate(row.lastActiveAt)
+            formatDate(row.lastActiveAt ?? undefined)
           }}</span>
         </template>
         <template #actions-cell="{ row: { original: row } }">

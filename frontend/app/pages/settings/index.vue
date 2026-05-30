@@ -214,7 +214,7 @@ const userColumns: any[] = [
           </UButton>
         </div>
       </template>
-      <UTable :data="(users ?? []) as any[]" :columns="userColumns">
+      <UTable :data="users ?? []" :columns="userColumns">
         <template #role-cell="{ row: { original: row } }">
           <UBadge :color="roleColor(row.role)" variant="subtle" size="xs">
             {{ roleLabel(row.role) }}

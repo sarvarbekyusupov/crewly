@@ -34,6 +34,7 @@ export interface Company {
   guaranteePeriodDays: number
   createdAt: string
   updatedAt: string
+  _count?: { users?: number; jobs?: number }
 }
 
 export interface User {
@@ -123,6 +124,9 @@ export interface Candidate {
   doNotContact?: boolean
   applicationId?: string
   status?: string
+  matchScore?: string | number | null
+  sourceId?: string | null
+  lastActiveAt?: string | null
 }
 
 export type AppStatus =

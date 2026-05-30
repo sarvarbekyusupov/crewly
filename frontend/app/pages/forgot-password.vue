@@ -22,6 +22,7 @@ const onSubmit = handleSubmit(async (values) => {
     await api.post('/api/v1/auth/forgot-password', { email: values.email })
     sent.value = true
   } catch {
+    /* useApi shows error toast */
   } finally {
     loading.value = false
   }

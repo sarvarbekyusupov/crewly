@@ -3,7 +3,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { loginSchema, candidateSignupSchema } from '~/schemas/auth'
 
-definePageMeta({ layout: 'empty' })
+definePageMeta({ layout: 'empty', auth: false })
 
 const store = useCandidateAuthStore()
 const router = useRouter()

@@ -53,5 +53,5 @@ const STEP_MAP: Record<string, number> = {
 }
 
 export function hiringStepIndex(status: string): number {
-  return status in STEP_MAP ? STEP_MAP[status] : -1
+  return status in STEP_MAP ? (STEP_MAP[status] ?? -1) : -1
 }

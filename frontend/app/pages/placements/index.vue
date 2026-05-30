@@ -44,7 +44,7 @@ function isGuaranteeExpired(p: Placement) {
     />
 
     <UCard :ui="{ body: 'p-0' }">
-      <UTable :data="(placements) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="placements" :columns="columns" :loading="pending">
         <template #empty>
           <div class="flex flex-col items-center py-14 gap-3">
             <UIcon

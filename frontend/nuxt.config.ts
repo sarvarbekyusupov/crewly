@@ -53,7 +53,7 @@ export default defineNuxtConfig({
   },
 
   typescript: {
-    strict: false,
+    strict: true,
     tsConfig: {
       compilerOptions: {
         paths: {

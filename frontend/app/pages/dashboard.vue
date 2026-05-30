@@ -225,7 +225,7 @@ const pipelineStages = computed(() => {
 
           <div>
             <div class="section-label mb-2">{{ t('dashboard.agentActivity') }}</div>
-            <DashboardAgentActivityStream :data="agents" :loading="agentsLoading" />
+            <DashboardAgentActivityStream :data="agents ?? null" :loading="agentsLoading" />
           </div>
         </div>
       </UCard>

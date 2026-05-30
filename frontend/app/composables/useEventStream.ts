@@ -2,6 +2,11 @@ import type { SseEventPayload } from '~/types/sse'
 
 export type { SseEventPayload }
 
+// Module-level singleton — prevents double connections if useEventStream() called multiple times
+let es: EventSource | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempt = 0
+
 export function useSseConnectionState() {
   return storeToRefs(useEventsStore()).connectionState
 }
@@ -20,9 +25,6 @@ export function useEventStream() {
   const toast = useToast()
   const router = useRouter()
   const { t } = useI18n()
-  let es: EventSource | null = null
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let reconnectAttempt = 0
 
   function eventsUrl() {
     const base = (config.public.apiBase as string).replace(/\/$/, '')

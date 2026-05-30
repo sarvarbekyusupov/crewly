@@ -97,7 +97,7 @@ const columns: any[] = [
 
     <UCard :ui="{ body: 'p-0' }">
       <UTable
-        :data="(invoices ?? []) as any[]"
+        :data="invoices ?? []"
         :columns="columns"
         :loading="pending"
         :empty-state="{ icon: 'i-heroicons-document-text', label: 'No invoices' }"

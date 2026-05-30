@@ -66,7 +66,7 @@ const columns: any[] = [
 
     <UCard :ui="{ body: 'p-0' }">
       <UTable
-        :data="(filtered) as any[]"
+        :data="filtered"
         :columns="columns"
         :loading="pending"
         :empty-state="{ icon: 'i-heroicons-building-office-2', label: 'No companies' }"

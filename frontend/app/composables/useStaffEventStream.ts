@@ -2,6 +2,11 @@ import type { StaffSseEventPayload, IngestionProgressPayload } from '~/types/sse
 
 export type { StaffSseEventPayload, IngestionProgressPayload }
 
+// Module-level singleton — prevents double connections if useStaffEventStream() called multiple times
+let es: EventSource | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempt = 0
+
 export function useStaffSseConnectionState() {
   return storeToRefs(useStaffEventsStore()).connectionState
 }
@@ -17,9 +22,6 @@ export function useStaffSseEventCount() {
 export function useStaffEventStream() {
   const store = useStaffEventsStore()
   const config = useRuntimeConfig()
-  let es: EventSource | null = null
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let reconnectAttempt = 0
 
   function eventsUrl() {
     const base = (config.public.apiBase as string).replace(/\/$/, '')

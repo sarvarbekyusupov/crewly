@@ -89,7 +89,7 @@ const sortOptions = [
     </CommonPageHead>
 
     <UCard :ui="{ body: 'p-0' }">
-      <UTable :data="(candidates) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="candidates" :columns="columns" :loading="pending">
         <template #empty>
           <div class="flex flex-col items-center py-14 gap-3">
             <UIcon

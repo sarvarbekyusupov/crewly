@@ -73,7 +73,7 @@ function formatDateTime(d?: string) {
     </div>
 
     <UCard :ui="{ body: 'p-0' }">
-      <UTable :data="(rows) as any[]" :columns="columns" :loading="pending">
+      <UTable :data="rows" :columns="columns" :loading="pending">
         <template #id-cell="{ row: { original: row } }">
           <span class="font-mono text-xs" style="color: var(--ink-subtle)">{{ row.id }}</span>
         </template>
