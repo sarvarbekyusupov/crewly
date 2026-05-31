@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  PaymeWebhookService,
-  PaymeError,
-  PaymeState,
-} from './payme-webhook.service';
+import { PaymeWebhookService } from './payme-webhook.service';
+import { PaymeError, PaymeState } from './payme.constants';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoicesService } from '../../modules/invoices/invoices.service';
 

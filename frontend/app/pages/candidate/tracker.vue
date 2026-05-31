@@ -34,11 +34,7 @@ const COLUMNS = [
 
 const statusOptions = COLUMNS.map((c) => ({ label: c.label, value: c.status }))
 
-function statusColor(
-  status: string,
-): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  return COLUMNS.find((c) => c.status === status)?.color ?? 'neutral'
-}
+const statusColor = seekerAppStatusColor
 
 function columnApps(status: string) {
   return (applications.value ?? []).filter((a) =>

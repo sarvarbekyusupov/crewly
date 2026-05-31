@@ -50,7 +50,7 @@ export default defineNuxtConfig({
   },
 
   imports: {
-    dirs: ['app/stores'],
+    dirs: ['app/stores', 'app/constants'],
   },
 
   typescript: {

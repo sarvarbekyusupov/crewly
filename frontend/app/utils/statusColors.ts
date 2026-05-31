@@ -63,3 +63,16 @@ export function ingestionStatusColor(s: string): BadgeColor {
 export function companyStatusColor(s: string): BadgeColor {
   return s === 'active' ? 'success' : s === 'suspended' ? 'warning' : 'neutral'
 }
+
+export function seekerAppStatusColor(s: string): BadgeColor {
+  const map: Record<string, BadgeColor> = {
+    queued: 'warning',
+    applied: 'primary',
+    viewed: 'info',
+    interview: 'success',
+    offer: 'success',
+    rejected: 'error',
+    failed: 'error',
+  }
+  return map[s] ?? 'neutral'
+}

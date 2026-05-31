@@ -108,23 +108,7 @@ function scoreColor(
   return 'error'
 }
 
-function appStatusColor(
-  status: string,
-): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  const map: Record<
-    string,
-    'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
-  > = {
-    queued: 'warning',
-    applied: 'primary',
-    viewed: 'info',
-    interview: 'success',
-    rejected: 'error',
-    offer: 'success',
-    failed: 'error',
-  }
-  return map[status] ?? 'neutral'
-}
+const appStatusColor = seekerAppStatusColor
 
 function formatPostedDate(dateStr?: string) {
   if (!dateStr) return ''
