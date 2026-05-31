@@ -162,7 +162,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
     <!-- Sidebar -->
     <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
       <!-- Brand -->
-      <NuxtLink to="/dashboard" class="brand-row">
+      <NuxtLink to="/employer/dashboard" class="brand-row">
         <div class="brand-mark">m</div>
         <div class="brand-name">my<em>-hr</em></div>
       </NuxtLink>
@@ -311,7 +311,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
             >
               {{ auth.user?.fullName?.[0] ?? '?' }}
             </div>
-            <NuxtLink to="/settings" class="icon-btn" :aria-label="t('nav.settings')">
+            <NuxtLink to="/employer/settings" class="icon-btn" :aria-label="t('nav.settings')">
               <UIcon name="i-heroicons-cog-6-tooth" style="width: 15px; height: 15px" />
             </NuxtLink>
             <button
@@ -337,18 +337,15 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   </div>
 
   <!-- Command palette -->
-  <UModal
-    v-model:open="ui.paletteOpen"
-    :ui="{
-      /* width removed */
-    }"
-  >
-    <UCommandPalette
-      v-model:search-term="searchTerm"
-      :groups="commandGroups"
-      :placeholder="t('nav.commandPlaceholder')"
-      @update:model-value="onCommandSelect as any"
-    />
+  <UModal v-model:open="ui.paletteOpen" :close="false">
+    <template #content>
+      <UCommandPalette
+        v-model:search-term="searchTerm"
+        :groups="commandGroups"
+        :placeholder="t('nav.commandPlaceholder')"
+        @update:model-value="onCommandSelect as any"
+      />
+    </template>
   </UModal>
 </template>
 
