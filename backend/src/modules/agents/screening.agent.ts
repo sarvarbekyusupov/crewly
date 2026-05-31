@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
 import { SCREENING_SYSTEM_PROMPT, screeningUserContext } from '@my-hr/prompts';
 
 export interface ScreeningResponse {
@@ -20,6 +20,25 @@ export interface ScreeningResponse {
     summary: string;
   };
 }
+
+const ScreeningResponseSchema = z.object({
+  action: z.enum(['continue', 'complete']),
+  message: z.string().optional(),
+  assessment: z
+    .object({
+      technical_score: z.number(),
+      experience_depth_score: z.number(),
+      communication_score: z.number(),
+      availability_score: z.number(),
+      salary_fit_score: z.number(),
+      overall_score: z.number(),
+      strengths: z.array(z.string()),
+      concerns: z.array(z.string()),
+      recommendation: z.enum(['advance', 'reject', 'maybe']),
+      summary: z.string(),
+    })
+    .optional(),
+});
 
 @Injectable()
 export class ScreeningAgent extends BaseAgent {
@@ -50,14 +69,15 @@ export class ScreeningAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'screening',
       contextMessages,
-      { maxTokens: 1024, temperature: 0.7, system: SCREENING_SYSTEM_PROMPT },
+      { maxTokens: 1024, temperature: 0.7, system: SCREENING_SYSTEM_PROMPT, responseFormat: { type: 'json_object' } },
       screeningId
         ? { related_entity_type: 'screening', related_entity_id: screeningId }
         : {},
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
+      const parsed = JSON.parse(output);
+      return ScreeningResponseSchema.parse(parsed);
     } catch {
       return { action: 'continue', message: output };
     }

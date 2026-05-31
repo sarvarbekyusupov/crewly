@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
 import {
   MATCHMAKER_PARSE_RESUME_SYSTEM,
   MATCHMAKER_PARSE_JOB_SYSTEM,
@@ -17,6 +17,81 @@ export interface MatchmakerResult {
   notes?: string;
   recommendation: 'strong fit' | 'good fit' | 'possible fit' | 'weak fit';
 }
+
+const nullableString = z
+  .string()
+  .or(z.null())
+  .transform((v) => (v === null ? undefined : v))
+  .optional();
+const nullableNumber = z
+  .number()
+  .or(z.null())
+  .transform((v) => (v === null ? undefined : v))
+  .optional();
+
+const MatchmakerResultSchema = z.object({
+  id: z.string(),
+  score: z.number(),
+  strengths: z.array(z.string()),
+  gaps: z.array(z.string()),
+  notes: z.string().optional(),
+  recommendation: z.enum(['strong fit', 'good fit', 'possible fit', 'weak fit']),
+});
+
+const ParsedResumeSchema = z.object({
+  full_name: nullableString,
+  skills: z.array(
+    z.object({
+      name: z.string(),
+      level: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
+    }),
+  ),
+  total_years: nullableNumber,
+  positions: z.array(
+    z.object({
+      title: nullableString,
+      company: nullableString,
+      start: nullableString,
+      end: nullableString,
+    }),
+  ),
+  education: z.array(
+    z.object({
+      degree: nullableString,
+      field: nullableString,
+      institution: nullableString,
+    }),
+  ),
+  languages: z.array(
+    z.object({
+      name: z.string(),
+      level: nullableString,
+    }),
+  ),
+  preferred_salary_uzs: nullableNumber,
+  preferred_work_mode: z
+    .enum(['remote', 'office', 'hybrid', 'null'])
+    .or(z.null())
+    .transform((v) => (v === null || v === 'null' ? undefined : v))
+    .optional(),
+  city: nullableString,
+  summary: nullableString,
+});
+
+const ParsedJobSchema = z.object({
+  title: z.string(),
+  required_skills: z.array(z.string()),
+  preferred_skills: z.array(z.string()),
+  min_experience_years: z.number().nullable().optional(),
+  description_summary: z.string(),
+});
+
+const SeekerJobScoreSchema = z.object({
+  score: z.number(),
+  explanation: z.string(),
+  strengths: z.array(z.string()),
+  gaps: z.array(z.string()),
+});
 
 @Injectable()
 export class MatchmakerAgent extends BaseAgent {
@@ -54,7 +129,7 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'match_rerank',
       [{ role: 'user', content: rerankPrompt }],
-      { maxTokens: 2048 },
+      { maxTokens: 2048, responseFormat: { type: 'json_object' } },
       {
         related_entity_type: 'job',
         // agentName is already handled by runLlm
@@ -62,8 +137,9 @@ export class MatchmakerAgent extends BaseAgent {
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return z.array(MatchmakerResultSchema).parse(parsed);
+    } catch (e: any) {
       throw new Error(`MatchmakerAgent failed to parse LLM output: ${e.message}`);
     }
   }
@@ -72,13 +148,14 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'parse_resume',
       [{ role: 'user', content: `Resume:\n${rawText.slice(0, 8000)}` }],
-      { system: MATCHMAKER_PARSE_RESUME_SYSTEM, maxTokens: 3000 },
+      { system: MATCHMAKER_PARSE_RESUME_SYSTEM, maxTokens: 3000, responseFormat: { type: 'json_object' } },
       candidateId ? { related_entity_type: 'candidate', related_entity_id: candidateId } : {},
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return ParsedResumeSchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(`MatchmakerAgent failed to parse resume JSON: ${e.message}`);
     }
   }
@@ -87,13 +164,14 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'parse_job',
       [{ role: 'user', content: `Job Title: ${title}\n\nDescription:\n${description}` }],
-      { system: MATCHMAKER_PARSE_JOB_SYSTEM, maxTokens: 2048 },
+      { system: MATCHMAKER_PARSE_JOB_SYSTEM, maxTokens: 2048, responseFormat: { type: 'json_object' } },
       jobId ? { related_entity_type: 'job', related_entity_id: jobId } : {},
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return ParsedJobSchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(`MatchmakerAgent failed to parse job JSON: ${e.message}`);
     }
   }
@@ -129,15 +207,16 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'seeker_job_score',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024 },
+      { maxTokens: 1024, responseFormat: { type: 'json_object' } },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
         : {},
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return z.array(SeekerJobScoreSchema).parse(parsed);
+    } catch (e: any) {
       throw new Error(
         `MatchmakerAgent failed to parse seeker job scores: ${e.message}`,
       );

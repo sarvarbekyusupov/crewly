@@ -1,8 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
 import { debriefSynthesizeFeedbackPrompt, debriefAnalyzeTranscriptPrompt } from '@my-hr/prompts';
+
+const TranscriptAnalysisSchema = z.object({
+  sentiment: z.enum(['positive', 'neutral', 'negative']),
+  summary: z.string(),
+  overall_score: z.number(),
+  dimensions: z.object({
+    technical_depth: z.number(),
+    communication: z.number(),
+    cultural_fit: z.number(),
+    experience_relevance: z.number(),
+    enthusiasm: z.number(),
+  }),
+  key_takeaways: z.array(z.string()),
+  confirmations: z.array(z.string()),
+  discrepancies: z.array(z.string()),
+  red_flags: z.array(z.string()),
+  recruiter_advice: z.string(),
+});
 
 @Injectable()
 export class DebriefAgent extends BaseAgent {
@@ -67,7 +85,7 @@ export class DebriefAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'shadow_analysis',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 2048, temperature: 0.2 },
+      { maxTokens: 2048, temperature: 0.2, responseFormat: { type: 'json_object' } },
       applicationId
         ? {
             related_entity_type: 'application',
@@ -77,8 +95,9 @@ export class DebriefAgent extends BaseAgent {
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return TranscriptAnalysisSchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(`DebriefAgent failed to parse shadow analysis: ${e.message}`);
     }
   }

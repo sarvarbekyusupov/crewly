@@ -1,14 +1,45 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { SearchService } from '../../integrations/search/search.service';
-import { stripLlmJson } from '../../workers/utils';
 import {
   sourcingCandidateSearchQueriesPrompt,
   sourcingJobSearchQueriesPrompt,
   sourcingEnrichCandidatePrompt,
   sourcingDraftStrategyPrompt,
 } from '@my-hr/prompts';
+
+const CandidateSearchQueriesSchema = z.object({
+  hh_query: z.string(),
+  linkedin_keywords: z.string(),
+  specialization_hints: z.array(z.string()),
+});
+
+const JobSearchQueriesSchema = z.object({
+  query: z.string(),
+  location_hints: z.string().optional(),
+});
+
+const CandidateEnrichmentSchema = z.object({
+  github_url: z.string().optional(),
+  linkedin_url: z.string().optional(),
+  portfolio_url: z.string().optional(),
+  tech_talks: z.array(
+    z.object({
+      title: z.string(),
+      url: z.string(),
+    }),
+  ),
+  social_proof_summary: z.string(),
+});
+
+const SourcingStrategySchema = z.object({
+  approach_summary: z.string(),
+  target_companies: z.array(z.string()),
+  alternative_titles: z.array(z.string()),
+  niche_sources: z.array(z.string()),
+});
 
 @Injectable()
 export class SourcingAgent extends BaseAgent {
@@ -42,12 +73,13 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'sourcing_queries',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.5 },
+      { maxTokens: 512, temperature: 0.5, responseFormat: { type: 'json_object' } },
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return CandidateSearchQueriesSchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(
         `SourcingAgent failed to parse search queries: ${e.message}`,
       );
@@ -67,12 +99,13 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'job_discovery_queries',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.5 },
+      { maxTokens: 512, temperature: 0.5, responseFormat: { type: 'json_object' } },
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return JobSearchQueriesSchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(
         `SourcingAgent failed to parse job search queries: ${e.message}`,
       );
@@ -105,11 +138,12 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'candidate_enrichment',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3 },
+      { maxTokens: 1024, temperature: 0.3, responseFormat: { type: 'json_object' } },
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
+      const parsed = JSON.parse(output);
+      return CandidateEnrichmentSchema.parse(parsed);
     } catch (e) {
       return {
         tech_talks: [],
@@ -133,12 +167,13 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'sourcing_strategy',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.4 },
+      { maxTokens: 1024, temperature: 0.4, responseFormat: { type: 'json_object' } },
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
+      const parsed = JSON.parse(output);
+      return SourcingStrategySchema.parse(parsed);
+    } catch (e: any) {
       throw new Error(`SourcingAgent failed to parse strategy JSON: ${e.message}`);
     }
   }

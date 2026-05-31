@@ -420,7 +420,8 @@ All previously identified legacy code issues (such as circular dependencies, dea
 Additionally, the following senior-level architectural optimizations have been successfully implemented:
 - **pgvector HNSW Optimization**: Refactored candidate vector searches to utilize constant-vector scalar subqueries, triggering native PostgreSQL **HNSW index** utilization and cutting search times from $O(N)$ linear scans to **sub-millisecond** logarithmic scans.
 - **Concurrent Ingestion Batching**: Refactored the sequential, blocking candidate ingestion loops in `adapter-ingest.service.ts` into parallelized chunks (size of 10) using `Promise.all`, dramatically shortening connection hold times.
-- **Strict JSON LLM Schema Enforcement**: Configured prompt runners and Groq providers to support strict `json_object` parameter formatting, completely eliminating formatting parse errors.
+- **Strict JSON LLM Schema Enforcement**: Configured prompt runners and Groq providers to support strict `json_object` parameter formatting.
+- **Strict Agent Output Validation**: Enforced the `json_object` formatting parameters across all `runLlm` calls inside all 6 specialized agents, and integrated robust runtime schema validation using **Zod parsing**, completely replacing the legacy, brittle `stripLlmJson` parsing fallback logic.
 - **LinkedIn Sourcing integration**: Pre-populated LinkedIn campaigns with job keywords directly from the Employer details page.
 - **Candidate Mobile UX**: Built an elegant Mobile Bottom Navigation Bar and updated spacing templates.
 - **Tri-lingual Parsing prompts**: Expanded prompts to parse English, Russian, and Uzbek resumes and automatically normalize regional universities and tech terminologies.

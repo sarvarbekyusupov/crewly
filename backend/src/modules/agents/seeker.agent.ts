@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
 import { seekerDecideAndDraftPrompt } from '@my-hr/prompts';
+
+const SeekerApplicationDecisionSchema = z.object({
+  should_apply: z.boolean(),
+  reason: z.string(),
+  cover_letter: z.string().optional(),
+});
 
 @Injectable()
 export class SeekerAgent extends BaseAgent {
@@ -47,14 +53,15 @@ export class SeekerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'seeker_application_decision',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3 },
+      { maxTokens: 1024, temperature: 0.3, responseFormat: { type: 'json_object' } },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
         : {},
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
+      const parsed = JSON.parse(output);
+      return SeekerApplicationDecisionSchema.parse(parsed);
     } catch (e) {
       return {
         should_apply: job.matchScore >= 85, // Default to true for elite matches
