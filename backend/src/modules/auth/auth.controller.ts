@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard, SkipThrottle } from '@nestjs/throttler';
 import { z } from 'zod';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -119,6 +119,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @SkipThrottle({ auth: true })
   async me(@CurrentUser() user: AuthUser) {
     return this.authService.getMe(user.id);
   }

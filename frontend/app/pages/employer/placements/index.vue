@@ -18,13 +18,13 @@ const total = computed(() => result.value?.total ?? 0)
 watch(page, () => refreshNuxtData('placements'))
 
 const columns: any[] = [
-  { key: 'candidate', label: 'Candidate' },
-  { key: 'job', label: 'Job' },
-  { key: 'salary', label: t('placements.salary') },
-  { key: 'fee', label: t('placements.fee') },
-  { key: 'startDate', label: t('placements.startDate') },
-  { key: 'status', label: t('common.status') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'candidate', header: 'Candidate' },
+  { accessorKey: 'job', header: 'Job' },
+  { accessorKey: 'salary', header: t('placements.salary') },
+  { accessorKey: 'fee', header: t('placements.fee') },
+  { accessorKey: 'startDate', header: t('placements.startDate') },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'actions', header: '' },
 ]
 
 function isGuaranteeExpired(p: Placement) {

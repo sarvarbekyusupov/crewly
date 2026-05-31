@@ -27,11 +27,11 @@ const {
 const rows = computed<ConsentRecord[]>(() => result.value?.data ?? [])
 
 const columns: any[] = [
-  { key: 'recordedAt', label: 'Timestamp' },
-  { key: 'candidate', label: 'Candidate' },
-  { key: 'action', label: 'Action' },
-  { key: 'basis', label: 'Basis' },
-  { key: 'ipAddress', label: 'IP Address' },
+  { accessorKey: 'recordedAt', header: 'Timestamp' },
+  { accessorKey: 'candidate', header: 'Candidate' },
+  { accessorKey: 'action', header: 'Action' },
+  { accessorKey: 'basis', header: 'Basis' },
+  { accessorKey: 'ipAddress', header: 'IP Address' },
 ]
 
 function formatDateTime(d?: string) {

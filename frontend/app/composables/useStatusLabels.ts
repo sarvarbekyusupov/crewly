@@ -3,21 +3,21 @@ export function useStatusLabels() {
 
   function appStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      matched: t('applications.status.matched'),
-      queued_outreach: t('applications.status.queued_outreach'),
-      outreach_sent: t('applications.status.outreach_sent'),
-      responded: t('applications.status.responded'),
-      screening: t('applications.status.screening'),
-      screened_pass: t('applications.status.screened_pass'),
-      screened_fail: t('applications.status.screened_fail'),
-      delivered: t('applications.status.delivered'),
-      interview_scheduled: t('applications.status.interview_scheduled'),
-      interviewed: t('applications.status.interviewed'),
-      offered: t('applications.status.offered'),
-      hired: t('applications.status.hired'),
-      rejected_by_client: t('applications.status.rejected_by_client'),
-      withdrew: t('applications.status.withdrew'),
-      no_response: t('applications.status.no_response'),
+      matched: t('status.matched'),
+      queued_outreach: t('status.queued_outreach'),
+      outreach_sent: t('status.outreach_sent'),
+      responded: t('status.responded'),
+      screening: t('status.screening'),
+      screened_pass: t('status.screened_pass'),
+      screened_fail: t('status.screened_fail'),
+      delivered: t('status.delivered'),
+      interview_scheduled: t('status.interview_scheduled'),
+      interviewed: t('status.interviewed'),
+      offered: t('status.offered'),
+      hired: t('status.hired'),
+      rejected_by_client: t('status.rejected_by_client'),
+      withdrew: t('status.withdrew'),
+      no_response: t('status.no_response'),
     }
     return labels[status] ?? status
   }

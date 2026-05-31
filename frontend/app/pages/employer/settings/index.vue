@@ -131,11 +131,11 @@ function roleColor(
 }
 
 const userColumns: any[] = [
-  { key: 'fullName', label: t('settings.fields.name') },
-  { key: 'email', label: t('settings.fields.email') },
-  { key: 'role', label: t('settings.fields.role') },
-  { key: 'lastLoginAt', label: t('settings.fields.lastLogin') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'fullName', header: t('settings.fields.name') },
+  { accessorKey: 'email', header: t('settings.fields.email') },
+  { accessorKey: 'role', header: t('settings.fields.role') },
+  { accessorKey: 'lastLoginAt', header: t('settings.fields.lastLogin') },
+  { accessorKey: 'actions', header: '' },
 ]
 </script>
 

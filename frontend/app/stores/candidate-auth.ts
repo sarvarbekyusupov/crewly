@@ -12,8 +12,10 @@ export const useCandidateAuthStore = defineStore('candidate-auth', () => {
     try {
       loading.value = true
       candidate.value = await api.get<Candidate>('/api/v1/candidate-auth/me')
+      if (import.meta.client) localStorage.setItem('cand_hint', '1')
     } catch {
       candidate.value = null
+      if (import.meta.client) localStorage.removeItem('cand_hint')
     } finally {
       loading.value = false
     }
@@ -34,6 +36,7 @@ export const useCandidateAuthStore = defineStore('candidate-auth', () => {
       fullName,
     })
     candidate.value = res.candidate
+    if (import.meta.client) localStorage.setItem('cand_hint', '1')
   }
 
   async function login(email: string, password: string): Promise<void> {
@@ -44,6 +47,7 @@ export const useCandidateAuthStore = defineStore('candidate-auth', () => {
       password,
     })
     candidate.value = res.candidate
+    if (import.meta.client) localStorage.setItem('cand_hint', '1')
   }
 
   async function logout(): Promise<void> {
@@ -54,11 +58,13 @@ export const useCandidateAuthStore = defineStore('candidate-auth', () => {
       /* ignore — always clear local state */
     } finally {
       candidate.value = null
+      if (import.meta.client) localStorage.removeItem('cand_hint')
     }
   }
 
   function clearCandidate(): void {
     candidate.value = null
+    if (import.meta.client) localStorage.removeItem('cand_hint')
   }
 
   return {

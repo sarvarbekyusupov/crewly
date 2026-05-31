@@ -1,14 +1,32 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'empty', auth: false })
+definePageMeta({ layout: 'empty', auth: 'guest' })
 
 const { t } = useI18n()
-const store = useAuthStore()
-if (!store.isAuthenticated) {
-  await store.fetchMe()
+
+const showPortalModal = ref(false)
+const portalIntent = ref<'login' | 'signup'>('login')
+
+function openPortalModal(intent: 'login' | 'signup' = 'login') {
+  portalIntent.value = intent
+  showPortalModal.value = true
 }
-if (store.isAuthenticated) {
-  await navigateTo('/employer/dashboard', { replace: true })
+
+async function goToHR() {
+  showPortalModal.value = false
+  await navigateTo(portalIntent.value === 'signup' ? '/employer/signup' : '/employer/login')
 }
+
+async function goToCandidate() {
+  showPortalModal.value = false
+  await navigateTo('/candidate/login')
+}
+
+function onEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape') showPortalModal.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', onEsc))
+onUnmounted(() => window.removeEventListener('keydown', onEsc))
 </script>
 
 <template>
@@ -20,7 +38,7 @@ if (store.isAuthenticated) {
       </NuxtLink>
       <div class="links">
         <a href="#how-it-works">{{ t('landing.navHowItWorks') }}</a>
-        <NuxtLink to="/login?mode=signup">{{ t('landing.navForCompanies') }}</NuxtLink>
+        <NuxtLink to="/employer/signup">{{ t('landing.navForCompanies') }}</NuxtLink>
         <a href="#for-candidates">{{ t('landing.navForCandidates') }}</a>
         <NuxtLink to="/terms">{{ t('landing.navPricing') }}</NuxtLink>
         <a href="#belief">{{ t('landing.navManifesto') }}</a>
@@ -30,7 +48,7 @@ if (store.isAuthenticated) {
           <span class="live-dot" />
           Agent · live
         </span>
-        <NuxtLink to="/login" class="signin-btn">{{ t('landing.signIn') }}</NuxtLink>
+        <button class="signin-btn" @click="openPortalModal('login')">{{ t('landing.signIn') }}</button>
       </div>
     </nav>
 
@@ -60,7 +78,7 @@ if (store.isAuthenticated) {
         </div>
 
         <div id="how-it-works" class="doors">
-          <NuxtLink class="door" to="/login?mode=signup">
+          <NuxtLink class="door" to="/employer/signup">
             <span class="ribbon">{{ t('landing.doorCompanyRibbon') }}</span>
             <h2>
               {{ t('landing.doorCompanyTitle') }}<br /><em>{{
@@ -133,7 +151,7 @@ if (store.isAuthenticated) {
             </div>
           </div>
         </div>
-        <NuxtLink to="/login?mode=signup" class="how-cta">{{
+        <NuxtLink to="/employer/signup" class="how-cta">{{
           t('landing.doorCompanyCta')
         }}</NuxtLink>
       </div>
@@ -195,6 +213,33 @@ if (store.isAuthenticated) {
         <p>{{ t('landing.pillar3Body') }}</p>
       </div>
     </section>
+
+    <Teleport to="body">
+      <Transition name="portal-fade">
+        <div v-if="showPortalModal" class="portal-overlay" @click.self="showPortalModal = false">
+          <div class="portal-modal">
+            <button class="portal-close" @click="showPortalModal = false">✕</button>
+            <p class="portal-eyebrow">SIGN IN AS</p>
+            <h2 class="portal-heading">Choose your<br /><em>portal</em></h2>
+            <div class="portal-cards">
+              <button
+                class="portal-card"
+                @click="goToHR"
+              >
+                <span class="portal-card-icon">🏢</span>
+                <strong>HR / Company</strong>
+                <span>Post jobs, source candidates,<br />hire with AI.</span>
+              </button>
+              <button class="portal-card portal-card--candidate" @click="goToCandidate">
+                <span class="portal-card-icon">👤</span>
+                <strong>Candidate</strong>
+                <span>Find your next opportunity<br />& track applications.</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <footer class="lfoot">
       <span>© 2025 my-hr</span>
@@ -723,6 +768,146 @@ if (store.isAuthenticated) {
   color: #c84a1f;
 }
 
+/* ── signin-btn as button reset ── */
+button.signin-btn {
+  cursor: pointer;
+  border: 1px solid #1a1a1a;
+  background: #1a1a1a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Portal modal ── */
+.portal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.portal-modal {
+  background: var(--bg, #f5f1ea);
+  border: 1px solid var(--line, #d9d3c7);
+  border-radius: 22px;
+  padding: 40px 36px 36px;
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.2);
+}
+
+.portal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--line, #d9d3c7);
+  background: transparent;
+  color: var(--ink-muted, #6b6760);
+  font-size: 12px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.12s, color 0.12s;
+}
+.portal-close:hover {
+  background: var(--ink, #1a1a1a);
+  color: var(--bg, #f5f1ea);
+  border-color: var(--ink, #1a1a1a);
+}
+
+.portal-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--ink-subtle, #a8a39a);
+  margin: 0 0 10px;
+}
+
+.portal-heading {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink, #1a1a1a);
+  margin: 0 0 28px;
+}
+.portal-heading em {
+  font-style: italic;
+  color: #c84a1f;
+}
+
+.portal-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line, #d9d3c7);
+  background: var(--bg-elevated, #faf8f4);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.portal-card:hover {
+  border-color: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.12);
+}
+.portal-card--candidate:hover {
+  border-color: #c84a1f;
+}
+
+.portal-card-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.portal-card strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink, #1a1a1a);
+  display: block;
+}
+.portal-card span:last-child {
+  font-size: 12px;
+  color: var(--ink-muted, #6b6760);
+  line-height: 1.45;
+}
+
+/* ── Portal fade transition ── */
+.portal-fade-enter-active,
+.portal-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.portal-fade-enter-from,
+.portal-fade-leave-to {
+  opacity: 0;
+}
+.portal-fade-enter-active .portal-modal,
+.portal-fade-leave-active .portal-modal {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.portal-fade-enter-from .portal-modal,
+.portal-fade-leave-to .portal-modal {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
 /* ── Responsive ── */
 @media (max-width: 760px) {
   .doors {
@@ -766,6 +951,12 @@ if (store.isAuthenticated) {
   }
   .subhead-wrap {
     padding: 0 4px;
+  }
+  .portal-cards {
+    grid-template-columns: 1fr;
+  }
+  .portal-modal {
+    padding: 32px 20px 24px;
   }
 }
 </style>

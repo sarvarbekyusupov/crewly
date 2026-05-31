@@ -165,21 +165,21 @@ function duration(run: { completedAt?: string; startedAt?: string }) {
 }
 
 const columns: any[] = [
-  { key: 'source', label: 'Source' },
-  { key: 'trigger', label: 'Trigger' },
-  { key: 'status', label: 'Status' },
-  { key: 'stats', label: 'Fetched / New / Updated / Failed' },
-  { key: 'startedAt', label: 'Started' },
-  { key: 'duration', label: 'Duration' },
+  { accessorKey: 'source', header: 'Source' },
+  { accessorKey: 'trigger', header: 'Trigger' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'stats', header: 'Fetched / New / Updated / Failed' },
+  { accessorKey: 'startedAt', header: 'Started' },
+  { accessorKey: 'duration', header: 'Duration' },
 ]
 
 const jobColumns: any[] = [
-  { key: 'source', label: 'Source' },
-  { key: 'trigger', label: 'Trigger' },
-  { key: 'status', label: 'Status' },
-  { key: 'stats', label: 'Fetched / New / Updated' },
-  { key: 'startedAt', label: 'Started' },
-  { key: 'duration', label: 'Duration' },
+  { accessorKey: 'source', header: 'Source' },
+  { accessorKey: 'trigger', header: 'Trigger' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'stats', header: 'Fetched / New / Updated' },
+  { accessorKey: 'startedAt', header: 'Started' },
+  { accessorKey: 'duration', header: 'Duration' },
 ]
 </script>
 

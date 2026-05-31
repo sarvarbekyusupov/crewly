@@ -55,12 +55,12 @@ function scoreColor(
 }
 
 const columns: any[] = [
-  { key: 'fullName', label: 'Name' },
-  { key: 'experience', label: t('candidates.experience') },
-  { key: 'skills', label: t('candidates.skills') },
-  { key: 'score', label: 'Score' },
-  { key: 'status', label: t('common.status') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'fullName', header: 'Name' },
+  { accessorKey: 'experience', header: t('candidates.experience') },
+  { accessorKey: 'skills', header: t('candidates.skills') },
+  { accessorKey: 'score', header: 'Score' },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'actions', header: '' },
 ]
 
 const sortOptions = [

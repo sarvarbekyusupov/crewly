@@ -8,6 +8,7 @@ export function useCandidateApi() {
 
   return buildApiClient(baseURL, {
     tryRefresh: () => tryRefreshCandidateToken(baseURL),
+    shouldAttemptRefresh: () => useCandidateAuthStore().isAuthenticated,
     onUnauth: async () => {
       useCandidateAuthStore().clearCandidate()
     },

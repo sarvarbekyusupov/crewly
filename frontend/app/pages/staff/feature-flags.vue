@@ -89,11 +89,11 @@ async function deleteFlag() {
 }
 
 const columns: any[] = [
-  { key: 'name', label: 'Name' },
-  { key: 'enabled', label: 'Enabled' },
-  { key: 'rolloutPercentage', label: 'Rollout %' },
-  { key: 'updatedAt', label: 'Updated At' },
-  { key: 'actions', label: '' },
+  { accessorKey: 'name', header: 'Name' },
+  { accessorKey: 'enabled', header: 'Enabled' },
+  { accessorKey: 'rolloutPercentage', header: 'Rollout %' },
+  { accessorKey: 'updatedAt', header: 'Updated At' },
+  { accessorKey: 'actions', header: '' },
 ]
 </script>
 

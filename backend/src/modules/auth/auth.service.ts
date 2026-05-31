@@ -115,8 +115,10 @@ export class AuthService {
 
     const hashToVerify = user?.passwordHash ?? DUMMY_HASH;
     const valid = await argon2.verify(hashToVerify, dto.password).catch(() => false);
-    if (!user || !user.passwordHash || !valid)
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user || !user.passwordHash)
+      throw new UnauthorizedException('No account found with this email');
+    if (!valid)
+      throw new UnauthorizedException('Incorrect password');
 
     if (!user.emailVerified) {
       throw new UnauthorizedException(

@@ -28,12 +28,12 @@ function fmtMs(v?: number) {
 }
 
 const columns: any[] = [
-  { key: 'purpose', label: 'Purpose' },
-  { key: 'model', label: 'Model' },
-  { key: 'tokens', label: 'Tokens' },
-  { key: 'cost', label: 'Cost' },
-  { key: 'latency', label: 'Latency' },
-  { key: 'createdAt', label: 'Time' },
+  { accessorKey: 'purpose', header: 'Purpose' },
+  { accessorKey: 'model', header: 'Model' },
+  { accessorKey: 'tokens', header: 'Tokens' },
+  { accessorKey: 'cost', header: 'Cost' },
+  { accessorKey: 'latency', header: 'Latency' },
+  { accessorKey: 'createdAt', header: 'Time' },
 ]
 </script>
 

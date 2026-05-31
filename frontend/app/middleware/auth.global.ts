@@ -1,13 +1,39 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  // If the route explicitly opts out of authentication, skip the check
+  // Guest routes: public pages that should redirect already-authenticated users to their dashboard
+  if (to.meta.auth === 'guest') {
+    if (to.path.startsWith('/staff')) {
+      const store = useStaffStore()
+      const hasHint = import.meta.client && !!localStorage.getItem('staff_hint')
+      if (!store.isAuthenticated && hasHint) await store.fetchMe()
+      if (store.isAuthenticated) return navigateTo('/staff/dashboard')
+    } else if (to.path.startsWith('/candidate')) {
+      const store = useCandidateAuthStore()
+      const hasHint = import.meta.client && !!localStorage.getItem('cand_hint')
+      if (!store.isAuthenticated && hasHint) await store.fetchMe()
+      if (store.isAuthenticated) return navigateTo('/candidate/dashboard')
+    } else {
+      const store = useAuthStore()
+      const hasHint = import.meta.client && !!localStorage.getItem('emp_hint')
+      if (!store.isAuthenticated && hasHint) await store.fetchMe()
+      if (store.isAuthenticated) return navigateTo('/employer/dashboard')
+    }
+    return
+  }
+
+  // Fully public routes — no auth checks at all
   if (to.meta.auth === false) return
 
   // 1. Staff/Admin Routes
   if (to.path.startsWith('/staff')) {
     const store = useStaffStore()
     if (!store.isAuthenticated) {
-      const ok = await store.fetchMe()
-      if (!ok) return navigateTo('/staff/login')
+      const hasHint = import.meta.client && !!localStorage.getItem('staff_hint')
+      if (hasHint) {
+        const ok = await store.fetchMe()
+        if (!ok) return navigateTo('/staff/login')
+      } else {
+        return navigateTo('/staff/login')
+      }
     }
     return
   }
@@ -16,10 +42,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path.startsWith('/candidate')) {
     const store = useCandidateAuthStore()
     if (!store.isAuthenticated) {
-      await store.fetchMe()
-    }
-    if (!store.isAuthenticated) {
-      return navigateTo('/candidate/login')
+      const hasHint = import.meta.client && !!localStorage.getItem('cand_hint')
+      if (hasHint) await store.fetchMe()
+      if (!store.isAuthenticated) return navigateTo('/candidate/login')
     }
     return
   }
@@ -27,9 +52,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // 3. HR / Employer / Corporate Routes (All other routes default to employer check)
   const store = useAuthStore()
   if (!store.isAuthenticated) {
-    await store.fetchMe()
-  }
-  if (!store.isAuthenticated) {
-    return navigateTo('/employer/login')
+    const hasHint = import.meta.client && !!localStorage.getItem('emp_hint')
+    if (hasHint) await store.fetchMe()
+    if (!store.isAuthenticated) return navigateTo('/employer/login')
   }
 })

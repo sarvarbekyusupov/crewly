@@ -19,12 +19,12 @@ const filtered = computed(() => {
 })
 
 const columns: any[] = [
-  { key: 'name', label: 'Company' },
-  { key: 'contactEmail', label: 'Email' },
-  { key: 'status', label: 'Status' },
-  { key: 'pricingTier', label: 'Tier' },
-  { key: 'counts', label: 'Users / Jobs' },
-  { key: 'createdAt', label: 'Created' },
+  { accessorKey: 'name', header: 'Company' },
+  { accessorKey: 'contactEmail', header: 'Email' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'pricingTier', header: 'Tier' },
+  { accessorKey: 'counts', header: 'Users / Jobs' },
+  { accessorKey: 'createdAt', header: 'Created' },
 ]
 </script>
 

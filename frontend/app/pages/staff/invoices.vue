@@ -31,12 +31,12 @@ const totalPending = computed(() =>
 )
 
 const columns: any[] = [
-  { key: 'invoiceNumber', label: 'Invoice #' },
-  { key: 'company', label: 'Company' },
-  { key: 'candidate', label: 'Candidate / Job' },
-  { key: 'total', label: 'Total' },
-  { key: 'dueDate', label: 'Due' },
-  { key: 'status', label: 'Status' },
+  { accessorKey: 'invoiceNumber', header: 'Invoice #' },
+  { accessorKey: 'company', header: 'Company' },
+  { accessorKey: 'candidate', header: 'Candidate / Job' },
+  { accessorKey: 'total', header: 'Total' },
+  { accessorKey: 'dueDate', header: 'Due' },
+  { accessorKey: 'status', header: 'Status' },
 ]
 </script>
 

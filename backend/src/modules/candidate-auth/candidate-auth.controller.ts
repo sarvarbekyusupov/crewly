@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard, SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { CandidateAuthService } from './candidate-auth.service';
 import { CandidateAuthGuard } from './guards/candidate-auth.guard';
@@ -153,6 +153,7 @@ export class CandidateAuthController {
   @Get('me')
   @Public()
   @UseGuards(CandidateAuthGuard)
+  @SkipThrottle({ auth: true })
   async me(@CurrentCandidate() candidate: { id: string }) {
     return this.candidateAuthService.getMe(candidate.id);
   }

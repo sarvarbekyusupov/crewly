@@ -27,12 +27,12 @@ const {
 const rows = computed<AuditLog[]>(() => result.value?.data ?? [])
 
 const columns: any[] = [
-  { key: 'id', label: 'ID' },
-  { key: 'createdAt', label: 'Timestamp' },
-  { key: 'actor', label: 'Actor' },
-  { key: 'action', label: 'Action' },
-  { key: 'resource', label: 'Resource' },
-  { key: 'ipAddress', label: 'IP Address' },
+  { accessorKey: 'id', header: 'ID' },
+  { accessorKey: 'createdAt', header: 'Timestamp' },
+  { accessorKey: 'actor', header: 'Actor' },
+  { accessorKey: 'action', header: 'Action' },
+  { accessorKey: 'resource', header: 'Resource' },
+  { accessorKey: 'ipAddress', header: 'IP Address' },
 ]
 
 function formatDateTime(d?: string) {

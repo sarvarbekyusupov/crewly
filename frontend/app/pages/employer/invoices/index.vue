@@ -42,13 +42,13 @@ const statusOptions = [
 ]
 
 const columns: any[] = [
-  { key: 'invoiceNumber', label: t('invoices.number') },
-  { key: 'candidate', label: t('common.candidate') },
-  { key: 'job', label: t('nav.jobs') },
-  { key: 'total', label: t('invoices.amount') },
-  { key: 'dueDate', label: t('invoices.dueDate') },
-  { key: 'status', label: t('common.status') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'invoiceNumber', header: t('invoices.number') },
+  { accessorKey: 'candidate', header: t('common.candidate') },
+  { accessorKey: 'job', header: t('nav.jobs') },
+  { accessorKey: 'total', header: t('invoices.amount') },
+  { accessorKey: 'dueDate', header: t('invoices.dueDate') },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'actions', header: '' },
 ]
 
 const totalPending = computed(() => Number(result.value?.pendingTotal ?? 0))

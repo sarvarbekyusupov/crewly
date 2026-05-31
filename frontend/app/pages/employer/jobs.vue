@@ -60,12 +60,12 @@ function priorityColor(
 }
 
 const columns: any[] = [
-  { key: 'title', label: t('jobs.fields.title') },
-  { key: 'status', label: t('common.status') },
-  { key: 'priority', label: t('jobs.fields.priority') },
-  { key: 'skills', label: t('jobs.fields.requiredSkills') },
-  { key: 'createdAt', label: t('common.createdAt') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'title', header: t('jobs.fields.title') },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'priority', header: t('jobs.fields.priority') },
+  { accessorKey: 'skills', header: t('jobs.fields.requiredSkills') },
+  { accessorKey: 'createdAt', header: t('common.createdAt') },
+  { accessorKey: 'actions', header: '' },
 ]
 
 async function activateJob(id: string) {

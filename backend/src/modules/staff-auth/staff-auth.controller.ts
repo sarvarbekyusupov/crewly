@@ -11,7 +11,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard, SkipThrottle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -86,6 +86,7 @@ export class StaffAuthController {
 
   @Get('me')
   @UseGuards(StaffGuard)
+  @SkipThrottle({ auth: true })
   async me(@Req() req: Request) {
     const staff = (req as any).staff;
     return { id: staff.id, email: staff.email, role: staff.role };

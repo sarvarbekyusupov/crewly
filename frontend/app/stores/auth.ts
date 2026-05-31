@@ -24,8 +24,10 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true
       const me = await api.get<User>('/api/v1/auth/me')
       user.value = me
+      if (import.meta.client) localStorage.setItem('emp_hint', '1')
     } catch {
       user.value = null
+      if (import.meta.client) localStorage.removeItem('emp_hint')
     } finally {
       loading.value = false
     }
@@ -36,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
     const api = useApi()
     const res = await api.post<{ user: User }>('/api/v1/auth/login', { email, password })
     user.value = res.user
+    if (import.meta.client) localStorage.setItem('emp_hint', '1')
   }
 
   async function logout(): Promise<void> {
@@ -44,11 +47,13 @@ export const useAuthStore = defineStore('auth', () => {
       await api.post('/api/v1/auth/logout')
     } finally {
       user.value = null
+      if (import.meta.client) localStorage.removeItem('emp_hint')
     }
   }
 
   function clearUser(): void {
     user.value = null
+    if (import.meta.client) localStorage.removeItem('emp_hint')
   }
 
   return { user, loading, isAuthenticated, role, can, fetchMe, login, logout, clearUser }

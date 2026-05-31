@@ -135,13 +135,13 @@ const statusOptions = computed(() => [
 ])
 
 const tableColumns: any[] = [
-  { key: 'select', label: '' },
-  { key: 'candidate', label: t('candidates.title') },
-  { key: 'job', label: t('nav.jobs') },
-  { key: 'matchScore', label: t('applications.matchScore') },
-  { key: 'status', label: t('common.status') },
-  { key: 'updatedAt', label: t('common.updatedAt') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'select', header: '' },
+  { accessorKey: 'candidate', header: t('candidates.title') },
+  { accessorKey: 'job', header: t('nav.jobs') },
+  { accessorKey: 'matchScore', header: t('applications.matchScore') },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'updatedAt', header: t('common.updatedAt') },
+  { accessorKey: 'actions', header: '' },
 ]
 </script>
 

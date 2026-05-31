@@ -48,11 +48,11 @@ async function markDnc(id: string) {
 }
 
 const columns: any[] = [
-  { key: 'fullName', label: 'Name' },
-  { key: 'source', label: 'Source' },
-  { key: 'consent', label: 'Consent' },
-  { key: 'lastActive', label: 'Last active' },
-  { key: 'actions', label: '' },
+  { accessorKey: 'fullName', header: 'Name' },
+  { accessorKey: 'source', header: 'Source' },
+  { accessorKey: 'consent', header: 'Consent' },
+  { accessorKey: 'lastActive', header: 'Last active' },
+  { accessorKey: 'actions', header: '' },
 ]
 </script>
 

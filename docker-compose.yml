@@ -38,6 +38,8 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set (min 32 chars)}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET must be set (min 32 chars)}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set (min 32 chars)}
+      JWT_CANDIDATE_SECRET: ${JWT_CANDIDATE_SECRET:-dev-jwt-candidate-secret-change-prod-32}
+      BULL_BOARD_PASSWORD: ${BULL_BOARD_PASSWORD:-dev-bull-board-password}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-placeholder}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-placeholder}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:4000/api/v1/candidate-auth/google/callback}
@@ -54,7 +56,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       S3_BUCKET: ${S3_BUCKET:-}
-    command: ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main"]
+    command: ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/backend/src/main"]
     depends_on:
       postgres:
         condition: service_healthy

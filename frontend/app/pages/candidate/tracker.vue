@@ -240,10 +240,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                     :key="c.status"
                     class="text-xs px-2 py-0.5 rounded transition-opacity hover:opacity-80"
                     :style="`background: var(--bg-elevated); color: var(--ink-muted); border: 1px solid var(--line);`"
-                    @click="
-                      updateStatus(app, c.status)
-                      expandedId = null
-                    "
+                    @click="updateStatus(app, c.status); expandedId = null"
                   >
                     {{ c.label }}
                   </button>

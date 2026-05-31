@@ -144,10 +144,10 @@ async function close() {
 }
 
 const appColumns: any[] = [
-  { key: 'candidate', label: t('candidates.title') },
-  { key: 'matchScore', label: t('applications.matchScore') },
-  { key: 'status', label: t('common.status') },
-  { key: 'actions', label: '' },
+  { accessorKey: 'candidate', header: t('candidates.title') },
+  { accessorKey: 'matchScore', header: t('applications.matchScore') },
+  { accessorKey: 'status', header: t('common.status') },
+  { accessorKey: 'actions', header: '' },
 ]
 </script>
 
