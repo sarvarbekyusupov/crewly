@@ -4,10 +4,12 @@ import type { Application } from '~/types/api'
 defineProps<{
   app: Application
 }>()
+
+const { appStatusLabel } = useStatusLabels()
 </script>
 
 <template>
-  <NuxtLink :to="`/applications/${app.id}`" class="cand-row">
+  <NuxtLink :to="`/employer/applications/${app.id}`" class="cand-row">
     <div class="cand-avatar">{{ app.candidate?.fullName?.[0] ?? '?' }}</div>
     <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
       <span class="cand-name">{{ app.candidate?.fullName ?? '—' }}</span>
@@ -26,7 +28,7 @@ defineProps<{
       >
     </div>
     <UBadge :color="appStatusColor(app.status)" variant="subtle" size="xs">
-      {{ app.status.replace(/_/g, ' ') }}
+      {{ appStatusLabel(app.status) }}
     </UBadge>
     <UIcon
       name="i-heroicons-chevron-right"
