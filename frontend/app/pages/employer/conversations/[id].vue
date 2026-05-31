@@ -82,7 +82,7 @@ const sendShortcut = computed(() => (isMac.value ? '⌘↵' : 'Ctrl+Enter'))
     <!-- Hero header -->
     <div class="pb-5" style="border-bottom: 1px solid var(--line)">
       <div class="flex items-center gap-3 mb-2">
-        <NuxtLink to="/conversations" style="color: var(--ink-muted)">
+        <NuxtLink to="/employer/conversations" style="color: var(--ink-muted)">
           <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
         </NuxtLink>
         <p

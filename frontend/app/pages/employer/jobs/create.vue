@@ -103,7 +103,7 @@ const onSubmit = handleSubmit(async (values) => {
       feePercentage: Number(formExtras.feePercentage),
     })
     toast.add({ title: t('common.success'), color: 'success' })
-    router.push(`/jobs/${job.id}`)
+    router.push(`/employer/jobs/${job.id}`)
   } catch (e) {
     toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {
@@ -116,7 +116,7 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="max-w-2xl space-y-6">
     <div class="pb-6" style="border-bottom: 1px solid var(--line)">
       <div class="flex items-center gap-3 mb-2">
-        <NuxtLink to="/jobs" style="color: var(--ink-muted)">
+        <NuxtLink to="/employer/jobs" style="color: var(--ink-muted)">
           <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
         </NuxtLink>
         <p

@@ -85,7 +85,7 @@ const totalInPipeline = computed(() => props.applications.length)
       <ul class="space-y-2">
         <li v-for="app in topApps" :key="app.id">
           <NuxtLink
-            :to="`/applications/${app.id}`"
+            :to="`/employer/applications/${app.id}`"
             class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 hover:bg-(--bg-elevated)"
           >
             <span class="text-sm font-medium" style="color: var(--ink)">

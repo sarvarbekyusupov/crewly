@@ -40,26 +40,26 @@ const kpis = computed(() => {
       label: t('dashboard.kpi.activeRoles'),
       value: s?.activeJobs ?? 0,
       delta: `${s?.totalJobs ?? 0} ${t('common.total').toLowerCase()}`,
-      href: '/jobs',
+      href: '/employer/jobs',
     },
     {
       label: t('dashboard.kpi.inPipeline'),
       value: s?.inPipeline ?? 0,
       delta: `${s?.totalApplications ?? 0} ${t('common.total').toLowerCase()}`,
-      href: '/applications',
+      href: '/employer/applications',
     },
     {
       label: t('dashboard.kpi.activePlacements'),
       value: s?.activePlacements ?? 0,
       delta: `${s?.totalPlacements ?? 0} ${t('common.total').toLowerCase()}`,
       positive: true,
-      href: '/placements',
+      href: '/employer/placements',
     },
     {
       label: t('dashboard.kpi.pendingInvoices'),
       value: s?.pendingInvoices ?? 0,
       delta: `${s?.totalInvoices ?? 0} ${t('common.total').toLowerCase()}`,
-      href: '/invoices',
+      href: '/employer/invoices',
     },
   ]
 })
@@ -115,14 +115,14 @@ const pipelineStages = computed(() => {
       </div>
       <div class="flex gap-2 items-center w-full sm:w-auto">
         <UButton
-          to="/jobs/create"
+          to="/employer/jobs/create"
           variant="outline"
           icon="i-heroicons-plus"
           size="sm"
           class="flex-1 sm:flex-none justify-center"
           >{{ t('dashboard.newRole') }}</UButton
         >
-        <UButton to="/jobs" size="sm" class="flex-1 sm:flex-none justify-center">{{
+        <UButton to="/employer/jobs" size="sm" class="flex-1 sm:flex-none justify-center">{{
           t('dashboard.openRoles')
         }}</UButton>
       </div>
@@ -135,7 +135,7 @@ const pipelineStages = computed(() => {
         :title="t('dashboard.onboarding.title')"
         :description="t('dashboard.onboarding.description')"
         :action-label="t('dashboard.onboarding.cta')"
-        action-to="/jobs/create"
+        action-to="/employer/jobs/create"
       />
     </UCard>
 
@@ -155,7 +155,7 @@ const pipelineStages = computed(() => {
                   {{ t('dashboard.candidatesReady', { count: needsAction.length }) }}
                 </h3>
               </div>
-              <UButton to="/applications" variant="ghost" size="xs">{{
+              <UButton to="/employer/applications" variant="ghost" size="xs">{{
                 t('dashboard.reviewAll')
               }}</UButton>
             </div>
@@ -171,7 +171,7 @@ const pipelineStages = computed(() => {
             <DashboardCandidateRow v-for="app in needsAction" :key="app.id" :app="app" />
             <div v-if="needsActionTotal > 5" class="pt-3 border-t border-line-soft">
               <NuxtLink
-                to="/applications"
+                to="/employer/applications"
                 class="font-mono text-[11px] text-ink-muted hover:text-accent transition-colors"
               >
                 {{ needsActionTotal - 5 }} {{ t('dashboard.moreApplications') }} →
@@ -190,7 +190,7 @@ const pipelineStages = computed(() => {
                   {{ t('dashboard.applicationStages') }}
                 </h3>
               </div>
-              <UButton to="/applications" variant="ghost" size="xs">{{
+              <UButton to="/employer/applications" variant="ghost" size="xs">{{
                 t('dashboard.viewAll')
               }}</UButton>
             </div>
@@ -209,7 +209,7 @@ const pipelineStages = computed(() => {
                 t('dashboard.agentActivity')
               }}</span>
             </div>
-            <UButton to="/conversations" variant="ghost" size="xs">{{
+            <UButton to="/employer/conversations" variant="ghost" size="xs">{{
               t('dashboard.openChat')
             }}</UButton>
           </div>

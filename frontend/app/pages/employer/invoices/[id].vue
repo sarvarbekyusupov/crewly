@@ -53,7 +53,7 @@ function printInvoice() {
     <div class="pb-5 print:hidden" style="border-bottom: 1px solid var(--line)">
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-start gap-3 flex-1 min-w-0">
-          <NuxtLink to="/invoices" style="color: var(--ink-muted); margin-top: 4px">
+          <NuxtLink to="/employer/invoices" style="color: var(--ink-muted); margin-top: 4px">
             <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
           </NuxtLink>
           <div class="min-w-0">

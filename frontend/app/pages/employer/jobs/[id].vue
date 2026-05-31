@@ -160,7 +160,7 @@ const appColumns: any[] = [
       <div class="flex flex-col lg:flex-row items-start justify-between gap-6">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-3 mb-2">
-            <NuxtLink to="/jobs" style="color: var(--ink-muted)">
+            <NuxtLink to="/employer/jobs" style="color: var(--ink-muted)">
               <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
             </NuxtLink>
             <p

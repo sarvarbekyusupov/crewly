@@ -230,7 +230,7 @@ const tableColumns: any[] = [
         :title="t('applications.empty')"
         :description="t('applications.emptyDescription')"
         :action-label="t('nav.jobs')"
-        action-to="/jobs"
+        action-to="/employer/jobs"
       />
     </template>
 
@@ -278,7 +278,7 @@ const tableColumns: any[] = [
           </template>
           <template #job-cell="{ row: { original: row } }">
             <NuxtLink
-              :to="`/jobs/${row.jobId}`"
+              :to="`/employer/jobs/${row.jobId}`"
               class="text-sm hover:underline"
               style="color: var(--ink-muted)"
             >
@@ -303,7 +303,7 @@ const tableColumns: any[] = [
               variant="ghost"
               size="xs"
               icon="i-heroicons-eye"
-              :to="`/applications/${row.id}`"
+              :to="`/employer/applications/${row.id}`"
               :aria-label="t('common.view')"
             />
           </template>
@@ -314,7 +314,7 @@ const tableColumns: any[] = [
           :title="t('applications.empty')"
           :description="t('applications.emptyDescription')"
           :action-label="t('nav.jobs')"
-          action-to="/jobs"
+          action-to="/employer/jobs"
         />
         <div
           v-if="total > limit"

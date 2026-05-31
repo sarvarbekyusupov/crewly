@@ -39,7 +39,7 @@ const { invoiceStatusLabel } = useStatusLabels()
     <div class="pb-6" style="border-bottom: 1px solid var(--line)">
       <div class="flex items-start justify-between gap-4">
         <div class="flex items-start gap-3 flex-1 min-w-0">
-          <NuxtLink to="/placements" style="color: var(--ink-muted); margin-top: 6px">
+          <NuxtLink to="/employer/placements" style="color: var(--ink-muted); margin-top: 6px">
             <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
           </NuxtLink>
           <div class="min-w-0">

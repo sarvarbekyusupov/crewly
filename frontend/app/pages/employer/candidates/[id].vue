@@ -135,7 +135,7 @@ function outreachStatusColor(status: string) {
       <div class="flex flex-col md:flex-row items-start justify-between gap-6">
         <div class="flex items-start gap-4">
           <NuxtLink
-            to="/candidates"
+            to="/employer/candidates"
             style="color: var(--ink-muted); margin-top: 4px"
             class="shrink-0"
           >

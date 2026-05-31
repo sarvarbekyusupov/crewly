@@ -35,7 +35,7 @@ const columns = computed(() => groupApplicationsByStage(props.applications))
           <NuxtLink
             v-for="card in col.cards"
             :key="card.id"
-            :to="`/applications/${card.id}`"
+            :to="`/employer/applications/${card.id}`"
             class="kanban-card"
             :style="`border-left-color: ${col.color};`"
           >

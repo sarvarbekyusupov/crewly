@@ -273,7 +273,7 @@ const shadowScoreFields = computed(() => {
       <div class="flex flex-col lg:flex-row items-start justify-between gap-6">
         <div class="flex items-start gap-4 flex-1 min-w-0">
           <NuxtLink
-            to="/applications"
+            to="/employer/applications"
             style="color: var(--ink-muted); margin-top: 6px"
             class="shrink-0"
           >
