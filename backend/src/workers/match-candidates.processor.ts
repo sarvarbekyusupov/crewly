@@ -66,18 +66,16 @@ export class MatchCandidatesProcessor {
       }
     }
 
-    // Vector similarity search — top 50 candidates
+    // Vector similarity search — top 50 candidates using HNSW-indexed query
     const vectorCandidates: Array<{ id: string; similarity: number }> =
       await this.db.$queryRaw`
-        SELECT c.id, 1 - (c.embedding <=> j.embedding) AS similarity
-        FROM candidates c
-        CROSS JOIN jobs j
-        WHERE j.id = ${jobId}
-          AND c.embedding IS NOT NULL
-          AND c.do_not_contact = false
-          AND c.consent_status != 'withdrawn'
-          AND c.deleted_at IS NULL
-        ORDER BY c.embedding <=> j.embedding
+        SELECT id, 1 - (embedding <=> (SELECT embedding FROM jobs WHERE id = ${jobId}::uuid)) AS similarity
+        FROM candidates
+        WHERE embedding IS NOT NULL
+          AND do_not_contact = false
+          AND consent_status != 'withdrawn'
+          AND deleted_at IS NULL
+        ORDER BY embedding <=> (SELECT embedding FROM jobs WHERE id = ${jobId}::uuid)
         LIMIT 50`;
 
     const vectorIds = new Set(vectorCandidates.map((c) => c.id));

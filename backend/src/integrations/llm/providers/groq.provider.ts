@@ -38,6 +38,7 @@ export class GroqProvider implements LlmProvider {
         messages: groqMessages,
         max_tokens: opts.maxTokens ?? 4096,
         temperature: opts.temperature ?? 0.3,
+        ...(opts.responseFormat ? { response_format: opts.responseFormat } : {}),
       });
 
       return {

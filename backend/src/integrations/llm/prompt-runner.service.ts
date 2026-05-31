@@ -21,6 +21,7 @@ export interface RunOptions {
   system?: string;
   maxTokens?: number;
   temperature?: number;
+  responseFormat?: { type: 'json_object' };
 }
 
 @Injectable()
@@ -91,7 +92,13 @@ export class PromptRunnerService {
       let result;
       if (primary.isAvailable()) {
         try {
-          result = await primary.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+          result = await primary.complete(messages, {
+            model: modelName,
+            system: opts.system,
+            maxTokens,
+            temperature,
+            responseFormat: opts.responseFormat,
+          });
           providerUsed = primary.name;
         } catch (primaryErr: any) {
           // Only fall back on retriable errors (rate limit, 5xx); rethrow non-retriable
@@ -103,11 +110,23 @@ export class PromptRunnerService {
             `${primary.name} failed, trying ${fallback.name}`,
           );
           if (!fallback.isAvailable()) throw primaryErr;
-          result = await fallback.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+          result = await fallback.complete(messages, {
+            model: modelName,
+            system: opts.system,
+            maxTokens,
+            temperature,
+            responseFormat: opts.responseFormat,
+          });
           providerUsed = fallback.name;
         }
       } else {
-        result = await fallback.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+        result = await fallback.complete(messages, {
+          model: modelName,
+          system: opts.system,
+          maxTokens,
+          temperature,
+          responseFormat: opts.responseFormat,
+        });
         providerUsed = fallback.name;
       }
 

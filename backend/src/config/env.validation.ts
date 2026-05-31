@@ -50,6 +50,10 @@ export const EnvSchema = z.object({
 
   PAYMENT_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
 
+  ESKIZ_EMAIL: z.string().email().optional().or(z.literal('')),
+  ESKIZ_PASSWORD: z.string().optional().or(z.literal('')),
+  ESKIZ_FROM: z.string().default('4546'),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

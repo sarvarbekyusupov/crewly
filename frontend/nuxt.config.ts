@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     '@nuxt/eslint',
     '@sentry/nuxt/module',
+    '@nuxt/test-utils/module',
   ],
 
   sentry: {

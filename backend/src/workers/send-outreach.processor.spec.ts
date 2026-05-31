@@ -3,6 +3,7 @@ import { SendOutreachProcessor } from './send-outreach.processor';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { EmailService } from '../integrations/email/email.service';
+import { EskizService } from '../integrations/sms/eskiz.service';
 import { OutreachAgent } from '../modules/agents/outreach.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
@@ -41,6 +42,7 @@ describe('SendOutreachProcessor', () => {
   let db: any;
   let telegram: { sendMessage: jest.Mock };
   let email: { send: jest.Mock };
+  let eskiz: { sendSms: jest.Mock };
   let agent: { generatePersonalizedMessage: jest.Mock };
 
   const applicationId = 'app-1';
@@ -65,6 +67,7 @@ describe('SendOutreachProcessor', () => {
     };
     telegram = { sendMessage: jest.fn().mockResolvedValue({}) };
     email = { send: jest.fn().mockResolvedValue('resend-id-123') };
+    eskiz = { sendSms: jest.fn().mockResolvedValue(true) };
     agent = { generatePersonalizedMessage: jest.fn().mockResolvedValue('Hello candidate!') };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,6 +76,7 @@ describe('SendOutreachProcessor', () => {
         { provide: PrismaService, useValue: db },
         { provide: TelegramBotService, useValue: telegram },
         { provide: EmailService, useValue: email },
+        { provide: EskizService, useValue: eskiz },
         { provide: OutreachAgent, useValue: agent },
         {
           provide: HhClientService,
@@ -195,24 +199,53 @@ describe('SendOutreachProcessor', () => {
     );
   });
 
-  it('returns early when conversation already exists', async () => {
+  it('sends via SMS when candidate has no Telegram or Email but has phone number', async () => {
     db.application.findUnique.mockResolvedValue({
       id: applicationId,
       status: 'matched',
       candidateId: 'c1',
       candidate: {
+        id: 'c1',
+        telegramUserId: null,
+        email: null,
+        phone: '998901234567',
+        fullName: 'Alice',
+        currentPosition: 'Dev',
+        skills: [],
+      },
+      job: { id: 'j1', title: 'Dev', companyId: 'co1', requiredSkills: [] },
+    });
+
+    await processor.handle(makeJob({ applicationId }));
+
+    expect(eskiz.sendSms).toHaveBeenCalledWith(
+      '998901234567',
+      expect.any(String),
+    );
+  });
+
+  it('returns early when conversation already exists (P2002 unique constraint)', async () => {
+    db.application.findUnique.mockResolvedValue({
+      id: applicationId,
+      status: 'matched',
+      candidateId: 'c1',
+      candidate: {
+        id: 'c1',
         telegramUserId: '123',
         email: null,
         fullName: 'A',
         currentPosition: null,
         skills: [],
       },
-      job: { title: 'Dev', companyId: 'co1', requiredSkills: [] },
+      job: { id: 'j1', title: 'Dev', companyId: 'co1', requiredSkills: [] },
     });
-    db.conversation.findFirst.mockResolvedValue({ id: 'existing-conv' });
+    
+    const p2002Error = new Error('Unique constraint failed') as any;
+    p2002Error.code = 'P2002';
+    db.conversation.create.mockRejectedValueOnce(p2002Error);
 
     await processor.handle(makeJob({ applicationId }));
-    expect(db.conversation.create).not.toHaveBeenCalled();
+    expect(db.conversation.create).toHaveBeenCalled();
   });
 
   describe('HH invite path', () => {
@@ -226,6 +259,7 @@ describe('SendOutreachProcessor', () => {
           { provide: PrismaService, useValue: db },
           { provide: TelegramBotService, useValue: telegram },
           { provide: EmailService, useValue: email },
+          { provide: EskizService, useValue: { sendSms: jest.fn().mockResolvedValue(true) } },
           { provide: OutreachAgent, useValue: agent },
           {
             provide: HhClientService,
@@ -262,6 +296,7 @@ describe('SendOutreachProcessor', () => {
           { provide: PrismaService, useValue: db },
           { provide: TelegramBotService, useValue: telegram },
           { provide: EmailService, useValue: email },
+          { provide: EskizService, useValue: { sendSms: jest.fn().mockResolvedValue(true) } },
           { provide: OutreachAgent, useValue: agent },
           {
             provide: HhClientService,
