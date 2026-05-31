@@ -422,6 +422,10 @@ Additionally, the following senior-level architectural optimizations have been s
 - **Concurrent Ingestion Batching**: Refactored the sequential, blocking candidate ingestion loops in `adapter-ingest.service.ts` into parallelized chunks (size of 10) using `Promise.all`, dramatically shortening connection hold times.
 - **Strict JSON LLM Schema Enforcement**: Configured prompt runners and Groq providers to support strict `json_object` parameter formatting.
 - **Strict Agent Output Validation**: Enforced the `json_object` formatting parameters across all `runLlm` calls inside all 6 specialized agents, and integrated robust runtime schema validation using **Zod parsing**, completely replacing the legacy, brittle `stripLlmJson` parsing fallback logic.
+- **Langfuse LLM Telemetry**: Integrated the **Langfuse SDK** at the `PromptRunnerService` layer, generating structured trace trees (DAGs) of inputs, prompt versions, token usage, latencies, and costs for the entire candidate lifecycle.
+- **Debrief Mem Compaction**: Programmed an AI-driven merge-compaction with a strict 1000-character truncation in `DebriefAgent` feedback synthesis to protect Matchmaker context limits.
+- **Screening Sliding-Window**: Coded an 8-turn sliding-window conversational memory with first-turn context safeguarding in `ScreeningAgent` to completely resolve quadratic token growth ($O(N^2)$) and latency.
+- **Matching DB Transaction**: Grouped candidate application upserts into a single atomic database `Prisma.$transaction` block inside `match-candidates.processor.ts`, resolving downstream event race conditions for the Coordinator Agent.
 - **LinkedIn Sourcing integration**: Pre-populated LinkedIn campaigns with job keywords directly from the Employer details page.
 - **Candidate Mobile UX**: Built an elegant Mobile Bottom Navigation Bar and updated spacing templates.
 - **Tri-lingual Parsing prompts**: Expanded prompts to parse English, Russian, and Uzbek resumes and automatically normalize regional universities and tech terminologies.
