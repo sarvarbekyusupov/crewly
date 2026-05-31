@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Langfuse } from 'langfuse';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CostCalculatorService } from './cost-calculator.service';
@@ -30,6 +31,7 @@ export class PromptRunnerService {
   private readonly openai: OpenAI | null;
   private readonly groq: GroqProvider;
   private readonly anthropic: AnthropicProvider;
+  private readonly langfuse: Langfuse | null = null;
 
   constructor(
     private readonly config: ConfigService,
@@ -47,6 +49,19 @@ export class PromptRunnerService {
     const openaiKey = config.get<string>('OPENAI_API_KEY');
     this.openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
     if (!this.openai) this.logger.warn('OPENAI_API_KEY not set — embeddings will fail');
+
+    const lfPubKey = config.get<string>('LANGFUSE_PUBLIC_KEY');
+    const lfSecKey = config.get<string>('LANGFUSE_SECRET_KEY');
+    const lfHost = config.get<string>('LANGFUSE_HOST') || 'https://cloud.langfuse.com';
+    
+    if (lfPubKey && lfSecKey) {
+      this.langfuse = new Langfuse({
+        publicKey: lfPubKey,
+        secretKey: lfSecKey,
+        baseUrl: lfHost,
+      });
+      this.logger.log('Langfuse tracing enabled');
+    }
   }
 
   async run(
@@ -78,6 +93,35 @@ export class PromptRunnerService {
     let outputTokens = 0;
     let totalTokens = 0;
     let finishReason: string | null = null;
+
+    // Create Langfuse trace & generation if configured
+    let lfTrace: any = null;
+    let lfGeneration: any = null;
+
+    if (this.langfuse) {
+      lfTrace = this.langfuse.trace({
+        name: promptName,
+        userId: ctx.company_id || undefined,
+        metadata: {
+          purpose,
+          promptVersion,
+          relatedEntityType: ctx.related_entity_type,
+          relatedEntityId: ctx.related_entity_id,
+          agentName: ctx.agent_name,
+          jobId: ctx.job_id,
+        },
+      });
+
+      lfGeneration = lfTrace.generation({
+        name: purpose,
+        model: modelName,
+        modelParameters: {
+          temperature,
+          maxTokens,
+        },
+        input: messages as any,
+      });
+    }
 
     try {
       // Select provider: explicit opt-in, or Groq first, Anthropic as fallback
@@ -136,9 +180,27 @@ export class PromptRunnerService {
       totalTokens = result.totalTokens;
       finishReason = result.finishReason;
       rawResponse = result.rawResponse;
+
+      if (lfGeneration) {
+        lfGeneration.update({
+          output: outputText,
+          usage: {
+            promptTokens: inputTokens,
+            completionTokens: outputTokens,
+            totalTokens: totalTokens,
+          },
+        });
+      }
     } catch (e: any) {
       error = e.message;
       this.logger.error({ promptName, error, providerUsed }, 'LLM call failed');
+
+      if (lfGeneration) {
+        lfGeneration.update({
+          statusMessage: error,
+        });
+      }
+
       throw e;
     } finally {
       const costUsd = this.costCalc.compute(modelName, {
@@ -194,6 +256,11 @@ export class PromptRunnerService {
       } catch (dbErr: any) {
         this.logger.error({ promptName, dbErr: dbErr.message }, 'Failed to persist LLM call log');
       }
+
+      if (this.langfuse) {
+        this.langfuse.shutdownAsync().catch(() => {});
+      }
+
       if (!error) {
         return { output: outputText!, callId };
       }

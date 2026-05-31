@@ -54,7 +54,7 @@ export class DebriefAgent extends BaseAgent {
       { maxTokens: 1024, temperature: 0.3 },
     );
 
-    return output.trim();
+    return output.trim().slice(0, 1000);
   }
 
   async analyzeTranscript(

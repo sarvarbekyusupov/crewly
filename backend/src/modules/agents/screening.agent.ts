@@ -61,10 +61,20 @@ export class ScreeningAgent extends BaseAgent {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     screeningId?: string,
   ): Promise<ScreeningResponse> {
-    const contextMessages =
-      messages.length === 0
-        ? [{ role: 'user' as const, content: screeningUserContext(job, candidate) }]
-        : messages;
+    // 1. Core candidate and job context should always be injected as the first user message on every turn
+    const contextMessage = {
+      role: 'user' as const,
+      content: screeningUserContext(job, candidate),
+    };
+
+    // 2. Limit conversational history to the last 8 turns to prevent quadratic token growth (sliding window)
+    const MAX_HISTORY = 8;
+    const activeHistory = messages.slice(-MAX_HISTORY);
+
+    const contextMessages = [
+      contextMessage,
+      ...activeHistory,
+    ];
 
     const { output } = await this.runLlm(
       'screening',

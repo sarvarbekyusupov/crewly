@@ -171,8 +171,8 @@ export class MatchCandidatesProcessor {
       }));
     }
 
-    // Create applications for top ranked candidates
-    for (const ranked_candidate of ranked) {
+    // Prepare database upsert queries for matching candidates
+    const upsertQueries = ranked.map((ranked_candidate) => {
       const sim =
         candidates.find((c) => c.id === ranked_candidate.id)?.similarity ?? 0;
       const matchReasons = {
@@ -180,7 +180,7 @@ export class MatchCandidatesProcessor {
         gaps: ranked_candidate.gaps ?? [],
         notes: ranked_candidate.notes ?? '',
       };
-      const app = await this.db.application.upsert({
+      return this.db.application.upsert({
         where: {
           jobId_candidateId: { jobId, candidateId: ranked_candidate.id },
         },
@@ -204,7 +204,13 @@ export class MatchCandidatesProcessor {
         },
         select: { id: true, status: true },
       });
+    });
 
+    // Execute database transaction to guarantee full persistence first (prevents race conditions)
+    const apps = await this.db.$transaction(upsertQueries);
+
+    // Emit outreach and created events only after transaction commits successfully
+    for (const app of apps) {
       this.emitter.emit('application.created', {
         applicationId: app.id,
         jobId,
