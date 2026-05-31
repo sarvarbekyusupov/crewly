@@ -47,7 +47,7 @@ const totalInPipeline = computed(() => props.applications.length)
           >
             {{ t('jobs.startOutreach') }}
           </UButton>
-          <UButton size="sm" variant="outline" :to="`/applications?jobId=${job.id}`">
+          <UButton size="sm" variant="outline" :to="`/employer/applications?jobId=${job.id}`">
             {{ t('jobs.viewFullPipeline') }}
           </UButton>
         </div>
