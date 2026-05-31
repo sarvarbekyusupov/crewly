@@ -62,7 +62,7 @@ describe('useCommandPaletteSearch', () => {
     const { searchTerm, commandGroups } = useCommandPaletteSearch(navGroups)
 
     expect(searchTerm.value).toBe('')
-    expect(commandGroups.value[0].items).toEqual([
+    expect(commandGroups.value?.[0]?.items).toEqual([
       { id: '/dashboard', label: 'Dashboard', icon: 'home', to: '/dashboard' },
     ])
   })

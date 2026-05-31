@@ -21,7 +21,7 @@ describe('ApplicationHiringStepper', () => {
 
     const activeSteps = wrapper.findAll('.step-active')
     expect(activeSteps).toHaveLength(1)
-    expect(activeSteps[0].text()).toContain('applications.stepper.delivered')
+    expect(activeSteps[0]?.text()).toContain('applications.stepper.delivered')
   })
 
   it('handles terminal rejected statuses correctly', async () => {

@@ -247,7 +247,16 @@ const appColumns: any[] = [
             variant="outline"
             class="flex-1 lg:flex-none justify-center"
             @click="close"
-            >{{ t('jobs.close') }}</UButton
+            >{{ t('common.close') }}</UButton
+          >
+          <UButton
+            v-if="auth.can('admin') && job.status === 'active'"
+            size="sm"
+            variant="outline"
+            icon="i-simple-icons-linkedin"
+            :to="`/employer/sourcing?q=${encodeURIComponent(job.title)}${job.officeLocation ? '&location=' + encodeURIComponent(job.officeLocation) : ''}`"
+            class="flex-1 lg:flex-none justify-center"
+            >Source from LinkedIn</UButton
           >
           <!-- HH controls -->
           <UButton

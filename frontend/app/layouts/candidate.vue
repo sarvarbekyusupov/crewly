@@ -27,6 +27,13 @@ const nav = [
   { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
 ]
 
+const mobileNav = [
+  { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
+  { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
+  { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
+]
+
 async function handleLogout() {
   await store.logout()
   router.push('/candidate/login')
@@ -178,9 +185,27 @@ router.afterEach(() => {
         <!-- Spacer -->
       </header>
 
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
         <slot />
       </main>
+
+      <!-- Bottom Navigation for Mobile Viewports -->
+      <div
+        class="fixed bottom-0 left-0 right-0 z-30 lg:hidden flex justify-around items-center h-16 border-t px-2"
+        style="background: var(--bg-deep); border-top: 1px solid var(--line)"
+      >
+        <NuxtLink
+          v-for="item in mobileNav"
+          :key="item.to"
+          :to="item.to"
+          class="flex flex-col items-center justify-center flex-1 py-1 text-[10px] transition-colors"
+          style="color: var(--ink-muted)"
+          active-class="mobile-nav-active"
+        >
+          <UIcon :name="item.icon" class="w-5 h-5 mb-0.5" />
+          <span>{{ item.label }}</span>
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>
@@ -197,5 +222,8 @@ router.afterEach(() => {
 .nav-active:hover {
   background: var(--ink) !important;
   color: var(--bg) !important;
+}
+.mobile-nav-active {
+  color: var(--ink) !important;
 }
 </style>

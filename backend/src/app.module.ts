@@ -12,6 +12,7 @@ import { AuthGuard } from './common/guards/auth.guard';
 import { PrismaModule } from './prisma/prisma.module';
 import { LlmModule } from './integrations/llm/llm.module';
 import { EmailModule } from './integrations/email/email.module';
+import { SmsModule } from './integrations/sms/sms.module';
 import { StorageModule } from './integrations/storage/storage.module';
 import { GoogleCalendarModule } from './integrations/google-calendar/google-calendar.module';
 import { TelegramModule } from './integrations/telegram/telegram.module';
@@ -54,6 +55,7 @@ import { HealthController } from './common/health.controller';
     PrismaModule,
     LlmModule,
     EmailModule,
+    SmsModule,
     StorageModule,
     GoogleCalendarModule,
     TelegramModule,

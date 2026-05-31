@@ -62,6 +62,7 @@ pipeline {
               pnpm --filter my-hr-frontend run lint || true
               pnpm typecheck
               pnpm --filter backend run test
+              pnpm --filter my-hr-frontend run test
             '''
           }
         }

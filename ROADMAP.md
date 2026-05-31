@@ -176,25 +176,25 @@ These are gaps that would hurt a first client or cause silent failures in produc
 
 ## Summary Table
 
-| Phase | Item | Priority | Effort |
-| :--- | :--- | :--- | :--- |
-| 1 | Sentry wiring | P0 | S |
-| 1 | Pipeline coordinator bugs (3 fixes) | P0 | S |
-| 1 | Dead code cleanup | P0 | S |
-| 1 | Circular dep refactor | P0 | M |
-| 2 | Payment gateway (Payme/Click) | P1 | L |
-| 2 | LinkedIn in company portal | P1 | M |
-| 2 | Real-time ingestion progress | P1 | S |
-| 2 | Feature flag admin UI | P1 | M |
-| 3 | Mobile optimization (candidate portal) | P2 | M |
-| 3 | Resume parsing progress feedback | P2 | S |
-| 3 | Skill slice consistency | P2 | XS |
-| 3 | Outreach agent type safety | P2 | XS |
-| 3 | Analytics visual funnel chart | P2 | M |
-| 4 | `packages/prompts` extraction | P3 | L |
-| 4 | PDF dossier S3 verify/fix | P3 | S |
-| 4 | SMS channel (Eskiz) | P3 | L |
-| 4 | E2E test expansion | P3 | M |
-| 4 | Multi-language resume parsing | P3 | M |
+| Phase | Item | Priority | Effort | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Sentry wiring | P0 | S | **Done** |
+| 1 | Pipeline coordinator bugs (3 fixes) | P0 | S | **Done** |
+| 1 | Dead code cleanup | P0 | S | **Done** |
+| 1 | Circular dep refactor | P0 | M | **Done** |
+| 2 | Payment gateway (Payme/Click) | P1 | L | **Done** |
+| 2 | LinkedIn in company portal | P1 | M | **Done** |
+| 2 | Real-time ingestion progress | P1 | S | **Done** |
+| 2 | Feature flag admin UI | P1 | M | **Done** |
+| 3 | Mobile optimization (candidate portal) | P2 | M | **Done** |
+| 3 | Resume parsing progress feedback | P2 | S | Planned |
+| 3 | Skill slice consistency | P2 | XS | **Done** |
+| 3 | Outreach agent type safety | P2 | XS | **Done** |
+| 3 | Analytics visual funnel chart | P2 | M | Planned |
+| 4 | `packages/prompts` extraction | P3 | L | **Done** |
+| 4 | PDF dossier S3 verify/fix | P3 | S | Planned |
+| 4 | SMS channel (Eskiz) | P3 | L | **Done** |
+| 4 | E2E test expansion | P3 | M | **Done** |
+| 4 | Multi-language resume parsing | P3 | M | **Done** |
 
 _Effort: XS <1h · S 1–4h · M 1–2d · L 3–5d_
