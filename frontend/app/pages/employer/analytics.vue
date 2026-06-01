@@ -1,5 +1,17 @@
 <script setup lang="ts">
 import type { Job, AgentActivityResponse } from '~/types/api'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+import { Bar } from 'vue-chartjs'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const api = useApi()
 useHead({ title: 'Analytics' })
@@ -78,8 +90,6 @@ const sourcing = computed(() => sourcingRes.value ?? [])
 const outcomes = computed(() => outcomesRes.value)
 const agents = computed(() => agentsRes.value)
 
-const funnelMax = computed(() => Math.max(...funnel.value.map((r) => r.count), 1))
-
 const STAGE_LABELS: Record<string, string> = {
   matched: 'Matched',
   outreach_sent: 'Outreach sent',
@@ -92,6 +102,61 @@ const STAGE_LABELS: Record<string, string> = {
   offered: 'Offered',
   hired: 'Hired',
 }
+
+const chartData = computed(() => {
+  return {
+    labels: funnel.value.map((row) => STAGE_LABELS[row.stage] ?? row.stage),
+    datasets: [
+      {
+        label: 'Candidates',
+        data: funnel.value.map((row) => row.count),
+        backgroundColor: funnel.value.map(
+          (row) => (row.stage === 'hired' ? '#22c55e' : '#c84a1f'), // Using direct hex to avoid CSS var issues in canvas
+        ),
+        borderRadius: 4,
+        barThickness: 24,
+      },
+    ],
+  }
+})
+
+const chartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: 'y' as const,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context: any) {
+          const index = context.dataIndex
+          const row = funnel.value[index]
+          if (!row) return context.parsed.x
+          return ` ${row.count} candidates (${row.rate}% conversion)`
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      display: false,
+      grid: { display: false },
+    },
+    y: {
+      grid: { display: false },
+      ticks: {
+        color: '#64748b',
+        font: {
+          family: 'Inter, system-ui, sans-serif',
+          size: 13,
+        },
+      },
+      border: { display: false },
+    },
+  },
+}))
 
 function fmtHours(h: number | null | undefined) {
   if (h == null) return '—'
@@ -200,28 +265,8 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
           <div v-if="!funnel.length" class="text-center py-8" style="color: var(--ink-subtle)">
             No data yet
           </div>
-          <div v-else class="space-y-2">
-            <div v-for="row in funnel" :key="row.stage" class="flex items-center gap-3">
-              <span class="text-xs w-32 shrink-0 text-right" style="color: var(--ink-muted)">
-                {{ STAGE_LABELS[row.stage] ?? row.stage }}
-              </span>
-              <div
-                class="flex-1 h-5 rounded-sm overflow-hidden"
-                style="background: var(--bg-elevated)"
-              >
-                <div
-                  class="h-full rounded-sm transition-all duration-500"
-                  :style="{
-                    width: funnelMax > 0 ? `${(row.count / funnelMax) * 100}%` : '0%',
-                    background: row.stage === 'hired' ? 'var(--positive)' : 'var(--accent)',
-                    minWidth: row.count > 0 ? '4px' : '0',
-                  }"
-                />
-              </div>
-              <span class="text-xs font-mono w-16 shrink-0" style="color: var(--ink-muted)">
-                {{ row.count }} <span style="color: var(--ink-subtle)">({{ row.rate }}%)</span>
-              </span>
-            </div>
+          <div v-else class="relative w-full" style="height: 400px">
+            <Bar :data="chartData" :options="chartOptions" />
           </div>
         </UCard>
       </div>

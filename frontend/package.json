@@ -20,10 +20,12 @@
     "@pinia/nuxt": "^0.11.0",
     "@sentry/nuxt": "^10.54.0",
     "@vee-validate/zod": "^4.15.1",
+    "chart.js": "^4.5.1",
     "nuxt": "^4.4.6",
     "pinia": "^3.0.0",
     "vee-validate": "^4.15.1",
     "vue": "^3.5.0",
+    "vue-chartjs": "^5.3.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

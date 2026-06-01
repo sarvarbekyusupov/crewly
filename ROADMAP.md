@@ -190,7 +190,7 @@ These are gaps that would hurt a first client or cause silent failures in produc
 | 3 | Resume parsing progress feedback | P2 | S | **Done** |
 | 3 | Skill slice consistency | P2 | XS | **Done** |
 | 3 | Outreach agent type safety | P2 | XS | **Done** |
-| 3 | Analytics visual funnel chart | P2 | M | Planned |
+| 3 | Analytics visual funnel chart | P2 | M | **Done** |
 | 4 | `packages/prompts` extraction | P3 | L | **Done** |
 | 4 | PDF dossier S3 verify/fix | P3 | S | **Done** |
 | 4 | SMS channel (Eskiz) | P3 | L | **Done** |
