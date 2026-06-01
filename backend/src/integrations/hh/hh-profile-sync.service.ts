@@ -109,7 +109,9 @@ export class HhProfileSyncService {
     const body: Record<string, unknown> = {
       area: { id: '97' },
       ...(candidate.currentPosition && { title: candidate.currentPosition }),
-      ...(candidate.skills?.length && { skill_set: candidate.skills.slice(0, 30) }),
+      ...(candidate.skills?.length && {
+        skill_set: candidate.skills.slice(0, 30),
+      }),
       ...(candidate.rawResumeText && {
         skills: candidate.rawResumeText.slice(0, 500),
       }),
@@ -124,13 +126,14 @@ export class HhProfileSyncService {
 
     if (candidate.hhResumeId) {
       await firstValueFrom(
-        this.http.put(
-          `${this.baseUrl}/resumes/${candidate.hhResumeId}`,
-          body,
-          { headers },
-        ),
+        this.http.put(`${this.baseUrl}/resumes/${candidate.hhResumeId}`, body, {
+          headers,
+        }),
       );
-      this.logger.log({ candidateId, hhResumeId: candidate.hhResumeId }, 'HH resume updated');
+      this.logger.log(
+        { candidateId, hhResumeId: candidate.hhResumeId },
+        'HH resume updated',
+      );
       return candidate.hhResumeId;
     }
 

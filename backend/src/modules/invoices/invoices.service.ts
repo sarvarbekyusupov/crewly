@@ -158,7 +158,9 @@ export class InvoicesService {
           });
         }
       })
-      .catch((e) => this.logger.error({ err: e.message }, 'markPaid notification failed'));
+      .catch((e) =>
+        this.logger.error({ err: e.message }, 'markPaid notification failed'),
+      );
 
     return updated;
   }

@@ -18,7 +18,9 @@ export class CronService implements OnModuleInit {
 
   async onModuleInit() {
     try {
-      const specializations = (this.config.get<string>('HH_SPECIALIZATIONS') ?? '1.221')
+      const specializations = (
+        this.config.get<string>('HH_SPECIALIZATIONS') ?? '1.221'
+      )
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);

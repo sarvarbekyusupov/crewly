@@ -46,7 +46,13 @@ describe('SyncHhStatusProcessor', () => {
         SyncHhStatusProcessor,
         { provide: PrismaService, useValue: db },
         { provide: HhClientService, useValue: hh },
-        { provide: HhTokenService, useValue: { refreshCandidateToken: jest.fn(), getValidToken: jest.fn().mockResolvedValue('tok-abc') } },
+        {
+          provide: HhTokenService,
+          useValue: {
+            refreshCandidateToken: jest.fn(),
+            getValidToken: jest.fn().mockResolvedValue('tok-abc'),
+          },
+        },
         { provide: HhNegotiationsService, useValue: hhNegMock },
       ],
     }).compile();

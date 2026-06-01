@@ -36,10 +36,7 @@ export class HhOAuthController {
 
   @Get('connect')
   @UseGuards(CandidateAuthGuard)
-  connect(
-    @CurrentCandidate() candidate: { id: string },
-    @Res() res: Response,
-  ) {
+  connect(@CurrentCandidate() candidate: { id: string }, @Res() res: Response) {
     const url = this.hhOAuth.buildAuthorizeUrl(candidate.id);
     res.redirect(url);
   }
@@ -80,9 +77,7 @@ export class HhOAuthController {
   /** Returns the seeker's active (non-rejected) HH applications. */
   @Get('negotiations')
   @UseGuards(CandidateAuthGuard)
-  async getActiveNegotiations(
-    @CurrentCandidate() candidate: { id: string },
-  ) {
+  async getActiveNegotiations(@CurrentCandidate() candidate: { id: string }) {
     const token = await this.hhToken.getValidToken(candidate.id);
     return this.hhClient.getActiveNegotiations(token);
   }

@@ -14,7 +14,11 @@ export function useStaffApi() {
     },
     onForbidden: () => {
       const { t } = useI18n()
-      useToast().add({ title: t('common.error'), description: t('common.accessDenied'), color: 'error' })
+      useToast().add({
+        title: t('common.error'),
+        description: t('common.accessDenied'),
+        color: 'error',
+      })
     },
     onError: (msg) => {
       const { t } = useI18n()

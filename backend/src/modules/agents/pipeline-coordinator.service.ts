@@ -37,7 +37,9 @@ export class PipelineCoordinator {
   @OnEvent('job.created')
   async handleJobCreated(payload: { jobId: string; companyId: string }) {
     try {
-      this.logger.log(`Job created: ${payload.jobId} - Coordinator deciding...`);
+      this.logger.log(
+        `Job created: ${payload.jobId} - Coordinator deciding...`,
+      );
       const decision = await this.agent.decideNextSteps({
         eventType: 'job.created',
         entityType: 'job',
@@ -45,7 +47,9 @@ export class PipelineCoordinator {
         currentStatus: 'draft',
       });
 
-      this.logger.log(`Coordinator decision for job ${payload.jobId}: ${decision.action} (${decision.reason})`);
+      this.logger.log(
+        `Coordinator decision for job ${payload.jobId}: ${decision.action} (${decision.reason})`,
+      );
 
       if (decision.action === 'trigger_matching') {
         await this.matchQueue.add(
@@ -55,14 +59,19 @@ export class PipelineCoordinator {
         );
       }
     } catch (err: any) {
-      this.logger.error({ jobId: payload.jobId, err: err.message }, 'handleJobCreated failed');
+      this.logger.error(
+        { jobId: payload.jobId, err: err.message },
+        'handleJobCreated failed',
+      );
     }
   }
 
   @OnEvent('job.activated')
   async handleJobActivated(payload: { jobId: string; companyId: string }) {
     try {
-      this.logger.log(`Job activated: ${payload.jobId} - Sourcing Hunter drafting strategy...`);
+      this.logger.log(
+        `Job activated: ${payload.jobId} - Sourcing Hunter drafting strategy...`,
+      );
 
       const job = await this.db.job.findUnique({
         where: { id: payload.jobId },
@@ -80,10 +89,15 @@ export class PipelineCoordinator {
           data: { sourcingStrategy: strategy as any },
         });
 
-        this.logger.log(`Strategic Sourcing memo generated for job ${payload.jobId}`);
+        this.logger.log(
+          `Strategic Sourcing memo generated for job ${payload.jobId}`,
+        );
       }
     } catch (err: any) {
-      this.logger.error({ jobId: payload.jobId, err: err.message }, 'handleJobActivated failed');
+      this.logger.error(
+        { jobId: payload.jobId, err: err.message },
+        'handleJobActivated failed',
+      );
     }
   }
 
@@ -122,44 +136,65 @@ export class PipelineCoordinator {
         },
       );
 
-      this.logger.log(`Coordinator decision for app ${payload.applicationId}: ${decision.action} (${decision.reason})`);
+      this.logger.log(
+        `Coordinator decision for app ${payload.applicationId}: ${decision.action} (${decision.reason})`,
+      );
 
       if (decision.action === 'trigger_screening') {
-        await this.outreachQueue.add('send', { applicationId: app.id }, LLM_JOB_OPTIONS);
+        await this.outreachQueue.add(
+          'send',
+          { applicationId: app.id },
+          LLM_JOB_OPTIONS,
+        );
         this.logger.log(`Autonomous outreach triggered for app ${app.id}`);
       } else if (decision.action === 'notify_human') {
         const creator = (app.job as any).createdBy;
         if (creator?.telegramChatId) {
-          const message = `🎯 **Новый кандидат!**\n\n` +
+          const message =
+            `🎯 **Новый кандидат!**\n\n` +
             `**${(app as any).candidate.fullName}** на роль **${(app as any).job.title}**\n` +
             `**Совпадение:** ${app.matchScore}%\n\n` +
             `**Matchmaker говорит:**\n${(app.matchReasons as any)?.notes || 'Без комментариев'}\n\n` +
-            `**Social Proof:**\n${((app as any).candidate.socialProof as any)?.social_proof_summary || 'Нет данных'}\n\n` +
+            `**Social Proof:**\n${(app as any).candidate.socialProof?.social_proof_summary || 'Нет данных'}\n\n` +
             `**Координатор считает:** ${decision.reason}\n\n` +
             `Что делаем?`;
 
           await this.telegram.sendMessage(creator.telegramChatId, message, {
             parseMode: 'Markdown',
             buttons: [
-              { text: '✅ Одобрить (AI Screen)', callbackData: `approve_screening|${app.id}` },
+              {
+                text: '✅ Одобрить (AI Screen)',
+                callbackData: `approve_screening|${app.id}`,
+              },
               { text: '❌ Пропустить', callbackData: `reject_app|${app.id}` },
             ],
           });
 
-          this.logger.log(`Telegram Command Center alert sent to ${creator.fullName} for app ${app.id}`);
+          this.logger.log(
+            `Telegram Command Center alert sent to ${creator.fullName} for app ${app.id}`,
+          );
         }
       }
     } catch (err: any) {
-      this.logger.error({ applicationId: payload.applicationId, err: err.message }, 'handleApplicationCreated failed');
+      this.logger.error(
+        { applicationId: payload.applicationId, err: err.message },
+        'handleApplicationCreated failed',
+      );
     }
   }
 
   @OnEvent('company.event')
-  async handleCompanyEvent(event: { type: string; companyId: string; payload: any }) {
+  async handleCompanyEvent(event: {
+    type: string;
+    companyId: string;
+    payload: any;
+  }) {
     try {
       if (event.type === 'screening_complete' && event.payload.passed) {
         const { applicationId } = event.payload;
-        this.logger.log(`Screening passed for ${applicationId} - Coordinator deciding...`);
+        this.logger.log(
+          `Screening passed for ${applicationId} - Coordinator deciding...`,
+        );
 
         const decision = await this.agent.decideNextSteps({
           eventType: 'screening_complete',
@@ -168,7 +203,9 @@ export class PipelineCoordinator {
           currentStatus: 'screened_pass',
         });
 
-        this.logger.log(`Coordinator decision for passed screening ${applicationId}: ${decision.action} (${decision.reason})`);
+        this.logger.log(
+          `Coordinator decision for passed screening ${applicationId}: ${decision.action} (${decision.reason})`,
+        );
 
         if (decision.action === 'schedule_interview') {
           const app = await this.db.application.findUnique({
@@ -176,7 +213,9 @@ export class PipelineCoordinator {
             include: { job: { include: { createdBy: true } } },
           });
 
-          const hiringManagerId = (app?.job as any)?.createdBy?.id as string | undefined;
+          const hiringManagerId = (app?.job as any)?.createdBy?.id as
+            | string
+            | undefined;
 
           const start = event.payload.preferredTime
             ? new Date(event.payload.preferredTime)
@@ -202,11 +241,16 @@ export class PipelineCoordinator {
             hiringManagerId,
           );
 
-          this.logger.log(`Autonomous interview scheduled for application ${applicationId}`);
+          this.logger.log(
+            `Autonomous interview scheduled for application ${applicationId}`,
+          );
         }
       }
     } catch (err: any) {
-      this.logger.error({ event, err: err.message }, 'handleCompanyEvent failed');
+      this.logger.error(
+        { event, err: err.message },
+        'handleCompanyEvent failed',
+      );
     }
   }
 }

@@ -80,9 +80,7 @@ describe('useApiBase', () => {
 
       // First call throws 401, second call succeeds
       const mockError = { status: 401 }
-      vi.mocked($fetch)
-        .mockRejectedValueOnce(mockError)
-        .mockResolvedValueOnce({ success: true })
+      vi.mocked($fetch).mockRejectedValueOnce(mockError).mockResolvedValueOnce({ success: true })
 
       const res = await client.get('/test')
 

@@ -30,10 +30,7 @@ interface OutcomesRow {
 const selectedJobId = ref<string>('')
 
 const { data: jobs } = useAsyncData('analytics-jobs', () =>
-  api
-    .get<{ data: Job[] }>('/api/v1/jobs')
-    .then((res) => res.data)
-    .catch(() => [] as Job[]),
+  api.get<{ data: Job[] }>('/api/v1/jobs').then((res) => res.data),
 )
 
 const jobOptions = computed(() => {
@@ -50,42 +47,28 @@ const currentJobQuery = computed(() =>
 
 const { data: funnelRes } = useAsyncData(
   'analytics-pipeline',
-  () =>
-    api
-      .get<FunnelRow[]>('/api/v1/analytics/pipeline', { query: currentJobQuery.value })
-      .catch(() => [] as FunnelRow[]),
+  () => api.get<FunnelRow[]>('/api/v1/analytics/pipeline', { query: currentJobQuery.value }),
   { watch: [selectedJobId] },
 )
 const { data: timingRes } = useAsyncData(
   'analytics-timing',
-  () =>
-    api
-      .get<TimingRow>('/api/v1/analytics/timing', { query: currentJobQuery.value })
-      .catch(() => null),
+  () => api.get<TimingRow>('/api/v1/analytics/timing', { query: currentJobQuery.value }),
   { watch: [selectedJobId] },
 )
 const { data: sourcingRes } = useAsyncData(
   'analytics-sourcing',
-  () =>
-    api
-      .get<SourcingRow[]>('/api/v1/analytics/sourcing', { query: currentJobQuery.value })
-      .catch(() => [] as SourcingRow[]),
+  () => api.get<SourcingRow[]>('/api/v1/analytics/sourcing', { query: currentJobQuery.value }),
   { watch: [selectedJobId] },
 )
 const { data: outcomesRes } = useAsyncData(
   'analytics-outcomes',
-  () =>
-    api
-      .get<OutcomesRow>('/api/v1/analytics/outcomes', { query: currentJobQuery.value })
-      .catch(() => null),
+  () => api.get<OutcomesRow>('/api/v1/analytics/outcomes', { query: currentJobQuery.value }),
   { watch: [selectedJobId] },
 )
 const { data: agentsRes } = useAsyncData(
   'analytics-agents',
   () =>
-    api
-      .get<AgentActivityResponse>('/api/v1/analytics/agents', { query: currentJobQuery.value })
-      .catch(() => null),
+    api.get<AgentActivityResponse>('/api/v1/analytics/agents', { query: currentJobQuery.value }),
   { watch: [selectedJobId] },
 )
 

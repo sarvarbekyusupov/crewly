@@ -67,7 +67,9 @@ describe('HhJobsAdapter', () => {
 
   it('throws error on API error', async () => {
     httpGet.mockReturnValue(throwError(() => new Error('Network error')));
-    await expect(adapter.fetchPage({ page: 0 })).rejects.toThrow('Network error');
+    await expect(adapter.fetchPage({ page: 0 })).rejects.toThrow(
+      'Network error',
+    );
   });
 
   it('hasMore is true when more pages available', async () => {

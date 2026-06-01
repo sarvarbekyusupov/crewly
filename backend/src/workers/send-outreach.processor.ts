@@ -68,8 +68,7 @@ export class SendOutreachProcessor {
 
     const hasTelegram = !!app.candidate.telegramUserId;
     const hasEmail = !!app.candidate.email;
-    const hasHhInvite =
-      !!app.candidate.externalId && !!app.job.hhVacancyId;
+    const hasHhInvite = !!app.candidate.externalId && !!app.job.hhVacancyId;
     const hasSms = !!app.candidate.phone;
     const channel = hasHhInvite
       ? 'hh'
@@ -116,7 +115,10 @@ export class SendOutreachProcessor {
     } catch (err: any) {
       // P2002 = unique constraint violation → duplicate outreach already in flight
       if (err?.code === 'P2002') {
-        this.logger.warn({ applicationId, channel }, 'Duplicate outreach detected — skipping');
+        this.logger.warn(
+          { applicationId, channel },
+          'Duplicate outreach detected — skipping',
+        );
         return;
       }
       throw err;
@@ -127,7 +129,9 @@ export class SendOutreachProcessor {
         name: app.candidate.fullName ?? 'кандидат',
         currentPosition: app.candidate.currentPosition,
         skills: app.candidate.skills,
-        socialProof: (app.candidate.socialProof ?? undefined) as Record<string, unknown> | undefined,
+        socialProof: (app.candidate.socialProof ?? undefined) as
+          | Record<string, unknown>
+          | undefined,
       },
       {
         title: app.job.title,

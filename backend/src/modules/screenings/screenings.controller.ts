@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/types/auth-user';
@@ -20,12 +28,18 @@ export class ScreeningsController {
   }
 
   @Post('applications/:applicationId/screenings')
-  create(@CurrentUser() user: AuthUser, @Param('applicationId', ParseUUIDPipe) appId: string) {
+  create(
+    @CurrentUser() user: AuthUser,
+    @Param('applicationId', ParseUUIDPipe) appId: string,
+  ) {
     return this.svc.create(appId, user.companyId);
   }
 
   @Get('screenings/:id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.findOne(id, user.companyId);
   }
 
@@ -33,7 +47,9 @@ export class ScreeningsController {
   escalate(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(z.object({ reason: z.string().min(1).max(1000) })))
+    @Body(
+      new ZodValidationPipe(z.object({ reason: z.string().min(1).max(1000) })),
+    )
     body: { reason: string },
   ) {
     return this.svc.escalate(id, user.companyId, body.reason);

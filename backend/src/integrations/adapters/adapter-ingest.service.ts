@@ -25,8 +25,7 @@ export class AdapterIngestService {
     const source = await this.db.candidateSource.findUnique({
       where: { name: sourceName },
     });
-    if (!source)
-      throw new Error(`${sourceName} source not configured in DB`);
+    if (!source) throw new Error(`${sourceName} source not configured in DB`);
 
     // Dedup: sourceId+externalId → email → phone
     let existing = await this.db.candidate.findFirst({
@@ -57,10 +56,7 @@ export class AdapterIngestService {
           email: profile.email ?? existing.email,
           phone: profile.phone ?? existing.phone,
           fullName: profile.fullName || existing.fullName,
-          fullNameNormalized: (
-            profile.fullName ||
-            (existing.fullName ?? '')
-          )
+          fullNameNormalized: (profile.fullName || (existing.fullName ?? ''))
             .toLowerCase()
             .trim(),
           city: profile.city ?? existing.city,
@@ -73,10 +69,7 @@ export class AdapterIngestService {
           payload: profile.rawPayload as any,
         },
       });
-      await this.parseQueue.add(
-        { candidateId: existing.id },
-        LLM_JOB_OPTIONS,
-      );
+      await this.parseQueue.add({ candidateId: existing.id }, LLM_JOB_OPTIONS);
       return candidate;
     } else {
       const candidate = await this.db.candidate.create({
@@ -101,10 +94,7 @@ export class AdapterIngestService {
           payload: profile.rawPayload as any,
         },
       });
-      await this.parseQueue.add(
-        { candidateId: candidate.id },
-        LLM_JOB_OPTIONS,
-      );
+      await this.parseQueue.add({ candidateId: candidate.id }, LLM_JOB_OPTIONS);
       return candidate;
     }
   }

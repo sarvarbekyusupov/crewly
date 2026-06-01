@@ -38,12 +38,18 @@ export class CandidatesController {
   }
 
   @Get(':id/outreach-history')
-  getOutreachHistory(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  getOutreachHistory(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.getOutreachHistory(user.companyId, id);
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.findOne(user.companyId, id);
   }
 

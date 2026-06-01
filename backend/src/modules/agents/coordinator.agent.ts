@@ -54,7 +54,11 @@ export class CoordinatorAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'orchestration_decision',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.3, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 512,
+        temperature: 0.3,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {

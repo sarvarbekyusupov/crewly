@@ -39,7 +39,11 @@ describe('PaymeWebhookService', () => {
 
   describe('handleRpc — method dispatch', () => {
     it('returns error for unknown method', async () => {
-      const res = await service.handleRpc({ method: 'Unknown', params: {}, id: 1 });
+      const res = await service.handleRpc({
+        method: 'Unknown',
+        params: {},
+        id: 1,
+      });
       expect(res.error?.code).toBe(-32601);
     });
   });
@@ -74,7 +78,11 @@ describe('PaymeWebhookService', () => {
     });
 
     it('returns CanNotPerformTransaction when already paid', async () => {
-      db.invoice.findUnique.mockResolvedValue({ id: invoiceId, status: 'paid', totalUzs: BigInt(100) });
+      db.invoice.findUnique.mockResolvedValue({
+        id: invoiceId,
+        status: 'paid',
+        totalUzs: BigInt(100),
+      });
       const res = await service.handleRpc({
         method: 'CheckPerformTransaction',
         params: { amount: 10000, account: { invoice_id: invoiceId } },
@@ -84,7 +92,11 @@ describe('PaymeWebhookService', () => {
     });
 
     it('returns InvalidAmount when amount does not match', async () => {
-      db.invoice.findUnique.mockResolvedValue({ id: invoiceId, status: 'issued', totalUzs: BigInt(100) });
+      db.invoice.findUnique.mockResolvedValue({
+        id: invoiceId,
+        status: 'issued',
+        totalUzs: BigInt(100),
+      });
       const res = await service.handleRpc({
         method: 'CheckPerformTransaction',
         // 100 * 100 = 10000, but we send 9999
@@ -95,7 +107,11 @@ describe('PaymeWebhookService', () => {
     });
 
     it('returns allow: true for valid invoice and amount', async () => {
-      db.invoice.findUnique.mockResolvedValue({ id: invoiceId, status: 'issued', totalUzs: BigInt(100) });
+      db.invoice.findUnique.mockResolvedValue({
+        id: invoiceId,
+        status: 'issued',
+        totalUzs: BigInt(100),
+      });
       const res = await service.handleRpc({
         method: 'CheckPerformTransaction',
         params: { amount: 10000, account: { invoice_id: invoiceId } },
@@ -123,7 +139,12 @@ describe('PaymeWebhookService', () => {
       });
       const res = await service.handleRpc({
         method: 'CreateTransaction',
-        params: { id: txId, time: 1000, amount: 10000, account: { invoice_id: invoiceId } },
+        params: {
+          id: txId,
+          time: 1000,
+          amount: 10000,
+          account: { invoice_id: invoiceId },
+        },
         id: 2,
       });
       expect((res.result as any)?.transaction).toBe(txId);

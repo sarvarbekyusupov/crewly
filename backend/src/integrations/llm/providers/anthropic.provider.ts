@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { NonRetryableError } from '../../../workers/errors';
-import { LlmProvider, LlmCompletionOpts, LlmCompletionResult } from './llm-provider.interface';
+import {
+  LlmProvider,
+  LlmCompletionOpts,
+  LlmCompletionResult,
+} from './llm-provider.interface';
 
 const GROQ_TO_ANTHROPIC: Record<string, string> = {
   'llama-3.3-70b-versatile': 'claude-haiku-4-5-20251001',
@@ -18,7 +22,8 @@ export class AnthropicProvider implements LlmProvider {
   constructor(config: ConfigService) {
     const key = config.get<string>('ANTHROPIC_API_KEY');
     this.client = key ? new Anthropic({ apiKey: key }) : null;
-    if (!this.client) this.logger.warn('ANTHROPIC_API_KEY not set — Anthropic unavailable');
+    if (!this.client)
+      this.logger.warn('ANTHROPIC_API_KEY not set — Anthropic unavailable');
   }
 
   isAvailable(): boolean {
@@ -44,7 +49,7 @@ export class AnthropicProvider implements LlmProvider {
 
       const output = response.content
         .filter((b) => b.type === 'text')
-        .map((b) => (b as Anthropic.TextBlock).text)
+        .map((b) => b.text)
         .join('');
 
       return {
@@ -57,7 +62,9 @@ export class AnthropicProvider implements LlmProvider {
       };
     } catch (e: any) {
       if (e.status === 400 || e.status === 401 || e.status === 403) {
-        throw new NonRetryableError(`Anthropic non-retriable: ${e.status} ${e.message}`);
+        throw new NonRetryableError(
+          `Anthropic non-retriable: ${e.status} ${e.message}`,
+        );
       }
       throw e;
     }

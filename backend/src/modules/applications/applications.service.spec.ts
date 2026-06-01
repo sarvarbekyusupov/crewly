@@ -24,25 +24,59 @@ describe('ApplicationsService', () => {
         create: jest.fn().mockResolvedValue({ id: 'p1' }),
         findFirst: jest.fn().mockResolvedValue(null),
       },
-      invoice: { findFirst: jest.fn(), create: jest.fn().mockResolvedValue({ id: 'i1' }) },
+      invoice: {
+        findFirst: jest.fn(),
+        create: jest.fn().mockResolvedValue({ id: 'i1' }),
+      },
       application: { update: jest.fn().mockResolvedValue({}) },
       job: { update: jest.fn().mockResolvedValue({}) },
     };
 
     db = {
       application: {
-        findFirst: jest.fn().mockResolvedValue({ id: applicationId, companyId: companyA, status: 'matched', candidateId: 'c1', jobId: 'job-1' }),
-        findUnique: jest.fn().mockResolvedValue({ id: applicationId, companyId: companyA, status: 'matched', candidateId: 'c1', jobId: 'job-1' }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: applicationId,
+          companyId: companyA,
+          status: 'matched',
+          candidateId: 'c1',
+          jobId: 'job-1',
+        }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: applicationId,
+          companyId: companyA,
+          status: 'matched',
+          candidateId: 'c1',
+          jobId: 'job-1',
+        }),
         update: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       },
-      candidate: { findUnique: jest.fn().mockResolvedValue({ id: 'c1', fullName: 'Alice' }) },
-      job: { findUnique: jest.fn().mockResolvedValue({ id: 'job-1', title: 'Dev', feePercentage: 12, feeBasis: 'annual' }) },
-      company: { findUnique: jest.fn().mockResolvedValue({ id: companyA, paymentTermsDays: 30, guaranteePeriodDays: 90 }) },
+      candidate: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: 'c1', fullName: 'Alice' }),
+      },
+      job: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'job-1',
+          title: 'Dev',
+          feePercentage: 12,
+          feeBasis: 'annual',
+        }),
+      },
+      company: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: companyA,
+          paymentTermsDays: 30,
+          guaranteePeriodDays: 90,
+        }),
+      },
       placement: { findFirst: jest.fn().mockResolvedValue(null) },
-      user: { findFirst: jest.fn().mockResolvedValue({ id: 'u1', email: 'u@ex.com' }) },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'u1', email: 'u@ex.com' }),
+      },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn((cb) => cb(tx)),
     };
@@ -76,7 +110,13 @@ describe('ApplicationsService', () => {
 
   describe('findOne (tenant isolation)', () => {
     it('returns application when companyId matches', async () => {
-      const app = { id: applicationId, companyId: companyA, status: 'matched', candidateId: 'c1', jobId: 'job-1' };
+      const app = {
+        id: applicationId,
+        companyId: companyA,
+        status: 'matched',
+        candidateId: 'c1',
+        jobId: 'job-1',
+      };
       (db.application.findFirst as jest.Mock).mockResolvedValue(app);
 
       const result = await service.findOne(companyA, applicationId);
@@ -117,9 +157,9 @@ describe('ApplicationsService', () => {
 
     it('throws when already placed', async () => {
       (db.placement.findFirst as jest.Mock).mockResolvedValue({ id: 'p1' });
-      await expect(service.hire(companyA, applicationId, hirePayload)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.hire(companyA, applicationId, hirePayload),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('creates placement and invoice', async () => {
@@ -161,9 +201,9 @@ describe('ApplicationsService', () => {
   describe('retryOutreach', () => {
     it('throws when application not found', async () => {
       (db.application.findFirst as jest.Mock).mockResolvedValue(null);
-      await expect(service.retryOutreach(companyA, applicationId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.retryOutreach(companyA, applicationId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequest when not no_contact status', async () => {
@@ -174,9 +214,9 @@ describe('ApplicationsService', () => {
         candidateId: 'c1',
         jobId: 'job-1',
       });
-      await expect(service.retryOutreach(companyA, applicationId)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.retryOutreach(companyA, applicationId),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

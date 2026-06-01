@@ -74,7 +74,9 @@ export class AdvanceScreeningProcessor {
       {
         fullName: screening.application.candidate.fullName ?? 'Unknown',
         skills: screening.application.candidate.skills,
-        yearsExperience: Number(screening.application.candidate.yearsExperience ?? 0),
+        yearsExperience: Number(
+          screening.application.candidate.yearsExperience ?? 0,
+        ),
       },
       messages,
       screeningId,

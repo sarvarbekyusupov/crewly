@@ -29,7 +29,7 @@ export class SchedulingService {
       where: { id: app.candidateId },
       select: { fullName: true, email: true },
     });
-    
+
     const job = await this.db.job.findUnique({
       where: { id: app.jobId },
       select: { title: true },

@@ -28,7 +28,10 @@ export class AnalyticsController {
    * Pipeline funnel: count of applications per status + conversion rates.
    */
   @Get('pipeline')
-  async pipeline(@CurrentUser() user: AuthUser, @Query('jobId') jobId?: string) {
+  async pipeline(
+    @CurrentUser() user: AuthUser,
+    @Query('jobId') jobId?: string,
+  ) {
     const companyId: string = user.companyId;
 
     const where = {

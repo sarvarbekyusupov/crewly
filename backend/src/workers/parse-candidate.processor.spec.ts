@@ -112,6 +112,8 @@ describe('ParseCandidateProcessor', () => {
     agent.parseResume.mockRejectedValue(new Error('Parse error'));
     db.candidate.update.mockResolvedValue({});
 
-    await expect(processor.handle(makeJob({ candidateId }))).rejects.toThrow('Parse error');
+    await expect(processor.handle(makeJob({ candidateId }))).rejects.toThrow(
+      'Parse error',
+    );
   });
 });

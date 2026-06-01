@@ -40,8 +40,11 @@ describe('useStaffApi', () => {
 
     await client.get('/staff-profile')
 
-    expect($fetch).toHaveBeenCalledWith('/staff-profile', expect.objectContaining({
-      baseURL: 'http://localhost:3000',
-    }))
+    expect($fetch).toHaveBeenCalledWith(
+      '/staff-profile',
+      expect.objectContaining({
+        baseURL: 'http://localhost:3000',
+      }),
+    )
   })
 })

@@ -10,11 +10,20 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 export class StaffService {
   constructor(private readonly db: PrismaService) {}
 
-  async login(email: string, password: string): Promise<{ token: string; staff: { id: string; email: string; role: string } }> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{
+    token: string;
+    staff: { id: string; email: string; role: string };
+  }> {
     const staff = await this.db.staff.findUnique({ where: { email } });
     const hashToVerify = staff?.passwordHash ?? DUMMY_HASH;
-    const valid = await argon2.verify(hashToVerify, password).catch(() => false);
-    if (!staff || !valid) throw new UnauthorizedException('Invalid credentials');
+    const valid = await argon2
+      .verify(hashToVerify, password)
+      .catch(() => false);
+    if (!staff || !valid)
+      throw new UnauthorizedException('Invalid credentials');
 
     const token = generateRawToken();
     const tokenHash = hashToken(token);
@@ -26,16 +35,23 @@ export class StaffService {
       },
     });
 
-    return { token, staff: { id: staff.id, email: staff.email, role: staff.role } };
+    return {
+      token,
+      staff: { id: staff.id, email: staff.email, role: staff.role },
+    };
   }
 
   async refresh(rawToken: string): Promise<string> {
     const tokenHash = hashToken(rawToken);
-    const session = await this.db.staffSession.findUnique({ where: { tokenHash } });
+    const session = await this.db.staffSession.findUnique({
+      where: { tokenHash },
+    });
 
     if (!session || session.expiresAt <= new Date()) {
       if (session) {
-        this.db.staffSession.delete({ where: { id: session.id } }).catch(() => {});
+        this.db.staffSession
+          .delete({ where: { id: session.id } })
+          .catch(() => {});
       }
       throw new UnauthorizedException('Session expired');
     }

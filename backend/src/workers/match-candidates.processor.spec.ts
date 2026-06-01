@@ -28,6 +28,7 @@ describe('MatchCandidatesProcessor', () => {
       },
       $queryRaw: rawMock,
       $queryRawUnsafe: rawMock,
+      $transaction: jest.fn((queries) => Promise.all(queries)),
     };
     agent = { rankCandidates: jest.fn() };
     emitter = { emit: jest.fn() };

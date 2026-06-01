@@ -35,7 +35,12 @@ const MatchmakerResultSchema = z.object({
   strengths: z.array(z.string()),
   gaps: z.array(z.string()),
   notes: z.string().optional(),
-  recommendation: z.enum(['strong fit', 'good fit', 'possible fit', 'weak fit']),
+  recommendation: z.enum([
+    'strong fit',
+    'good fit',
+    'possible fit',
+    'weak fit',
+  ]),
 });
 
 const ParsedResumeSchema = z.object({
@@ -124,7 +129,11 @@ export class MatchmakerAgent extends BaseAgent {
     }>,
     targetCount = 10,
   ): Promise<MatchmakerResult[]> {
-    const rerankPrompt = matchmakerRankCandidatesPrompt(job, candidates, targetCount);
+    const rerankPrompt = matchmakerRankCandidatesPrompt(
+      job,
+      candidates,
+      targetCount,
+    );
 
     const { output } = await this.runLlm(
       'match_rerank',
@@ -140,7 +149,9 @@ export class MatchmakerAgent extends BaseAgent {
       const parsed = JSON.parse(output);
       return z.array(MatchmakerResultSchema).parse(parsed);
     } catch (e: any) {
-      throw new Error(`MatchmakerAgent failed to parse LLM output: ${e.message}`);
+      throw new Error(
+        `MatchmakerAgent failed to parse LLM output: ${e.message}`,
+      );
     }
   }
 
@@ -148,23 +159,44 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'parse_resume',
       [{ role: 'user', content: `Resume:\n${rawText.slice(0, 8000)}` }],
-      { system: MATCHMAKER_PARSE_RESUME_SYSTEM, maxTokens: 3000, responseFormat: { type: 'json_object' } },
-      candidateId ? { related_entity_type: 'candidate', related_entity_id: candidateId } : {},
+      {
+        system: MATCHMAKER_PARSE_RESUME_SYSTEM,
+        maxTokens: 3000,
+        responseFormat: { type: 'json_object' },
+      },
+      candidateId
+        ? { related_entity_type: 'candidate', related_entity_id: candidateId }
+        : {},
     );
 
     try {
       const parsed = JSON.parse(output);
       return ParsedResumeSchema.parse(parsed);
     } catch (e: any) {
-      throw new Error(`MatchmakerAgent failed to parse resume JSON: ${e.message}`);
+      throw new Error(
+        `MatchmakerAgent failed to parse resume JSON: ${e.message}`,
+      );
     }
   }
 
-  async parseJobDescription(title: string, description: string, jobId?: string) {
+  async parseJobDescription(
+    title: string,
+    description: string,
+    jobId?: string,
+  ) {
     const { output } = await this.runLlm(
       'parse_job',
-      [{ role: 'user', content: `Job Title: ${title}\n\nDescription:\n${description}` }],
-      { system: MATCHMAKER_PARSE_JOB_SYSTEM, maxTokens: 2048, responseFormat: { type: 'json_object' } },
+      [
+        {
+          role: 'user',
+          content: `Job Title: ${title}\n\nDescription:\n${description}`,
+        },
+      ],
+      {
+        system: MATCHMAKER_PARSE_JOB_SYSTEM,
+        maxTokens: 2048,
+        responseFormat: { type: 'json_object' },
+      },
       jobId ? { related_entity_type: 'job', related_entity_id: jobId } : {},
     );
 

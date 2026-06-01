@@ -17,7 +17,7 @@ export class SeekerAgent extends BaseAgent {
       {
         name: 'CareerPilot',
         role: 'Personal Career Agent',
-        goal: 'Autonomously manage a candidate\'s job search, identifying the best roles and applying with high-impact, personalized cover letters.',
+        goal: "Autonomously manage a candidate's job search, identifying the best roles and applying with high-impact, personalized cover letters.",
         backstory:
           'You are a dedicated career agent for top-tier talent. Your only loyalty is to your candidate. You sift through hundreds of jobs to find the perfect fit, ensuring the candidate only applies to roles that match their career trajectory, salary goals, and lifestyle preferences.',
       },
@@ -53,7 +53,11 @@ export class SeekerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'seeker_application_decision',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 1024,
+        temperature: 0.3,
+        responseFormat: { type: 'json_object' },
+      },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
         : {},

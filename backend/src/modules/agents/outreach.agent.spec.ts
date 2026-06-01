@@ -59,7 +59,12 @@ describe('OutreachAgent', () => {
   it('passes applicationId to context when provided', async () => {
     llm.run.mockResolvedValue({ output: 'Hi Bob!' });
 
-    await agent.generatePersonalizedMessage(candidate, job, undefined, 'app-42');
+    await agent.generatePersonalizedMessage(
+      candidate,
+      job,
+      undefined,
+      'app-42',
+    );
 
     expect(llm.run).toHaveBeenCalledWith(
       expect.any(String),

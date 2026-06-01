@@ -68,7 +68,11 @@ describe('SendOutreachProcessor', () => {
     telegram = { sendMessage: jest.fn().mockResolvedValue({}) };
     email = { send: jest.fn().mockResolvedValue('resend-id-123') };
     eskiz = { sendSms: jest.fn().mockResolvedValue(true) };
-    agent = { generatePersonalizedMessage: jest.fn().mockResolvedValue('Hello candidate!') };
+    agent = {
+      generatePersonalizedMessage: jest
+        .fn()
+        .mockResolvedValue('Hello candidate!'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -239,7 +243,7 @@ describe('SendOutreachProcessor', () => {
       },
       job: { id: 'j1', title: 'Dev', companyId: 'co1', requiredSkills: [] },
     });
-    
+
     const p2002Error = new Error('Unique constraint failed') as any;
     p2002Error.code = 'P2002';
     db.conversation.create.mockRejectedValueOnce(p2002Error);
@@ -259,15 +263,22 @@ describe('SendOutreachProcessor', () => {
           { provide: PrismaService, useValue: db },
           { provide: TelegramBotService, useValue: telegram },
           { provide: EmailService, useValue: email },
-          { provide: EskizService, useValue: { sendSms: jest.fn().mockResolvedValue(true) } },
+          {
+            provide: EskizService,
+            useValue: { sendSms: jest.fn().mockResolvedValue(true) },
+          },
           { provide: OutreachAgent, useValue: agent },
           {
             provide: HhClientService,
-            useValue: { checkSuitableResume: jest.fn().mockResolvedValue(true) },
+            useValue: {
+              checkSuitableResume: jest.fn().mockResolvedValue(true),
+            },
           },
           {
             provide: HhNegotiationsService,
-            useValue: { inviteCandidate: jest.fn().mockResolvedValue('neg-hh-1') },
+            useValue: {
+              inviteCandidate: jest.fn().mockResolvedValue('neg-hh-1'),
+            },
           },
         ],
       }).compile();
@@ -278,7 +289,10 @@ describe('SendOutreachProcessor', () => {
       await proc.handle(makeJob({ applicationId }));
 
       expect(hhNegotiations.inviteCandidate).toHaveBeenCalledWith(
-        expect.objectContaining({ vacancyId: 'vac-777', resumeId: 'ext-resume-42' }),
+        expect.objectContaining({
+          vacancyId: 'vac-777',
+          resumeId: 'ext-resume-42',
+        }),
       );
       expect(db.application.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -296,11 +310,16 @@ describe('SendOutreachProcessor', () => {
           { provide: PrismaService, useValue: db },
           { provide: TelegramBotService, useValue: telegram },
           { provide: EmailService, useValue: email },
-          { provide: EskizService, useValue: { sendSms: jest.fn().mockResolvedValue(true) } },
+          {
+            provide: EskizService,
+            useValue: { sendSms: jest.fn().mockResolvedValue(true) },
+          },
           { provide: OutreachAgent, useValue: agent },
           {
             provide: HhClientService,
-            useValue: { checkSuitableResume: jest.fn().mockResolvedValue(false) },
+            useValue: {
+              checkSuitableResume: jest.fn().mockResolvedValue(false),
+            },
           },
           {
             provide: HhNegotiationsService,

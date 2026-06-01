@@ -63,7 +63,10 @@ export class ApplicationsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.findOne(user.companyId, id);
   }
 
@@ -80,7 +83,10 @@ export class ApplicationsController {
 
   @Post(':id/approve')
   @RequireRole('hiring_manager')
-  approve(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  approve(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.approve(user.companyId, id, user.id);
   }
 
@@ -97,13 +103,19 @@ export class ApplicationsController {
 
   @Post(':id/mark-interviewed')
   @RequireRole('hiring_manager')
-  markInterviewed(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  markInterviewed(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.markInterviewed(user.companyId, id, user.id);
   }
 
   @Post(':id/make-offer')
   @RequireRole('hiring_manager')
-  makeOffer(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  makeOffer(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.makeOffer(user.companyId, id, user.id);
   }
 
@@ -125,7 +137,12 @@ export class ApplicationsController {
     @Body(new ZodValidationPipe(ScheduleInterviewSchema))
     dto: ScheduleInterviewDto,
   ) {
-    return this.schedulingSvc.scheduleInterview(user.companyId, id, dto, user.id);
+    return this.schedulingSvc.scheduleInterview(
+      user.companyId,
+      id,
+      dto,
+      user.id,
+    );
   }
 
   @Post(':id/debrief')
@@ -148,7 +165,8 @@ export class ApplicationsController {
   uploadTranscript(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(UploadTranscriptSchema)) body: UploadTranscriptDto,
+    @Body(new ZodValidationPipe(UploadTranscriptSchema))
+    body: UploadTranscriptDto,
   ) {
     return this.svc.uploadAndAnalyzeTranscript(
       user.companyId,
@@ -159,13 +177,19 @@ export class ApplicationsController {
   }
 
   @Get(':id/dossier')
-  getDossier(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  getDossier(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.getDossier(user.companyId, id);
   }
 
   @Post(':id/retry-outreach')
   @RequireRole('hiring_manager')
-  retryOutreach(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  retryOutreach(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.retryOutreach(user.companyId, id);
   }
 

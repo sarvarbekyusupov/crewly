@@ -100,10 +100,9 @@ export class HhClientService {
 
   async getVacancyDetail(vacancyId: string): Promise<HhVacancyDetail> {
     const response = await firstValueFrom(
-      this.http.get<HhVacancyDetail>(
-        `${this.baseUrl}/vacancies/${vacancyId}`,
-        { headers: this.headers },
-      ),
+      this.http.get<HhVacancyDetail>(`${this.baseUrl}/vacancies/${vacancyId}`, {
+        headers: this.headers,
+      }),
     );
     return response.data;
   }
@@ -152,7 +151,10 @@ export class HhClientService {
         `${this.baseUrl}/employers/${employerId}/resumes/views`,
         {
           headers: this.headers,
-          params: { per_page: 100, ...(vacancyId && { vacancy_id: vacancyId }) },
+          params: {
+            per_page: 100,
+            ...(vacancyId && { vacancy_id: vacancyId }),
+          },
         },
       ),
     );
@@ -222,16 +224,13 @@ export class HhClientService {
   ): Promise<void> {
     const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     await firstValueFrom(
-      this.http.delete(
-        `${this.baseUrl}/negotiations/active/${negotiationId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${candidateToken}`,
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-          },
+      this.http.delete(`${this.baseUrl}/negotiations/active/${negotiationId}`, {
+        headers: {
+          Authorization: `Bearer ${candidateToken}`,
+          'User-Agent': userAgent,
+          'HH-User-Agent': userAgent,
         },
-      ),
+      }),
     );
   }
 

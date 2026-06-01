@@ -85,6 +85,8 @@ describe('useStaffEventStream', () => {
     MockEventSource.instance?.onmessage?.(mockEvent)
 
     expect(mockStaffEventsStore.eventCount).toBe(1)
-    expect(mockStaffEventsStore.lastEvent).toEqual(expect.objectContaining({ type: 'ingestion_progress' }))
+    expect(mockStaffEventsStore.lastEvent).toEqual(
+      expect.objectContaining({ type: 'ingestion_progress' }),
+    )
   })
 })

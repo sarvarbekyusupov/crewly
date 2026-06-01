@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Groq from 'groq-sdk';
 import { NonRetryableError } from '../../../workers/errors';
-import { LlmProvider, LlmCompletionOpts, LlmCompletionResult } from './llm-provider.interface';
+import {
+  LlmProvider,
+  LlmCompletionOpts,
+  LlmCompletionResult,
+} from './llm-provider.interface';
 
 @Injectable()
 export class GroqProvider implements LlmProvider {
@@ -13,7 +17,8 @@ export class GroqProvider implements LlmProvider {
   constructor(config: ConfigService) {
     const key = config.get<string>('GROQ_API_KEY');
     this.client = key ? new Groq({ apiKey: key }) : null;
-    if (!this.client) this.logger.warn('GROQ_API_KEY not set — Groq unavailable');
+    if (!this.client)
+      this.logger.warn('GROQ_API_KEY not set — Groq unavailable');
   }
 
   isAvailable(): boolean {
@@ -28,7 +33,9 @@ export class GroqProvider implements LlmProvider {
 
     const model = opts.model ?? 'llama-3.3-70b-versatile';
     const groqMessages: Groq.Chat.ChatCompletionMessageParam[] = [
-      ...(opts.system ? [{ role: 'system' as const, content: opts.system }] : []),
+      ...(opts.system
+        ? [{ role: 'system' as const, content: opts.system }]
+        : []),
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
@@ -38,7 +45,9 @@ export class GroqProvider implements LlmProvider {
         messages: groqMessages,
         max_tokens: opts.maxTokens ?? 4096,
         temperature: opts.temperature ?? 0.3,
-        ...(opts.responseFormat ? { response_format: opts.responseFormat } : {}),
+        ...(opts.responseFormat
+          ? { response_format: opts.responseFormat }
+          : {}),
       });
 
       return {
@@ -51,7 +60,9 @@ export class GroqProvider implements LlmProvider {
       };
     } catch (e: any) {
       if (e.status === 400 || e.status === 401 || e.status === 403) {
-        throw new NonRetryableError(`Groq non-retriable: ${e.status} ${e.message}`);
+        throw new NonRetryableError(
+          `Groq non-retriable: ${e.status} ${e.message}`,
+        );
       }
       throw e;
     }

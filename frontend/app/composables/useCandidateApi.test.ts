@@ -40,8 +40,11 @@ describe('useCandidateApi', () => {
 
     await client.get('/cand-profile')
 
-    expect($fetch).toHaveBeenCalledWith('/cand-profile', expect.objectContaining({
-      baseURL: 'http://localhost:3000',
-    }))
+    expect($fetch).toHaveBeenCalledWith(
+      '/cand-profile',
+      expect.objectContaining({
+        baseURL: 'http://localhost:3000',
+      }),
+    )
   })
 })

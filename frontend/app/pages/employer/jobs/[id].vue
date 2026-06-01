@@ -5,7 +5,6 @@ const { t } = useI18n()
 const api = useApi()
 const toast = useToast()
 const route = useRoute()
-const router = useRouter()
 const auth = useAuthStore()
 
 const jobId = route.params.id as string

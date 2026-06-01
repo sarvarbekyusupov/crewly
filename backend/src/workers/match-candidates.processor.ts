@@ -4,7 +4,10 @@ import { Job } from 'bull';
 import { NonRetryableError } from './errors';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { MatchmakerAgent, MatchmakerResult } from '../modules/agents/matchmaker.agent';
+import {
+  MatchmakerAgent,
+  MatchmakerResult,
+} from '../modules/agents/matchmaker.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { QUEUES } from './queue-names';
 import { stripLlmJson } from './utils';
@@ -44,7 +47,8 @@ export class MatchCandidatesProcessor {
     const hhVacancyId = (dbJob as any).hhVacancyId as string | null;
     if (hhVacancyId) {
       try {
-        const potentialResumes = await this.hhClient.getPotentialResumes(hhVacancyId);
+        const potentialResumes =
+          await this.hhClient.getPotentialResumes(hhVacancyId);
         if (potentialResumes.length) {
           const resumeIds = potentialResumes.map((r) => r.id);
           const matched = await this.db.candidate.findMany({
@@ -62,7 +66,10 @@ export class MatchCandidatesProcessor {
           );
         }
       } catch (err: any) {
-        this.logger.warn({ jobId, err: err.message }, 'potential_resumes fetch skipped');
+        this.logger.warn(
+          { jobId, err: err.message },
+          'potential_resumes fetch skipped',
+        );
       }
     }
 
@@ -148,7 +155,8 @@ export class MatchCandidatesProcessor {
           title: dbJob.title,
           requiredSkills: dbJob.requiredSkills,
           minExperienceYears: dbJob.minExperienceYears ?? undefined,
-          hiringManagerFeedbackContext: (dbJob as any).hiringManagerFeedbackContext,
+          hiringManagerFeedbackContext: (dbJob as any)
+            .hiringManagerFeedbackContext,
         },
         candidateDetails.map((c) => ({
           ...c,
@@ -159,7 +167,10 @@ export class MatchCandidatesProcessor {
         targetCount,
       );
     } catch (err) {
-      this.logger.error({ jobId, error: err.message }, 'MatchmakerAgent failed');
+      this.logger.error(
+        { jobId, error: err.message },
+        'MatchmakerAgent failed',
+      );
       // Fallback: use top N by vector similarity
       ranked = candidates.slice(0, targetCount).map((c) => ({
         id: c.id,

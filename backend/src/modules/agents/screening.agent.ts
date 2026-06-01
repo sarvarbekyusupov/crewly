@@ -49,7 +49,7 @@ export class ScreeningAgent extends BaseAgent {
         role: 'AI Recruiter',
         goal: 'Assess technical skills, experience, motivation, and job fit through a conversational interview.',
         backstory:
-          'You are a professional and friendly AI recruiter. You know how to ask probing questions to validate a candidate\'s claims and evaluate their cultural fit.',
+          "You are a professional and friendly AI recruiter. You know how to ask probing questions to validate a candidate's claims and evaluate their cultural fit.",
       },
       llm,
     );
@@ -71,15 +71,17 @@ export class ScreeningAgent extends BaseAgent {
     const MAX_HISTORY = 8;
     const activeHistory = messages.slice(-MAX_HISTORY);
 
-    const contextMessages = [
-      contextMessage,
-      ...activeHistory,
-    ];
+    const contextMessages = [contextMessage, ...activeHistory];
 
     const { output } = await this.runLlm(
       'screening',
       contextMessages,
-      { maxTokens: 1024, temperature: 0.7, system: SCREENING_SYSTEM_PROMPT, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 1024,
+        temperature: 0.7,
+        system: SCREENING_SYSTEM_PROMPT,
+        responseFormat: { type: 'json_object' },
+      },
       screeningId
         ? { related_entity_type: 'screening', related_entity_id: screeningId }
         : {},

@@ -1,5 +1,8 @@
 import { vi, describe, it, expect } from 'vitest'
 
+import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import ConfirmModal from './ConfirmModal.vue'
+
 // Stub localStorage globally before Nuxt starts
 const storageMock: Record<string, string> = {}
 globalThis.localStorage = {
@@ -18,10 +21,6 @@ globalThis.localStorage = {
   length: 0,
   key: vi.fn(),
 } as any
-
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import ConfirmModal from './ConfirmModal.vue'
 
 mockNuxtImport('useI18n', () => {
   return () => ({
@@ -54,7 +53,7 @@ describe('ConfirmModal', () => {
     const buttons = Array.from(document.body.querySelectorAll('button'))
     const confirmButton = buttons.find((btn) => btn.textContent?.trim() === 'Confirm Delete')
     expect(confirmButton).toBeDefined()
-    
+
     // Click the native button
     confirmButton?.click()
 

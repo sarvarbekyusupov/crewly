@@ -53,7 +53,9 @@ export class StaffOrAdminGuard implements CanActivate {
             return true;
           } else {
             // Throw forbidden if user is authenticated but has no role
-            throw new ForbiddenException('Admin or owner role required for sourcing');
+            throw new ForbiddenException(
+              'Admin or owner role required for sourcing',
+            );
           }
         }
       } catch (e) {

@@ -57,6 +57,7 @@ describe('AdvanceScreeningProcessor', () => {
       application: { update: jest.fn().mockResolvedValue({}) },
       message: { create: jest.fn().mockResolvedValue({}) },
       user: { findFirst: jest.fn().mockResolvedValue(null) },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
     };
     agent = { advance: jest.fn() };
     emitter = { emit: jest.fn() };

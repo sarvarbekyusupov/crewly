@@ -58,9 +58,15 @@ export class ParseCandidateProcessor {
 
     let parsed: ParsedResume;
     try {
-      parsed = await this.agent.parseResume(candidate.rawResumeText, candidateId);
+      parsed = await this.agent.parseResume(
+        candidate.rawResumeText,
+        candidateId,
+      );
     } catch (err: any) {
-      this.logger.error({ candidateId, error: err.message }, 'Failed to parse resume');
+      this.logger.error(
+        { candidateId, error: err.message },
+        'Failed to parse resume',
+      );
       throw err;
     }
 
@@ -77,7 +83,10 @@ export class ParseCandidateProcessor {
         skills,
       );
     } catch (err: any) {
-      this.logger.warn({ candidateId, error: err.message }, 'Social proof enrichment failed');
+      this.logger.warn(
+        { candidateId, error: err.message },
+        'Social proof enrichment failed',
+      );
     }
 
     await this.db.candidate.update({

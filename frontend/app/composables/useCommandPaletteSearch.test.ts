@@ -1,15 +1,15 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { ref, watch } from 'vue'
 
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { setActivePinia, createPinia } from 'pinia'
+import { useCommandPaletteSearch } from './useCommandPaletteSearch'
+
 vi.mock('@vueuse/core', () => ({
   watchDebounced: (src: any, cb: any, options: any) => {
     watch(src, cb, { ...options, flush: 'sync' })
   },
 }))
-
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { setActivePinia, createPinia } from 'pinia'
-import { useCommandPaletteSearch } from './useCommandPaletteSearch'
 
 const { mockApi, mockPush, mockOpen, mockClose } = vi.hoisted(() => {
   return {
@@ -71,13 +71,18 @@ describe('useCommandPaletteSearch', () => {
     const navGroups = ref([])
     const { searchTerm } = useCommandPaletteSearch(navGroups)
 
-    mockApi.get.mockResolvedValueOnce({ data: [{ id: 'job-1', title: 'Developer', status: 'active' }] })
+    mockApi.get.mockResolvedValueOnce({
+      data: [{ id: 'job-1', title: 'Developer', status: 'active' }],
+    })
     mockApi.get.mockResolvedValueOnce({ data: [{ id: 'cand-1', fullName: 'Candidate A' }] })
 
     searchTerm.value = 'Developer'
 
     expect(mockApi.get).toHaveBeenCalledWith('/api/v1/jobs', { search: 'Developer', limit: 5 })
-    expect(mockApi.get).toHaveBeenCalledWith('/api/v1/candidates', { search: 'Developer', limit: 5 })
+    expect(mockApi.get).toHaveBeenCalledWith('/api/v1/candidates', {
+      search: 'Developer',
+      limit: 5,
+    })
   })
 
   it('closes palette and pushes to route onCommandSelect', () => {

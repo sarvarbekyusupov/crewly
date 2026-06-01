@@ -110,10 +110,12 @@ describe('useEventStream', () => {
 
     expect(mockEventsStore.eventCount).toBe(1)
     expect(mockEventsStore.lastEvent).toEqual(expect.objectContaining({ type: 'new_matches' }))
-    expect(mockToastAdd).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'events.newMatches',
-      color: 'success',
-    }))
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'events.newMatches',
+        color: 'success',
+      }),
+    )
   })
 
   it('disconnects and closes EventSource', () => {

@@ -43,17 +43,21 @@ export class PromptRunnerService {
     this.anthropic = new AnthropicProvider(config);
 
     if (!this.groq.isAvailable() && !this.anthropic.isAvailable()) {
-      this.logger.warn('No LLM provider configured — all agent calls will fail');
+      this.logger.warn(
+        'No LLM provider configured — all agent calls will fail',
+      );
     }
 
     const openaiKey = config.get<string>('OPENAI_API_KEY');
     this.openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
-    if (!this.openai) this.logger.warn('OPENAI_API_KEY not set — embeddings will fail');
+    if (!this.openai)
+      this.logger.warn('OPENAI_API_KEY not set — embeddings will fail');
 
     const lfPubKey = config.get<string>('LANGFUSE_PUBLIC_KEY');
     const lfSecKey = config.get<string>('LANGFUSE_SECRET_KEY');
-    const lfHost = config.get<string>('LANGFUSE_HOST') || 'https://cloud.langfuse.com';
-    
+    const lfHost =
+      config.get<string>('LANGFUSE_HOST') || 'https://cloud.langfuse.com';
+
     if (lfPubKey && lfSecKey) {
       this.langfuse = new Langfuse({
         publicKey: lfPubKey,
@@ -81,7 +85,12 @@ export class PromptRunnerService {
       this.emitter.emit('company.event', {
         type: 'agent.thought',
         companyId: ctx.company_id,
-        payload: { agent: ctx.agent_name, action: 'started', purpose, promptName },
+        payload: {
+          agent: ctx.agent_name,
+          action: 'started',
+          purpose,
+          promptName,
+        },
       });
     }
 
@@ -126,11 +135,15 @@ export class PromptRunnerService {
     try {
       // Select provider: explicit opt-in, or Groq first, Anthropic as fallback
       const preferredProvider = opts.provider ?? 'groq';
-      const primary = preferredProvider === 'anthropic' ? this.anthropic : this.groq;
-      const fallback = preferredProvider === 'anthropic' ? this.groq : this.anthropic;
+      const primary =
+        preferredProvider === 'anthropic' ? this.anthropic : this.groq;
+      const fallback =
+        preferredProvider === 'anthropic' ? this.groq : this.anthropic;
 
       if (!primary.isAvailable() && !fallback.isAvailable()) {
-        throw new Error('No LLM provider available — configure GROQ_API_KEY or ANTHROPIC_API_KEY');
+        throw new Error(
+          'No LLM provider available — configure GROQ_API_KEY or ANTHROPIC_API_KEY',
+        );
       }
 
       let result;
@@ -146,7 +159,10 @@ export class PromptRunnerService {
           providerUsed = primary.name;
         } catch (primaryErr: any) {
           // Only fall back on retriable errors (rate limit, 5xx); rethrow non-retriable
-          if (primaryErr.message?.includes('non-retriable') || primaryErr.name === 'NonRetryableError') {
+          if (
+            primaryErr.message?.includes('non-retriable') ||
+            primaryErr.name === 'NonRetryableError'
+          ) {
             throw primaryErr;
           }
           this.logger.warn(
@@ -254,7 +270,10 @@ export class PromptRunnerService {
         });
         callId = record.id;
       } catch (dbErr: any) {
-        this.logger.error({ promptName, dbErr: dbErr.message }, 'Failed to persist LLM call log');
+        this.logger.error(
+          { promptName, dbErr: dbErr.message },
+          'Failed to persist LLM call log',
+        );
       }
 
       if (this.langfuse) {
@@ -269,7 +288,10 @@ export class PromptRunnerService {
   }
 
   async embed(text: string): Promise<number[]> {
-    if (!this.openai) throw new Error('OPENAI_API_KEY not configured — required for embeddings');
+    if (!this.openai)
+      throw new Error(
+        'OPENAI_API_KEY not configured — required for embeddings',
+      );
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: text.slice(0, 8000),

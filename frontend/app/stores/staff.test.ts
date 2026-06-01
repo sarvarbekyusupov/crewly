@@ -1,5 +1,9 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { setActivePinia, createPinia } from 'pinia'
+import { useStaffStore } from './staff'
+
 // Stub localStorage globally before Nuxt starts
 const storageMock: Record<string, string> = {}
 globalThis.localStorage = {
@@ -18,10 +22,6 @@ globalThis.localStorage = {
   length: 0,
   key: vi.fn(),
 } as any
-
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { setActivePinia, createPinia } from 'pinia'
-import { useStaffStore } from './staff'
 
 const { mockGet, mockPost } = vi.hoisted(() => {
   return {

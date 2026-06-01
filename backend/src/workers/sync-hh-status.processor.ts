@@ -55,7 +55,10 @@ export class SyncHhStatusProcessor {
     for (const app of apps) {
       if (!app.hhNegotiationId) continue;
       if (!app.candidate.hhOauthToken) {
-        this.logger.warn({ appId: app.id }, 'Candidate has no HH token — skipping');
+        this.logger.warn(
+          { appId: app.id },
+          'Candidate has no HH token — skipping',
+        );
         continue;
       }
       try {
@@ -95,7 +98,10 @@ export class SyncHhStatusProcessor {
     }
 
     if (apps.length) {
-      this.logger.log({ total: apps.length, updated }, 'HH seeker status sync complete');
+      this.logger.log(
+        { total: apps.length, updated },
+        'HH seeker status sync complete',
+      );
     }
     await this.syncEmployerNegotiations();
     await this.syncInboundResponses();
@@ -196,9 +202,10 @@ export class SyncHhStatusProcessor {
           if (!candidate) {
             try {
               const resume = await this.hh.getResume(neg.resume.id);
-              const fullName = [resume.first_name, resume.last_name]
-                .filter(Boolean)
-                .join(' ') || null;
+              const fullName =
+                [resume.first_name, resume.last_name]
+                  .filter(Boolean)
+                  .join(' ') || null;
               candidate = await this.db.candidate.create({
                 data: {
                   externalId: neg.resume.id,
@@ -261,8 +268,7 @@ export class SyncHhStatusProcessor {
       });
       if (exists) continue;
 
-      const isFromCandidate =
-        msg.author.participant_type === 'applicant';
+      const isFromCandidate = msg.author.participant_type === 'applicant';
 
       await this.db.message.create({
         data: {

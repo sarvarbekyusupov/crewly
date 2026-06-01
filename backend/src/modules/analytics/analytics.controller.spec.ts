@@ -20,6 +20,7 @@ describe('AnalyticsController', () => {
       candidate: {
         findMany: jest.fn(),
       },
+      $queryRaw: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -37,7 +38,7 @@ describe('AnalyticsController', () => {
 
   describe('pipeline()', () => {
     it('returns 10 stage rows', async () => {
-      db.application.count.mockResolvedValue(10);
+      db.application.groupBy.mockResolvedValue([]);
 
       const result = await controller.pipeline(user);
 
@@ -45,10 +46,10 @@ describe('AnalyticsController', () => {
     });
 
     it('rate = Math.round(count/total*100) where total=counts[0]', async () => {
-      // 100 at matched, 50 at others
-      db.application.count
-        .mockResolvedValueOnce(100) // matched
-        .mockResolvedValue(50); // rest
+      db.application.groupBy.mockResolvedValue([
+        { status: 'matched', _count: { _all: 100 } },
+        { status: 'outreach_sent', _count: { _all: 50 } },
+      ]);
 
       const result = await controller.pipeline(user);
 
@@ -57,11 +58,15 @@ describe('AnalyticsController', () => {
         count: 100,
         rate: 100,
       });
-      expect(result[1]).toMatchObject({ rate: 50 });
+      expect(result[1]).toMatchObject({
+        stage: 'outreach_sent',
+        count: 50,
+        rate: 50,
+      });
     });
 
     it('all counts zero → rates all 0, no divide-by-zero', async () => {
-      db.application.count.mockResolvedValue(0);
+      db.application.groupBy.mockResolvedValue([]);
 
       const result = await controller.pipeline(user);
 
@@ -74,22 +79,14 @@ describe('AnalyticsController', () => {
   // ─── timing ──────────────────────────────────────────────────────────────
 
   describe('timing()', () => {
-    const t = (offsetHours: number) =>
-      new Date(Date.now() + offsetHours * 3_600_000);
-
     it('returns integer hours for valid date pairs', async () => {
-      const now = new Date('2026-01-01T10:00:00Z');
-      const plus2 = new Date('2026-01-01T12:00:00Z');
-      db.application.findMany.mockResolvedValue([
+      db.$queryRaw.mockResolvedValue([
         {
-          matchedAt: now,
-          outreachSentAt: plus2,
-          respondedAt: null,
-          screenedAt: null,
-          deliveredAt: null,
-          interviewedAt: null,
-          hiredAt: null,
-          rejectedAt: null,
+          matchToOutreach: 2,
+          outreachToResponse: null,
+          responseToDelivery: null,
+          deliveryToInterview: null,
+          interviewToHire: null,
         },
       ]);
 
@@ -99,37 +96,13 @@ describe('AnalyticsController', () => {
     });
 
     it('excludes pair when one date is null', async () => {
-      db.application.findMany.mockResolvedValue([
+      db.$queryRaw.mockResolvedValue([
         {
-          matchedAt: new Date(),
-          outreachSentAt: null,
-          respondedAt: null,
-          screenedAt: null,
-          deliveredAt: null,
-          interviewedAt: null,
-          hiredAt: null,
-          rejectedAt: null,
-        },
-      ]);
-
-      const result = await controller.timing(user);
-
-      expect(result.matchToOutreach).toBeNull();
-    });
-
-    it('excludes negative diffs (data anomalies)', async () => {
-      const later = new Date('2026-01-01T12:00:00Z');
-      const earlier = new Date('2026-01-01T10:00:00Z');
-      db.application.findMany.mockResolvedValue([
-        {
-          matchedAt: later, // B before A → negative diff
-          outreachSentAt: earlier,
-          respondedAt: null,
-          screenedAt: null,
-          deliveredAt: null,
-          interviewedAt: null,
-          hiredAt: null,
-          rejectedAt: null,
+          matchToOutreach: null,
+          outreachToResponse: null,
+          responseToDelivery: null,
+          deliveryToInterview: null,
+          interviewToHire: null,
         },
       ]);
 
@@ -139,7 +112,7 @@ describe('AnalyticsController', () => {
     });
 
     it('returns null for metric when no valid pairs exist', async () => {
-      db.application.findMany.mockResolvedValue([]);
+      db.$queryRaw.mockResolvedValue([]);
 
       const result = await controller.timing(user);
 

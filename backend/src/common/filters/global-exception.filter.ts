@@ -36,7 +36,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return response.status(status).json({
         error:
           typeof exceptionResponse === 'string'
-            ? { code: STATUS_CODES[status] ?? 'HTTP_ERROR', message: exceptionResponse }
+            ? {
+                code: STATUS_CODES[status] ?? 'HTTP_ERROR',
+                message: exceptionResponse,
+              }
             : exceptionResponse,
       });
     }

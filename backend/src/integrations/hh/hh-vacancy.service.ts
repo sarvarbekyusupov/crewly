@@ -49,8 +49,7 @@ export class HhVacancyService {
 
   private get headers() {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -105,10 +104,7 @@ export class HhVacancyService {
     const location: string = response.headers['location'] ?? '';
     const hhVacancyId = location.split('/').pop() ?? '';
 
-    this.logger.log(
-      { jobId: job.id, hhVacancyId },
-      'HH vacancy created',
-    );
+    this.logger.log({ jobId: job.id, hhVacancyId }, 'HH vacancy created');
     return hhVacancyId;
   }
 
@@ -179,10 +175,9 @@ export class HhVacancyService {
     hhVacancyId: string,
   ): Promise<{ views: number; responses: number }> {
     const response = await firstValueFrom(
-      this.http.get<any>(
-        `${this.baseUrl}/vacancies/${hhVacancyId}/stats`,
-        { headers: this.headers },
-      ),
+      this.http.get<any>(`${this.baseUrl}/vacancies/${hhVacancyId}/stats`, {
+        headers: this.headers,
+      }),
     );
     return {
       views: response.data?.views?.total ?? 0,

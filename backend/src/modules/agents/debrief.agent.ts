@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { debriefSynthesizeFeedbackPrompt, debriefAnalyzeTranscriptPrompt } from '@my-hr/prompts';
+import {
+  debriefSynthesizeFeedbackPrompt,
+  debriefAnalyzeTranscriptPrompt,
+} from '@my-hr/prompts';
 
 const TranscriptAnalysisSchema = z.object({
   sentiment: z.enum(['positive', 'neutral', 'negative']),
@@ -46,7 +49,11 @@ export class DebriefAgent extends BaseAgent {
       decision: 'hired' | 'rejected_by_client' | 'interviewed';
     },
   ): Promise<string> {
-    const prompt = debriefSynthesizeFeedbackPrompt(jobTitle, currentContext, newFeedback);
+    const prompt = debriefSynthesizeFeedbackPrompt(
+      jobTitle,
+      currentContext,
+      newFeedback,
+    );
 
     const { output } = await this.runLlm(
       'feedback_synthesis',
@@ -80,12 +87,21 @@ export class DebriefAgent extends BaseAgent {
     red_flags: string[];
     recruiter_advice: string;
   }> {
-    const prompt = debriefAnalyzeTranscriptPrompt(candidate, job, aiScreeningAssessment, transcript);
+    const prompt = debriefAnalyzeTranscriptPrompt(
+      candidate,
+      job,
+      aiScreeningAssessment,
+      transcript,
+    );
 
     const { output } = await this.runLlm(
       'shadow_analysis',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 2048, temperature: 0.2, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 2048,
+        temperature: 0.2,
+        responseFormat: { type: 'json_object' },
+      },
       applicationId
         ? {
             related_entity_type: 'application',
@@ -98,7 +114,9 @@ export class DebriefAgent extends BaseAgent {
       const parsed = JSON.parse(output);
       return TranscriptAnalysisSchema.parse(parsed);
     } catch (e: any) {
-      throw new Error(`DebriefAgent failed to parse shadow analysis: ${e.message}`);
+      throw new Error(
+        `DebriefAgent failed to parse shadow analysis: ${e.message}`,
+      );
     }
   }
 }

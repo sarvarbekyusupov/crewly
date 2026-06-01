@@ -100,7 +100,9 @@ describe('S3Service', () => {
 
       await expect(
         service.upload('fail/key.txt', 'data', 'text/plain'),
-      ).rejects.toThrow('S3 upload failed for key "fail/key.txt": AccessDenied');
+      ).rejects.toThrow(
+        'S3 upload failed for key "fail/key.txt": AccessDenied',
+      );
     });
 
     it('upload accepts string body', async () => {

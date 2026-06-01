@@ -73,7 +73,11 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'sourcing_queries',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.5, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 512,
+        temperature: 0.5,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {
@@ -99,7 +103,11 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'job_discovery_queries',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.5, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 512,
+        temperature: 0.5,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {
@@ -123,7 +131,8 @@ export class SourcingAgent extends BaseAgent {
     tech_talks: Array<{ title: string; url: string }>;
     social_proof_summary: string;
   }> {
-    const searchQuery = `${name} ${currentCompany || ''} ${skills.slice(0, 3).join(' ')} github linkedin portfolio talk`.trim();
+    const searchQuery =
+      `${name} ${currentCompany || ''} ${skills.slice(0, 3).join(' ')} github linkedin portfolio talk`.trim();
     const searchResults = await this.searchService.search(searchQuery, 8);
 
     if (searchResults.length === 0) {
@@ -133,12 +142,21 @@ export class SourcingAgent extends BaseAgent {
       };
     }
 
-    const prompt = sourcingEnrichCandidatePrompt(name, currentCompany, skills, searchResults);
+    const prompt = sourcingEnrichCandidatePrompt(
+      name,
+      currentCompany,
+      skills,
+      searchResults,
+    );
 
     const { output } = await this.runLlm(
       'candidate_enrichment',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 1024,
+        temperature: 0.3,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {
@@ -167,14 +185,20 @@ export class SourcingAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'sourcing_strategy',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.4, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 1024,
+        temperature: 0.4,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {
       const parsed = JSON.parse(output);
       return SourcingStrategySchema.parse(parsed);
     } catch (e: any) {
-      throw new Error(`SourcingAgent failed to parse strategy JSON: ${e.message}`);
+      throw new Error(
+        `SourcingAgent failed to parse strategy JSON: ${e.message}`,
+      );
     }
   }
 }

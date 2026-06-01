@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { HttpService } from '@nestjs/axios';
@@ -59,8 +55,7 @@ export class HhOAuthService {
       throw new UnauthorizedException('Invalid or expired HH OAuth state');
     }
 
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
 
     const response = await firstValueFrom(
       this.http.post<HhTokenResponse>(
@@ -97,12 +92,14 @@ export class HhOAuthService {
     this.logger.log({ candidateId }, 'HH account connected');
 
     // Fire-and-forget — populate profile fields from HH resume
-    this.profileSync.syncFromHh(candidateId, access_token).catch((err) =>
-      this.logger.warn(
-        { candidateId, err: err.message },
-        'HH profile sync failed post-connect',
-      ),
-    );
+    this.profileSync
+      .syncFromHh(candidateId, access_token)
+      .catch((err) =>
+        this.logger.warn(
+          { candidateId, err: err.message },
+          'HH profile sync failed post-connect',
+        ),
+      );
   }
 
   async disconnect(candidateId: string): Promise<void> {

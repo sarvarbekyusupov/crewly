@@ -17,10 +17,7 @@ describe('EskizService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        EskizService,
-        { provide: ConfigService, useValue: config },
-      ],
+      providers: [EskizService, { provide: ConfigService, useValue: config }],
     }).compile();
 
     service = module.get<EskizService>(EskizService);

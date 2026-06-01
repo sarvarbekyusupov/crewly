@@ -36,8 +36,7 @@ export class HhNegotiationsService {
 
   private get headers() {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -94,8 +93,7 @@ export class HhNegotiationsService {
     resumeId: string;
     message: string;
   }): Promise<string> {
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
 
     const response = await firstValueFrom(

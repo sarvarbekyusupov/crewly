@@ -142,8 +142,17 @@ describe('InvoicesService', () => {
       db.invoice.updateMany
         .mockResolvedValueOnce({ count: 1 })
         .mockResolvedValueOnce({ count: 0 });
-      db.invoice.findUniqueOrThrow.mockResolvedValue({ id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-001' });
-      db.invoice.findUnique.mockResolvedValue({ id: invoiceId, companyId, status: 'paid' });
+      db.invoice.findUniqueOrThrow.mockResolvedValue({
+        id: invoiceId,
+        companyId,
+        status: 'paid',
+        invoiceNumber: 'INV-001',
+      });
+      db.invoice.findUnique.mockResolvedValue({
+        id: invoiceId,
+        companyId,
+        status: 'paid',
+      });
 
       await service.markPaid(companyId, invoiceId, 'owner', {});
       await expect(
@@ -152,7 +161,12 @@ describe('InvoicesService', () => {
     });
 
     it('marks invoice as paid for owner', async () => {
-      const paid = { id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-001' };
+      const paid = {
+        id: invoiceId,
+        companyId,
+        status: 'paid',
+        invoiceNumber: 'INV-001',
+      };
       db.invoice.updateMany.mockResolvedValue({ count: 1 });
       db.invoice.findUniqueOrThrow.mockResolvedValue(paid);
 
@@ -177,7 +191,12 @@ describe('InvoicesService', () => {
     });
 
     it('marks invoice as paid for admin', async () => {
-      const paid = { id: invoiceId, companyId, status: 'paid', invoiceNumber: 'INV-002' };
+      const paid = {
+        id: invoiceId,
+        companyId,
+        status: 'paid',
+        invoiceNumber: 'INV-002',
+      };
       db.invoice.updateMany.mockResolvedValue({ count: 1 });
       db.invoice.findUniqueOrThrow.mockResolvedValue(paid);
 

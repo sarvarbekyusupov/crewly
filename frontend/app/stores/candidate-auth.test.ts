@@ -1,5 +1,9 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { setActivePinia, createPinia } from 'pinia'
+import { useCandidateAuthStore } from './candidate-auth'
+
 // Stub localStorage globally before Nuxt starts
 const storageMock: Record<string, string> = {}
 globalThis.localStorage = {
@@ -32,10 +36,6 @@ if (typeof window !== 'undefined' && window.location) {
     configurable: true,
   })
 }
-
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { setActivePinia, createPinia } from 'pinia'
-import { useCandidateAuthStore } from './candidate-auth'
 
 const { mockGet, mockPost } = vi.hoisted(() => {
   return {

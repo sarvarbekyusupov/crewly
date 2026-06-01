@@ -46,12 +46,24 @@ describe('AdapterIngestService', () => {
   it('counts failed when source not found in DB', async () => {
     db.candidateSource.findUnique.mockResolvedValue(null);
     const profile = {
-      externalId: 'ext-1', fullName: 'Alice', email: 'a@x.com', phone: null,
-      rawText: '', sourceUrl: 'https://hh.ru/1', rawPayload: {}, city: null, expectedSalaryUzs: null,
+      externalId: 'ext-1',
+      fullName: 'Alice',
+      email: 'a@x.com',
+      phone: null,
+      rawText: '',
+      sourceUrl: 'https://hh.ru/1',
+      rawPayload: {},
+      city: null,
+      expectedSalaryUzs: null,
     };
     const adapter = makeAdapter('hh.ru', [profile]);
-    const result = await service.ingest('run-1', adapter as any, {}, 1);
-    expect(result).toMatchObject({ fetched: 1, created: 0, updated: 0, failed: 1 });
+    const result = await service.ingest('run-1', adapter, {}, 1);
+    expect(result).toMatchObject({
+      fetched: 1,
+      created: 0,
+      updated: 0,
+      failed: 1,
+    });
   });
 
   it('creates new candidate and enqueues parse job', async () => {

@@ -17,7 +17,9 @@ export class SearchService {
   constructor(private readonly config: ConfigService) {
     this.tavilyApiKey = config.get<string>('TAVILY_API_KEY') || null;
     if (!this.tavilyApiKey) {
-      this.logger.warn('TAVILY_API_KEY not set — deep web sourcing will be disabled');
+      this.logger.warn(
+        'TAVILY_API_KEY not set — deep web sourcing will be disabled',
+      );
     }
   }
 

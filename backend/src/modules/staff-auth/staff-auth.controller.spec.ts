@@ -2,6 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { StaffAuthController } from './staff-auth.controller';
+import { StaffService } from './staff.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CandidatesService } from '../candidates/candidates.service';
 import { InvoicesService } from '../invoices/invoices.service';
@@ -67,6 +68,7 @@ describe('StaffAuthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StaffAuthController],
       providers: [
+        StaffService,
         { provide: PrismaService, useValue: db },
         { provide: CandidatesService, useValue: candidatesService },
         { provide: InvoicesService, useValue: invoicesService },
@@ -238,7 +240,11 @@ describe('StaffAuthController', () => {
   describe('consent', () => {
     it('delegates to consentService.findAllForStaff', async () => {
       await controller.consent('cand-1');
-      expect(consentService.findAllForStaff).toHaveBeenCalledWith('cand-1', 1, 50);
+      expect(consentService.findAllForStaff).toHaveBeenCalledWith(
+        'cand-1',
+        1,
+        50,
+      );
     });
   });
 

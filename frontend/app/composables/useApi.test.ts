@@ -41,8 +41,11 @@ describe('useApi', () => {
 
     await client.get('/me')
 
-    expect($fetch).toHaveBeenCalledWith('/me', expect.objectContaining({
-      baseURL: 'http://localhost:3000',
-    }))
+    expect($fetch).toHaveBeenCalledWith(
+      '/me',
+      expect.objectContaining({
+        baseURL: 'http://localhost:3000',
+      }),
+    )
   })
 })
