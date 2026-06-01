@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { PromptRunnerService } from '../integrations/llm/prompt-runner.service';
@@ -72,12 +73,65 @@ Write a structured 3-section report:
       },
     );
 
-    // Upload dossier text to S3
-    const s3Key = `dossiers/${screening.applicationId}/${screeningId}.txt`;
+    // Generate PDF
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    let page = pdfDoc.addPage([595, 842]); // A4
+    const { width, height } = page.getSize();
+    let y = height - 50;
+
+    page.drawText(`Candidate Dossier: ${screening.application.candidate.fullName}`, {
+      x: 50,
+      y,
+      size: 20,
+      font: boldFont,
+      color: rgb(0.1, 0.1, 0.1),
+    });
+    
+    y -= 40;
+    
+    // Simple text wrapping logic
+    const lines = output.split('\n');
+    for (const line of lines) {
+      if (y < 50) {
+        page = pdfDoc.addPage([595, 842]);
+        y = height - 50;
+      }
+      
+      const words = line.split(' ');
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine + word + ' ';
+        const textWidth = font.widthOfTextAtSize(testLine, 11);
+        if (textWidth > width - 100) {
+          page.drawText(currentLine, { x: 50, y, size: 11, font });
+          y -= 15;
+          currentLine = word + ' ';
+          if (y < 50) {
+            page = pdfDoc.addPage([595, 842]);
+            y = height - 50;
+          }
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) {
+        page.drawText(currentLine, { x: 50, y, size: 11, font });
+        y -= 15;
+      }
+      y -= 5; // paragraph spacing
+    }
+
+    const pdfBytes = await pdfDoc.save();
+
+    // Upload dossier PDF to S3
+    const s3Key = `dossiers/${screening.applicationId}/${screeningId}.pdf`;
     const dossierUrl = await this.s3.upload(
       s3Key,
-      output,
-      'text/plain; charset=utf-8',
+      Buffer.from(pdfBytes),
+      'application/pdf',
     );
 
     // Merge dossierUrl into existing aiAssessment JSON
@@ -98,7 +152,7 @@ Write a structured 3-section report:
 
     this.logger.log(
       { screeningId, applicationId: screening.applicationId, dossierUrl },
-      'Dossier generated',
+      'Dossier PDF generated and uploaded',
     );
     return { dossier: output, dossierUrl };
   }

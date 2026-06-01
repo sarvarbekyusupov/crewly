@@ -192,7 +192,7 @@ These are gaps that would hurt a first client or cause silent failures in produc
 | 3 | Outreach agent type safety | P2 | XS | **Done** |
 | 3 | Analytics visual funnel chart | P2 | M | Planned |
 | 4 | `packages/prompts` extraction | P3 | L | **Done** |
-| 4 | PDF dossier S3 verify/fix | P3 | S | Planned |
+| 4 | PDF dossier S3 verify/fix | P3 | S | **Done** |
 | 4 | SMS channel (Eskiz) | P3 | L | **Done** |
 | 4 | E2E test expansion | P3 | M | **Done** |
 | 4 | Multi-language resume parsing | P3 | M | **Done** |
