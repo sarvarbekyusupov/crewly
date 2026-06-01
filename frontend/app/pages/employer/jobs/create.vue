@@ -105,9 +105,13 @@ const onSubmit = handleSubmit(async (values) => {
     toast.add({ title: t('common.success'), color: 'success' })
     router.push(`/employer/jobs/${job.id}`)
   } catch (e: any) {
-    const details = e?.data?.error?.details as Array<{ field?: string; message?: string }> | undefined
+    const details = e?.data?.error?.details as
+      | Array<{ field?: string; message?: string }>
+      | undefined
     if (details?.length) {
-      details.forEach((d) => { if (d.field) setFieldError(d.field as any, d.message) })
+      details.forEach((d) => {
+        if (d.field) setFieldError(d.field as any, d.message)
+      })
     }
     toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {

@@ -8,6 +8,7 @@ const showPortalModal = ref(false)
 const portalIntent = ref<'login' | 'signup'>('login')
 const howTab = ref<'companies' | 'candidates'>('companies')
 const navScrolled = ref(false)
+const mobileMenuOpen = ref(false)
 
 function openPortalModal(intent: 'login' | 'signup' = 'login') {
   portalIntent.value = intent
@@ -25,7 +26,10 @@ async function goToCandidate() {
 }
 
 function onEsc(e: KeyboardEvent) {
-  if (e.key === 'Escape') showPortalModal.value = false
+  if (e.key === 'Escape') {
+    showPortalModal.value = false
+    mobileMenuOpen.value = false
+  }
 }
 
 function onScroll() {
@@ -75,8 +79,50 @@ onUnmounted(() => {
         <button class="signin-btn" @click="openPortalModal('login')">
           {{ t('landing.signIn') }}
         </button>
+        <button
+          type="button"
+          class="hamburger"
+          :aria-label="mobileMenuOpen ? 'Close menu' : 'Open menu'"
+          :aria-expanded="mobileMenuOpen"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <UIcon
+            :name="mobileMenuOpen ? 'i-heroicons-x-mark' : 'i-heroicons-bars-3'"
+            style="width: 20px; height: 20px"
+          />
+        </button>
       </div>
     </nav>
+
+    <!-- ── Mobile Menu ── -->
+    <Transition name="mobile-menu">
+      <div v-if="mobileMenuOpen" class="mobile-menu" @click.self="mobileMenuOpen = false">
+        <div class="mobile-menu-panel">
+          <a href="#how-it-works" class="mobile-link" @click="mobileMenuOpen = false">{{
+            t('landing.navHowItWorks')
+          }}</a>
+          <NuxtLink to="/employer/signup" class="mobile-link" @click="mobileMenuOpen = false">{{
+            t('landing.navForCompanies')
+          }}</NuxtLink>
+          <a href="#for-candidates" class="mobile-link" @click="mobileMenuOpen = false">{{
+            t('landing.navForCandidates')
+          }}</a>
+          <a href="#belief" class="mobile-link" @click="mobileMenuOpen = false">{{
+            t('landing.navManifesto')
+          }}</a>
+          <div class="mobile-menu-divider" />
+          <button
+            class="mobile-signin"
+            @click="
+              openPortalModal('login');
+              mobileMenuOpen = false;
+            "
+          >
+            {{ t('landing.signIn') }}
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <!-- ── Dark Hero ── -->
     <section class="hero-wrap">
@@ -363,7 +409,9 @@ onUnmounted(() => {
       <Transition name="portal-fade">
         <div v-if="showPortalModal" class="portal-overlay" @click.self="showPortalModal = false">
           <div class="portal-modal">
-            <button class="portal-close" @click="showPortalModal = false">✕</button>
+            <button class="portal-close" aria-label="Close" @click="showPortalModal = false">
+              <UIcon name="i-heroicons-x-mark" style="width: 14px; height: 14px" />
+            </button>
             <p class="portal-eyebrow">SIGN IN AS</p>
             <h2 class="portal-heading">Choose your<br /><em>portal</em></h2>
             <div class="portal-cards">
@@ -423,14 +471,46 @@ onUnmounted(() => {
   gap: 32px;
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(12px);
+  background: transparent;
   z-index: 100;
   border-bottom: 1px solid transparent;
-  transition: border-color 0.2s;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    backdrop-filter 0.25s;
 }
 .lnav--scrolled {
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
   border-bottom-color: var(--line-soft);
+}
+
+/* Nav contrast overrides when transparent over dark hero */
+.lnav:not(.lnav--scrolled) .brand-name,
+.lnav:not(.lnav--scrolled) .brand-mark,
+.lnav:not(.lnav--scrolled) .links a,
+.lnav:not(.lnav--scrolled) .icon-btn,
+.lnav:not(.lnav--scrolled) .hamburger {
+  color: rgba(245, 241, 234, 0.85);
+}
+.lnav:not(.lnav--scrolled) .brand-mark {
+  background: #f5f1ea;
+  color: #15140f;
+}
+.lnav:not(.lnav--scrolled) .links a:hover,
+.lnav:not(.lnav--scrolled) .icon-btn:hover,
+.lnav:not(.lnav--scrolled) .hamburger:hover {
+  color: #fff;
+}
+.lnav:not(.lnav--scrolled) .signin-btn {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #f5f1ea;
+}
+.lnav:not(.lnav--scrolled) .signin-btn:hover {
+  background: #f5f1ea;
+  color: #15140f;
+  border-color: #f5f1ea;
 }
 
 .brand {
@@ -485,16 +565,18 @@ onUnmounted(() => {
 }
 
 .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: 8px;
   color: var(--ink-muted);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -506,7 +588,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-muted);
   padding: 4px 10px;
   border: 1px solid var(--line);
@@ -535,7 +617,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   padding: 6px 14px;
   border: 1px solid var(--ink);
@@ -556,7 +638,7 @@ onUnmounted(() => {
    Hero — dark, two-column
 ═══════════════════════════════════════════ */
 .hero-wrap {
-  background: #15140F;
+  background: #15140f;
   padding: 80px 40px 100px;
   position: relative;
   overflow: hidden;
@@ -605,7 +687,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(245, 241, 234, 0.85);
   padding: 6px 14px;
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -672,19 +754,21 @@ onUnmounted(() => {
   align-items: center;
   padding: 12px 24px;
   background: transparent;
-  color: var(--accent);
-  border: 1.5px solid var(--accent);
+  color: rgba(245, 241, 234, 0.65);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s;
 }
 .cta-secondary:hover {
-  background: var(--accent);
   color: #f5f1ea;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Mockup Panel ── */
@@ -709,7 +793,7 @@ onUnmounted(() => {
   transition: transform 0.3s ease;
 }
 .mockup-card:hover {
-  transform: rotate(0.5deg) translateY(-14px);
+  transform: rotate(1.5deg) translateY(-16px) scale(1.01);
 }
 
 .mockup-header {
@@ -739,7 +823,7 @@ onUnmounted(() => {
 }
 .mockup-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.35);
   letter-spacing: 0.08em;
   margin-left: 4px;
@@ -832,7 +916,7 @@ onUnmounted(() => {
 }
 .mockup-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.3);
   white-space: nowrap;
 }
@@ -886,7 +970,7 @@ onUnmounted(() => {
 }
 .stat-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-subtle);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -905,12 +989,7 @@ onUnmounted(() => {
   gap: 0;
   max-width: 100%;
 }
-.path-row--reverse {
-  direction: rtl;
-}
-.path-row--reverse > * {
-  direction: ltr;
-}
+/* grid-column swap — no rtl hack */
 
 .path-text {
   padding: 72px 60px;
@@ -924,10 +1003,22 @@ onUnmounted(() => {
   border-right: none;
   border-left: 1px solid var(--line);
 }
+@media (min-width: 901px) {
+  .path-row--reverse .path-text {
+    grid-column: 2;
+    grid-row: 1;
+    border-left: 1px solid var(--line);
+  }
+  .path-row--reverse .path-steps {
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 1px solid var(--line);
+  }
+}
 
 .path-ribbon {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-subtle);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -995,7 +1086,7 @@ onUnmounted(() => {
 }
 .path-step-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-subtle);
   letter-spacing: 0.06em;
   padding-top: 3px;
@@ -1065,10 +1156,10 @@ onUnmounted(() => {
 }
 .how-tab {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 8px 20px;
+  padding: 10px 22px;
   border-radius: 999px;
   border: none;
   background: transparent;
@@ -1112,7 +1203,7 @@ onUnmounted(() => {
 
 .how-step-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-subtle);
   letter-spacing: 0.06em;
 }
@@ -1244,7 +1335,7 @@ onUnmounted(() => {
 
 .belief-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-subtle);
   letter-spacing: 0.06em;
   padding-top: 6px;
@@ -1258,7 +1349,7 @@ onUnmounted(() => {
 
 .pillar-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--ink-subtle);
@@ -1454,7 +1545,7 @@ onUnmounted(() => {
 }
 .lfoot-links a {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-muted);
   text-decoration: none;
   letter-spacing: 0.04em;
@@ -1466,7 +1557,7 @@ onUnmounted(() => {
 
 .lfoot-copy {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-subtle);
 }
 
@@ -1487,7 +1578,6 @@ onUnmounted(() => {
   .path-row,
   .path-row--reverse {
     grid-template-columns: 1fr;
-    direction: ltr;
   }
   .path-text,
   .path-row--reverse .path-text {
@@ -1521,7 +1611,113 @@ onUnmounted(() => {
   }
 }
 
+/* ═══════════════════════════════════════════
+   Hamburger & Mobile Menu
+═══════════════════════════════════════════ */
+.hamburger {
+  display: none;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: rgba(245, 241, 234, 0.7);
+  cursor: pointer;
+  border-radius: 8px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  flex-shrink: 0;
+}
+.hamburger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f1ea;
+}
+
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+.mobile-menu-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 80px 32px 40px;
+  gap: 4px;
+}
+.mobile-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+  transition: color 0.12s;
+}
+.mobile-link:hover {
+  color: var(--ink);
+}
+.mobile-link:last-of-type {
+  border-bottom: none;
+}
+.mobile-menu-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 16px 0;
+}
+.mobile-signin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mobile-signin:hover {
+  background: var(--accent);
+}
+
+/* Mobile menu transition */
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+  transition: opacity 0.2s ease;
+}
+.mobile-menu-enter-active .mobile-menu-panel,
+.mobile-menu-leave-active .mobile-menu-panel {
+  transition: transform 0.2s ease;
+}
+.mobile-menu-enter-from,
+.mobile-menu-leave-to {
+  opacity: 0;
+}
+.mobile-menu-enter-from .mobile-menu-panel,
+.mobile-menu-leave-to .mobile-menu-panel {
+  transform: translateX(100%);
+}
+
 @media (max-width: 760px) {
+  .hamburger {
+    display: grid;
+  }
+  .live-pill {
+    display: none;
+  }
+
   .hero-wrap {
     padding: 48px 24px 64px;
   }

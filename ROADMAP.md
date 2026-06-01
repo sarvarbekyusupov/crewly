@@ -187,7 +187,7 @@ These are gaps that would hurt a first client or cause silent failures in produc
 | 2 | Real-time ingestion progress | P1 | S | **Done** |
 | 2 | Feature flag admin UI | P1 | M | **Done** |
 | 3 | Mobile optimization (candidate portal) | P2 | M | **Done** |
-| 3 | Resume parsing progress feedback | P2 | S | Planned |
+| 3 | Resume parsing progress feedback | P2 | S | **Done** |
 | 3 | Skill slice consistency | P2 | XS | **Done** |
 | 3 | Outreach agent type safety | P2 | XS | **Done** |
 | 3 | Analytics visual funnel chart | P2 | M | Planned |

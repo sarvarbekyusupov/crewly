@@ -115,7 +115,12 @@ const onSignup = signupHandleSubmit(async (values) => {
     router.push('/candidate/dashboard')
   } catch (e) {
     applyApiFieldErrors(e, signupSetFieldError)
-    toast.add({ id: 'c-signup-err', title: t('common.error'), description: extractApiErrorMessage(e, t('auth.signupError')), color: 'error' })
+    toast.add({
+      id: 'c-signup-err',
+      title: t('common.error'),
+      description: extractApiErrorMessage(e, t('auth.signupError')),
+      color: 'error',
+    })
   } finally {
     loading.value = false
   }

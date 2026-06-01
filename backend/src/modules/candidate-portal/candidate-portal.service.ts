@@ -13,10 +13,9 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 // @ts-ignore
+const pdfParseReq = require('pdf-parse');
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = pdfParseReq.default || pdfParseReq;
 
-const pdfParse: (
-  buf: Buffer,
-) => Promise<{ text: string }> = require('pdf-parse');
 
 @Injectable()
 export class CandidatePortalService {
