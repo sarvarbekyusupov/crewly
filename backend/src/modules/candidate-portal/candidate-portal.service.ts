@@ -13,8 +13,7 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 // @ts-ignore
-const pdfParseReq = require('pdf-parse');
-const pdfParse: (buf: Buffer) => Promise<{ text: string }> = pdfParseReq.default || pdfParseReq;
+import { PDFParse } from 'pdf-parse';
 
 
 @Injectable()
@@ -148,7 +147,8 @@ export class CandidatePortalService {
     let rawText = '';
     if (mimetype === 'application/pdf') {
       try {
-        const parsed = await pdfParse(buffer);
+        const parser = new PDFParse({ data: buffer });
+        const parsed = await parser.getText();
         rawText = parsed.text;
       } catch (err: any) {
         this.logger.warn(
