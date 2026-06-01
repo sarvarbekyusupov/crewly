@@ -31,7 +31,6 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div class="min-h-screen lg:grid lg:grid-cols-2">
-
     <!-- Left brand panel (desktop only) -->
     <div
       class="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
@@ -39,11 +38,22 @@ const onSubmit = handleSubmit(async (values) => {
     >
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 32px 32px;"
+        style="
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+          background-size: 32px 32px;
+        "
       />
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background: radial-gradient(ellipse at 20% 80%, transparent 20%, rgba(26,26,26,0.75) 80%)"
+        style="
+          background: radial-gradient(
+            ellipse at 20% 80%,
+            transparent 20%,
+            rgba(26, 26, 26, 0.75) 80%
+          );
+        "
       />
 
       <NuxtLink to="/" class="relative z-10">
@@ -55,7 +65,7 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="relative z-10">
         <p
           class="text-xs uppercase tracking-widest mb-6"
-          style="color: rgba(255,255,255,0.35); font-family: 'JetBrains Mono', monospace"
+          style="color: rgba(255, 255, 255, 0.35); font-family: 'JetBrains Mono', monospace"
         >
           HR Portal
         </p>
@@ -63,19 +73,19 @@ const onSubmit = handleSubmit(async (values) => {
           class="font-serif text-4xl font-normal leading-tight mb-8"
           style="color: white; letter-spacing: -0.03em"
         >
-          Recruit with<br>
+          Recruit with<br />
           <em style="font-style: italic; color: var(--accent)">clarity</em>.
         </h2>
         <ul class="space-y-3">
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Post jobs and track every applicant
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Automate offers and invoicing
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Invite your team and collaborate
           </li>
@@ -84,7 +94,11 @@ const onSubmit = handleSubmit(async (values) => {
 
       <p
         class="relative z-10 text-xs"
-        style="color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em"
+        style="
+          color: rgba(255, 255, 255, 0.2);
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.06em;
+        "
       >
         my-hr / employers
       </p>
@@ -96,7 +110,6 @@ const onSubmit = handleSubmit(async (values) => {
       style="background: var(--paper)"
     >
       <div class="w-full max-w-sm">
-
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
           <NuxtLink to="/employer/login">
@@ -109,7 +122,11 @@ const onSubmit = handleSubmit(async (values) => {
           </NuxtLink>
           <p
             class="mt-2 text-sm"
-            style="color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em"
+            style="
+              color: var(--ink-muted);
+              font-family: 'JetBrains Mono', monospace;
+              letter-spacing: 0.04em;
+            "
           >
             {{ t('auth.forgotPasswordSubtitle') }}
           </p>
@@ -127,7 +144,11 @@ const onSubmit = handleSubmit(async (values) => {
             <p class="text-sm mb-6" style="color: var(--ink-muted)">
               {{ t('auth.forgotPasswordSentDesc') }}
             </p>
-            <NuxtLink to="/employer/login" class="hover:underline text-sm font-medium" style="color: var(--accent)">
+            <NuxtLink
+              to="/employer/login"
+              class="hover:underline text-sm font-medium"
+              style="color: var(--accent)"
+            >
               {{ t('auth.backToLogin') }}
             </NuxtLink>
           </div>
@@ -151,17 +172,27 @@ const onSubmit = handleSubmit(async (values) => {
                 class="w-full"
               />
             </UFormField>
-            <UButton type="submit" color="primary" block :loading="loading" :disabled="loading" class="mt-2">
+            <UButton
+              type="submit"
+              color="primary"
+              block
+              :loading="loading"
+              :disabled="loading"
+              class="mt-2"
+            >
               {{ t('auth.sendResetLink') }}
             </UButton>
           </form>
           <p class="text-center text-sm mt-5" style="color: var(--ink-muted)">
-            <NuxtLink to="/employer/login" class="hover:underline font-medium" style="color: var(--accent)">
+            <NuxtLink
+              to="/employer/login"
+              class="hover:underline font-medium"
+              style="color: var(--accent)"
+            >
               {{ t('auth.backToLogin') }}
             </NuxtLink>
           </p>
         </template>
-
       </div>
     </div>
   </div>

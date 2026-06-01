@@ -5,7 +5,9 @@ const api = useCandidateApi()
 const toast = useToast()
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const applicationId = route.params.id as string
+const MAX_LENGTH = 500
 
 interface ChatMessage {
   id: string
@@ -45,7 +47,7 @@ async function fetchMessages() {
 }
 
 async function sendMessage() {
-  if (!content.value.trim() || isSending.value) return
+  if (!content.value.trim() || isSending.value || content.value.length > MAX_LENGTH) return
 
   const text = content.value.trim()
   content.value = ''
@@ -116,7 +118,7 @@ function formatTime(dateStr: string) {
         icon="i-heroicons-arrow-left"
         variant="ghost"
         color="neutral"
-        to="/candidate/offers"
+        @click="router.back()"
       />
       <div>
         <h1 class="text-xl font-medium" style="color: var(--ink)">
@@ -162,11 +164,12 @@ function formatTime(dateStr: string) {
       >
         <div
           class="px-4 py-2 rounded-2xl whitespace-pre-wrap text-sm"
-          :class="[
+          :class="msg.direction === 'inbound' ? 'rounded-tr-sm' : 'rounded-tl-sm border'"
+          :style="
             msg.direction === 'inbound'
-              ? 'rounded-tr-sm bg-(--ink) text-(--bg)'
-              : 'rounded-tl-sm bg-(--surface) text-(--ink) border border-(--line-soft)',
-          ]"
+              ? 'background: var(--ink); color: var(--bg)'
+              : 'background: var(--surface); color: var(--ink); border-color: var(--line-soft)'
+          "
         >
           {{ msg.content }}
         </div>
@@ -181,23 +184,35 @@ function formatTime(dateStr: string) {
     </div>
 
     <div class="mt-4 shrink-0">
-      <form class="flex gap-2" @submit.prevent="sendMessage">
-        <UInput
-          v-model="content"
-          :placeholder="t('candidate.chat.placeholder')"
-          class="flex-1"
-          :disabled="isSending"
-          autocomplete="off"
-        />
-        <UButton
-          type="submit"
-          color="primary"
-          :loading="isSending"
-          :disabled="!content.trim()"
-          icon="i-heroicons-paper-airplane"
+      <form class="space-y-1" @submit.prevent="sendMessage">
+        <div class="flex gap-2">
+          <UInput
+            v-model="content"
+            :placeholder="t('candidate.chat.placeholder')"
+            class="flex-1"
+            :disabled="isSending"
+            :maxlength="MAX_LENGTH"
+            autocomplete="off"
+          />
+          <UButton
+            type="submit"
+            color="primary"
+            :loading="isSending"
+            :disabled="!content.trim()"
+            icon="i-heroicons-paper-airplane"
+          >
+            {{ t('candidate.chat.send') }}
+          </UButton>
+        </div>
+        <div
+          v-if="content.length > MAX_LENGTH * 0.8"
+          class="text-right text-xs"
+          :style="
+            content.length >= MAX_LENGTH ? 'color: var(--negative)' : 'color: var(--ink-subtle)'
+          "
         >
-          {{ t('candidate.chat.send') }}
-        </UButton>
+          {{ content.length }}/{{ MAX_LENGTH }}
+        </div>
       </form>
     </div>
   </div>

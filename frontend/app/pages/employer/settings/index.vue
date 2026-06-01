@@ -24,6 +24,7 @@ const {
   handleSubmit: companyHandleSubmit,
   defineField: companyDefineField,
   setValues: setCompanyValues,
+  setFieldError: setCompanyFieldError,
 } = useForm({ validationSchema: toTypedSchema(companySchema) })
 
 watchEffect(() => {
@@ -52,7 +53,8 @@ const saveCompany = companyHandleSubmit(async (values) => {
     toast.add({ title: t('common.success'), color: 'success' })
     refreshCompany()
   } catch (e) {
-    toast.add({ title: extractApiErrorMessage(e), color: 'error' })
+    applyApiFieldErrors(e, setCompanyFieldError)
+    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   }
 })
 
@@ -64,6 +66,7 @@ const {
   handleSubmit: inviteHandleSubmit,
   defineField: inviteDefineField,
   resetForm: resetInviteForm,
+  setFieldError: setInviteFieldError,
 } = useForm({
   validationSchema: toTypedSchema(inviteMemberSchema),
   initialValues: { role: 'hiring_manager' as const },
@@ -81,7 +84,8 @@ const inviteUser = inviteHandleSubmit(async (values) => {
     resetInviteForm({ values: { fullName: '', email: '', role: 'hiring_manager' } })
     refreshUsers()
   } catch (e) {
-    toast.add({ title: extractApiErrorMessage(e), color: 'error' })
+    applyApiFieldErrors(e, setInviteFieldError)
+    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   }
 })
 

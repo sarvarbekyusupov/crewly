@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
+import { capitalizeStatus } from '~/utils/candidate'
 
 definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
+const { t } = useI18n()
 
 useHead({ title: 'Job Discovery' })
 
@@ -48,17 +50,17 @@ watch([workMode, minScore, sortBy], () => {
   page.value = 1
 })
 
-const workModeOptions = [
-  { label: 'All modes', value: '' },
-  { label: 'Office', value: 'office' },
-  { label: 'Hybrid', value: 'hybrid' },
-  { label: 'Remote', value: 'remote' },
-]
+const workModeOptions = computed(() => [
+  { label: t('candidate.jobs.allModes'), value: '' },
+  { label: t('candidate.jobs.office'), value: 'office' },
+  { label: t('candidate.jobs.hybrid'), value: 'hybrid' },
+  { label: t('candidate.jobs.remote'), value: 'remote' },
+])
 
-const sortOptions = [
-  { label: 'Most recent', value: 'recent' },
-  { label: 'Best match', value: 'score' },
-]
+const sortOptions = computed(() => [
+  { label: t('candidate.jobs.mostRecent'), value: 'recent' },
+  { label: t('candidate.jobs.bestMatch'), value: 'score' },
+])
 
 const scoringInProgress = ref(false)
 
@@ -67,12 +69,12 @@ async function triggerScoring() {
   try {
     await api.post('/api/v1/candidate-portal/discovered-jobs/score', {})
     toast.add({
-      title: 'AI scoring queued',
-      description: 'Scores will appear in 1-2 minutes.',
+      title: t('candidate.dashboard.scoringQueued'),
+      description: t('candidate.dashboard.scoringDesc'),
       color: 'success',
     })
   } catch {
-    toast.add({ title: 'Could not queue scoring', color: 'error' })
+    toast.add({ title: t('common.error'), color: 'error' })
   } finally {
     scoringInProgress.value = false
   }
@@ -139,7 +141,7 @@ function formatPostedDate(dateStr?: string) {
               margin-bottom: 6px;
             "
           >
-            Job Discovery
+            {{ t('candidate.jobs.eyebrow') }}
           </p>
           <h1
             style="
@@ -151,10 +153,10 @@ function formatPostedDate(dateStr?: string) {
               font-weight: 400;
             "
           >
-            Open Positions
+            {{ t('candidate.jobs.title') }}
           </h1>
           <p class="mt-1 text-sm" style="color: var(--ink-muted)">
-            {{ total }} jobs matching your profile.
+            {{ t('candidate.jobs.matchingJobs', { n: total }) }}
           </p>
         </div>
         <UButton
@@ -164,7 +166,7 @@ function formatPostedDate(dateStr?: string) {
           :loading="scoringInProgress"
           @click="triggerScoring"
         >
-          AI Score All
+          {{ t('candidate.jobs.scoreAll') }}
         </UButton>
       </div>
     </div>
@@ -180,7 +182,7 @@ function formatPostedDate(dateStr?: string) {
       <USelect v-model="workMode" :options="workModeOptions" size="sm" class="w-36" />
       <USelect v-model="sortBy" :options="sortOptions" size="sm" class="w-36" />
       <div class="flex items-center gap-2 text-sm" style="color: var(--ink-muted)">
-        <span>Min score:</span>
+        <span>{{ t('candidate.jobs.minScore') }}:</span>
         <UInput
           v-model.number="minScore"
           type="number"
@@ -206,10 +208,14 @@ function formatPostedDate(dateStr?: string) {
       <p
         style="font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); font-weight: 400"
       >
-        No jobs found
+        {{ t('candidate.jobs.noJobs') }}
       </p>
       <p class="text-sm" style="color: var(--ink-muted)">
-        Try adjusting filters or run AI scoring to improve ranking.
+        {{
+          search || workMode || minScore > 0
+            ? t('candidate.jobs.noJobsFiltered')
+            : t('candidate.jobs.noJobsDiscovered')
+        }}
       </p>
     </div>
 
@@ -303,7 +309,7 @@ function formatPostedDate(dateStr?: string) {
               <!-- Application status or apply button -->
               <template v-if="job.application">
                 <UBadge :color="appStatusColor(job.application.status)" variant="subtle" size="sm">
-                  {{ job.application.status }}
+                  {{ capitalizeStatus(job.application.status) }}
                 </UBadge>
               </template>
               <template v-else>
@@ -313,7 +319,7 @@ function formatPostedDate(dateStr?: string) {
                   :loading="applying.has(job.id)"
                   @click="applyToJob(job)"
                 >
-                  Apply
+                  {{ t('candidate.jobs.apply') }}
                 </UButton>
               </template>
 

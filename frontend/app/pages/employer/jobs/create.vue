@@ -16,7 +16,7 @@ const skillInput = ref('')
 const niceSkillInput = ref('')
 
 // Validated fields: title + description
-const { errors, handleSubmit, defineField } = useForm({
+const { errors, handleSubmit, defineField, setFieldError } = useForm({
   validationSchema: toTypedSchema(jobCreateSchema),
 })
 
@@ -104,7 +104,11 @@ const onSubmit = handleSubmit(async (values) => {
     })
     toast.add({ title: t('common.success'), color: 'success' })
     router.push(`/employer/jobs/${job.id}`)
-  } catch (e) {
+  } catch (e: any) {
+    const details = e?.data?.error?.details as Array<{ field?: string; message?: string }> | undefined
+    if (details?.length) {
+      details.forEach((d) => { if (d.field) setFieldError(d.field as any, d.message) })
+    }
     toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {
     loading.value = false

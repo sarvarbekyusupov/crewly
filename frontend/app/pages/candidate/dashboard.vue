@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveredJob, SeekerApplication, PaginatedResponse } from '~/types/api'
+import { seekerAppStatusColor, appStatusColor } from '~/utils/statusColors'
+import { capitalizeStatus } from '~/utils/candidate'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -81,24 +83,6 @@ function scoreColor(
   return 'error'
 }
 
-function seekerStatusColor(
-  status: string,
-): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  const map: Record<
-    string,
-    'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
-  > = {
-    queued: 'warning',
-    applied: 'primary',
-    viewed: 'info',
-    interview: 'success',
-    rejected: 'error',
-    offer: 'success',
-    failed: 'error',
-  }
-  return map[status] ?? 'neutral'
-}
-
 const { t } = useI18n()
 const scoringInProgress = ref(false)
 const toast = useToast()
@@ -108,8 +92,8 @@ async function triggerScoring() {
   try {
     await api.post('/api/v1/candidate-portal/discovered-jobs/score', {})
     toast.add({
-      title: 'AI scoring queued',
-      description: 'Scores ready in ~1 minute',
+      title: t('candidate.dashboard.scoringQueued'),
+      description: t('candidate.dashboard.scoringDesc'),
       color: 'success',
     })
   } catch (e) {
@@ -166,7 +150,11 @@ async function triggerScoring() {
         />
         <div class="min-w-0">
           <p class="text-sm font-medium" style="color: var(--ink)">
-            Profile {{ completeness }}% complete — better profiles get better matches
+            {{
+              completeness > 0
+                ? `${t('candidate.dashboard.profileComplete', { n: completeness })}`
+                : t('candidate.dashboard.profileIncomplete')
+            }}
           </p>
           <div class="w-48 h-1 rounded-full mt-1 overflow-hidden" style="background: var(--line)">
             <div
@@ -176,7 +164,9 @@ async function triggerScoring() {
           </div>
         </div>
       </div>
-      <UButton to="/candidate/profile" size="xs" variant="outline">Complete profile</UButton>
+      <UButton to="/candidate/profile" size="xs" variant="outline">{{
+        t('candidate.dashboard.completeProfile')
+      }}</UButton>
     </div>
 
     <!-- Active Screening Banner -->
@@ -187,13 +177,20 @@ async function triggerScoring() {
     >
       <div class="flex items-center gap-4">
         <div
-          class="w-10 h-10 rounded-full bg-(--accent) flex items-center justify-center animate-pulse"
+          class="w-10 h-10 rounded-full flex items-center justify-center animate-pulse"
+          style="background: var(--accent)"
         >
-          <UIcon name="i-heroicons-chat-bubble-left-right" class="w-6 h-6 text-(--bg)" />
+          <UIcon
+            name="i-heroicons-chat-bubble-left-right"
+            class="w-6 h-6"
+            style="color: var(--bg)"
+          />
         </div>
         <div>
-          <p class="font-medium text-lg leading-tight">AI Screening in progress</p>
-          <p class="text-xs opacity-70">The recruiter agent is waiting for your reply.</p>
+          <p class="font-medium text-lg leading-tight">
+            {{ t('candidate.dashboard.aiScreening') }}
+          </p>
+          <p class="text-xs opacity-70">{{ t('candidate.dashboard.aiScreeningDesc') }}</p>
         </div>
       </div>
       <UButton
@@ -202,7 +199,7 @@ async function triggerScoring() {
         size="md"
         icon="i-heroicons-chat-bubble-left-ellipsis"
       >
-        Go to Chat
+        {{ t('candidate.dashboard.replyNow') }}
       </UButton>
     </div>
 
@@ -211,25 +208,25 @@ async function triggerScoring() {
       <div
         v-for="(item, key) in [
           {
-            label: 'Jobs discovered',
+            label: t('candidate.dashboard.statDiscovered'),
             value: stats.discovered,
             icon: 'i-heroicons-magnifying-glass',
             color: 'var(--accent)',
           },
           {
-            label: 'Applied',
+            label: t('candidate.dashboard.statApplied'),
             value: stats.applied,
             icon: 'i-heroicons-paper-airplane',
             color: 'var(--info)',
           },
           {
-            label: 'Interviews',
+            label: t('candidate.dashboard.statInterviews'),
             value: stats.interviews,
             icon: 'i-heroicons-chat-bubble-left-right',
             color: 'var(--warning)',
           },
           {
-            label: 'Offers',
+            label: t('candidate.dashboard.statOffers'),
             value: stats.offers,
             icon: 'i-heroicons-trophy',
             color: 'var(--positive)',
@@ -261,7 +258,7 @@ async function triggerScoring() {
       <!-- Top job matches (3/5 width) -->
       <div class="lg:col-span-3 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="section-label">Top job matches</h2>
+          <h2 class="section-label">{{ t('candidate.dashboard.topMatches') }}</h2>
           <div class="flex items-center gap-2">
             <UButton
               variant="ghost"
@@ -337,7 +334,7 @@ async function triggerScoring() {
       <!-- Recent applications (2/5 width) -->
       <div class="lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="section-label">Recent applications</h2>
+          <h2 class="section-label">{{ t('candidate.dashboard.recentApps') }}</h2>
           <UButton variant="ghost" size="xs" to="/candidate/tracker">See all →</UButton>
         </div>
 
@@ -372,7 +369,7 @@ async function triggerScoring() {
             </p>
           </div>
           <UBadge
-            :color="seekerStatusColor(app.status)"
+            :color="seekerAppStatusColor(app.status)"
             variant="subtle"
             size="xs"
             class="shrink-0"
@@ -383,7 +380,7 @@ async function triggerScoring() {
 
         <!-- HR pipeline apps -->
         <div v-if="hrApps.length" class="mt-4">
-          <h3 class="section-label mb-2">In recruiter pipeline</h3>
+          <h3 class="section-label mb-2">{{ t('candidate.dashboard.inPipeline') }}</h3>
           <div class="space-y-2">
             <div
               v-for="app in hrApps.slice(0, 3)"
@@ -399,12 +396,12 @@ async function triggerScoring() {
               </div>
               <div class="flex items-center gap-2">
                 <UBadge
-                  :color="app.status === 'screening' ? 'primary' : 'neutral'"
+                  :color="appStatusColor(app.status)"
                   variant="subtle"
                   size="xs"
                   class="shrink-0"
                 >
-                  {{ app.status.replace(/_/g, ' ') }}
+                  {{ capitalizeStatus(app.status) }}
                 </UBadge>
                 <NuxtLink
                   v-if="['screening', 'responded', 'outreach_sent'].includes(app.status)"
@@ -423,15 +420,23 @@ async function triggerScoring() {
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <NuxtLink
         v-for="action in [
-          { label: 'Browse Jobs', icon: 'i-heroicons-magnifying-glass', to: '/candidate/jobs' },
           {
-            label: 'My Applications',
+            label: t('candidate.dashboard.browseJobs'),
+            icon: 'i-heroicons-magnifying-glass',
+            to: '/candidate/jobs',
+          },
+          {
+            label: t('candidate.dashboard.myApplications'),
             icon: 'i-heroicons-paper-airplane',
             to: '/candidate/tracker',
           },
-          { label: 'Edit Profile', icon: 'i-heroicons-user', to: '/candidate/profile' },
           {
-            label: 'Preferences',
+            label: t('candidate.dashboard.editProfile'),
+            icon: 'i-heroicons-user',
+            to: '/candidate/profile',
+          },
+          {
+            label: t('candidate.dashboard.preferences'),
             icon: 'i-heroicons-adjustments-horizontal',
             to: '/candidate/preferences',
           },

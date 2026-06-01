@@ -112,6 +112,7 @@ function connectHh() {
 const disconnecting = ref(false)
 
 async function disconnectHh() {
+  if (!window.confirm(t('candidate.preferences.hhDisconnectConfirm'))) return
   disconnecting.value = true
   try {
     await api.del('/api/v1/candidate-portal/hh/disconnect')
@@ -165,7 +166,7 @@ async function disconnectHh() {
             <div class="flex gap-2">
               <button
                 v-for="mode in [
-                  { label: 'Any', value: '' },
+                  { label: t('candidate.jobs.allModes'), value: '' },
                   { label: t('jobs.workMode.remote'), value: 'remote' },
                   { label: t('jobs.workMode.hybrid'), value: 'hybrid' },
                   { label: t('jobs.workMode.office'), value: 'office' },
@@ -186,8 +187,8 @@ async function disconnectHh() {
           </UFormField>
 
           <UFormField
-            label="Expected salary (UZS/month)"
-            hint="Used to filter jobs below your target"
+            :label="t('candidate.preferences.salaryLabel')"
+            :hint="t('candidate.preferences.salaryHint')"
             :error="errors.expectedSalaryUzs"
           >
             <div class="flex items-center gap-3">
@@ -207,8 +208,8 @@ async function disconnectHh() {
           </UFormField>
 
           <UFormField
-            label="Minimum match score"
-            hint="Jobs below this score are hidden (0 = show all)"
+            :label="t('candidate.preferences.minScoreLabel')"
+            :hint="t('candidate.preferences.minScoreHint')"
             :error="errors.minMatchScore"
           >
             <div class="flex items-center gap-3">
@@ -228,8 +229,8 @@ async function disconnectHh() {
           </UFormField>
 
           <UFormField
-            label="Max applications per day"
-            hint="Auto-apply will stop after this limit"
+            :label="t('candidate.preferences.maxAppsLabel')"
+            :hint="t('candidate.preferences.maxAppsHint')"
             :error="errors.maxApplicationsPerDay"
           >
             <UInput
@@ -246,9 +247,9 @@ async function disconnectHh() {
 
       <!-- Blacklisted companies -->
       <UCard>
-        <h3 class="section-label mb-3">Blacklisted Companies</h3>
+        <h3 class="section-label mb-3">{{ t('candidate.preferences.blacklistTitle') }}</h3>
         <p class="text-sm mb-3" style="color: var(--ink-muted)">
-          Jobs from these companies will be hidden and never auto-applied.
+          {{ t('candidate.preferences.blacklistDesc') }}
         </p>
         <div class="flex gap-2 mb-3">
           <UInput
@@ -264,17 +265,20 @@ async function disconnectHh() {
             {{ c }}
             <button class="ml-1 hover:opacity-70" @click="removeBlacklist(c)">×</button>
           </UBadge>
-          <span v-if="!blacklistedCompanies.length" class="text-sm" style="color: var(--ink-subtle)"
-            >No blacklisted companies</span
+          <span
+            v-if="!blacklistedCompanies.length"
+            class="text-sm"
+            style="color: var(--ink-subtle)"
+            >{{ t('candidate.preferences.noBlacklist') }}</span
           >
         </div>
       </UCard>
 
       <!-- HH.ru OAuth -->
       <UCard>
-        <h3 class="section-label mb-3">HH.ru Auto-Apply</h3>
+        <h3 class="section-label mb-3">{{ t('candidate.preferences.hhTitle') }}</h3>
         <p class="text-sm mb-4" style="color: var(--ink-muted)">
-          Connect your HH.ru account so the AI agent can apply to jobs on your behalf.
+          {{ t('candidate.preferences.hhDesc') }}
         </p>
 
         <div v-if="prefs?.hhOauthTokenSet" class="space-y-4">
@@ -287,9 +291,11 @@ async function disconnectHh() {
           >
             <UIcon name="i-heroicons-check-circle" class="text-green-500 shrink-0" />
             <div>
-              <p class="text-sm font-medium" style="color: var(--ink)">HH.ru connected</p>
+              <p class="text-sm font-medium" style="color: var(--ink)">
+                {{ t('candidate.preferences.hhConnectedLabel') }}
+              </p>
               <p class="text-xs" style="color: var(--ink-muted)">
-                Auto-apply is active for HH.ru vacancies
+                {{ t('candidate.preferences.hhActiveDesc') }}
               </p>
             </div>
             <UButton
@@ -301,7 +307,7 @@ async function disconnectHh() {
               :loading="disconnecting"
               @click="disconnectHh"
             >
-              Disconnect
+              {{ t('candidate.preferences.disconnect') }}
             </UButton>
           </div>
 
@@ -321,7 +327,7 @@ async function disconnectHh() {
 
         <div v-else>
           <UButton type="button" variant="outline" icon="i-heroicons-link" @click="connectHh">
-            Connect HH.ru account
+            {{ t('candidate.preferences.hhConnect') }}
           </UButton>
         </div>
       </UCard>

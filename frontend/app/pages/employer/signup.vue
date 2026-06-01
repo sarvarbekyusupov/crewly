@@ -13,7 +13,7 @@ const done = ref(false)
 const showPassword = ref(false)
 const registeredEmail = ref('')
 
-const { errors, handleSubmit, defineField } = useForm({
+const { errors, handleSubmit, defineField, setFieldError } = useForm({
   validationSchema: toTypedSchema(signupSchema),
 })
 
@@ -58,8 +58,9 @@ const onSubmit = handleSubmit(async (values) => {
     await api.post('/api/v1/auth/signup', values)
     registeredEmail.value = values.email
     done.value = true
-  } catch {
-    // useApi shows error toast
+  } catch (e) {
+    applyApiFieldErrors(e, setFieldError)
+    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -71,19 +72,21 @@ async function resendVerification() {
   try {
     const api = useApi()
     await api.post('/api/v1/auth/resend-verification', { email: registeredEmail.value })
-    toast.add({ title: t('common.success'), description: t('auth.verificationResent'), color: 'success' })
+    toast.add({
+      title: t('common.success'),
+      description: t('auth.verificationResent'),
+      color: 'success',
+    })
   } catch {
     // useApi shows error toast
   } finally {
     resendLoading.value = false
   }
 }
-
 </script>
 
 <template>
   <div class="min-h-screen lg:grid lg:grid-cols-2">
-
     <!-- Left brand panel (desktop only) -->
     <div
       class="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
@@ -91,11 +94,22 @@ async function resendVerification() {
     >
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 32px 32px;"
+        style="
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+          background-size: 32px 32px;
+        "
       />
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background: radial-gradient(ellipse at 20% 80%, transparent 20%, rgba(26,26,26,0.75) 80%)"
+        style="
+          background: radial-gradient(
+            ellipse at 20% 80%,
+            transparent 20%,
+            rgba(26, 26, 26, 0.75) 80%
+          );
+        "
       />
 
       <NuxtLink to="/" class="relative z-10">
@@ -107,7 +121,7 @@ async function resendVerification() {
       <div class="relative z-10">
         <p
           class="text-xs uppercase tracking-widest mb-6"
-          style="color: rgba(255,255,255,0.35); font-family: 'JetBrains Mono', monospace"
+          style="color: rgba(255, 255, 255, 0.35); font-family: 'JetBrains Mono', monospace"
         >
           HR Portal
         </p>
@@ -115,19 +129,19 @@ async function resendVerification() {
           class="font-serif text-4xl font-normal leading-tight mb-8"
           style="color: white; letter-spacing: -0.03em"
         >
-          Recruit with<br>
+          Recruit with<br />
           <em style="font-style: italic; color: var(--accent)">clarity</em>.
         </h2>
         <ul class="space-y-3">
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Post jobs and track every applicant
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Automate offers and invoicing
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Invite your team and collaborate
           </li>
@@ -136,7 +150,11 @@ async function resendVerification() {
 
       <p
         class="relative z-10 text-xs"
-        style="color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em"
+        style="
+          color: rgba(255, 255, 255, 0.2);
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.06em;
+        "
       >
         my-hr / employers
       </p>
@@ -148,7 +166,6 @@ async function resendVerification() {
       style="background: var(--paper)"
     >
       <div class="w-full max-w-md">
-
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
           <h1
@@ -159,7 +176,11 @@ async function resendVerification() {
           </h1>
           <p
             class="mt-2 text-sm"
-            style="color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em"
+            style="
+              color: var(--ink-muted);
+              font-family: 'JetBrains Mono', monospace;
+              letter-spacing: 0.04em;
+            "
           >
             {{ t('auth.signupSubtitle') }}
           </p>
@@ -174,12 +195,23 @@ async function resendVerification() {
             >
               {{ t('auth.checkEmail') }}
             </h2>
-            <p class="text-sm mb-6" style="color: var(--ink-muted)">{{ t('auth.verifyEmailSent') }}</p>
+            <p class="text-sm mb-6" style="color: var(--ink-muted)">
+              {{ t('auth.verifyEmailSent') }}
+            </p>
             <div class="flex flex-col items-center gap-3">
-              <UButton variant="link" size="sm" :loading="resendLoading" @click="resendVerification">
+              <UButton
+                variant="link"
+                size="sm"
+                :loading="resendLoading"
+                @click="resendVerification"
+              >
                 {{ t('auth.resendVerification') }}
               </UButton>
-              <NuxtLink to="/employer/login" class="hover:underline text-sm font-medium" style="color: var(--accent)">
+              <NuxtLink
+                to="/employer/login"
+                class="hover:underline text-sm font-medium"
+                style="color: var(--accent)"
+              >
                 {{ t('auth.backToLogin') }}
               </NuxtLink>
             </div>
@@ -195,7 +227,12 @@ async function resendVerification() {
           </h2>
 
           <form class="space-y-4" @submit.prevent="onSubmit">
-            <p class="text-xs font-medium uppercase tracking-wider" style="color: var(--ink-subtle)">{{ t('auth.sectionCompany') }}</p>
+            <p
+              class="text-xs font-medium uppercase tracking-wider"
+              style="color: var(--ink-subtle)"
+            >
+              {{ t('auth.sectionCompany') }}
+            </p>
             <UFormField :label="t('auth.companyName')" :error="errors.companyName">
               <UInput v-model="companyName" v-bind="companyNameProps" autofocus class="w-full" />
             </UFormField>
@@ -209,12 +246,24 @@ async function resendVerification() {
                 class="w-full"
               />
               <template #hint>
-                <span class="text-xs" style="color: var(--ink-subtle)">{{ t('auth.contactEmailHint') }}</span>
+                <span class="text-xs" style="color: var(--ink-subtle)">{{
+                  t('auth.contactEmailHint')
+                }}</span>
               </template>
             </UFormField>
-            <p class="text-xs font-medium uppercase tracking-wider pt-2" style="color: var(--ink-subtle)">{{ t('auth.sectionAccount') }}</p>
+            <p
+              class="text-xs font-medium uppercase tracking-wider pt-2"
+              style="color: var(--ink-subtle)"
+            >
+              {{ t('auth.sectionAccount') }}
+            </p>
             <UFormField :label="t('auth.fullName')" :error="errors.fullName">
-              <UInput v-model="fullName" v-bind="fullNameProps" autocomplete="name" class="w-full" />
+              <UInput
+                v-model="fullName"
+                v-bind="fullNameProps"
+                autocomplete="name"
+                class="w-full"
+              />
             </UFormField>
             <UFormField :label="t('auth.email')" :error="errors.email">
               <UInput
@@ -226,7 +275,9 @@ async function resendVerification() {
                 class="w-full"
               />
               <template #hint>
-                <span class="text-xs" style="color: var(--ink-subtle)">{{ t('auth.loginEmailHint') }}</span>
+                <span class="text-xs" style="color: var(--ink-subtle)">{{
+                  t('auth.loginEmailHint')
+                }}</span>
               </template>
             </UFormField>
             <UFormField :label="t('auth.password')" :error="errors.password">
@@ -240,7 +291,11 @@ async function resendVerification() {
               >
                 <template #trailing>
                   <button type="button" tabindex="-1" @click="showPassword = !showPassword">
-                    <UIcon :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" class="w-4 h-4" style="color: var(--ink-muted)" />
+                    <UIcon
+                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      class="w-4 h-4"
+                      style="color: var(--ink-muted)"
+                    />
                   </button>
                 </template>
               </UInput>
@@ -254,27 +309,42 @@ async function resendVerification() {
                       :style="{ background: i <= pwStrength ? pwStrengthColor : 'var(--line)' }"
                     />
                   </div>
-                  <span class="text-xs" :style="{ color: pwStrengthColor }">{{ pwStrengthLabel }}</span>
+                  <span class="text-xs" :style="{ color: pwStrengthColor }">{{
+                    pwStrengthLabel
+                  }}</span>
                 </div>
               </template>
             </UFormField>
-            <UButton type="submit" color="primary" block :loading="loading" :disabled="loading" class="mt-2">
+            <UButton
+              type="submit"
+              color="primary"
+              block
+              :loading="loading"
+              :disabled="loading"
+              class="mt-2"
+            >
               {{ t('auth.signup') }}
             </UButton>
           </form>
 
           <p class="text-center text-sm mt-5" style="color: var(--ink-muted)">
             {{ t('auth.haveAccount') }}
-            <NuxtLink to="/employer/login" class="hover:underline ml-1 font-medium" style="color: var(--accent)">
+            <NuxtLink
+              to="/employer/login"
+              class="hover:underline ml-1 font-medium"
+              style="color: var(--accent)"
+            >
               {{ t('auth.login') }}
             </NuxtLink>
           </p>
           <p class="text-center text-xs mt-3" style="color: var(--ink-muted)">
             {{ t('auth.tosPrefix') }}
-            <NuxtLink to="/terms" class="hover:underline" style="color: var(--ink-muted)">{{ t('auth.tosLink') }}</NuxtLink>.
+            <NuxtLink to="/terms" class="hover:underline" style="color: var(--ink-muted)">{{
+              t('auth.tosLink')
+            }}</NuxtLink
+            >.
           </p>
         </template>
-
       </div>
     </div>
   </div>

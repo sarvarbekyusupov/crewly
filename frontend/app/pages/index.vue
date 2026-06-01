@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'empty', auth: 'guest' })
 
 const { t } = useI18n()
+const colorMode = useColorMode()
 
 const showPortalModal = ref(false)
 const portalIntent = ref<'login' | 'signup'>('login')
@@ -43,7 +44,6 @@ onUnmounted(() => {
 
 <template>
   <div class="landing">
-
     <!-- ── Nav ── -->
     <nav class="lnav" :class="{ 'lnav--scrolled': navScrolled }">
       <NuxtLink to="/" class="brand">
@@ -61,7 +61,20 @@ onUnmounted(() => {
           <span class="live-dot" />
           Agent · live
         </span>
-        <button class="signin-btn" @click="openPortalModal('login')">{{ t('landing.signIn') }}</button>
+        <button
+          type="button"
+          class="icon-btn"
+          :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
+          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+        >
+          <UIcon
+            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+            style="width: 16px; height: 16px"
+          />
+        </button>
+        <button class="signin-btn" @click="openPortalModal('login')">
+          {{ t('landing.signIn') }}
+        </button>
       </div>
     </nav>
 
@@ -91,7 +104,9 @@ onUnmounted(() => {
           <div class="mockup-card">
             <div class="mockup-header">
               <div class="mockup-dots">
-                <span class="mdot mdot--r" /><span class="mdot mdot--y" /><span class="mdot mdot--g" />
+                <span class="mdot mdot--r" /><span class="mdot mdot--y" /><span
+                  class="mdot mdot--g"
+                />
               </div>
               <span class="mockup-title">Active Pipeline</span>
             </div>
@@ -150,7 +165,7 @@ onUnmounted(() => {
     </div>
 
     <!-- ── Dual Path Section ── -->
-    <section class="paths" id="paths">
+    <section id="paths" class="paths">
       <div class="path-row">
         <div class="path-text">
           <span class="path-ribbon">{{ t('landing.doorCompanyRibbon') }}</span>
@@ -159,7 +174,9 @@ onUnmounted(() => {
             <em>{{ t('landing.doorCompanyTitleEm') }}</em>
           </h2>
           <p class="path-body">{{ t('landing.doorCompanyBody') }}</p>
-          <NuxtLink to="/employer/signup" class="path-cta">{{ t('landing.doorCompanyCta') }} →</NuxtLink>
+          <NuxtLink to="/employer/signup" class="path-cta"
+            >{{ t('landing.doorCompanyCta') }} →</NuxtLink
+          >
         </div>
         <div class="path-steps">
           <div class="path-step">
@@ -190,15 +207,19 @@ onUnmounted(() => {
 
       <div class="path-divider" />
 
-      <div class="path-row path-row--reverse" id="for-candidates">
+      <div id="for-candidates" class="path-row path-row--reverse">
         <div class="path-text">
-          <span class="path-ribbon path-ribbon--candidate">{{ t('landing.doorCandidateRibbon') }}</span>
+          <span class="path-ribbon path-ribbon--candidate">{{
+            t('landing.doorCandidateRibbon')
+          }}</span>
           <h2 class="path-title">
             {{ t('landing.doorCandidateTitle') }}<br />
             <em>{{ t('landing.doorCandidateTitleEm') }}</em>
           </h2>
           <p class="path-body">{{ t('landing.doorCandidateBodyNew') }}</p>
-          <NuxtLink to="/candidate/login" class="path-cta path-cta--candidate">{{ t('landing.doorCandidateCtaNew') }} →</NuxtLink>
+          <NuxtLink to="/candidate/login" class="path-cta path-cta--candidate"
+            >{{ t('landing.doorCandidateCtaNew') }} →</NuxtLink
+          >
         </div>
         <div class="path-steps">
           <div class="path-step">
@@ -320,7 +341,9 @@ onUnmounted(() => {
           <span class="belief-num">02</span>
           <div class="belief-pillar-content">
             <span class="pillar-label">{{ t('landing.pillar2Label') }}</span>
-            <span class="pillar-big"><em>{{ t('landing.pillar2Title') }}</em></span>
+            <span class="pillar-big"
+              ><em>{{ t('landing.pillar2Title') }}</em></span
+            >
             <p>{{ t('landing.pillar2Body') }}</p>
           </div>
         </div>
@@ -373,7 +396,6 @@ onUnmounted(() => {
       </div>
       <span class="lfoot-copy">© 2025 my-hr</span>
     </footer>
-
   </div>
 </template>
 
@@ -462,6 +484,23 @@ onUnmounted(() => {
   align-items: center;
 }
 
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+}
+
 .live-pill {
   display: inline-flex;
   align-items: center;
@@ -483,8 +522,13 @@ onUnmounted(() => {
   animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
 }
 
 .signin-btn {
@@ -499,7 +543,9 @@ onUnmounted(() => {
   background: var(--ink);
   color: var(--bg);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .signin-btn:hover {
   background: var(--accent);
@@ -510,7 +556,7 @@ onUnmounted(() => {
    Hero — dark, two-column
 ═══════════════════════════════════════════ */
 .hero-wrap {
-  background: var(--ink);
+  background: #15140F;
   padding: 80px 40px 100px;
   position: relative;
   overflow: hidden;
@@ -520,10 +566,21 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
+}
+.hero-wrap::after {
+  content: '';
+  position: absolute;
+  top: -180px;
+  left: -120px;
+  width: 640px;
+  height: 640px;
+  background: radial-gradient(circle, rgba(200, 74, 31, 0.14) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .hero {
@@ -532,15 +589,15 @@ onUnmounted(() => {
   max-width: 1160px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 60px;
+  grid-template-columns: 1fr 440px;
+  gap: 72px;
   align-items: center;
 }
 
 .hero-content {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 }
 
 .eyebrow-pill {
@@ -549,11 +606,11 @@ onUnmounted(() => {
   gap: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: rgba(245, 241, 234, 0.6);
+  color: rgba(245, 241, 234, 0.85);
   padding: 6px 14px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.09);
   letter-spacing: 0.06em;
   align-self: flex-start;
 }
@@ -572,7 +629,7 @@ onUnmounted(() => {
   line-height: 0.96;
   letter-spacing: -0.045em;
   color: #f5f1ea;
-  max-width: 12ch;
+  max-width: 16ch;
   text-wrap: balance;
 }
 .headline em {
@@ -581,10 +638,10 @@ onUnmounted(() => {
 }
 
 .hero-body {
-  font-size: 15px;
-  color: rgba(245, 241, 234, 0.55);
+  font-size: 16px;
+  color: rgba(245, 241, 234, 0.72);
   line-height: 1.6;
-  max-width: 44ch;
+  max-width: 50ch;
 }
 
 .hero-ctas {
@@ -602,7 +659,9 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s, transform 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s;
 }
 .cta-primary:hover {
   background: #fff;
@@ -619,7 +678,9 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .cta-secondary:hover {
   background: var(--accent);
@@ -635,12 +696,20 @@ onUnmounted(() => {
 
 .mockup-card {
   background: #1e1d17;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   width: 100%;
   max-width: 380px;
   overflow: hidden;
-  box-shadow: 0 32px 80px -20px rgba(0,0,0,0.6);
+  box-shadow:
+    0 48px 100px -24px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: rotate(1.5deg) translateY(-8px);
+  transition: transform 0.3s ease;
+}
+.mockup-card:hover {
+  transform: rotate(0.5deg) translateY(-14px);
 }
 
 .mockup-header {
@@ -648,7 +717,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .mockup-dots {
   display: flex;
@@ -659,13 +728,19 @@ onUnmounted(() => {
   height: 10px;
   border-radius: 50%;
 }
-.mdot--r { background: #ff5f57; }
-.mdot--y { background: #ffbd2e; }
-.mdot--g { background: #28ca41; }
+.mdot--r {
+  background: #ff5f57;
+}
+.mdot--y {
+  background: #ffbd2e;
+}
+.mdot--g {
+  background: #28ca41;
+}
 .mockup-title {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255, 255, 255, 0.35);
   letter-spacing: 0.08em;
   margin-left: 4px;
 }
@@ -681,7 +756,7 @@ onUnmounted(() => {
   transition: background 0.12s;
 }
 .mockup-row:hover {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .mockup-avatar {
@@ -715,7 +790,7 @@ onUnmounted(() => {
 .mockup-name {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(245,241,234,0.85);
+  color: rgba(245, 241, 234, 0.85);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -723,7 +798,7 @@ onUnmounted(() => {
 .mockup-role {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .mockup-chip {
@@ -736,15 +811,15 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .chip--interview {
-  background: rgba(139,92,246,0.2);
+  background: rgba(139, 92, 246, 0.2);
   color: #a78bfa;
 }
 .chip--offered {
-  background: rgba(168,85,247,0.2);
+  background: rgba(168, 85, 247, 0.2);
   color: #c084fc;
 }
 .chip--outreach {
-  background: rgba(74,124,200,0.2);
+  background: rgba(74, 124, 200, 0.2);
   color: #6b9ee0;
 }
 
@@ -753,18 +828,18 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px 18px 16px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 .mockup-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
   white-space: nowrap;
 }
 .mockup-bar {
   flex: 1;
   height: 4px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -804,7 +879,7 @@ onUnmounted(() => {
 }
 .stat-value {
   font-family: 'Fraunces', serif;
-  font-size: clamp(56px, 7vw, 96px);
+  font-size: clamp(44px, 5.5vw, 76px);
   letter-spacing: -0.05em;
   line-height: 1;
   color: var(--ink);
@@ -953,7 +1028,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 .path-connector--candidate {
-  background: rgba(200, 74, 31, 0.25);
+  background: rgba(200, 74, 31, 0.45);
 }
 
 .path-divider {
@@ -999,7 +1074,9 @@ onUnmounted(() => {
   background: transparent;
   color: var(--ink-subtle);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .how-tab--active {
   background: var(--ink);
@@ -1026,10 +1103,11 @@ onUnmounted(() => {
   padding: 28px 32px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--bg-elevated);
+  background: var(--paper);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 .how-step-block--candidate {
-  border-color: rgba(200, 74, 31, 0.2);
+  border-color: rgba(200, 74, 31, 0.35);
 }
 
 .how-step-num {
@@ -1095,7 +1173,9 @@ onUnmounted(() => {
 /* Tab transition */
 .tab-fade-enter-active,
 .tab-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .tab-fade-enter-from,
 .tab-fade-leave-to {
@@ -1209,7 +1289,7 @@ onUnmounted(() => {
 .portal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -1225,7 +1305,7 @@ onUnmounted(() => {
   width: 100%;
   max-width: 480px;
   position: relative;
-  box-shadow: 0 24px 60px -12px rgba(0,0,0,0.2);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.2);
 }
 .portal-close {
   position: absolute;
@@ -1241,7 +1321,9 @@ onUnmounted(() => {
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 .portal-close:hover {
   background: var(--ink);
@@ -1283,12 +1365,15 @@ onUnmounted(() => {
   background: var(--bg-elevated);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .portal-card:hover {
   border-color: var(--ink);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -6px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.12);
 }
 .portal-card--candidate:hover {
   border-color: var(--accent);
@@ -1318,7 +1403,9 @@ onUnmounted(() => {
 }
 .portal-fade-enter-active .portal-modal,
 .portal-fade-leave-active .portal-modal {
-  transition: transform 0.18s ease, opacity 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
 }
 .portal-fade-enter-from .portal-modal,
 .portal-fade-leave-to .portal-modal {
@@ -1330,8 +1417,9 @@ onUnmounted(() => {
    Footer
 ═══════════════════════════════════════════ */
 .lfoot {
-  border-top: 1px solid var(--line-soft);
-  padding: 28px 40px;
+  background: var(--bg-deep);
+  border-top: 1px solid var(--line);
+  padding: 32px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;

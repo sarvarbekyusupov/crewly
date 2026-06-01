@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { capitalizeStatus } from '~/utils/candidate'
+import { appStatusColor } from '~/utils/statusColors'
+import { formatRelativeTime } from '~/utils/formatters'
+
 definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
+const { t } = useI18n()
 
 interface Application {
   id: string
@@ -18,37 +23,42 @@ interface Application {
   }
 }
 
+useHead({ title: t('candidate.offers.title') })
+
 const { data: applications, pending } = await useAsyncData('candidate-applications-full', () =>
   api.get<Application[]>('/api/v1/candidate-portal/applications').catch(() => [] as Application[]),
 )
-
-const statusColor: Record<
-  string,
-  'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
-> = {
-  matched: 'info',
-  outreach_sent: 'warning',
-  responded: 'primary',
-  screened: 'primary',
-  delivered: 'success',
-  interviewed: 'success',
-  hired: 'success',
-  rejected: 'error',
-  withdrawn: 'neutral',
-}
 </script>
 
 <template>
-  <div class="p-6 max-w-4xl mx-auto">
-    <div class="mb-6">
-      <h1
-        class="font-serif text-2xl font-normal"
-        style="color: var(--ink); letter-spacing: -0.02em"
+  <div class="space-y-6">
+    <div class="pb-4" style="border-bottom: 1px solid var(--line)">
+      <p
+        style="
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: var(--ink-subtle);
+          margin-bottom: 6px;
+        "
       >
-        Applications
+        {{ t('candidate.offers.eyebrow') }}
+      </p>
+      <h1
+        style="
+          font-family: 'Fraunces', serif;
+          font-size: 28px;
+          line-height: 1.05;
+          letter-spacing: -0.03em;
+          color: var(--ink);
+          font-weight: 400;
+        "
+      >
+        {{ t('candidate.offers.title') }}
       </h1>
-      <p class="text-sm mt-1" style="color: var(--ink-muted)">
-        All your job applications in one place.
+      <p class="mt-1 text-sm" style="color: var(--ink-muted)">
+        {{ t('candidate.offers.subtitle') }}
       </p>
     </div>
 
@@ -59,19 +69,30 @@ const statusColor: Record<
         style="color: var(--ink-muted)"
       />
     </div>
-    <div
-      v-else-if="!applications?.length"
-      class="text-center py-16 text-sm"
-      style="color: var(--ink-muted)"
-    >
-      No applications yet.
+
+    <div v-else-if="!applications?.length" class="flex flex-col items-center py-16 gap-3">
+      <UIcon
+        name="i-heroicons-briefcase"
+        class="w-12 h-12 opacity-40"
+        style="color: var(--ink-subtle)"
+      />
+      <p
+        style="font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); font-weight: 400"
+      >
+        {{ t('candidate.offers.empty') }}
+      </p>
+      <p class="text-sm" style="color: var(--ink-muted)">{{ t('candidate.offers.emptyDesc') }}</p>
+      <UButton to="/candidate/jobs" variant="outline" size="sm">{{
+        t('candidate.dashboard.browseJobs')
+      }}</UButton>
     </div>
+
     <div v-else class="space-y-3">
       <div
         v-for="app in applications"
         :key="app.id"
         class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-        style="background: var(--paper); border: 1px solid var(--line)"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
       >
         <div class="flex-1 min-w-0">
           <div class="font-medium" style="color: var(--ink)">{{ app.job.title }}</div>
@@ -82,15 +103,16 @@ const statusColor: Record<
             <span v-if="app.job.workMode">{{ app.job.workMode }}</span>
             <span v-if="app.job.employmentType">· {{ app.job.employmentType }}</span>
             <span v-if="app.job.officeLocation">· {{ app.job.officeLocation }}</span>
+            <span v-if="app.matchedAt">· {{ formatRelativeTime(app.matchedAt) }}</span>
           </div>
         </div>
         <div class="flex sm:flex-col items-center sm:items-end gap-3 shrink-0">
           <div class="flex flex-col items-end gap-1">
-            <UBadge :color="statusColor[app.status] ?? 'neutral'" variant="soft" size="sm">
-              {{ app.status.replace(/_/g, ' ') }}
+            <UBadge :color="appStatusColor(app.status)" variant="soft" size="sm">
+              {{ capitalizeStatus(app.status) }}
             </UBadge>
             <span v-if="app.matchScore" class="text-xs" style="color: var(--ink-muted)">
-              Match: {{ Math.round(Number(app.matchScore)) }}%
+              {{ t('candidate.offers.match') }}: {{ Math.round(Number(app.matchScore)) }}%
             </span>
           </div>
           <UButton
@@ -100,7 +122,7 @@ const statusColor: Record<
             size="sm"
             :to="`/candidate/chat/${app.id}`"
           >
-            Chat
+            {{ t('candidate.offers.chat') }}
           </UButton>
         </div>
       </div>

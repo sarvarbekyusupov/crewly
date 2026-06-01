@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { SeekerApplication } from '~/types/api'
+import { capitalizeStatus } from '~/utils/candidate'
+import { formatRelativeTime } from '~/utils/formatters'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -7,7 +9,7 @@ const { t } = useI18n()
 const api = useCandidateApi()
 const toast = useToast()
 
-useHead({ title: 'My Applications' })
+useHead({ title: t('candidate.tracker.title') })
 
 const {
   data: applications,
@@ -23,16 +25,18 @@ const viewMode = ref<'list' | 'kanban'>('kanban')
 const expandedId = ref<string | null>(null)
 const updatingId = ref<string | null>(null)
 
-const COLUMNS = [
-  { status: 'queued', label: 'Queued', color: 'warning' as const },
-  { status: 'applied', label: 'Applied', color: 'primary' as const },
-  { status: 'viewed', label: 'Viewed', color: 'info' as const },
-  { status: 'interview', label: 'Interview', color: 'success' as const },
-  { status: 'offer', label: 'Offer', color: 'success' as const },
-  { status: 'rejected', label: 'Rejected', color: 'error' as const },
-]
+const COLUMNS = computed(() => [
+  { status: 'queued', label: t('candidate.tracker.queued'), color: 'warning' as const },
+  { status: 'applied', label: t('candidate.tracker.applied'), color: 'primary' as const },
+  { status: 'viewed', label: t('candidate.tracker.viewed'), color: 'info' as const },
+  { status: 'interview', label: t('candidate.tracker.interview'), color: 'success' as const },
+  { status: 'offer', label: t('candidate.tracker.offer'), color: 'success' as const },
+  { status: 'rejected', label: t('candidate.tracker.rejected'), color: 'error' as const },
+])
 
-const statusOptions = COLUMNS.map((c) => ({ label: c.label, value: c.status }))
+const statusOptions = computed(() =>
+  COLUMNS.value.map((c) => ({ label: c.label, value: c.status })),
+)
 
 const statusColor = seekerAppStatusColor
 
@@ -40,6 +44,17 @@ function columnApps(status: string) {
   return (applications.value ?? []).filter((a) =>
     status === 'rejected' ? a.status === 'rejected' || a.status === 'failed' : a.status === status,
   )
+}
+
+function colDotColor(color: string): string {
+  const map: Record<string, string> = {
+    warning: 'var(--warning)',
+    primary: 'var(--accent)',
+    info: 'var(--info)',
+    success: 'var(--positive)',
+    error: 'var(--negative)',
+  }
+  return map[color] ?? 'var(--ink-subtle)'
 }
 
 async function updateStatus(app: SeekerApplication, newStatus: string) {
@@ -74,7 +89,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               margin-bottom: 6px;
             "
           >
-            Auto-Apply
+            {{ t('candidate.tracker.eyebrow') }}
           </p>
           <h1
             style="
@@ -86,7 +101,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               font-weight: 400;
             "
           >
-            My Applications
+            {{ t('candidate.tracker.title') }}
           </h1>
         </div>
         <div class="flex items-center gap-2">
@@ -101,7 +116,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               "
               @click="viewMode = 'kanban'"
             >
-              Board
+              {{ t('candidate.tracker.board') }}
             </button>
             <button
               class="px-3 py-1.5 text-xs transition-colors"
@@ -112,7 +127,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               "
               @click="viewMode = 'list'"
             >
-              List
+              {{ t('candidate.tracker.list') }}
             </button>
           </div>
           <UButton
@@ -132,13 +147,17 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       <p
         style="font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); font-weight: 400"
       >
-        No applications yet
+        {{ t('candidate.tracker.empty') }}
       </p>
       <p class="text-sm" style="color: var(--ink-muted)">
-        Browse jobs and hit Apply to start the queue.
+        {{ t('candidate.tracker.emptyDesc') }}
       </p>
-      <UButton to="/candidate/jobs" size="sm" variant="outline" icon="i-heroicons-magnifying-glass"
-        >Browse Jobs</UButton
+      <UButton
+        to="/candidate/jobs"
+        size="sm"
+        variant="outline"
+        icon="i-heroicons-magnifying-glass"
+        >{{ t('candidate.dashboard.browseJobs') }}</UButton
       >
     </div>
 
@@ -146,30 +165,14 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
     <div v-else-if="viewMode === 'kanban'" class="overflow-x-auto pb-4 snap-x snap-mandatory">
       <div class="flex gap-3 min-w-max">
         <div
-          v-for="col in COLUMNS"
+          v-for="col in COLUMNS.value"
           :key="col.status"
           class="w-64 shrink-0 flex flex-col gap-2 snap-start"
         >
           <!-- Column header -->
           <div class="flex items-center justify-between px-1">
             <div class="flex items-center gap-1.5">
-              <div
-                class="w-2 h-2 rounded-full"
-                :style="{
-                  background:
-                    col.color === 'warning'
-                      ? 'var(--warning)'
-                      : col.color === 'primary'
-                        ? 'var(--accent)'
-                        : col.color === 'info'
-                          ? 'var(--info)'
-                          : col.color === 'success'
-                            ? 'var(--positive)'
-                            : col.color === 'error'
-                              ? 'var(--negative)'
-                              : 'var(--ink-subtle)',
-                }"
-              />
+              <div class="w-2 h-2 rounded-full" :style="{ background: colDotColor(col.color) }" />
               <span
                 class="text-xs font-medium"
                 style="color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em"
@@ -229,14 +232,19 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                 style="border-top: 1px solid var(--line-soft)"
                 @click.stop
               >
-                <p class="text-xs mb-1.5" style="color: var(--ink-subtle)">Move to:</p>
+                <p class="text-xs mb-1.5" style="color: var(--ink-subtle)">
+                  {{ t('candidate.tracker.moveTo') }}:
+                </p>
                 <div class="flex flex-wrap gap-1">
                   <button
-                    v-for="c in COLUMNS.filter((c) => c.status !== col.status)"
+                    v-for="c in COLUMNS.value.filter((c) => c.status !== col.status)"
                     :key="c.status"
                     class="text-xs px-2 py-0.5 rounded transition-opacity hover:opacity-80"
                     :style="`background: var(--bg-elevated); color: var(--ink-muted); border: 1px solid var(--line);`"
-                    @click="updateStatus(app, c.status); expandedId = null"
+                    @click="
+                      updateStatus(app, c.status);
+                      expandedId = null;
+                    "
                   >
                     {{ c.label }}
                   </button>
@@ -303,8 +311,13 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
             </p>
             <div class="flex items-center gap-2 mt-1 text-xs" style="color: var(--ink-subtle)">
               <span v-if="app.discoveredJob?.workMode">{{ app.discoveredJob.workMode }}</span>
-              <span v-if="app.appliedAt">Applied {{ formatDateTime(app.appliedAt) }}</span>
-              <span v-else>Queued {{ formatDateTime(app.createdAt) }}</span>
+              <span v-if="app.appliedAt"
+                >{{ t('candidate.tracker.appliedAt') }}
+                {{ formatRelativeTime(app.appliedAt) }}</span
+              >
+              <span v-else
+                >{{ t('candidate.tracker.queuedAt') }} {{ formatRelativeTime(app.createdAt) }}</span
+              >
               <span
                 style="
                   font-family: 'JetBrains Mono', monospace;
@@ -321,7 +334,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
 
           <div class="flex flex-col items-end gap-2 shrink-0">
             <UBadge :color="statusColor(app.status)" variant="subtle" size="sm">
-              {{ app.status.replace(/_/g, ' ') }}
+              {{ capitalizeStatus(app.status) }}
             </UBadge>
             <USelect
               :model-value="app.status"
@@ -338,7 +351,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               :icon="expandedId === app.id ? 'i-heroicons-chevron-up' : 'i-heroicons-document-text'"
               @click="expandedId = expandedId === app.id ? null : app.id"
             >
-              Cover letter
+              {{ t('candidate.tracker.coverLetter') }}
             </UButton>
           </div>
         </div>
@@ -352,7 +365,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
             class="text-xs font-medium mb-2 pt-3"
             style="color: var(--ink-subtle); text-transform: uppercase; letter-spacing: 0.08em"
           >
-            Generated Cover Letter
+            {{ t('candidate.tracker.generatedCoverLetter') }}
           </p>
           <p class="text-sm leading-relaxed whitespace-pre-line" style="color: var(--ink-muted)">
             {{ app.coverLetter }}

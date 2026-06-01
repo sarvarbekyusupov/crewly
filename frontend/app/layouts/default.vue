@@ -284,7 +284,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
           />
           <button
             type="button"
-            class="icon-btn hidden sm:grid"
+            class="icon-btn grid"
             :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
             @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
           >

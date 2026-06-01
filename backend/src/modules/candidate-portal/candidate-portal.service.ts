@@ -13,7 +13,10 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 // @ts-ignore
-import pdfParse from 'pdf-parse';
+
+const pdfParse: (
+  buf: Buffer,
+) => Promise<{ text: string }> = require('pdf-parse');
 
 @Injectable()
 export class CandidatePortalService {
@@ -31,22 +34,26 @@ export class CandidatePortalService {
       where: { id: applicationId, candidateId },
     });
     if (!app) throw new NotFoundException('Application not found');
-    
+
     const conv = await this.db.conversation.findFirst({
       where: { applicationId, candidateId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
-      orderBy: { startedAt: 'desc' }
+      orderBy: { startedAt: 'desc' },
     });
-    
+
     return conv?.messages || [];
   }
 
-  async postMessage(candidateId: string, applicationId: string, content: string) {
+  async postMessage(
+    candidateId: string,
+    applicationId: string,
+    content: string,
+  ) {
     const app = await this.db.application.findFirst({
       where: { id: applicationId, candidateId },
     });
     if (!app) throw new NotFoundException('Application not found');
-    
+
     await this.conv.handleWebMessage(applicationId, candidateId, content);
     return { success: true };
   }
@@ -56,7 +63,7 @@ export class CandidatePortalService {
       where: { id: candidateId },
     });
     if (!candidate || candidate.deletedAt) throw new NotFoundException();
-    
+
     // We return rawResumeText and parsedResume to track parsing status on frontend
     const { ...safe } = candidate as any;
     return safe;
@@ -142,18 +149,23 @@ export class CandidatePortalService {
     let rawText = '';
     if (mimetype === 'application/pdf') {
       try {
-        const parsed = await (pdfParse as any)(buffer);
+        const parsed = await pdfParse(buffer);
         rawText = parsed.text;
       } catch (err: any) {
-        this.logger.warn({ candidateId, error: err.message }, 'Failed to parse PDF text');
+        this.logger.warn(
+          { candidateId, error: err.message },
+          'Failed to parse PDF text',
+        );
       }
     }
 
     await this.db.candidate.update({
       where: { id: candidateId },
-      data: { 
+      data: {
         resumeFileUrl: publicUrl || null,
-        ...(rawText ? { rawResumeText: rawText, parsedResume: Prisma.DbNull } : {}),
+        ...(rawText
+          ? { rawResumeText: rawText, parsedResume: Prisma.DbNull }
+          : {}),
       },
     });
 

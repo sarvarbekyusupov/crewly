@@ -7,7 +7,11 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { hashToken, generateRawToken, REFRESH_TOKEN_TTL_MS } from '../../common/utils/token.utils';
+import {
+  hashToken,
+  generateRawToken,
+  REFRESH_TOKEN_TTL_MS,
+} from '../../common/utils/token.utils';
 import { DUMMY_HASH } from '../../common/auth.constants';
 import * as argon2 from 'argon2';
 import type {
@@ -86,6 +90,8 @@ export class CandidateAuthService {
           emailVerified: true,
           lastLoginAt: new Date(),
           consentStatus: 'explicit',
+          skills: [],
+          blacklistedCompanies: [],
         },
       });
     } else {
@@ -121,6 +127,8 @@ export class CandidateAuthService {
         emailVerified: false,
         consentStatus: 'explicit',
         lastLoginAt: new Date(),
+        skills: [],
+        blacklistedCompanies: [],
       },
     });
 
@@ -141,7 +149,9 @@ export class CandidateAuthService {
     });
 
     const hashToVerify = (candidate as any)?.passwordHash ?? DUMMY_HASH;
-    const valid = await argon2.verify(hashToVerify, dto.password).catch(() => false);
+    const valid = await argon2
+      .verify(hashToVerify, dto.password)
+      .catch(() => false);
     if (!candidate || !(candidate as any).passwordHash || !valid)
       throw new UnauthorizedException('Invalid credentials');
 

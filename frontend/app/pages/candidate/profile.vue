@@ -96,7 +96,7 @@ onUnmounted(() => {
 })
 
 // --- VeeValidate form ---
-const { errors, handleSubmit, defineField, setValues } = useForm({
+const { errors, handleSubmit, defineField, setValues, setFieldError } = useForm({
   validationSchema: toTypedSchema(candidateProfileSchema),
 })
 
@@ -156,6 +156,7 @@ const save = handleSubmit(async (values) => {
     await store.fetchMe()
     toast.add({ title: t('candidate.profile.saved'), color: 'success' })
   } catch (e) {
+    applyApiFieldErrors(e, setFieldError)
     toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {
     saving.value = false
@@ -169,6 +170,29 @@ const cvInput = ref<HTMLInputElement | null>(null)
 async function uploadCv(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
+  const allowed = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ]
+  if (!allowed.includes(file.type)) {
+    toast.add({
+      title: t('common.error'),
+      description: t('candidate.profile.cvInvalidType'),
+      color: 'error',
+    })
+    if (cvInput.value) cvInput.value.value = ''
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast.add({
+      title: t('common.error'),
+      description: t('candidate.profile.cvTooLarge'),
+      color: 'error',
+    })
+    if (cvInput.value) cvInput.value.value = ''
+    return
+  }
   cvUploading.value = true
   const body = new FormData()
   body.append('file', file)
@@ -392,10 +416,7 @@ const completeness = computed(() => {
             class="w-full"
           />
         </UFormField>
-        <UFormField
-          :label="t('candidate.profile.preferredWorkMode')"
-          class="flex items-center pt-6"
-        >
+        <UFormField class="flex items-center pt-6">
           <UCheckbox
             v-model="willingToRelocate"
             v-bind="willingToRelocateProps"

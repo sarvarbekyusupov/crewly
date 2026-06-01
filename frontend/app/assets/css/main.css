@@ -54,9 +54,14 @@
   --ink-subtle: #6B6760;
   --line: #2C2A22;
   --line-soft: #24221C;
+  --accent: #E07048;
   --accent-soft: #3A1F12;
+  --positive: #4DB870;
+  --warn: #D4952A;
+  --ink-subtle: #80807A;
   --grid-color: rgba(255,255,255,0.04);
-  --positive-soft: rgba(47,107,63,0.15);
+  --positive-soft: rgba(77, 184, 112, 0.12);
+  --ui-primary: #E07048;
   --status-outreach: #6B9EE0;
   --status-responded: #38BDF8;
   --status-interview: #A78BFA;

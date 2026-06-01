@@ -21,6 +21,23 @@ export function formatSalary(v?: string | number, currency = 'UZS'): string {
   return Number(v).toLocaleString() + ' ' + currency
 }
 
+export function applyApiFieldErrors(
+  e: unknown,
+  setFieldError: (field: string, message: string) => void,
+): boolean {
+  if (e && typeof e === 'object') {
+    const data = (e as Record<string, unknown>)?.data as Record<string, unknown> | undefined
+    const details = (data?.error as Record<string, unknown>)?.details
+    if (Array.isArray(details) && details.length > 0) {
+      ;(details as Array<{ field?: string; message?: string }>).forEach((d) => {
+        if (d.field && d.message) setFieldError(d.field, d.message)
+      })
+      return true
+    }
+  }
+  return false
+}
+
 export function extractApiErrorMessage(e: unknown, fallback = 'Request failed'): string {
   if (e && typeof e === 'object') {
     const err = e as Record<string, unknown>
@@ -30,6 +47,13 @@ export function extractApiErrorMessage(e: unknown, fallback = 'Request failed'):
 
     if (errorObj && typeof errorObj === 'object') {
       msg = (errorObj as Record<string, unknown>).message
+      const details = (errorObj as Record<string, unknown>).details
+      if (Array.isArray(details) && details.length > 0) {
+        const detailMsgs = (details as Array<{ field?: string; message?: string }>)
+          .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
+          .filter(Boolean)
+        if (detailMsgs.length) return detailMsgs.join('\n')
+      }
     } else if (
       typeof errorObj === 'string' &&
       errorObj !== 'Unauthorized' &&

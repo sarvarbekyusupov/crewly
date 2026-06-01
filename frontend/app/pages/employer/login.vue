@@ -36,7 +36,12 @@ const handleLogin = handleSubmit(async (values) => {
   } catch (e) {
     const status = getFetchStatus(e)
     if (status === 429) {
-      toast.add({ id: 'login-error', title: t('common.error'), description: t('auth.tooManyAttempts'), color: 'error' })
+      toast.add({
+        id: 'login-error',
+        title: t('common.error'),
+        description: t('auth.tooManyAttempts'),
+        color: 'error',
+      })
     } else if (status === 401) {
       const raw = extractApiErrorMessage(e, '')
       if (raw.includes('No account found')) {
@@ -47,7 +52,12 @@ const handleLogin = handleSubmit(async (values) => {
         toast.add({ id: 'login-error', title: t('common.error'), description: raw, color: 'error' })
         showResendVerification.value = true
       } else {
-        toast.add({ id: 'login-error', title: t('common.error'), description: t('auth.invalidCredentials'), color: 'error' })
+        toast.add({
+          id: 'login-error',
+          title: t('common.error'),
+          description: t('auth.invalidCredentials'),
+          color: 'error',
+        })
       }
     }
   } finally {
@@ -69,12 +79,10 @@ async function resendVerification() {
     toast.add({ title: extractApiErrorMessage(e), color: 'error' })
   }
 }
-
 </script>
 
 <template>
   <div class="min-h-screen lg:grid lg:grid-cols-2">
-
     <!-- Left brand panel (desktop only) -->
     <div
       class="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
@@ -82,11 +90,22 @@ async function resendVerification() {
     >
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 32px 32px;"
+        style="
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+          background-size: 32px 32px;
+        "
       />
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background: radial-gradient(ellipse at 20% 80%, transparent 20%, rgba(26,26,26,0.75) 80%)"
+        style="
+          background: radial-gradient(
+            ellipse at 20% 80%,
+            transparent 20%,
+            rgba(26, 26, 26, 0.75) 80%
+          );
+        "
       />
 
       <NuxtLink to="/" class="relative z-10">
@@ -98,7 +117,7 @@ async function resendVerification() {
       <div class="relative z-10">
         <p
           class="text-xs uppercase tracking-widest mb-6"
-          style="color: rgba(255,255,255,0.35); font-family: 'JetBrains Mono', monospace"
+          style="color: rgba(255, 255, 255, 0.35); font-family: 'JetBrains Mono', monospace"
         >
           HR Portal
         </p>
@@ -106,19 +125,19 @@ async function resendVerification() {
           class="font-serif text-4xl font-normal leading-tight mb-8"
           style="color: white; letter-spacing: -0.03em"
         >
-          Recruit with<br>
+          Recruit with<br />
           <em style="font-style: italic; color: var(--accent)">clarity</em>.
         </h2>
         <ul class="space-y-3">
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Post jobs and track every applicant
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Automate offers and invoicing
           </li>
-          <li class="flex items-start gap-3 text-sm" style="color: rgba(255,255,255,0.6)">
+          <li class="flex items-start gap-3 text-sm" style="color: rgba(255, 255, 255, 0.6)">
             <span style="color: var(--accent); flex-shrink: 0">✓</span>
             Invite your team and collaborate
           </li>
@@ -127,7 +146,11 @@ async function resendVerification() {
 
       <p
         class="relative z-10 text-xs"
-        style="color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em"
+        style="
+          color: rgba(255, 255, 255, 0.2);
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.06em;
+        "
       >
         my-hr / employers
       </p>
@@ -139,7 +162,6 @@ async function resendVerification() {
       style="background: var(--paper)"
     >
       <div class="w-full max-w-sm">
-
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
           <h1
@@ -150,7 +172,11 @@ async function resendVerification() {
           </h1>
           <p
             class="mt-2 text-sm"
-            style="color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em"
+            style="
+              color: var(--ink-muted);
+              font-family: 'JetBrains Mono', monospace;
+              letter-spacing: 0.04em;
+            "
           >
             {{ t('auth.loginSubtitle') }}
           </p>
@@ -186,17 +212,32 @@ async function resendVerification() {
             >
               <template #trailing>
                 <button type="button" tabindex="-1" @click="showPassword = !showPassword">
-                  <UIcon :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" class="w-4 h-4" style="color: var(--ink-muted)" />
+                  <UIcon
+                    :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    class="w-4 h-4"
+                    style="color: var(--ink-muted)"
+                  />
                 </button>
               </template>
             </UInput>
             <template #hint>
-              <NuxtLink to="/employer/forgot-password" class="text-xs hover:underline" style="color: var(--ink-muted)">
+              <NuxtLink
+                to="/employer/forgot-password"
+                class="text-xs hover:underline"
+                style="color: var(--ink-muted)"
+              >
                 {{ t('auth.forgotPassword') }}
               </NuxtLink>
             </template>
           </UFormField>
-          <UButton type="submit" color="primary" block :loading="loading" :disabled="loading" class="mt-2">
+          <UButton
+            type="submit"
+            color="primary"
+            block
+            :loading="loading"
+            :disabled="loading"
+            class="mt-2"
+          >
             {{ t('auth.login') }}
           </UButton>
         </form>
@@ -209,11 +250,14 @@ async function resendVerification() {
 
         <p class="text-center text-sm mt-5" style="color: var(--ink-muted)">
           {{ t('auth.noAccount') }}
-          <NuxtLink to="/employer/signup" class="hover:underline ml-1 font-medium" style="color: var(--accent)">
+          <NuxtLink
+            to="/employer/signup"
+            class="hover:underline ml-1 font-medium"
+            style="color: var(--accent)"
+          >
             {{ t('auth.signup') }}
           </NuxtLink>
         </p>
-
       </div>
     </div>
   </div>

@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
@@ -52,6 +53,7 @@ type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
 @Controller('api/v1/candidate-portal')
 @UseGuards(CandidateAuthGuard)
 @Public()
+@SkipThrottle({ auth: true })
 export class CandidatePortalController {
   constructor(
     private readonly portalService: CandidatePortalService,
@@ -147,7 +149,9 @@ export class CandidatePortalController {
   async postMessage(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(z.object({ content: z.string().min(1).max(4000) })))
+    @Body(
+      new ZodValidationPipe(z.object({ content: z.string().min(1).max(4000) })),
+    )
     body: { content: string },
   ) {
     return this.portalService.postMessage(candidate.id, id, body.content);
@@ -196,7 +200,9 @@ export class CandidatePortalController {
   @HttpCode(HttpStatus.CREATED)
   async applyToJob(
     @CurrentCandidate() candidate: { id: string },
-    @Body(new ZodValidationPipe(z.object({ discoveredJobId: z.string().uuid() })))
+    @Body(
+      new ZodValidationPipe(z.object({ discoveredJobId: z.string().uuid() })),
+    )
     body: { discoveredJobId: string },
   ) {
     const seekerApp = await this.portalService.queueApplication(
@@ -215,7 +221,9 @@ export class CandidatePortalController {
   async updateApplicationStatus(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(z.object({ status: z.string().min(1).max(50) })))
+    @Body(
+      new ZodValidationPipe(z.object({ status: z.string().min(1).max(50) })),
+    )
     body: { status: string },
   ) {
     return this.portalService.updateSeekerApplicationStatus(
