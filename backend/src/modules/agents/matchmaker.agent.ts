@@ -45,6 +45,8 @@ const MatchmakerResultSchema = z.object({
 
 const ParsedResumeSchema = z.object({
   full_name: nullableString,
+  phone: nullableString,
+  email: nullableString,
   skills: z.array(
     z.object({
       name: z.string(),

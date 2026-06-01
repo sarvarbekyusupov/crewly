@@ -10,6 +10,8 @@ import { NonRetryableError } from './errors';
 interface ParsedResume {
   skills?: (string | { name: string })[];
   full_name?: string;
+  phone?: string;
+  email?: string;
   positions?: { title?: string; company?: string }[];
   total_years?: number;
   preferred_salary_uzs?: string | number;
@@ -108,6 +110,8 @@ export class ParseCandidateProcessor {
         parsedResume: parsed as Prisma.InputJsonValue,
         socialProof: (socialProof as Prisma.InputJsonValue) || undefined,
         skills,
+        fullName: parsed.full_name || undefined,
+        phone: parsed.phone || undefined,
         yearsExperience: parsed.total_years ? parsed.total_years : undefined,
         currentPosition: parsed.positions?.[0]?.title,
         currentCompany: parsed.positions?.[0]?.company,

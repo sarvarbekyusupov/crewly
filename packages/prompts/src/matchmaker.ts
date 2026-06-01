@@ -24,6 +24,8 @@ GUIDELINES FOR LOCALIZATION & NORMALIZATION (Uzbekistan Context):
 Return ONLY valid JSON matching this exact structure:
 {
   "full_name": "...",
+  "phone": "...",
+  "email": "...",
   "skills": [{"name": "...", "level": "beginner|intermediate|advanced|expert"}],
   "total_years": 5,
   "positions": [{"title": "...", "company": "...", "start": "2020-01", "end": "2023-06"}],
