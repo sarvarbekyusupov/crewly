@@ -3,6 +3,7 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { Prisma } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { stripLlmJson } from './utils';
 import { NonRetryableError } from './errors';
 
@@ -34,6 +35,7 @@ export class ParseCandidateProcessor {
     private readonly db: PrismaService,
     private readonly agent: MatchmakerAgent,
     private readonly sourcingAgent: SourcingAgent,
+    private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.EMBED_CANDIDATE) private readonly embedQueue: Queue,
   ) {}
 
@@ -56,6 +58,12 @@ export class ParseCandidateProcessor {
       return;
     }
 
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'parsing' },
+    });
+
     let parsed: ParsedResume;
     try {
       parsed = await this.agent.parseResume(
@@ -67,6 +75,11 @@ export class ParseCandidateProcessor {
         { candidateId, error: err.message },
         'Failed to parse resume',
       );
+      this.emitter.emit('candidate.event', {
+        candidateId,
+        type: 'resume_parse_progress',
+        payload: { status: 'error' },
+      });
       throw err;
     }
 
@@ -110,6 +123,12 @@ export class ParseCandidateProcessor {
       },
     });
 
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'done' },
+    });
+
     await this.embedQueue.add({ candidateId }, LLM_JOB_OPTIONS);
   }
 
@@ -119,6 +138,11 @@ export class ParseCandidateProcessor {
       { candidateId: job.data.candidateId, error: err.message },
       'parse-candidate failed',
     );
+    this.emitter.emit('candidate.event', {
+      candidateId: job.data.candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'error' },
+    });
     if (err instanceof NonRetryableError) job.discard().catch(() => {});
   }
 }

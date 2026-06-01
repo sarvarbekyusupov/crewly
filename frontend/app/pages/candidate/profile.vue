@@ -44,55 +44,61 @@ const isParsing = computed(() => {
   )
 })
 
-let parsePollInterval: ReturnType<typeof setInterval> | null = null
-let parsePollAttempts = 0
-const MAX_POLL_ATTEMPTS = 40 // 2 minutes at 3s intervals
+let eventSource: EventSource | null = null
 
-watch(
-  isParsing,
-  (val) => {
-    if (val && !parsePollInterval) {
-      parsePollAttempts = 0
-      parsePollInterval = setInterval(async () => {
-        parsePollAttempts++
-        try {
+function setupSSE() {
+  if (eventSource) return
+
+  // Need to append credentials via withCredentials if not using a proxy,
+  // but standard browser fetch via API proxy usually attaches cookies.
+  eventSource = new EventSource('/api/v1/candidate-portal/events', {
+    withCredentials: true,
+  })
+
+  eventSource.onmessage = async (event) => {
+    if (!event.data) return // keepalive
+    try {
+      const data = JSON.parse(event.data)
+      if (data.type === 'resume_parse_progress') {
+        if (data.payload.status === 'parsing') {
+          isAnalyzingManual.value = true
+        } else if (data.payload.status === 'done') {
+          isAnalyzingManual.value = false
           await refresh()
-          if (profile.value?.parsedResume) {
-            clearInterval(parsePollInterval!)
-            parsePollInterval = null
-            isAnalyzingManual.value = false
-            parsePollAttempts = 0
-            toast.add({
-              title: t('candidate.profile.resumeAnalysisComplete'),
-              description: t('candidate.profile.resumeAnalysisDesc'),
-              color: 'success',
-            })
-          } else if (parsePollAttempts >= MAX_POLL_ATTEMPTS) {
-            clearInterval(parsePollInterval!)
-            parsePollInterval = null
-            isAnalyzingManual.value = false
-            parsePollAttempts = 0
-            toast.add({
-              title: t('common.error'),
-              description: t('candidate.profile.resumeAnalysisTimeout'),
-              color: 'error',
-            })
-          }
-        } catch {
-          // ignore polling errors silently
+          toast.add({
+            title: t('candidate.profile.resumeAnalysisComplete'),
+            description: t('candidate.profile.resumeAnalysisDesc'),
+            color: 'success',
+          })
+        } else if (data.payload.status === 'error') {
+          isAnalyzingManual.value = false
+          toast.add({
+            title: t('common.error'),
+            description: t('candidate.profile.resumeAnalysisTimeout'), // Or a specific error message
+            color: 'error',
+          })
         }
-      }, 3000)
-    } else if (!val && parsePollInterval) {
-      clearInterval(parsePollInterval)
-      parsePollInterval = null
-      parsePollAttempts = 0
+      }
+    } catch {
+      // ignore JSON parse errors from keepalives
     }
-  },
-  { immediate: true },
-)
+  }
+
+  eventSource.onerror = () => {
+    // Attempted reconnection is automatic, but we can close it if we want to stop
+    // For now, let EventSource handle reconnects.
+  }
+}
+
+onMounted(() => {
+  setupSSE()
+})
 
 onUnmounted(() => {
-  if (parsePollInterval) clearInterval(parsePollInterval)
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
 })
 
 // --- VeeValidate form ---

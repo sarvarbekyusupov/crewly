@@ -11,11 +11,16 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Observable, fromEvent, interval, merge } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { CandidatePortalService } from './candidate-portal.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
@@ -57,9 +62,28 @@ type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
 export class CandidatePortalController {
   constructor(
     private readonly portalService: CandidatePortalService,
+    private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
   ) {}
+
+  @Sse('events')
+  stream(@CurrentCandidate() candidate: { id: string }): Observable<MessageEvent> {
+    const keepalive$ = interval(30_000).pipe(
+      map((): MessageEvent => ({ data: '' })),
+    );
+
+    const events$ = fromEvent(this.emitter, 'candidate.event').pipe(
+      filter((event: any) => event?.candidateId === candidate.id),
+      map(
+        (event: any): MessageEvent => ({
+          data: JSON.stringify({ type: event.type, payload: event.payload }),
+        }),
+      ),
+    );
+
+    return merge(events$, keepalive$);
+  }
 
   @Get('profile')
   async getProfile(@CurrentCandidate() candidate: { id: string }) {
