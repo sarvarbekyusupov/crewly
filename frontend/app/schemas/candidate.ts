@@ -11,6 +11,10 @@ export const candidateProfileSchema = z.object({
   githubUrl: z.union([z.string().url('Enter a valid GitHub URL'), z.literal('')]).optional(),
   preferredWorkMode: z.string().optional(),
   willingToRelocate: z.boolean().optional(),
+  yearsExperience: z.coerce.number().min(0).max(100).optional(),
+  noticePeriodDays: z.coerce.number().min(0).max(365).optional(),
+  telegramUsername: z.string().optional(),
+  parsedResume: z.any().optional(),
 })
 
 export const candidatePreferencesSchema = z.object({

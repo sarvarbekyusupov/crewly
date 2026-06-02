@@ -42,6 +42,10 @@ const UpdateProfileSchema = z.object({
   preferredWorkMode: z.string().optional(),
   willingToRelocate: z.boolean().optional(),
   skills: z.array(z.string()).optional(),
+  yearsExperience: z.number().min(0).max(100).nullable().optional(),
+  noticePeriodDays: z.number().int().min(0).max(365).nullable().optional(),
+  telegramUsername: z.string().max(100).nullable().optional(),
+  parsedResume: z.any().optional(),
 });
 
 const UpdatePreferencesSchema = z.object({
@@ -122,6 +126,12 @@ export class CandidatePortalController {
       file.originalname,
       file.mimetype,
     );
+  }
+
+  @Post('cv/parse')
+  @HttpCode(HttpStatus.OK)
+  async parseCv(@CurrentCandidate() candidate: { id: string }) {
+    return this.portalService.triggerParseCv(candidate.id);
   }
 
   @Get('preferences')

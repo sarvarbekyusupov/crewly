@@ -81,14 +81,33 @@ export class CandidatePortalService {
       preferredWorkMode?: string;
       willingToRelocate?: boolean;
       skills?: string[];
+      yearsExperience?: number | null;
+      noticePeriodDays?: number | null;
+      telegramUsername?: string | null;
+      parsedResume?: any;
     },
   ) {
     const candidate = await this.db.candidate.update({
       where: { id: candidateId },
       data,
     });
-    const { rawResumeText: _, parsedResume: __, ...safe } = candidate as any;
+    const { rawResumeText: _, ...safe } = candidate as any;
     return safe;
+  }
+
+  async triggerParseCv(candidateId: string) {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+    });
+    if (!candidate || !candidate.rawResumeText) {
+      throw new NotFoundException('No raw resume text available to parse');
+    }
+    await this.db.candidate.update({
+      where: { id: candidateId },
+      data: { parsedResume: Prisma.DbNull },
+    });
+    await this.parseQueue.add({ candidateId }, LLM_JOB_OPTIONS);
+    return { success: true };
   }
 
   async updatePreferences(
@@ -173,7 +192,7 @@ export class CandidatePortalService {
     }
 
     this.logger.log({ candidateId, key }, 'CV uploaded');
-    return { url: signedUrl || publicUrl, uploaded: true };
+    return { url: signedUrl || publicUrl, uploaded: true, parsing: !!rawText };
   }
 
   async getDiscoveredJobs(

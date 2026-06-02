@@ -77,6 +77,17 @@ export class ParseCandidateProcessor {
         { candidateId, error: err.message },
         'Failed to parse resume',
       );
+      await this.db.candidate.update({
+        where: { id: candidateId },
+        data: {
+          parsedResume: { error: true, message: err.message } as any,
+        },
+      }).catch((dbErr) => {
+        this.logger.error(
+          { candidateId, error: dbErr.message },
+          'Failed to write parse error status to database',
+        );
+      });
       this.emitter.emit('candidate.event', {
         candidateId,
         type: 'resume_parse_progress',
