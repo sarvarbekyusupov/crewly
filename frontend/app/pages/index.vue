@@ -471,7 +471,7 @@ onUnmounted(() => {
   gap: 32px;
   position: sticky;
   top: 0;
-  background: transparent;
+  background: #15140f;
   z-index: 100;
   border-bottom: 1px solid transparent;
   transition:
