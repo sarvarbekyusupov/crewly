@@ -648,10 +648,10 @@ const missingProfileItems = computed(() => {
                   </p>
                 </div>
                 <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-lg border border-line bg-slate-50 dark:bg-slate-900/50">
-                  <UInput v-model="pos.title" placeholder="Title" size="xs" />
+                  <UInput v-model="pos.title" placeholder="Title" size="xs" autofocus />
                   <UInput v-model="pos.company" placeholder="Company" size="xs" />
-                  <UInput v-model="pos.start" placeholder="Start Date (e.g. 2023-01)" size="xs" />
-                  <UInput v-model="pos.end" placeholder="End Date (or empty for Present)" size="xs" />
+                  <UInput v-model="pos.start" type="month" placeholder="Start Date" size="xs" />
+                  <UInput v-model="pos.end" type="month" placeholder="End Date (or empty for Present)" size="xs" />
                 </div>
               </div>
 
@@ -714,7 +714,7 @@ const missingProfileItems = computed(() => {
               <p class="text-xs" style="color: var(--ink-muted)">{{ edu.institution || t('candidate.profile.unknown') }}</p>
             </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <UInput v-model="edu.degree" placeholder="Degree (e.g. Bachelor's)" size="xs" />
+              <UInput v-model="edu.degree" placeholder="Degree (e.g. Bachelor's)" size="xs" autofocus />
               <UInput v-model="edu.field" placeholder="Field of Study" size="xs" />
               <UInput v-model="edu.institution" placeholder="Institution" size="xs" />
             </div>
@@ -775,7 +775,7 @@ const missingProfileItems = computed(() => {
               </h5>
             </div>
             <div v-else class="grid grid-cols-2 gap-2">
-              <UInput v-model="lang.name" placeholder="Language (e.g. English)" size="xs" />
+              <UInput v-model="lang.name" placeholder="Language (e.g. English)" size="xs" autofocus />
               <USelect
                 v-model="lang.level"
                 :options="['Native', 'Fluent', 'Intermediate', 'Beginner', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']"
@@ -963,7 +963,7 @@ const missingProfileItems = computed(() => {
               {{ skill || 'Untitled Skill' }}
             </div>
             <div v-else>
-              <UInput v-model="skills[i]" placeholder="Skill Name (e.g. Node.js)" size="xs" class="w-full" />
+              <UInput v-model="skills[i]" placeholder="Skill Name (e.g. Node.js)" size="xs" class="w-full" autofocus />
             </div>
           </div>
 
@@ -993,8 +993,11 @@ const missingProfileItems = computed(() => {
           </div>
         </div>
 
-        <div v-if="!skills.length" class="text-sm py-4 text-center italic col-span-2" style="color: var(--ink-subtle)">
-          Add your professional skills here.
+        <div v-if="!skills.length" class="text-sm py-6 text-center italic col-span-2 flex flex-col items-center gap-2" style="color: var(--ink-subtle)">
+          <span>Add your professional skills here.</span>
+          <UButton variant="outline" size="xs" icon="i-heroicons-plus" class="mt-1" @click="addCustomSkill">
+            Add Your First Skill
+          </UButton>
         </div>
       </div>
     </UCard>
