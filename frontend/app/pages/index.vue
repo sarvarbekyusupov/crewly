@@ -139,10 +139,10 @@ onUnmounted(() => {
           <p class="hero-body">{{ t('landing.subheadCompany') }}</p>
           <div class="hero-ctas">
             <NuxtLink to="/employer/signup" class="cta-primary">
-              {{ t('landing.doorCompanyCta') }} →
+              {{ t('landing.doorCompanyCta') }}
             </NuxtLink>
             <NuxtLink to="/candidate/login" class="cta-secondary">
-              {{ t('landing.doorCandidateCtaNew') }} →
+              {{ t('landing.doorCandidateCtaNew') }}
             </NuxtLink>
           </div>
         </div>
@@ -221,7 +221,7 @@ onUnmounted(() => {
           </h2>
           <p class="path-body">{{ t('landing.doorCompanyBody') }}</p>
           <NuxtLink to="/employer/signup" class="path-cta"
-            >{{ t('landing.doorCompanyCta') }} →</NuxtLink
+            >{{ t('landing.doorCompanyCta') }}</NuxtLink
           >
         </div>
         <div class="path-steps">
@@ -264,7 +264,7 @@ onUnmounted(() => {
           </h2>
           <p class="path-body">{{ t('landing.doorCandidateBodyNew') }}</p>
           <NuxtLink to="/candidate/login" class="path-cta path-cta--candidate"
-            >{{ t('landing.doorCandidateCtaNew') }} →</NuxtLink
+            >{{ t('landing.doorCandidateCtaNew') }}</NuxtLink
           >
         </div>
         <div class="path-steps">
@@ -1019,7 +1019,7 @@ onUnmounted(() => {
 .path-ribbon {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1087,7 +1087,7 @@ onUnmounted(() => {
 .path-step-num {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
   letter-spacing: 0.06em;
   padding-top: 3px;
   min-width: 22px;
@@ -1336,7 +1336,7 @@ onUnmounted(() => {
 .belief-num {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
   letter-spacing: 0.06em;
   padding-top: 6px;
 }
@@ -1352,7 +1352,7 @@ onUnmounted(() => {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
 }
 .pillar-big {
   font-family: 'Fraunces', serif;
@@ -1535,7 +1535,7 @@ onUnmounted(() => {
 .lfoot-tagline {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
   letter-spacing: 0.06em;
 }
 
@@ -1558,7 +1558,7 @@ onUnmounted(() => {
 .lfoot-copy {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
 }
 
 /* ═══════════════════════════════════════════
