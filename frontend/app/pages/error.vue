@@ -9,6 +9,10 @@ function goHome() {
   clearError({ redirect: '/' })
 }
 
+function goTo(path: string) {
+  clearError({ redirect: path })
+}
+
 onMounted(() => {
   if (!isNotFound.value) {
     Sentry.captureException(new Error(props.error.message || `HTTP ${props.error.statusCode}`))
@@ -17,10 +21,63 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="grid-hero min-h-screen flex items-center justify-center p-6"
-    style="background: var(--bg)"
-  >
+  <div class="grid-hero min-h-screen flex flex-col" style="background: var(--bg)">
+    <nav
+      style="
+        border-bottom: 1px solid var(--line);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        background: var(--bg);
+      "
+    >
+      <span
+        style="
+          font-family: 'Fraunces', serif;
+          font-size: 18px;
+          font-weight: 400;
+          color: var(--ink);
+          cursor: pointer;
+        "
+        @click="goHome"
+      >
+        my-hr
+      </span>
+      <button
+        style="
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--ink-muted);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        "
+        @click="goTo('/candidate/dashboard')"
+      >
+        Dashboard
+      </button>
+      <button
+        style="
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--ink-muted);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        "
+        @click="goTo('/candidate/jobs')"
+      >
+        Job Discovery
+      </button>
+    </nav>
+    <div class="flex-1 flex items-center justify-center p-6">
     <div class="text-center max-w-sm">
       <p
         style="
@@ -68,6 +125,7 @@ onMounted(() => {
         </p>
         <UButton icon="i-heroicons-home" @click="goHome">Go to Dashboard</UButton>
       </div>
+    </div>
     </div>
   </div>
 </template>

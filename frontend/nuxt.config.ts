@@ -72,6 +72,8 @@ export default defineNuxtConfig({
       '/api/**': {
         proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/**`,
       },
+      '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
+      '/candidate/job-discovery': { redirect: { to: '/candidate/jobs', statusCode: 301 } },
     },
   },
 })

@@ -439,10 +439,11 @@ onUnmounted(() => {
       </div>
       <div class="lfoot-links">
         <NuxtLink to="/terms">{{ t('landing.navPricing') }}</NuxtLink>
+        <NuxtLink to="/employer/signup">{{ t('landing.navForCompanies') }}</NuxtLink>
         <NuxtLink to="/employer/login">{{ t('auth.login') }}</NuxtLink>
         <NuxtLink to="/candidate/login">{{ t('landing.navForCandidates') }}</NuxtLink>
       </div>
-      <span class="lfoot-copy">© 2025 my-hr</span>
+      <span class="lfoot-copy">© {{ new Date().getFullYear() }} my-hr</span>
     </footer>
   </div>
 </template>

@@ -39,7 +39,7 @@ interface Profile {
   }
 }
 
-const { data: profile, refresh } = await useAsyncData('candidate-profile', () =>
+const { data: profile, pending: profilePending, refresh } = useAsyncData('candidate-profile', () =>
   api.get<Profile>('/api/v1/candidate-portal/profile'),
 )
 
@@ -383,25 +383,7 @@ async function regenerateSummary() {
   }
 }
 
-// Profile completeness
-const completeness = computed(() => {
-  const p = profile.value
-  if (!p) return 0
-  const fields = [
-    p.fullName,
-    p.phone,
-    p.city,
-    p.currentPosition,
-    p.currentCompany,
-    p.preferredWorkMode,
-    p.resumeFileUrl,
-    p.telegramUsername,
-    p.yearsExperience,
-  ]
-  const hasSkills = (p.skills?.length ?? 0) > 0 ? 1 : 0
-  const filled = fields.filter((f) => f !== undefined && f !== null && f !== '').length + hasSkills
-  return Math.round((filled / (fields.length + 1)) * 100)
-})
+const completeness = useProfileCompletion(profile)
 
 // Actionable Dropdown list for progress bar
 const missingProfileItems = computed(() => {
@@ -435,6 +417,22 @@ const missingProfileItems = computed(() => {
 
 <template>
   <div class="max-w-2xl space-y-6 pb-24">
+    <!-- Loading skeleton -->
+    <template v-if="profilePending">
+      <div class="pb-4" style="border-bottom: 1px solid var(--line)">
+        <USkeleton class="h-3 w-24 mb-2" />
+        <USkeleton class="h-8 w-48 mb-3" />
+        <USkeleton class="h-4 w-64" />
+      </div>
+      <div class="space-y-3">
+        <USkeleton class="h-32 w-full rounded-lg" />
+        <USkeleton class="h-24 w-full rounded-lg" />
+        <USkeleton class="h-24 w-full rounded-lg" />
+        <USkeleton class="h-24 w-full rounded-lg" />
+      </div>
+    </template>
+
+    <template v-else>
     <UAlert
       v-if="isParsing"
       icon="i-heroicons-sparkles"
@@ -1017,6 +1015,7 @@ const missingProfileItems = computed(() => {
         {{ t('candidate.profile.saveChanges') }}
       </UButton>
     </div>
+    </template>
   </div>
 </template>
 

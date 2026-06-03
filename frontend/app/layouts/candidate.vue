@@ -11,7 +11,7 @@ onErrorCaptured((err) => {
 
 const nav = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
-  { label: 'Offers', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
+  { label: 'Applications', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
   { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
   { label: 'Job Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   {

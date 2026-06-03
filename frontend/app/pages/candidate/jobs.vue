@@ -179,8 +179,8 @@ function formatPostedDate(dateStr?: string) {
         placeholder="Search jobs..."
         class="max-w-xs"
       />
-      <USelect v-model="workMode" :options="workModeOptions" size="sm" class="w-36" />
-      <USelect v-model="sortBy" :options="sortOptions" size="sm" class="w-36" />
+      <USelect v-model="workMode" :options="workModeOptions" size="sm" class="w-36" aria-label="Work mode" />
+      <USelect v-model="sortBy" :options="sortOptions" size="sm" class="w-36" aria-label="Sort by" />
       <div class="flex items-center gap-2 text-sm" style="color: var(--ink-muted)">
         <span>{{ t('candidate.jobs.minScore') }}:</span>
         <UInput

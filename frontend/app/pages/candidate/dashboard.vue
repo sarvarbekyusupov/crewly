@@ -20,9 +20,15 @@ interface HrApplication {
 
 interface Profile {
   fullName?: string
-  skills?: string[]
-  resumeFileUrl?: string
+  phone?: string
+  city?: string
   currentPosition?: string
+  currentCompany?: string
+  preferredWorkMode?: string
+  resumeFileUrl?: string
+  telegramUsername?: string
+  yearsExperience?: number | string
+  skills?: string[]
   minMatchScore?: number | null
 }
 
@@ -65,14 +71,7 @@ const stats = computed(() => {
   }
 })
 
-// Profile completeness
-const completeness = computed(() => {
-  const p = profile.value
-  if (!p) return 0
-  const fields = [p.fullName, p.currentPosition, p.resumeFileUrl]
-  const hasSkills = (p.skills?.length ?? 0) > 0 ? 1 : 0
-  return Math.round(((fields.filter(Boolean).length + hasSkills) / (fields.length + 1)) * 100)
-})
+const completeness = useProfileCompletion(profile)
 
 function scoreColor(
   score: number | null | undefined,
@@ -261,6 +260,7 @@ async function triggerScoring() {
           <h2 class="section-label">{{ t('candidate.dashboard.topMatches') }}</h2>
           <div class="flex items-center gap-2">
             <UButton
+              v-if="topJobs.length"
               variant="ghost"
               size="xs"
               icon="i-heroicons-sparkles"
@@ -284,9 +284,13 @@ async function triggerScoring() {
             style="color: var(--ink-subtle)"
           />
           <p class="text-sm" style="color: var(--ink-muted)">No jobs discovered yet</p>
-          <p class="text-xs mt-1" style="color: var(--ink-subtle)">
-            Ask staff to run a job discovery scan
-          </p>
+          <NuxtLink
+            to="/candidate/jobs"
+            class="text-xs mt-2 inline-block"
+            style="color: var(--ink-muted); text-decoration: underline"
+          >
+            Go to Job Discovery →
+          </NuxtLink>
         </div>
 
         <div
