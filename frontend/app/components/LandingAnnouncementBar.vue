@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { audience, set } = useAudience()
-const dismissed = ref(false)
+const dismissed = useState('annc_dismissed', () => false)
 </script>
 
 <template>
@@ -20,8 +20,11 @@ const dismissed = ref(false)
 
 <style scoped>
 .annc-wrap {
-  position: relative;
-  z-index: 60;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
   height: 39px;
   box-sizing: border-box;
 }

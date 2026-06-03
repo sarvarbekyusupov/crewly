@@ -1,25 +1,34 @@
 <script setup lang="ts">
 const { audience, set } = useAudience()
 
+const dismissed = useState('annc_dismissed', () => false)
 const scrolled = ref(false)
 
 function onScroll() {
   scrolled.value = window.scrollY > 20
 }
 
+const navTop = computed(() => {
+  if (scrolled.value) {
+    return dismissed.value ? '12px' : '51px'
+  } else {
+    return dismissed.value ? '0px' : '39px'
+  }
+})
+
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
-  <header class="nav-wrap">
+  <header class="nav-wrap" :class="{ scrolled }">
     <nav class="nav">
       <div class="nav-bg" :class="{ scrolled }" />
 
       <!-- Logo -->
       <NuxtLink to="/" class="brand" @click="set('employer')">
         <svg class="brand-icon" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M15 2L28 26H2L15 2Z" fill="rgb(245, 240, 234)" />
+          <path d="M15 2L28 26H2L15 2Z" fill="currentColor" />
         </svg>
         <span class="brand-name">myHR</span>
       </NuxtLink>
@@ -65,8 +74,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 <style scoped>
 .nav-wrap {
-  position: relative;
-  z-index: 50;
+  position: fixed;
+  top: v-bind(navTop);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0;
+  transition: padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-wrap.scrolled {
+  top: 12px;
+  padding: 0 clamp(16px, 4vw, 40px);
 }
 
 .nav {
@@ -84,16 +103,19 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   position: absolute;
   inset: 0;
   z-index: -1;
-  backdrop-filter: blur(6px) saturate(1.1);
-  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
   background: transparent;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
   border-bottom: 1px solid transparent;
+  border-radius: 0;
 }
 
 .nav-bg.scrolled {
-  background: color-mix(in srgb, var(--l-bg) 80%, transparent);
-  border-bottom-color: var(--l-line);
+  background: color-mix(in srgb, var(--l-surface) 60%, transparent);
+  border: 1px solid var(--l-line);
+  border-radius: 34px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Logo ── */
@@ -104,6 +126,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   text-decoration: none;
   justify-self: start;
   transition: opacity 0.15s;
+  color: var(--l-text);
 }
 
 .brand:hover {
@@ -120,7 +143,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-family: var(--l-sans);
   font-size: 18px;
   font-weight: 500;
-  color: rgb(245, 240, 234);
+  color: var(--l-text);
   line-height: 28px;
 }
 
@@ -130,7 +153,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   height: 44px;
   padding: 3px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--l-line);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   display: flex;
@@ -145,7 +168,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   height: calc(100% - 6px);
   width: calc(50% - 3px);
   border-radius: 9999px;
-  background: rgb(214, 227, 143);
+  background: var(--l-green);
   transition: left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
@@ -162,7 +185,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-family: var(--l-sans);
   font-size: 14px;
   font-weight: 500;
-  color: rgba(245, 240, 234, 0.7);
+  color: color-mix(in srgb, var(--l-text) 70%, transparent);
   text-decoration: none;
   border-radius: 9999px;
   position: relative;
@@ -172,7 +195,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 
 .tab-btn.active {
-  color: rgb(61, 64, 47);
+  color: #1a1a18;
 }
 
 /* ── Right section ── */
@@ -187,7 +210,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-family: var(--l-sans);
   font-size: 14px;
   font-weight: 500;
-  color: rgb(245, 240, 234);
+  color: var(--l-text);
   text-decoration: none;
   transition: opacity 0.12s;
   white-space: nowrap;
@@ -202,8 +225,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   align-items: center;
   height: 52px;
   padding: 16px 24px;
-  background: rgb(207, 176, 219);
-  color: rgb(74, 29, 96);
+  background: var(--l-lilac);
+  color: #341b48;
   font-family: var(--l-sans);
   font-size: 16px;
   font-weight: 500;
