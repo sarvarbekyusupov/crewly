@@ -39,9 +39,11 @@ interface Profile {
   }
 }
 
-const { data: profile, pending: profilePending, refresh } = useAsyncData('candidate-profile', () =>
-  api.get<Profile>('/api/v1/candidate-portal/profile'),
-)
+const {
+  data: profile,
+  pending: profilePending,
+  refresh,
+} = useAsyncData('candidate-profile', () => api.get<Profile>('/api/v1/candidate-portal/profile'))
 
 const isAnalyzingManual = ref(false)
 
@@ -182,8 +184,14 @@ watch(
       githubUrl: p.githubUrl ?? '',
       preferredWorkMode: p.preferredWorkMode ?? '',
       willingToRelocate: p.willingToRelocate ?? false,
-      yearsExperience: p.yearsExperience !== undefined && p.yearsExperience !== null && p.yearsExperience !== '' ? Number(p.yearsExperience) : undefined,
-      noticePeriodDays: p.noticePeriodDays !== undefined && p.noticePeriodDays !== null && p.noticePeriodDays !== '' ? Number(p.noticePeriodDays) : undefined,
+      yearsExperience:
+        p.yearsExperience !== undefined && p.yearsExperience !== null && p.yearsExperience !== ''
+          ? Number(p.yearsExperience)
+          : undefined,
+      noticePeriodDays:
+        p.noticePeriodDays !== undefined && p.noticePeriodDays !== null && p.noticePeriodDays !== ''
+          ? Number(p.noticePeriodDays)
+          : undefined,
       telegramUsername: p.telegramUsername ?? '',
     })
     skills.value = p.skills ?? []
@@ -210,8 +218,14 @@ const save = handleSubmit(async (values) => {
     const payload = {
       ...values,
       skills: skills.value,
-      yearsExperience: (values.yearsExperience === undefined || values.yearsExperience === null) ? null : Number(values.yearsExperience),
-      noticePeriodDays: (values.noticePeriodDays === undefined || values.noticePeriodDays === null) ? null : Number(values.noticePeriodDays),
+      yearsExperience:
+        values.yearsExperience === undefined || values.yearsExperience === null
+          ? null
+          : Number(values.yearsExperience),
+      noticePeriodDays:
+        values.noticePeriodDays === undefined || values.noticePeriodDays === null
+          ? null
+          : Number(values.noticePeriodDays),
       telegramUsername: formatTelegramUsername(values.telegramUsername),
       parsedResume: {
         ...profile.value?.parsedResume,
@@ -286,7 +300,10 @@ async function uploadCv(event: Event) {
   const body = new FormData()
   body.append('file', file)
   try {
-    const res = await api.post<{ url: string; uploaded: boolean; parsing?: boolean }>('/api/v1/candidate-portal/cv', body)
+    const res = await api.post<{ url: string; uploaded: boolean; parsing?: boolean }>(
+      '/api/v1/candidate-portal/cv',
+      body,
+    )
     toast.add({ title: t('candidate.profile.cvUploaded'), color: 'success' })
     if (parsingTimeoutId) {
       clearTimeout(parsingTimeoutId)
@@ -394,12 +411,18 @@ const missingProfileItems = computed(() => {
   if (!p.fullName) items.push({ label: 'Add Full Name (+12%)', icon: 'i-heroicons-user' })
   if (!p.phone) items.push({ label: 'Add Phone Number (+12%)', icon: 'i-heroicons-phone' })
   if (!p.city) items.push({ label: 'Add City (+12%)', icon: 'i-heroicons-map-pin' })
-  if (!p.currentPosition) items.push({ label: 'Add Current Position (+12%)', icon: 'i-heroicons-briefcase' })
-  if (!p.currentCompany) items.push({ label: 'Add Current Company (+12%)', icon: 'i-heroicons-building-office' })
-  if (!p.preferredWorkMode) items.push({ label: 'Select Preferred Work Mode (+12%)', icon: 'i-heroicons-globe-alt' })
-  if (!p.resumeFileUrl) items.push({ label: 'Upload your Resume CV (+12%)', icon: 'i-heroicons-arrow-up-tray' })
-  if (!p.telegramUsername) items.push({ label: 'Add Telegram handle (+12%)', icon: 'i-heroicons-paper-airplane' })
-  if ((p.skills?.length ?? 0) === 0) items.push({ label: 'Add Skills (+12%)', icon: 'i-heroicons-command-line' })
+  if (!p.currentPosition)
+    items.push({ label: 'Add Current Position (+12%)', icon: 'i-heroicons-briefcase' })
+  if (!p.currentCompany)
+    items.push({ label: 'Add Current Company (+12%)', icon: 'i-heroicons-building-office' })
+  if (!p.preferredWorkMode)
+    items.push({ label: 'Select Preferred Work Mode (+12%)', icon: 'i-heroicons-globe-alt' })
+  if (!p.resumeFileUrl)
+    items.push({ label: 'Upload your Resume CV (+12%)', icon: 'i-heroicons-arrow-up-tray' })
+  if (!p.telegramUsername)
+    items.push({ label: 'Add Telegram handle (+12%)', icon: 'i-heroicons-paper-airplane' })
+  if ((p.skills?.length ?? 0) === 0)
+    items.push({ label: 'Add Skills (+12%)', icon: 'i-heroicons-command-line' })
 
   if (items.length === 0) {
     return [[{ label: 'Profile complete! 🎉', disabled: true }]]
@@ -433,588 +456,702 @@ const missingProfileItems = computed(() => {
     </template>
 
     <template v-else>
-    <UAlert
-      v-if="isParsing"
-      icon="i-heroicons-sparkles"
-      :title="t('candidate.profile.aiAnalysisTitle')"
-      :description="t('candidate.profile.aiAnalysisDesc')"
-      color="primary"
-      variant="soft"
-      class="animate-pulse"
-    />
-
-    <div class="pb-4" style="border-bottom: 1px solid var(--line)">
-      <p
-        style="
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--ink-subtle);
-          margin-bottom: 6px;
-        "
-      >
-        {{ t('candidate.profile.eyebrow') }}
-      </p>
-      <div class="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <h1
-          style="
-            font-family: 'Fraunces', serif;
-            font-size: 28px;
-            line-height: 1.05;
-            letter-spacing: -0.03em;
-            color: var(--ink);
-            font-weight: 400;
-          "
-        >
-          {{ t('candidate.profile.title') }}
-        </h1>
-        
-        <!-- Actionable progress bar dropdown -->
-        <UDropdown :items="missingProfileItems" :popper="{ placement: 'bottom-end' }">
-          <div class="text-left sm:text-right shrink-0 cursor-pointer hover:opacity-80">
-            <span class="text-xs font-semibold" style="color: var(--ink-subtle)">{{ completeness }}% complete</span>
-            <div class="w-32 h-1.5 rounded-full mt-1 overflow-hidden" style="background: var(--line)">
-              <div
-                class="h-full rounded-full transition-all duration-500"
-                :style="{
-                  width: completeness + '%',
-                  background:
-                    completeness >= 80
-                      ? 'var(--positive)'
-                      : completeness >= 50
-                        ? 'var(--warning)'
-                        : 'var(--accent)',
-                }"
-              />
-            </div>
-          </div>
-        </UDropdown>
-      </div>
-    </div>
-
-    <!-- CV Upload -->
-    <UCard>
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="section-label">{{ t('candidate.profile.resumeSection') }}</h3>
-        <div v-if="isParsing" class="flex items-center gap-2 px-2 py-1 rounded bg-primary-50">
-          <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-spin text-primary-500" />
-          <span class="text-[11px] font-medium text-primary-700 uppercase tracking-wider">{{
-            t('candidate.profile.analyzingAi')
-          }}</span>
-        </div>
-      </div>
-
-      <div v-if="isParsing" class="mb-4">
-        <div class="flex justify-between text-[10px] text-ink-subtle mb-1 uppercase font-mono">
-          <span>{{ t('candidate.profile.extractingSkills') }}</span>
-          <span>{{ t('candidate.profile.inProgress') }}</span>
-        </div>
-        <div class="w-full h-1 bg-line rounded-full overflow-hidden">
-          <div class="h-full bg-primary-500 animate-progress-indeterminate w-1/3 rounded-full" />
-        </div>
-      </div>
-
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2">
-          <UIcon
-            :name="profile?.resumeFileUrl ? 'i-heroicons-document-check' : 'i-heroicons-document'"
-            class="w-5 h-5"
-            :style="{ color: profile?.resumeFileUrl ? 'var(--positive)' : 'var(--ink-subtle)' }"
-          />
-          <span
-            class="text-sm"
-            :style="{ color: profile?.resumeFileUrl ? 'var(--ink)' : 'var(--ink-muted)' }"
-          >
-            {{
-              profile?.resumeFileUrl ? t('candidate.profile.cvOnFile') : t('candidate.profile.noCv')
-            }}
-          </span>
-        </div>
-
-        <label class="cursor-pointer">
-          <input
-            ref="cvInput"
-            type="file"
-            accept=".pdf,.doc,.docx"
-            class="hidden"
-            @change="uploadCv"
-          />
-          <UButton
-            as="span"
-            variant="outline"
-            size="sm"
-            icon="i-heroicons-arrow-up-tray"
-            :loading="cvUploading"
-            :disabled="!!isParsing"
-          >
-            {{
-              profile?.resumeFileUrl
-                ? t('candidate.profile.replaceCv')
-                : t('candidate.profile.uploadCv')
-            }}
-          </UButton>
-        </label>
-
-        <a
-          v-if="profile?.resumeFileUrl"
-          :href="profile.resumeFileUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray">Download</UButton>
-        </a>
-      </div>
-      <p class="text-xs mt-2" style="color: var(--ink-subtle)">
-        {{ t('candidate.profile.cvFileHint') }}
-      </p>
-    </UCard>
-
-    <!-- Experience Review -->
-    <UCard>
-      <div class="flex items-center justify-between gap-2 mb-4">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-primary-500" />
-          <h3 class="section-label mb-0">{{ t('candidate.profile.experienceReview') }}</h3>
-        </div>
-        
-        <!-- Regenerate summary with AI -->
-        <UButton
-          v-if="profile?.resumeFileUrl"
-          variant="ghost"
-          size="xs"
-          icon="i-heroicons-arrow-path"
-          :loading="isRegenerating"
-          @click="regenerateSummary"
-        >
-          Regenerate Summary
-        </UButton>
-      </div>
-
-      <!-- AI Professional Summary (Feedback) -->
-      <div v-if="profile?.parsedResume?.summary" class="mb-6 p-4 rounded-xl bg-primary-50 border border-primary-100 dark:bg-primary-950/20 dark:border-primary-900/30">
-        <div class="flex items-center gap-2 mb-2">
-          <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-4 h-4 text-primary-500" />
-          <span class="text-xs font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider">
-            {{ t('candidate.profile.aiSummary') }}
-          </span>
-        </div>
-        <p class="text-sm leading-relaxed text-primary-900 dark:text-primary-200 italic font-medium">
-          "{{ profile.parsedResume.summary }}"
-        </p>
-      </div>
-
-      <!-- Overlapping dates warning alert -->
       <UAlert
-        v-if="overlappingPositionsWarning"
-        icon="i-heroicons-exclamation-triangle"
-        title="Overlapping Positions"
-        description="You have multiple positions marked as current (Present). Please clarify dates to ensure recruiters see accurate experience timelines."
-        color="warning"
-        variant="subtle"
-        class="mb-4"
+        v-if="isParsing"
+        icon="i-heroicons-sparkles"
+        :title="t('candidate.profile.aiAnalysisTitle')"
+        :description="t('candidate.profile.aiAnalysisDesc')"
+        color="primary"
+        variant="soft"
+        class="animate-pulse"
       />
 
-      <!-- Work History Timeline -->
-      <div class="space-y-4">
-        <div class="flex justify-between items-center mb-3">
-          <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink-muted)">
-            {{ t('candidate.profile.workHistory') }}
-          </h4>
-          <UButton
-            variant="outline"
-            size="xs"
-            icon="i-heroicons-plus"
-            @click="addPosition"
+      <div class="pb-4" style="border-bottom: 1px solid var(--line)">
+        <p
+          style="
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ink-subtle);
+            margin-bottom: 6px;
+          "
+        >
+          {{ t('candidate.profile.eyebrow') }}
+        </p>
+        <div class="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <h1
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 28px;
+              line-height: 1.05;
+              letter-spacing: -0.03em;
+              color: var(--ink);
+              font-weight: 400;
+            "
           >
-            Add Position
+            {{ t('candidate.profile.title') }}
+          </h1>
+
+          <!-- Actionable progress bar dropdown -->
+          <UDropdown :items="missingProfileItems" :popper="{ placement: 'bottom-end' }">
+            <div class="text-left sm:text-right shrink-0 cursor-pointer hover:opacity-80">
+              <span class="text-xs font-semibold" style="color: var(--ink-subtle)"
+                >{{ completeness }}% complete</span
+              >
+              <div
+                class="w-32 h-1.5 rounded-full mt-1 overflow-hidden"
+                style="background: var(--line)"
+              >
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :style="{
+                    width: completeness + '%',
+                    background:
+                      completeness >= 80
+                        ? 'var(--positive)'
+                        : completeness >= 50
+                          ? 'var(--warning)'
+                          : 'var(--accent)',
+                  }"
+                />
+              </div>
+            </div>
+          </UDropdown>
+        </div>
+      </div>
+
+      <!-- CV Upload -->
+      <UCard>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="section-label">{{ t('candidate.profile.resumeSection') }}</h3>
+          <div v-if="isParsing" class="flex items-center gap-2 px-2 py-1 rounded bg-primary-50">
+            <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-spin text-primary-500" />
+            <span class="text-[11px] font-medium text-primary-700 uppercase tracking-wider">{{
+              t('candidate.profile.analyzingAi')
+            }}</span>
+          </div>
+        </div>
+
+        <div v-if="isParsing" class="mb-4">
+          <div class="flex justify-between text-[10px] text-ink-subtle mb-1 uppercase font-mono">
+            <span>{{ t('candidate.profile.extractingSkills') }}</span>
+            <span>{{ t('candidate.profile.inProgress') }}</span>
+          </div>
+          <div class="w-full h-1 bg-line rounded-full overflow-hidden">
+            <div class="h-full bg-primary-500 animate-progress-indeterminate w-1/3 rounded-full" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <UIcon
+              :name="profile?.resumeFileUrl ? 'i-heroicons-document-check' : 'i-heroicons-document'"
+              class="w-5 h-5"
+              :style="{ color: profile?.resumeFileUrl ? 'var(--positive)' : 'var(--ink-subtle)' }"
+            />
+            <span
+              class="text-sm"
+              :style="{ color: profile?.resumeFileUrl ? 'var(--ink)' : 'var(--ink-muted)' }"
+            >
+              {{
+                profile?.resumeFileUrl
+                  ? t('candidate.profile.cvOnFile')
+                  : t('candidate.profile.noCv')
+              }}
+            </span>
+          </div>
+
+          <label class="cursor-pointer">
+            <input
+              ref="cvInput"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              class="hidden"
+              @change="uploadCv"
+            />
+            <UButton
+              as="span"
+              variant="outline"
+              size="sm"
+              icon="i-heroicons-arrow-up-tray"
+              :loading="cvUploading"
+              :disabled="!!isParsing"
+            >
+              {{
+                profile?.resumeFileUrl
+                  ? t('candidate.profile.replaceCv')
+                  : t('candidate.profile.uploadCv')
+              }}
+            </UButton>
+          </label>
+
+          <a
+            v-if="profile?.resumeFileUrl"
+            :href="profile.resumeFileUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <UButton variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray">Download</UButton>
+          </a>
+        </div>
+        <p class="text-xs mt-2" style="color: var(--ink-subtle)">
+          {{ t('candidate.profile.cvFileHint') }}
+        </p>
+      </UCard>
+
+      <!-- Experience Review -->
+      <UCard>
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-primary-500" />
+            <h3 class="section-label mb-0">{{ t('candidate.profile.experienceReview') }}</h3>
+          </div>
+
+          <!-- Regenerate summary with AI -->
+          <UButton
+            v-if="profile?.resumeFileUrl"
+            variant="ghost"
+            size="xs"
+            icon="i-heroicons-arrow-path"
+            :loading="isRegenerating"
+            @click="regenerateSummary"
+          >
+            Regenerate Summary
           </UButton>
         </div>
 
-        <div class="relative border-l border-line ml-3 pl-5 space-y-6">
-          <div v-for="(pos, i) in localPositions" :key="i" class="relative group">
-            <div class="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-white border-2 border-primary-500 dark:bg-slate-900" />
-            
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex-1 space-y-2">
-                <!-- Read mode / Edit mode fields -->
-                <div v-if="editingPositionIndex !== i">
-                  <h5 class="text-sm font-semibold" style="color: var(--ink)">{{ pos.title || t('candidate.profile.unknown') }}</h5>
-                  <p class="text-xs font-medium" style="color: var(--ink-muted)">{{ pos.company || t('candidate.profile.unknown') }}</p>
-                  <p class="text-[11px] mt-1 font-mono" style="color: var(--ink-subtle)">
-                    {{ pos.start || t('candidate.profile.unknown') }} — {{ pos.end || t('candidate.profile.present') }}
-                  </p>
+        <!-- AI Professional Summary (Feedback) -->
+        <div
+          v-if="profile?.parsedResume?.summary"
+          class="mb-6 p-4 rounded-xl bg-primary-50 border border-primary-100 dark:bg-primary-950/20 dark:border-primary-900/30"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <UIcon
+              name="i-heroicons-chat-bubble-bottom-center-text"
+              class="w-4 h-4 text-primary-500"
+            />
+            <span
+              class="text-xs font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider"
+            >
+              {{ t('candidate.profile.aiSummary') }}
+            </span>
+          </div>
+          <p
+            class="text-sm leading-relaxed text-primary-900 dark:text-primary-200 italic font-medium"
+          >
+            "{{ profile.parsedResume.summary }}"
+          </p>
+        </div>
+
+        <!-- Overlapping dates warning alert -->
+        <UAlert
+          v-if="overlappingPositionsWarning"
+          icon="i-heroicons-exclamation-triangle"
+          title="Overlapping Positions"
+          description="You have multiple positions marked as current (Present). Please clarify dates to ensure recruiters see accurate experience timelines."
+          color="warning"
+          variant="subtle"
+          class="mb-4"
+        />
+
+        <!-- Work History Timeline -->
+        <div class="space-y-4">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink-muted)">
+              {{ t('candidate.profile.workHistory') }}
+            </h4>
+            <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addPosition">
+              Add Position
+            </UButton>
+          </div>
+
+          <div class="relative border-l border-line ml-3 pl-5 space-y-6">
+            <div v-for="(pos, i) in localPositions" :key="i" class="relative group">
+              <div
+                class="absolute -left-6.5 top-1.5 w-3 h-3 rounded-full bg-white border-2 border-primary-500 dark:bg-slate-900"
+              />
+
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 space-y-2">
+                  <!-- Read mode / Edit mode fields -->
+                  <div v-if="editingPositionIndex !== i">
+                    <h5 class="text-sm font-semibold" style="color: var(--ink)">
+                      {{ pos.title || t('candidate.profile.unknown') }}
+                    </h5>
+                    <p class="text-xs font-medium" style="color: var(--ink-muted)">
+                      {{ pos.company || t('candidate.profile.unknown') }}
+                    </p>
+                    <p class="text-[11px] mt-1 font-mono" style="color: var(--ink-subtle)">
+                      {{ pos.start || t('candidate.profile.unknown') }} —
+                      {{ pos.end || t('candidate.profile.present') }}
+                    </p>
+                  </div>
+                  <div
+                    v-else
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-lg border border-line bg-slate-50 dark:bg-slate-900/50"
+                  >
+                    <UInput v-model="pos.title" placeholder="Title" size="xs" autofocus />
+                    <UInput v-model="pos.company" placeholder="Company" size="xs" />
+                    <UInput v-model="pos.start" type="month" placeholder="Start Date" size="xs" />
+                    <UInput
+                      v-model="pos.end"
+                      type="month"
+                      placeholder="End Date (or empty for Present)"
+                      size="xs"
+                    />
+                  </div>
                 </div>
-                <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-lg border border-line bg-slate-50 dark:bg-slate-900/50">
-                  <UInput v-model="pos.title" placeholder="Title" size="xs" autofocus />
-                  <UInput v-model="pos.company" placeholder="Company" size="xs" />
-                  <UInput v-model="pos.start" type="month" placeholder="Start Date" size="xs" />
-                  <UInput v-model="pos.end" type="month" placeholder="End Date (or empty for Present)" size="xs" />
+
+                <!-- Item Actions -->
+                <div
+                  class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <UButton
+                    v-if="editingPositionIndex !== i"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-pencil"
+                    @click="editingPositionIndex = i"
+                  />
+                  <UButton
+                    v-else
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-check"
+                    color="success"
+                    @click="editingPositionIndex = null"
+                  />
+                  <UButton
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-trash"
+                    color="error"
+                    @click="deletePosition(i)"
+                  />
                 </div>
               </div>
+            </div>
 
-              <!-- Item Actions -->
-              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <UButton
-                  v-if="editingPositionIndex !== i"
-                  variant="ghost"
+            <div
+              v-if="!localPositions.length"
+              class="text-sm py-4 text-center italic"
+              style="color: var(--ink-subtle)"
+            >
+              {{ t('candidate.profile.uploadToGenerate') }}
+            </div>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Education Section -->
+      <UCard>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="section-label mb-0">Education</h3>
+          <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addEducation">
+            Add Education
+          </UButton>
+        </div>
+
+        <div class="space-y-4">
+          <div
+            v-for="(edu, i) in localEducation"
+            :key="i"
+            class="group flex items-start justify-between gap-4 p-3 rounded-xl border border-line"
+          >
+            <div class="flex-1 space-y-2">
+              <div v-if="editingEducationIndex !== i">
+                <h5 class="text-sm font-semibold" style="color: var(--ink)">
+                  {{ edu.degree }} <span v-if="edu.field">in {{ edu.field }}</span>
+                </h5>
+                <p class="text-xs" style="color: var(--ink-muted)">
+                  {{ edu.institution || t('candidate.profile.unknown') }}
+                </p>
+              </div>
+              <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <UInput
+                  v-model="edu.degree"
+                  placeholder="Degree (e.g. Bachelor's)"
                   size="xs"
-                  icon="i-heroicons-pencil"
-                  @click="editingPositionIndex = i"
+                  autofocus
                 />
-                <UButton
-                  v-else
-                  variant="ghost"
-                  size="xs"
-                  icon="i-heroicons-check"
-                  color="success"
-                  @click="editingPositionIndex = null"
-                />
-                <UButton
-                  variant="ghost"
-                  size="xs"
-                  icon="i-heroicons-trash"
-                  color="error"
-                  @click="deletePosition(i)"
-                />
+                <UInput v-model="edu.field" placeholder="Field of Study" size="xs" />
+                <UInput v-model="edu.institution" placeholder="Institution" size="xs" />
               </div>
             </div>
-          </div>
 
-          <div v-if="!localPositions.length" class="text-sm py-4 text-center italic" style="color: var(--ink-subtle)">
-            {{ t('candidate.profile.uploadToGenerate') }}
-          </div>
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Education Section -->
-    <UCard>
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="section-label mb-0">Education</h3>
-        <UButton
-          variant="outline"
-          size="xs"
-          icon="i-heroicons-plus"
-          @click="addEducation"
-        >
-          Add Education
-        </UButton>
-      </div>
-
-      <div class="space-y-4">
-        <div v-for="(edu, i) in localEducation" :key="i" class="group flex items-start justify-between gap-4 p-3 rounded-xl border border-line">
-          <div class="flex-1 space-y-2">
-            <div v-if="editingEducationIndex !== i">
-              <h5 class="text-sm font-semibold" style="color: var(--ink)">
-                {{ edu.degree }} <span v-if="edu.field">in {{ edu.field }}</span>
-              </h5>
-              <p class="text-xs" style="color: var(--ink-muted)">{{ edu.institution || t('candidate.profile.unknown') }}</p>
-            </div>
-            <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <UInput v-model="edu.degree" placeholder="Degree (e.g. Bachelor's)" size="xs" autofocus />
-              <UInput v-model="edu.field" placeholder="Field of Study" size="xs" />
-              <UInput v-model="edu.institution" placeholder="Institution" size="xs" />
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <UButton
-              v-if="editingEducationIndex !== i"
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-pencil"
-              @click="editingEducationIndex = i"
-            />
-            <UButton
-              v-else
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-check"
-              color="success"
-              @click="editingEducationIndex = null"
-            />
-            <UButton
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-trash"
-              color="error"
-              @click="deleteEducation(i)"
-            />
-          </div>
-        </div>
-
-        <div v-if="!localEducation.length" class="text-sm py-4 text-center italic" style="color: var(--ink-subtle)">
-          Add your education history here.
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Languages Section -->
-    <UCard>
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="section-label mb-0">Languages</h3>
-        <UButton
-          variant="outline"
-          size="xs"
-          icon="i-heroicons-plus"
-          @click="addLanguage"
-        >
-          Add Language
-        </UButton>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div v-for="(lang, i) in localLanguages" :key="i" class="group flex items-start justify-between gap-4 p-3 rounded-xl border border-line">
-          <div class="flex-1 space-y-2">
-            <div v-if="editingLanguageIndex !== i">
-              <h5 class="text-sm font-semibold" style="color: var(--ink)">
-                {{ lang.name }} <span v-if="lang.level" class="text-xs font-mono ml-2 p-1 rounded bg-slate-100 dark:bg-slate-800">{{ lang.level }}</span>
-              </h5>
-            </div>
-            <div v-else class="grid grid-cols-2 gap-2">
-              <UInput v-model="lang.name" placeholder="Language (e.g. English)" size="xs" autofocus />
-              <USelect
-                v-model="lang.level"
-                :options="['Native', 'Fluent', 'Intermediate', 'Beginner', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']"
-                placeholder="Level"
+            <div
+              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <UButton
+                v-if="editingEducationIndex !== i"
+                variant="ghost"
                 size="xs"
+                icon="i-heroicons-pencil"
+                @click="editingEducationIndex = i"
+              />
+              <UButton
+                v-else
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-check"
+                color="success"
+                @click="editingEducationIndex = null"
+              />
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-trash"
+                color="error"
+                @click="deleteEducation(i)"
               />
             </div>
           </div>
 
-          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <UButton
-              v-if="editingLanguageIndex !== i"
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-pencil"
-              @click="editingLanguageIndex = i"
-            />
-            <UButton
-              v-else
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-check"
-              color="success"
-              @click="editingLanguageIndex = null"
-            />
-            <UButton
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-trash"
-              color="error"
-              @click="deleteLanguage(i)"
-            />
+          <div
+            v-if="!localEducation.length"
+            class="text-sm py-4 text-center italic"
+            style="color: var(--ink-subtle)"
+          >
+            Add your education history here.
           </div>
         </div>
+      </UCard>
 
-        <div v-if="!localLanguages.length" class="text-sm py-4 text-center italic col-span-2" style="color: var(--ink-subtle)">
-          Add your spoken languages here.
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Contact Information -->
-    <UCard>
-      <h3 class="section-label mb-4">{{ t('candidate.profile.contactInfo') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField :label="t('candidate.profile.fullName')" :error="errors.fullName">
-          <UInput v-model="fullName" v-bind="fullNameProps" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.email')">
-          <UInput :value="profile?.email" disabled class="w-full opacity-60" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.phone')" :error="errors.phone">
-          <UInput v-model="phone" v-bind="phoneProps" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.telegramUsername')" :error="errors.telegramUsername">
-          <UInput
-            v-model="telegramUsername"
-            v-bind="telegramUsernameProps"
-            placeholder="e.g. username"
-            class="w-full"
-            @blur="telegramUsername = formatTelegramUsername(telegramUsername)"
-          />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.city')" :error="errors.city">
-          <UInput v-model="city" v-bind="cityProps" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.country')" :error="errors.country">
-          <UInput v-model="country" v-bind="countryProps" placeholder="e.g. UZ" class="w-full" />
-        </UFormField>
-      </div>
-    </UCard>
-
-    <!-- Professional Summary -->
-    <UCard>
-      <h3 class="section-label mb-4">{{ t('candidate.profile.professionalSummary') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField :label="t('candidate.profile.currentPosition')" :error="errors.currentPosition">
-          <UInput v-model="currentPosition" v-bind="currentPositionProps" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.currentCompany')" :error="errors.currentCompany">
-          <UInput v-model="currentCompany" v-bind="currentCompanyProps" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.yearsExperience')" :error="errors.yearsExperience">
-          <UInput v-model="yearsExperience" v-bind="yearsExperienceProps" type="number" min="0" max="100" step="0.5" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.noticePeriodDays')" :error="errors.noticePeriodDays">
-          <!-- notice period dropdown instead of raw number -->
-          <USelect
-            v-model="noticePeriodDays"
-            v-bind="noticePeriodDaysProps"
-            :options="[
-              { label: 'Immediate / No notice', value: 0 },
-              { label: '14 Days (2 weeks)', value: 14 },
-              { label: '30 Days (1 month)', value: 30 },
-              { label: '60 Days (2 months)', value: 60 },
-              { label: '90 Days (3 months)', value: 90 }
-            ]"
-            class="w-full"
-          />
-        </UFormField>
-      </div>
-    </UCard>
-
-    <!-- Links & Socials -->
-    <UCard>
-      <h3 class="section-label mb-4">{{ t('candidate.profile.linksAndSocials') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField :label="t('candidate.profile.linkedinUrl')" :error="errors.linkedinUrl">
-          <UInput
-            v-model="linkedinUrl"
-            v-bind="linkedinUrlProps"
-            placeholder="https://linkedin.com/in/…"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField :label="t('candidate.profile.githubUrl')" :error="errors.githubUrl">
-          <UInput
-            v-model="githubUrl"
-            v-bind="githubUrlProps"
-            placeholder="https://github.com/…"
-            class="w-full"
-          />
-        </UFormField>
-      </div>
-    </UCard>
-
-    <!-- Work Preferences & Privacy -->
-    <UCard>
-      <h3 class="section-label mb-4">{{ t('candidate.profile.workPreferences') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField
-          :label="t('candidate.profile.preferredWorkMode')"
-          :error="errors.preferredWorkMode"
-        >
-          <USelect
-            v-model="preferredWorkMode"
-            v-bind="preferredWorkModeProps"
-            :options="[
-              { label: t('candidate.jobs.remote') || 'Remote', value: 'remote' },
-              { label: t('candidate.jobs.office') || 'Office', value: 'office' },
-              { label: t('candidate.jobs.hybrid') || 'Hybrid', value: 'hybrid' },
-            ]"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField class="flex items-center pt-6">
-          <UCheckbox
-            v-model="willingToRelocate"
-            v-bind="willingToRelocateProps"
-            :label="t('candidate.profile.willingToRelocate')"
-          />
-        </UFormField>
-        
-        <!-- Profile Privacy Current Company Toggle -->
-        <UFormField class="flex items-center pt-4 col-span-2">
-          <UCheckbox
-            v-model="hideFromCurrentCompany"
-            label="Hide my profile and auto-applies from my current company"
-          />
-        </UFormField>
-      </div>
-    </UCard>
-
-    <!-- Skills Card -->
-    <UCard>
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-command-line" class="w-5 h-5 text-primary-500" />
-          <h3 class="section-label mb-0">{{ t('candidate.profile.skills') }}</h3>
-        </div>
-        <UButton
-          variant="outline"
-          size="xs"
-          icon="i-heroicons-plus"
-          @click="addCustomSkill"
-        >
-          Add Skill
-        </UButton>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div v-for="(skill, i) in skills" :key="i" class="group flex items-center justify-between gap-4 p-3 rounded-xl border border-line">
-          <div class="flex-1">
-            <div v-if="editingSkillIndex !== i" class="text-sm font-semibold" style="color: var(--ink)">
-              {{ skill || 'Untitled Skill' }}
-            </div>
-            <div v-else>
-              <UInput v-model="skills[i]" placeholder="Skill Name (e.g. Node.js)" size="xs" class="w-full" autofocus />
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <UButton
-              v-if="editingSkillIndex !== i"
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-pencil"
-              @click="editingSkillIndex = i"
-            />
-            <UButton
-              v-else
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-check"
-              color="success"
-              @click="editingSkillIndex = null"
-            />
-            <UButton
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-trash"
-              color="error"
-              @click="deleteCustomSkill(i)"
-            />
-          </div>
-        </div>
-
-        <div v-if="!skills.length" class="text-sm py-6 text-center italic col-span-2 flex flex-col items-center gap-2" style="color: var(--ink-subtle)">
-          <span>Add your professional skills here.</span>
-          <UButton variant="outline" size="xs" icon="i-heroicons-plus" class="mt-1" @click="addCustomSkill">
-            Add Your First Skill
+      <!-- Languages Section -->
+      <UCard>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="section-label mb-0">Languages</h3>
+          <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addLanguage">
+            Add Language
           </UButton>
         </div>
-      </div>
-    </UCard>
 
-    <!-- Sticky Bottom Save Changes Action Bar -->
-    <div class="sticky bottom-4 z-10 p-4 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-line shadow-lg flex justify-end">
-      <UButton
-        :loading="saving"
-        icon="i-heroicons-check"
-        size="md"
-        @click="
-          async () => {
-            await save()
-          }
-        "
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            v-for="(lang, i) in localLanguages"
+            :key="i"
+            class="group flex items-start justify-between gap-4 p-3 rounded-xl border border-line"
+          >
+            <div class="flex-1 space-y-2">
+              <div v-if="editingLanguageIndex !== i">
+                <h5 class="text-sm font-semibold" style="color: var(--ink)">
+                  {{ lang.name }}
+                  <span
+                    v-if="lang.level"
+                    class="text-xs font-mono ml-2 p-1 rounded bg-slate-100 dark:bg-slate-800"
+                    >{{ lang.level }}</span
+                  >
+                </h5>
+              </div>
+              <div v-else class="grid grid-cols-2 gap-2">
+                <UInput
+                  v-model="lang.name"
+                  placeholder="Language (e.g. English)"
+                  size="xs"
+                  autofocus
+                />
+                <USelect
+                  v-model="lang.level"
+                  :options="[
+                    'Native',
+                    'Fluent',
+                    'Intermediate',
+                    'Beginner',
+                    'A1',
+                    'A2',
+                    'B1',
+                    'B2',
+                    'C1',
+                    'C2',
+                  ]"
+                  placeholder="Level"
+                  size="xs"
+                />
+              </div>
+            </div>
+
+            <div
+              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <UButton
+                v-if="editingLanguageIndex !== i"
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-pencil"
+                @click="editingLanguageIndex = i"
+              />
+              <UButton
+                v-else
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-check"
+                color="success"
+                @click="editingLanguageIndex = null"
+              />
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-trash"
+                color="error"
+                @click="deleteLanguage(i)"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="!localLanguages.length"
+            class="text-sm py-4 text-center italic col-span-2"
+            style="color: var(--ink-subtle)"
+          >
+            Add your spoken languages here.
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Contact Information -->
+      <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.contactInfo') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField :label="t('candidate.profile.fullName')" :error="errors.fullName">
+            <UInput v-model="fullName" v-bind="fullNameProps" class="w-full" />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.email')">
+            <UInput :value="profile?.email" disabled class="w-full opacity-60" />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.phone')" :error="errors.phone">
+            <UInput v-model="phone" v-bind="phoneProps" class="w-full" />
+          </UFormField>
+          <UFormField
+            :label="t('candidate.profile.telegramUsername')"
+            :error="errors.telegramUsername"
+          >
+            <UInput
+              v-model="telegramUsername"
+              v-bind="telegramUsernameProps"
+              placeholder="e.g. username"
+              class="w-full"
+              @blur="telegramUsername = formatTelegramUsername(telegramUsername)"
+            />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.city')" :error="errors.city">
+            <UInput v-model="city" v-bind="cityProps" class="w-full" />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.country')" :error="errors.country">
+            <UInput v-model="country" v-bind="countryProps" placeholder="e.g. UZ" class="w-full" />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- Professional Summary -->
+      <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.professionalSummary') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField
+            :label="t('candidate.profile.currentPosition')"
+            :error="errors.currentPosition"
+          >
+            <UInput v-model="currentPosition" v-bind="currentPositionProps" class="w-full" />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.currentCompany')" :error="errors.currentCompany">
+            <UInput v-model="currentCompany" v-bind="currentCompanyProps" class="w-full" />
+          </UFormField>
+          <UFormField
+            :label="t('candidate.profile.yearsExperience')"
+            :error="errors.yearsExperience"
+          >
+            <UInput
+              v-model="yearsExperience"
+              v-bind="yearsExperienceProps"
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            :label="t('candidate.profile.noticePeriodDays')"
+            :error="errors.noticePeriodDays"
+          >
+            <!-- notice period dropdown instead of raw number -->
+            <USelect
+              v-model="noticePeriodDays"
+              v-bind="noticePeriodDaysProps"
+              :options="[
+                { label: 'Immediate / No notice', value: 0 },
+                { label: '14 Days (2 weeks)', value: 14 },
+                { label: '30 Days (1 month)', value: 30 },
+                { label: '60 Days (2 months)', value: 60 },
+                { label: '90 Days (3 months)', value: 90 },
+              ]"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- Links & Socials -->
+      <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.linksAndSocials') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField :label="t('candidate.profile.linkedinUrl')" :error="errors.linkedinUrl">
+            <UInput
+              v-model="linkedinUrl"
+              v-bind="linkedinUrlProps"
+              placeholder="https://linkedin.com/in/…"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.githubUrl')" :error="errors.githubUrl">
+            <UInput
+              v-model="githubUrl"
+              v-bind="githubUrlProps"
+              placeholder="https://github.com/…"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- Work Preferences & Privacy -->
+      <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.workPreferences') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField
+            :label="t('candidate.profile.preferredWorkMode')"
+            :error="errors.preferredWorkMode"
+          >
+            <USelect
+              v-model="preferredWorkMode"
+              v-bind="preferredWorkModeProps"
+              :options="[
+                { label: t('candidate.jobs.remote') || 'Remote', value: 'remote' },
+                { label: t('candidate.jobs.office') || 'Office', value: 'office' },
+                { label: t('candidate.jobs.hybrid') || 'Hybrid', value: 'hybrid' },
+              ]"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField class="flex items-center pt-6">
+            <UCheckbox
+              v-model="willingToRelocate"
+              v-bind="willingToRelocateProps"
+              :label="t('candidate.profile.willingToRelocate')"
+            />
+          </UFormField>
+
+          <!-- Profile Privacy Current Company Toggle -->
+          <UFormField class="flex items-center pt-4 col-span-2">
+            <UCheckbox
+              v-model="hideFromCurrentCompany"
+              label="Hide my profile and auto-applies from my current company"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- Skills Card -->
+      <UCard>
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-command-line" class="w-5 h-5 text-primary-500" />
+            <h3 class="section-label mb-0">{{ t('candidate.profile.skills') }}</h3>
+          </div>
+          <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addCustomSkill">
+            Add Skill
+          </UButton>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            v-for="(skill, i) in skills"
+            :key="i"
+            class="group flex items-center justify-between gap-4 p-3 rounded-xl border border-line"
+          >
+            <div class="flex-1">
+              <div
+                v-if="editingSkillIndex !== i"
+                class="text-sm font-semibold"
+                style="color: var(--ink)"
+              >
+                {{ skill || 'Untitled Skill' }}
+              </div>
+              <div v-else>
+                <UInput
+                  v-model="skills[i]"
+                  placeholder="Skill Name (e.g. Node.js)"
+                  size="xs"
+                  class="w-full"
+                  autofocus
+                />
+              </div>
+            </div>
+
+            <div
+              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <UButton
+                v-if="editingSkillIndex !== i"
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-pencil"
+                @click="editingSkillIndex = i"
+              />
+              <UButton
+                v-else
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-check"
+                color="success"
+                @click="editingSkillIndex = null"
+              />
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-trash"
+                color="error"
+                @click="deleteCustomSkill(i)"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="!skills.length"
+            class="text-sm py-6 text-center italic col-span-2 flex flex-col items-center gap-2"
+            style="color: var(--ink-subtle)"
+          >
+            <span>Add your professional skills here.</span>
+            <UButton
+              variant="outline"
+              size="xs"
+              icon="i-heroicons-plus"
+              class="mt-1"
+              @click="addCustomSkill"
+            >
+              Add Your First Skill
+            </UButton>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Sticky Bottom Save Changes Action Bar -->
+      <div
+        class="sticky bottom-4 z-10 p-4 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-line shadow-lg flex justify-end"
       >
-        {{ t('candidate.profile.saveChanges') }}
-      </UButton>
-    </div>
+        <UButton
+          :loading="saving"
+          icon="i-heroicons-check"
+          size="md"
+          @click="
+            async () => {
+              await save()
+            }
+          "
+        >
+          {{ t('candidate.profile.saveChanges') }}
+        </UButton>
+      </div>
     </template>
   </div>
 </template>

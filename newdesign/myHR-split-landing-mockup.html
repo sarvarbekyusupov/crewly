@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en" data-audience="employer">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>myHR — split landing mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#cfe06a; --green-soft:#dbe892;
+    --lilac:#dcc5f0; --lilac-deep:#7a4fa0;
+    --pill:999px;
+    --display:"Source Serif 4",Georgia,serif;
+    --sans:"DM Sans",system-ui,sans-serif;
+    --maxw:1180px;
+  }
+  [data-audience="employer"]{
+    --bg:#1a1a18; --surface:#232320; --surface-2:#2c2c28;
+    --text:#f5f0eb; --muted:#a8a39b; --line:rgba(245,240,235,.12);
+    --dot:rgba(245,240,235,.07);
+  }
+  [data-audience="candidate"]{
+    --bg:#ece9e2; --surface:#ffffff; --surface-2:#f4f1ea;
+    --text:#1a1a18; --muted:#6b675f; --line:rgba(26,26,24,.12);
+    --dot:rgba(26,26,24,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    transition:background-color .5s ease, color .5s ease;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 28px}
+  a{color:inherit; text-decoration:none}
+  .serif{font-family:var(--display)}
+  .accent-italic{font-style:italic; color:var(--green); background:linear-gradient(transparent 70%, color-mix(in srgb,var(--green) 22%, transparent) 0)}
+
+  /* announcement bar */
+  .annc{background:var(--green); color:#1a1a18; font-size:14px; text-align:center;
+    padding:11px 16px; display:flex; gap:10px; align-items:center; justify-content:center; font-weight:500}
+  .annc a{text-decoration:underline; font-weight:700}
+  .annc .x{position:absolute; right:18px; cursor:pointer; opacity:.6}
+  .annc-wrap{position:relative}
+
+  /* nav */
+  nav{display:flex; align-items:center; justify-content:space-between; padding:18px 0}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px}
+  .logo{width:30px;height:28px}
+  .toggle{display:flex; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--pill); padding:5px}
+  .toggle button{font-family:var(--sans); font-size:15px; font-weight:600; color:var(--muted);
+    background:none; border:0; padding:8px 20px; border-radius:var(--pill); cursor:pointer; transition:.25s}
+  .toggle button.on{background:var(--green); color:#1a1a18}
+  .nav-r{display:flex; align-items:center; gap:26px; font-size:15px}
+  .cta{background:var(--lilac); color:#341b48; font-family:var(--display); font-style:italic;
+    font-weight:600; padding:11px 24px; border-radius:var(--pill); font-size:16px; cursor:pointer; border:0; transition:.2s}
+  .cta:hover{filter:brightness(1.05)}
+
+  /* hero */
+  .hero{position:relative; overflow:hidden; min-height:600px;
+    background-image:radial-gradient(var(--dot) 1.4px, transparent 1.4px); background-size:26px 26px}
+  .hero .wrap{display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:center; padding-top:60px; padding-bottom:60px}
+  h1{font-family:var(--display); font-weight:400; font-size:74px; line-height:1.02; letter-spacing:-.5px}
+  .sub{color:var(--muted); font-size:19px; max-width:480px; margin:26px 0 32px}
+  .badge{display:inline-flex; gap:8px; align-items:center; margin-top:26px; font-size:13px; color:var(--muted)}
+  .badge i{background:#ff6a3d; color:#fff; font-style:normal; font-weight:700; width:22px;height:22px;
+    display:grid;place-items:center;border-radius:5px;font-size:12px}
+
+  /* search box (employer) */
+  .search{display:flex; align-items:center; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--pill); padding:7px 7px 7px 24px; max-width:480px}
+  .search input{flex:1; background:none; border:0; color:var(--text); font-family:var(--sans); font-size:17px; outline:none}
+  .search input::placeholder{color:var(--muted)}
+  .round{width:46px;height:46px;border-radius:50%;border:0;background:var(--lilac);color:#341b48;
+    font-size:20px;cursor:pointer;display:grid;place-items:center;flex:none}
+
+  /* assessment cta (candidate) */
+  .pillcta{display:inline-flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--pill); padding:8px 8px 8px 28px; font-size:18px; font-weight:500; cursor:pointer}
+  .browse{display:block; margin-top:16px; color:var(--muted); font-size:15px}
+  .browse a{text-decoration:underline; color:var(--text)}
+
+  /* hero art */
+  .art{position:relative; height:480px; display:grid; place-items:center}
+  .cv{width:300px; height:400px; background:var(--surface); border-radius:14px; transform:rotate(7deg);
+    box-shadow:0 40px 80px rgba(0,0,0,.45); padding:30px; border:1px solid var(--line)}
+  [data-audience="candidate"] .cv{box-shadow:0 40px 80px rgba(120,90,60,.22)}
+  .cv h4{font-family:var(--display); font-size:30px; font-weight:400; line-height:1; color:var(--muted)}
+  .cv .ln{height:7px; background:var(--surface-2); border-radius:4px; margin-top:11px}
+  .cv .ln.s{width:60%} .cv .ln.m{width:85%}
+  .grass{position:absolute; bottom:-2px; left:0; right:0; height:120px;
+    background:linear-gradient(transparent, color-mix(in srgb,var(--green) 55%, var(--bg)));
+    -webkit-mask:repeating-linear-gradient(90deg,#000 0 3px,transparent 3px 6px); mask:repeating-linear-gradient(90deg,#000 0 3px,transparent 3px 6px)}
+
+  /* generic section */
+  section.blk{padding:90px 0}
+  .eyebrow{text-align:center; font-family:var(--display); font-style:italic; color:var(--muted); font-size:18px; margin-bottom:34px}
+  .htitle{text-align:center; font-family:var(--display); font-weight:400; font-size:46px; margin-bottom:14px}
+
+  /* logo marquee */
+  .marquee{overflow:hidden; -webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .track{display:flex; gap:64px; width:max-content; animation:scrollx 26s linear infinite}
+  .marquee:hover .track{animation-play-state:paused}
+  .track span{color:var(--muted); font-weight:600; font-size:20px; opacity:.7; white-space:nowrap}
+  @keyframes scrollx{to{transform:translateX(-50%)}}
+
+  /* feature cards (3D tilt) */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:24px; perspective:1400px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:30px;
+    min-height:280px; transition:transform .5s ease, box-shadow .5s ease; transform-style:preserve-3d}
+  .card:nth-child(1){transform:rotateY(9deg)}
+  .card:nth-child(3){transform:rotateY(-9deg)}
+  .cards:hover .card{transform:rotateY(0); box-shadow:0 30px 60px rgba(0,0,0,.25)}
+  .card .k{font-size:12px; letter-spacing:.14em; color:var(--green); font-weight:700; text-transform:uppercase}
+  .card h3{font-family:var(--display); font-weight:400; font-size:26px; margin:14px 0 12px}
+  .card p{color:var(--muted); font-size:16px}
+  /* mock chips inside cards */
+  .chip{display:inline-block; font-size:13px; padding:5px 11px; border-radius:var(--pill); margin:5px 5px 0 0}
+  .chip.g{background:color-mix(in srgb,var(--green) 30%,transparent)}
+  .chip.l{background:color-mix(in srgb,var(--lilac) 45%,transparent)}
+  .bubble{background:var(--surface-2); border-radius:14px; padding:9px 13px; font-size:14px; margin-top:8px; max-width:80%}
+  .bubble.me{background:var(--green); color:#1a1a18; margin-left:auto}
+  .match{display:flex; justify-content:space-between; align-items:center; background:var(--surface-2);
+    border-radius:12px; padding:12px 14px; margin-top:10px; font-size:14px}
+  .pct{background:var(--green); color:#1a1a18; font-weight:700; border-radius:var(--pill); padding:3px 9px; font-size:12px}
+
+  /* benchmark (employer only) */
+  .bench{display:grid; grid-template-columns:1fr 1fr; gap:50px; align-items:center}
+  .bars{display:flex; gap:18px; align-items:flex-end; height:240px}
+  .bar{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:8px; height:100%}
+  .bar .b{width:100%; border-radius:8px 8px 0 0; background:var(--surface-2)}
+  .bar.win .b{background:var(--green)}
+  .bar small{color:var(--muted); font-size:12px}
+  .bar b{font-size:14px}
+
+  /* testimonials */
+  .ttrack{display:flex; gap:24px; width:max-content; animation:scrollx 32s linear infinite}
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px; width:380px}
+  .quote p{font-family:var(--display); font-size:20px; line-height:1.35}
+  .quote span{display:block; margin-top:16px; color:var(--muted); font-size:14px}
+
+  /* faq */
+  .faq{max-width:760px; margin:0 auto}
+  details{border-bottom:1px solid var(--line); padding:20px 4px}
+  summary{list-style:none; cursor:pointer; display:flex; justify-content:space-between; font-size:19px; font-weight:500}
+  summary::-webkit-details-marker{display:none}
+  details[open] summary .pm{transform:rotate(45deg)}
+  .pm{transition:.2s; color:var(--muted)}
+  details p{color:var(--muted); margin-top:12px; font-size:16px}
+
+  /* final cta */
+  .final{text-align:center; padding:110px 0}
+  .final h2{font-family:var(--display); font-weight:400; font-size:40px; max-width:680px; margin:0 auto 30px}
+
+  footer{border-top:1px solid var(--line); padding:40px 0; color:var(--muted); font-size:14px;
+    display:flex; justify-content:space-between; align-items:center}
+
+  /* the "candidate-only" / "employer-only" visibility */
+  [data-audience="employer"] .only-cand{display:none}
+  [data-audience="candidate"] .only-emp{display:none}
+
+  @media(max-width:880px){
+    .hero .wrap,.bench{grid-template-columns:1fr}
+    .art{display:none}
+    h1{font-size:50px}
+    .cards{grid-template-columns:1fr}
+    .card,.cards:hover .card{transform:none}
+    nav .nav-r .txtlink{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="annc-wrap">
+  <!-- employer sees candidate cross-sell, and vice versa -->
+  <div class="annc only-emp">Looking for a new job? myHR matches you with the right roles. <a onclick="setAud('candidate')">See myHR for candidates →</a></div>
+  <div class="annc only-cand">Hiring? Let myHR source and screen for you. <a onclick="setAud('employer')">See myHR for employers →</a></div>
+</div>
+
+<header class="wrap">
+  <nav>
+    <a class="brand">
+      <svg class="logo" viewBox="0 0 30 28"><path d="M15 2 L23 26 L7 26 Z" fill="var(--green)"/><path d="M15 12 L21 26 L9 26 Z" fill="var(--text)"/></svg>
+      myHR
+    </a>
+    <div class="toggle">
+      <button id="t-emp" class="on" onclick="setAud('employer')">Employers</button>
+      <button id="t-cand" onclick="setAud('candidate')">Candidates</button>
+    </div>
+    <div class="nav-r">
+      <a class="txtlink">About</a>
+      <a class="txtlink">Login</a>
+      <button class="cta"><span class="only-emp">Start hiring</span><span class="only-cand">Build Your Profile</span></button>
+    </div>
+  </nav>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1 class="only-emp">Hire the right people,<br><span class="accent-italic">a lot faster.</span></h1>
+      <h1 class="only-cand">Find work. Grow.<br><span class="accent-italic">Get hired.</span></h1>
+
+      <p class="sub only-emp">myHR is your AI hiring team. We source, screen, and shortlist — so you only spend time with candidates who matter.</p>
+      <p class="sub only-cand">Your AI career partner. Build your profile, see roles that actually fit, close skill gaps, and get reached out to when you're a match.</p>
+
+      <!-- employer CTA: search -->
+      <div class="search only-emp">
+        <input placeholder="What role are you hiring for?">
+        <button class="round">→</button>
+      </div>
+      <!-- candidate CTA: assessment -->
+      <div class="only-cand">
+        <button class="pillcta">Start your career assessment <span class="round">→</span></button>
+        <span class="browse">or <a>browse open roles</a></span>
+      </div>
+
+      <div class="badge"><i>Y</i> Backed · myHR ’26</div>
+    </div>
+
+    <div class="art">
+      <div class="cv">
+        <h4>Curriculum<br>Vitae</h4>
+        <div class="ln m"></div><div class="ln s"></div><div class="ln"></div>
+        <div class="ln m" style="margin-top:24px"></div><div class="ln s"></div><div class="ln m"></div><div class="ln s"></div>
+        <div class="ln" style="margin-top:24px"></div><div class="ln m"></div><div class="ln s"></div>
+      </div>
+      <div class="grass"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGO MARQUEE -->
+<section class="blk">
+  <div class="wrap">
+    <p class="eyebrow only-emp">Trusted by people teams at</p>
+    <p class="eyebrow only-cand">Hiring through our network</p>
+    <div class="marquee">
+      <div class="track">
+        <span>Northwind</span><span>Stint</span><span>Cars24</span><span>Nero</span><span>AccessOwl</span><span>Dataland</span><span>OmniAI</span><span>Corgi</span>
+        <span>Northwind</span><span>Stint</span><span>Cars24</span><span>Nero</span><span>AccessOwl</span><span>Dataland</span><span>OmniAI</span><span>Corgi</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="blk">
+  <div class="wrap">
+    <h2 class="htitle only-emp">How myHR works</h2>
+    <h2 class="htitle only-cand">How it works</h2>
+
+    <!-- EMPLOYER cards -->
+    <div class="cards only-emp">
+      <div class="card"><span class="k">Brief</span><h3>We hire for you, end-to-end</h3><p>No software, no team to build. Brief us once — we open the role, source, screen, and send a shortlist ready to interview.</p></div>
+      <div class="card"><span class="k">Pricing</span><h3>15% of salary, only when you hire</h3><p>No setup fees. No monthly platform charge. You pay on signed offer. No hire, no bill.</p></div>
+      <div class="card"><span class="k">Reach</span><h3>Our pool. Your network. The whole internet.</h3><p>Every channel in parallel — our pre-screened pool, your ATS, and the open web — into one ranked shortlist.</p></div>
+    </div>
+
+    <!-- CANDIDATE cards (product mocks) -->
+    <div class="cards only-cand">
+      <div class="card"><span class="k">Chat</span><h3>Tell us what you want</h3>
+        <div class="bubble">What kind of role are you after?</div>
+        <div class="bubble me">Product design at a startup</div>
+        <div class="bubble">Great — experience level?</div>
+        <div class="bubble me">4 years, currently at Figma</div>
+      </div>
+      <div class="card"><span class="k">Learn</span><h3>Upskill with AI coaching</h3>
+        <span class="chip l">Courses</span><span class="chip l">Flashcards</span><span class="chip l">Tutor</span>
+        <div class="match"><span>System Design</span><span class="chip g" style="margin:0">In progress</span></div>
+        <div class="match"><span>SQL Fundamentals</span><span class="chip g" style="margin:0">Weak area</span></div>
+      </div>
+      <div class="card"><span class="k">Find roles</span><h3>We find roles that fit</h3>
+        <div class="match"><span>Product Designer · Stripe</span><span class="pct">96%</span></div>
+        <div class="match"><span>Senior UX · Linear</span><span class="pct">91%</span></div>
+        <p style="margin-top:12px;font-size:13px">12 new roles today</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EMPLOYER PROOF (benchmark) -->
+<section class="blk only-emp">
+  <div class="wrap bench">
+    <div>
+      <h2 class="htitle" style="text-align:left;font-size:40px">The <span class="accent-italic">best</span> people search engine.</h2>
+      <p class="sub">Benchmarked on PeopleSearchBench. myHR scores 89.6 overall vs. the strongest baseline at 68.2 — a 21-point lead across every metric.</p>
+      <button class="cta" style="background:var(--surface);color:var(--text);border:1px solid var(--line)">Open the paper →</button>
+    </div>
+    <div class="bars">
+      <div class="bar win"><b>89.6</b><div class="b" style="height:90%"></div><small>myHR</small></div>
+      <div class="bar"><b>68.2</b><div class="b" style="height:68%"></div><small>Base A</small></div>
+      <div class="bar"><b>65.7</b><div class="b" style="height:66%"></div><small>Base B</small></div>
+      <div class="bar"><b>50.5</b><div class="b" style="height:50%"></div><small>Base C</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="blk">
+  <div class="marquee">
+    <div class="ttrack">
+      <div class="quote"><p>“myHR understood our needs and found our hire fast. First call next time.”</p><span>VP People — fintech</span></div>
+      <div class="quote"><p>“We're generally anti-recruiter… but myHR found the best candidate we've seen.”</p><span>Corgi</span></div>
+      <div class="quote"><p>“myHR gets what we're looking for more than anyone else.”</p><span>Co-founder — Nero</span></div>
+      <div class="quote"><p>“myHR understood our needs and found our hire fast. First call next time.”</p><span>VP People — fintech</span></div>
+      <div class="quote"><p>“We're generally anti-recruiter… but myHR found the best candidate we've seen.”</p><span>Corgi</span></div>
+      <div class="quote"><p>“myHR gets what we're looking for more than anyone else.”</p><span>Co-founder — Nero</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="blk">
+  <div class="wrap">
+    <h2 class="htitle">Common questions</h2>
+    <div class="faq">
+      <details open><summary><span class="only-emp">What does it cost?</span><span class="only-cand">Is this free for me?</span><span class="pm">+</span></summary>
+        <p class="only-emp">15% of first-year salary, billed only on a signed offer.</p>
+        <p class="only-cand">Yes — myHR is free for candidates. Employers pay when they hire.</p></details>
+      <details><summary><span class="only-emp">Where do you source from?</span><span class="only-cand">How does matching work?</span><span class="pm">+</span></summary>
+        <p>Our pre-screened pool, your network, and the open web — ranked into one shortlist.</p></details>
+      <details><summary><span class="only-emp">How fast is it?</span><span class="only-cand">What if I'm not actively looking?</span><span class="pm">+</span></summary>
+        <p>Most first shortlists land within days. Keep a profile and we reach out when you're a fit.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <h2 class="only-emp">Spend time with candidates who matter — not on sourcing.</h2>
+    <h2 class="only-cand">One profile. Matched to roles through our network, yours, and the world.</h2>
+    <button class="cta"><span class="only-emp">Start hiring</span><span class="only-cand">Build Your Profile</span></button>
+  </div>
+</section>
+
+<footer class="wrap">
+  <span>© myHR ’26</span>
+  <span>Mockup — modeled on tryprism.com · toggle the pill above ↑</span>
+</footer>
+
+<script>
+  function setAud(a){
+    document.documentElement.setAttribute('data-audience', a);
+    document.getElementById('t-emp').classList.toggle('on', a==='employer');
+    document.getElementById('t-cand').classList.toggle('on', a==='candidate');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+</script>
+</body>
+</html>

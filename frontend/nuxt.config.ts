@@ -26,6 +26,8 @@ export default defineNuxtConfig({
       { name: 'Fraunces', provider: 'google' },
       { name: 'Inter', provider: 'google' },
       { name: 'JetBrains Mono', provider: 'google' },
+      { name: 'Source Serif 4', provider: 'google' },
+      { name: 'DM Sans', provider: 'google' },
     ],
   },
 
@@ -64,7 +66,7 @@ export default defineNuxtConfig({
     },
   },
 
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   compatibilityDate: '2026-05-30',
 
   nitro: {

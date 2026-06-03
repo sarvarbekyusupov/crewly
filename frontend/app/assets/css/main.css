@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+}
+
 /* ============ Nuxt UI primary color mapping (terracotta) ============ */
 /* Required: Nuxt UI v3 looks for --ui-color-primary-* and --ui-primary */
 :root {
@@ -189,6 +200,36 @@ tbody tr {
 .page-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+/* ============ Landing page audience tokens ============ */
+[data-audience="employer"] {
+  --l-bg: #1a1a18;
+  --l-surface: #232320;
+  --l-surface-2: #2c2c28;
+  --l-text: #f5f0eb;
+  --l-muted: #a8a39b;
+  --l-line: rgba(245, 240, 235, 0.12);
+  --l-dot: rgba(245, 240, 235, 0.07);
+}
+[data-audience="candidate"] {
+  --l-bg: #ece9e2;
+  --l-surface: #ffffff;
+  --l-surface-2: #f4f1ea;
+  --l-text: #1a1a18;
+  --l-muted: #6b675f;
+  --l-line: rgba(26, 26, 24, 0.12);
+  --l-dot: rgba(26, 26, 24, 0.06);
+}
+:root {
+  --l-green: #cfe06a;
+  --l-green-soft: #dbe892;
+  --l-lilac: #dcc5f0;
+  --l-lilac-deep: #7a4fa0;
+  --l-pill: 999px;
+  --l-display: "Source Serif 4", Georgia, serif;
+  --l-sans: "DM Sans", system-ui, sans-serif;
+  --l-maxw: 1180px;
 }
 
 /* ============ Print ============ */
