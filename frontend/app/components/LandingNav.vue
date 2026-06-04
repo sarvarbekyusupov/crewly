@@ -1,20 +1,11 @@
 <script setup lang="ts">
 const { audience, set } = useAudience()
 
-const dismissed = useState('annc_dismissed', () => false)
 const scrolled = ref(false)
 
 function onScroll() {
   scrolled.value = window.scrollY > 20
 }
-
-const navTop = computed(() => {
-  if (scrolled.value) {
-    return dismissed.value ? '12px' : '51px'
-  } else {
-    return dismissed.value ? '0px' : '39px'
-  }
-})
 
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
@@ -74,17 +65,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 <style scoped>
 .nav-wrap {
-  position: fixed;
-  top: v-bind(navTop);
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 0;
   z-index: 100;
   padding: 0;
-  transition: padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-wrap.scrolled {
-  top: 12px;
   padding: 0 clamp(16px, 4vw, 40px);
 }
 
@@ -225,8 +213,8 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   align-items: center;
   height: 52px;
   padding: 16px 24px;
-  background: var(--l-lilac);
-  color: #341b48;
+  background: var(--l-green);
+  color: var(--l-cta-text, #fff);
   font-family: var(--l-sans);
   font-size: 16px;
   font-weight: 500;

@@ -31,7 +31,7 @@ html {
 
 /* ============ Design tokens ============ */
 :root {
-  --bg: #F5F1EA;
+  --bg: #C84A1F;
   --bg-elevated: #FAF8F4;
   --bg-deep: #EFE9DD;
   --paper: #FDFCF8;
@@ -204,13 +204,13 @@ tbody tr {
 
 /* ============ Landing page audience tokens ============ */
 [data-audience="employer"] {
-  --l-bg: #1a1a18;
-  --l-surface: #232320;
-  --l-surface-2: #2c2c28;
-  --l-text: #f5f0eb;
-  --l-muted: #a8a39b;
-  --l-line: rgba(245, 240, 235, 0.12);
-  --l-dot: rgba(245, 240, 235, 0.07);
+  --l-bg: #faf7f2;
+  --l-surface: #ffffff;
+  --l-surface-2: #f0ece4;
+  --l-text: #1a1714;
+  --l-muted: #8a857e;
+  --l-line: rgba(26, 23, 20, 0.1);
+  --l-dot: rgba(26, 23, 20, 0.06);
 }
 [data-audience="candidate"] {
   --l-bg: #ece9e2;
@@ -222,10 +222,10 @@ tbody tr {
   --l-dot: rgba(26, 26, 24, 0.06);
 }
 :root {
-  --l-green: #cfe06a;
-  --l-green-soft: #dbe892;
-  --l-lilac: #dcc5f0;
-  --l-lilac-deep: #7a4fa0;
+  --l-green: #c84a1f;
+  --l-green-soft: rgba(200, 74, 31, 0.15);
+  --l-lilac: #c84a1f;
+  --l-lilac-deep: #ffffff;
   --l-pill: 999px;
   --l-display: "Source Serif 4", Georgia, serif;
   --l-sans: "DM Sans", system-ui, sans-serif;

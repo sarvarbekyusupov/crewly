@@ -60,7 +60,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   transform: translateX(-50%);
   width: 600px;
   height: 400px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 12%, transparent) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 10%, transparent) 0%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
 }
@@ -101,8 +101,8 @@ h2 {
   color: var(--l-text);
 }
 .cta {
-  background: var(--l-lilac);
-  color: #341b48;
+  background: var(--l-green);
+  color: var(--l-cta-text, #fff);
   font-family: var(--l-display);
   font-style: italic;
   font-weight: 600;

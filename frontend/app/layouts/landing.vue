@@ -90,3 +90,21 @@ main {
   color: var(--l-muted);
 }
 </style>
+
+<style>
+/* ── Mist palette — employer landing only ── */
+.landing-shell[data-audience='employer'] {
+  --l-bg: #faf7f2;
+  --l-surface: #ffffff;
+  --l-surface-2: #f0ece4;
+  --l-text: #1a1714;
+  --l-muted: #8a857e;
+  --l-line: rgba(26, 23, 20, 0.1);
+  --l-dot: rgba(26, 23, 20, 0.06);
+  --l-green: #c84a1f;
+  --l-green-soft: rgba(200, 74, 31, 0.15);
+  --l-lilac: #c84a1f;
+  --l-lilac-deep: #ffffff;
+  --l-cta-text: #ffffff;
+}
+</style>

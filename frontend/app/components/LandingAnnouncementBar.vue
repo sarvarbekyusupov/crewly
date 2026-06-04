@@ -32,8 +32,8 @@ const dismissed = useState('annc_dismissed', () => false)
 .annc {
   height: 39px;
   box-sizing: border-box;
-  background: rgb(214, 227, 143);
-  color: rgb(61, 64, 47);
+  background: #fde8df;
+  color: #7a2d10;
   font-family: var(--l-sans);
   font-size: 14px;
   font-weight: 400;
@@ -47,7 +47,7 @@ const dismissed = useState('annc_dismissed', () => false)
 .annc a {
   text-decoration: underline;
   font-weight: 600;
-  color: inherit;
+  color: #c84a1f;
   cursor: pointer;
 }
 
@@ -62,7 +62,7 @@ const dismissed = useState('annc_dismissed', () => false)
   opacity: 0.6;
   font-size: 14px;
   padding: 4px;
-  color: rgb(61, 64, 47);
+  color: #7a2d10;
   line-height: 1;
 }
 

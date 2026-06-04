@@ -121,7 +121,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   left: -5%;
   width: 50%;
   height: 60%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 14%, transparent) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 10%, transparent) 0%, transparent 70%);
   filter: blur(100px);
   z-index: 1;
   pointer-events: none;
@@ -194,8 +194,8 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   height: 46px;
   padding: 0 22px;
   border-radius: var(--l-pill);
-  background: var(--l-lilac);
-  color: #341b48;
+  background: var(--l-green);
+  color: var(--l-cta-text, #fff);
   font-family: var(--l-sans);
   font-size: 15px;
   font-weight: 600;
@@ -250,8 +250,8 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   height: 46px;
   border-radius: 50%;
   border: none;
-  background: var(--l-lilac);
-  color: #341b48;
+  background: var(--l-green);
+  color: var(--l-cta-text, #fff);
   font-size: 20px;
   cursor: pointer;
   display: grid;
