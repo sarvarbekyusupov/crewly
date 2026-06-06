@@ -61,6 +61,43 @@ const sidebarOpen = ref(false)
 router.afterEach(() => {
   sidebarOpen.value = false
 })
+
+// ── Command palette ──
+const ui = useUIStore()
+const searchTerm = ref('')
+const navGroups = computed(() => [
+  {
+    label: 'Navigation',
+    items: nav.map((item) => ({ to: item.to, label: item.label, icon: item.icon })),
+  },
+])
+
+const commandGroups = computed(() => [
+  {
+    id: 'nav',
+    label: 'Navigation',
+    items: (navGroups.value[0]?.items ?? [])
+      .filter((item) => item.label.toLowerCase().includes(searchTerm.value.toLowerCase()))
+      .map((item) => ({ id: item.to, label: item.label, icon: item.icon, to: item.to })),
+  },
+])
+
+function onCommandSelect(item: { to: string }) {
+  if (item && item.to) {
+    router.push(item.to)
+    ui.closePalette()
+  }
+}
+
+const handleKbd = (e: KeyboardEvent) => {
+  if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault()
+    ui.openPalette()
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', handleKbd))
+onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 </script>
 
 <template>
@@ -242,6 +279,18 @@ router.afterEach(() => {
       </div>
     </div>
   </div>
+
+  <!-- Command palette -->
+  <UModal v-model:open="ui.paletteOpen" :close="false">
+    <template #content>
+      <UCommandPalette
+        v-model:search-term="searchTerm"
+        :groups="commandGroups"
+        placeholder="Search pages..."
+        @update:model-value="onCommandSelect as any"
+      />
+    </template>
+  </UModal>
 </template>
 
 <style scoped>

@@ -41,6 +41,14 @@ const bulkLoading = ref(false)
 const showRejectModal = ref(false)
 const rejectReason = ref('')
 
+const activeSlideoverId = ref<string | null>(null)
+const isSlideoverOpen = ref(false)
+
+function openSlideover(id: string) {
+  activeSlideoverId.value = id
+  isSlideoverOpen.value = true
+}
+
 watch(view, () => {
   selectedIds.value = new Set()
 })
@@ -184,7 +192,7 @@ const statusOptions = computed(() => [
     </CommonPageHead>
 
     <template v-if="view === 'kanban'">
-      <ApplicationKanban :applications="applications" :loading="pending" />
+      <ApplicationKanban :applications="applications" :loading="pending" @select="openSlideover" />
       <div
         v-if="!pending && total > applications.length"
         class="mt-3 text-center font-mono text-xs text-ink-subtle"
@@ -223,6 +231,7 @@ const statusOptions = computed(() => [
         :total="total"
         :limit="limit"
         :pending="pending"
+        @select="openSlideover"
       />
 
       <CommonConfirmModal
@@ -238,5 +247,13 @@ const statusOptions = computed(() => [
         </UFormField>
       </CommonConfirmModal>
     </template>
+
+    <!-- Application details slideover -->
+    <EmployerApplicationSlideover
+      v-if="activeSlideoverId"
+      :id="activeSlideoverId"
+      v-model:open="isSlideoverOpen"
+      @refresh="() => refresh()"
+    />
   </div>
 </template>

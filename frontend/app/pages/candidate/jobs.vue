@@ -126,6 +126,45 @@ function formatPostedDate(dateStr?: string) {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
   return `${Math.floor(diffDays / 30)}mo ago`
 }
+
+// ── Tinder-Style Discovery Feed ──
+const viewMode = ref<'discovery' | 'list'>('discovery')
+const currentIndex = ref(0)
+const currentJob = computed(() => jobs.value[currentIndex.value] ?? null)
+
+// Reset card index when filters or search changes
+watch([search, workMode, minScore, sortBy], () => {
+  currentIndex.value = 0
+})
+
+const showPassFeedback = ref(false)
+const passReasons = [
+  'Tech Stack Mismatch',
+  'Salary Too Low',
+  'Location / Work Mode Mismatch',
+  'Not Interested',
+]
+
+function handlePass() {
+  showPassFeedback.value = true
+}
+
+function submitPassFeedback(reason: string) {
+  toast.add({
+    title: 'Feedback saved',
+    description: `AI trained: Passed on ${currentJob.value?.title} due to "${reason}"`,
+    color: 'neutral',
+  })
+  showPassFeedback.value = false
+  currentIndex.value++
+}
+
+async function handleLike() {
+  if (!currentJob.value) return
+  const job = currentJob.value
+  await applyToJob(job)
+  currentIndex.value++
+}
 </script>
 
 <template>
@@ -162,15 +201,38 @@ function formatPostedDate(dateStr?: string) {
             {{ t('candidate.jobs.matchingJobs', { n: total }) }}
           </p>
         </div>
-        <UButton
-          variant="outline"
-          size="sm"
-          icon="i-heroicons-sparkles"
-          :loading="scoringInProgress"
-          @click="triggerScoring"
-        >
-          {{ t('candidate.jobs.scoreAll') }}
-        </UButton>
+        <div class="flex items-center gap-2">
+          <!-- View toggle -->
+          <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors"
+              :class="viewMode === 'discovery' ? 'bg-ink text-bg' : 'text-ink-muted'"
+              @click="viewMode = 'discovery'"
+            >
+              <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" />
+              Feed
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors"
+              :class="viewMode === 'list' ? 'bg-ink text-bg' : 'text-ink-muted'"
+              @click="viewMode = 'list'"
+            >
+              <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
+              List
+            </button>
+          </div>
+          <UButton
+            variant="outline"
+            size="sm"
+            icon="i-heroicons-bolt"
+            :loading="scoringInProgress"
+            @click="triggerScoring"
+          >
+            {{ t('candidate.jobs.scoreAll') }}
+          </UButton>
+        </div>
       </div>
     </div>
 
@@ -260,7 +322,120 @@ function formatPostedDate(dateStr?: string) {
       </p>
     </div>
 
-    <!-- Job list -->
+    <!-- Tinder-Style Discovery Feed -->
+    <div v-else-if="viewMode === 'discovery'" class="max-w-xl mx-auto py-4 space-y-6">
+      <div v-if="currentIndex >= jobs.length" class="bg-surface border border-line-soft rounded-xl p-8 text-center flex flex-col items-center gap-3">
+        <UIcon name="i-heroicons-sparkles" class="w-12 h-12 text-accent animate-bounce" />
+        <h3 class="text-xl font-serif">All Caught Up!</h3>
+        <p class="text-sm text-ink-muted">You have reviewed all the AI-discovered roles matching your preferences.</p>
+        <UButton variant="outline" size="sm" @click="currentIndex = 0; refresh()">Review Again</UButton>
+      </div>
+
+      <div v-else-if="currentJob" class="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col transition-all duration-300">
+        <!-- Card Header: Title & Company -->
+        <div class="p-6 border-b border-line-soft bg-surface-2">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="text-xl font-serif font-medium text-ink tracking-tight truncate">
+                {{ currentJob.title }}
+              </h3>
+              <p class="text-sm text-ink-muted mt-1 font-medium">
+                {{ currentJob.company }}<span class="text-xs font-normal text-ink-subtle"> · {{ currentJob.location ?? 'No location' }}</span>
+              </p>
+            </div>
+            <UBadge
+              v-if="currentJob.displayScore != null"
+              :color="scoreColor(currentJob.displayScore)"
+              size="sm"
+              class="font-mono text-xs shrink-0 px-2 py-0.5"
+            >
+              {{ currentJob.displayScore }}% Match
+            </UBadge>
+          </div>
+        </div>
+
+        <!-- Card Body: Details & AI match insights -->
+        <div class="p-6 flex-1 space-y-5">
+          <!-- Metadata row -->
+          <div class="flex flex-wrap items-center gap-3 text-xs" style="color: var(--ink-subtle)">
+            <span v-if="currentJob.workMode" class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]">{{ currentJob.workMode }}</span>
+            <span v-if="currentJob.employmentType" class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]">{{ currentJob.employmentType }}</span>
+            <span v-if="currentJob.salaryMinUzs || currentJob.salaryMaxUzs" class="font-medium text-ink-muted">
+              {{ formatSalary(currentJob.salaryMinUzs) }}<span v-if="currentJob.salaryMaxUzs"> – {{ formatSalary(currentJob.salaryMaxUzs) }}</span>
+            </span>
+          </div>
+
+          <!-- Skills tags -->
+          <div v-if="currentJob.skills?.length" class="flex flex-wrap gap-1">
+            <UBadge v-for="s in currentJob.skills" :key="s" color="neutral" variant="subtle" size="xs">
+              {{ s }}
+            </UBadge>
+          </div>
+
+          <!-- Match Explanation (Why it fits) -->
+          <div v-if="currentJob.matchExplanation" class="bg-accent-soft border border-line-soft rounded-xl p-4 space-y-3.5">
+            <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-accent">AI Matchmaker Analysis</h4>
+            <p class="text-sm leading-relaxed text-ink-muted">
+              {{ currentJob.matchExplanation }}
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-line-soft">
+              <div v-if="currentJob.matchStrengths?.length">
+                <p class="text-xs font-semibold mb-1" style="color: var(--positive)">Key Strengths</p>
+                <ul class="space-y-0.5">
+                  <li v-for="s in currentJob.matchStrengths" :key="s" class="text-xs flex gap-1" style="color: var(--ink-muted)">
+                    <span style="color: var(--positive)">✓</span> {{ s }}
+                  </li>
+                </ul>
+              </div>
+              <div v-if="currentJob.matchGaps?.length">
+                <p class="text-xs font-semibold mb-1" style="color: var(--warning)">Considerations / Gaps</p>
+                <ul class="space-y-0.5">
+                  <li v-for="g in currentJob.matchGaps" :key="g" class="text-xs flex gap-1" style="color: var(--ink-muted)">
+                    <span style="color: var(--warning)">△</span> {{ g }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Footer: Swiping actions -->
+        <div class="p-6 border-t border-line bg-surface-2 flex items-center justify-center gap-4">
+          <!-- Pass Button -->
+          <UButton
+            color="error"
+            size="lg"
+            variant="outline"
+            icon="i-heroicons-x-mark"
+            class="rounded-full w-14 h-14 flex items-center justify-center"
+            aria-label="Pass"
+            @click="handlePass"
+          />
+
+          <!-- Apply / Interested Button -->
+          <template v-if="currentJob.application">
+            <UBadge :color="appStatusColor(currentJob.application.status)" variant="subtle" size="md">
+              {{ capitalizeStatus(currentJob.application.status) }}
+            </UBadge>
+          </template>
+          <template v-else>
+            <UButton
+              color="success"
+              size="lg"
+              icon="i-heroicons-heart"
+              class="rounded-full w-14 h-14 flex items-center justify-center text-white"
+              style="background: var(--positive)"
+              :loading="applying.has(currentJob.id)"
+              aria-label="Interested"
+              @click="handleLike"
+            />
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job list (Classic) -->
     <div v-else class="space-y-3">
       <div
         v-for="job in jobs"
@@ -418,9 +593,36 @@ function formatPostedDate(dateStr?: string) {
     </div>
 
     <!-- Pagination -->
-    <div v-if="total > limit" class="flex justify-center pt-2">
+    <div v-if="viewMode === 'list' && total > limit" class="flex justify-center pt-2">
       <UPagination v-model="page" :total="total" :page-size="limit" />
     </div>
+
+    <!-- Pass Dismiss Feedback Modal -->
+    <CommonConfirmModal
+      v-model:open="showPassFeedback"
+      title="Tell us why you passed"
+      confirm-label="Dismiss Card"
+      confirm-color="primary"
+      @confirm="submitPassFeedback('Not Interested')"
+    >
+      <div class="space-y-3">
+        <p class="text-xs text-ink-muted">
+          Your feedback trains our AI Matchmaker to fetch better job fits for you in real-time.
+        </p>
+        <div class="flex flex-col gap-1.5">
+          <UButton
+            v-for="reason in passReasons"
+            :key="reason"
+            variant="outline"
+            size="sm"
+            class="justify-start font-mono text-xs text-left"
+            @click="submitPassFeedback(reason)"
+          >
+            {{ reason }}
+          </UButton>
+        </div>
+      </div>
+    </CommonConfirmModal>
   </div>
 </template>
 

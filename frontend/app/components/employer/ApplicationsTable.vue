@@ -8,6 +8,10 @@ const props = defineProps<{
   pending: boolean
 }>()
 
+defineEmits<{
+  (e: 'select', id: string): void
+}>()
+
 const { t } = useI18n()
 
 const page = defineModel<number>('page', { default: 1 })
@@ -132,6 +136,7 @@ function formatDate(s?: string) {
           icon="i-heroicons-eye"
           :to="`/employer/applications/${row.id}`"
           :aria-label="t('common.view')"
+          @click.prevent="$emit('select', row.id)"
         />
       </template>
     </UTable>

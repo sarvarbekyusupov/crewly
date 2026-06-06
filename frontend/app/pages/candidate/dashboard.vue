@@ -101,6 +101,43 @@ async function triggerScoring() {
     scoringInProgress.value = false
   }
 }
+
+const nextBestAction = computed(() => {
+  const missing = missingFields.value
+  if (missing.includes('resumeFileUrl') || missing.includes('cv')) {
+    return {
+      message: 'Upload your latest resume (PDF) so our AI Matchmaker can find high-scoring matches for you.',
+      ctaLabel: 'Upload CV',
+      ctaTo: '/candidate/profile'
+    }
+  }
+  if (missing.includes('skills')) {
+    return {
+      message: 'Add your core professional skills to optimize your matching alignment with employers.',
+      ctaLabel: 'Add Skills',
+      ctaTo: '/candidate/profile'
+    }
+  }
+  if (missing.includes('telegramUsername') || missing.includes('phone')) {
+    return {
+      message: 'Set up your contact information (Telegram / Phone) so recruiters can reach out directly.',
+      ctaLabel: 'Add Contacts',
+      ctaTo: '/candidate/profile'
+    }
+  }
+  if (missing.includes('preferredWorkMode') || missing.includes('city')) {
+    return {
+      message: 'Define your preferred location and work mode (Remote / Hybrid) to filter out unfitting jobs.',
+      ctaLabel: 'Update Preferences',
+      ctaTo: '/candidate/profile'
+    }
+  }
+  return {
+    message: 'Your profile looks fantastic! Go to Job Discovery to find and apply for top AI-matched roles.',
+    ctaLabel: 'Explore Jobs',
+    ctaTo: '/candidate/jobs'
+  }
+})
 </script>
 
 <template>
@@ -135,50 +172,43 @@ async function triggerScoring() {
       </h1>
     </div>
 
-    <!-- Profile completeness banner -->
+    <!-- Profile completeness banner (Gamified) -->
     <div
-      v-if="completeness < 80"
-      class="rounded-lg px-4 py-3 flex items-start justify-between gap-4"
-      style="background: var(--accent-soft); border: 1px solid var(--accent)"
+      v-if="completeness < 100"
+      class="rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all duration-300 hover:shadow-md"
+      style="background: var(--surface); border: 1px solid var(--accent); position: relative; overflow: hidden"
     >
-      <div class="flex items-start gap-3 min-w-0 flex-1">
-        <UIcon
-          name="i-heroicons-user-circle"
-          class="w-5 h-5 shrink-0 mt-0.5"
-          style="color: var(--accent)"
-        />
+      <div class="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-xl pointer-events-none" style="background: var(--accent)" />
+      
+      <div class="flex items-start gap-4 min-w-0 flex-1">
+        <!-- Progress circle / ring simulation -->
+        <div class="relative shrink-0 flex items-center justify-center w-14 h-14 rounded-full border border-line bg-bg-deep">
+          <span class="text-sm font-semibold font-mono" style="color: var(--accent)">
+            {{ completeness }}%
+          </span>
+        </div>
+
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium" style="color: var(--ink)">
-            {{
-              completeness > 0
-                ? `${t('candidate.dashboard.profileComplete', { n: completeness })}`
-                : t('candidate.dashboard.profileIncomplete')
-            }}
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-mono font-semibold uppercase tracking-wide" style="color: var(--accent)">Profile Strength</span>
+            <span v-if="completeness < 80" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold font-mono">Needs Completion</span>
+          </div>
+          <p class="text-sm font-medium mt-1 leading-snug" style="color: var(--ink)">
+            {{ nextBestAction.message }}
           </p>
-          <div class="w-full max-w-48 h-1 rounded-full mt-1.5 mb-2 overflow-hidden" style="background: var(--line)">
+
+          <div class="w-full max-w-md h-1.5 rounded-full mt-2.5 bg-bg-deep overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
               :style="{ width: completeness + '%', background: 'var(--accent)' }"
             />
           </div>
-          <div v-if="missingFields.length" class="flex flex-wrap gap-1">
-            <span
-              v-for="f in missingFields.slice(0, 4)"
-              :key="f"
-              class="text-xs px-1.5 py-0.5 rounded"
-              style="background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent)"
-            >{{ f }}</span>
-            <span
-              v-if="missingFields.length > 4"
-              class="text-xs"
-              style="color: var(--ink-muted)"
-            >+{{ missingFields.length - 4 }} more</span>
-          </div>
         </div>
       </div>
-      <UButton to="/candidate/profile" size="xs" variant="outline" class="shrink-0">{{
-        t('candidate.dashboard.completeProfile')
-      }}</UButton>
+      
+      <UButton :to="nextBestAction.ctaTo" size="sm" class="shrink-0 font-medium">
+        {{ nextBestAction.ctaLabel }}
+      </UButton>
     </div>
 
     <!-- Active Screening Banner -->

@@ -222,6 +222,21 @@ function formatTime(dateStr: string) {
           {{ formatTime(msg.createdAt) }}
         </span>
       </div>
+
+      <!-- AI Typing Indicator -->
+      <div v-if="isSending" class="flex flex-col max-w-[85%] self-start animate-fade-in">
+        <div
+          class="px-4 py-3 rounded-2xl rounded-tl-sm border flex items-center gap-1.5"
+          style="background: var(--surface); color: var(--ink); border-color: var(--line-soft)"
+        >
+          <span class="typing-dot animate-bounce" style="animation-delay: 0s" />
+          <span class="typing-dot animate-bounce" style="animation-delay: 0.2s" />
+          <span class="typing-dot animate-bounce" style="animation-delay: 0.4s" />
+        </div>
+        <span class="text-[10px] mt-1 px-1 text-ink-subtle text-left">
+          myHR Recruiter is thinking...
+        </span>
+      </div>
     </div>
 
     <div class="mt-4 shrink-0">
@@ -258,3 +273,13 @@ function formatTime(dateStr: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  display: inline-block;
+}
+</style>

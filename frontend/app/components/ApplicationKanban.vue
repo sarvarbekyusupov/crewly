@@ -7,6 +7,10 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
+defineEmits<{
+  (e: 'select', id: string): void
+}>()
+
 const { t } = useI18n()
 const { appStatusLabel } = useStatusLabels()
 const columns = computed(() => groupApplicationsByStage(props.applications))
@@ -45,6 +49,7 @@ function recommendationColor(rec?: string | null) {
             :to="`/employer/applications/${card.id}`"
             class="kanban-card"
             :style="`border-left-color: ${col.color};`"
+            @click.prevent="$emit('select', card.id)"
           >
             <div class="flex items-start gap-2 mb-2">
               <div class="avatar-sm">{{ card.candidate?.fullName?.[0] ?? '?' }}</div>
