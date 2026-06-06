@@ -26,8 +26,34 @@ describe('useStatusLabels', () => {
     expect(jobStatusLabel('random')).toBe('random')
   })
 
+  it('translates job priority', () => {
+    const { jobPriorityLabel } = useStatusLabels()
+    expect(jobPriorityLabel('high')).toBe('jobs.priority.high')
+    expect(jobPriorityLabel('normal')).toBe('jobs.priority.normal')
+    expect(jobPriorityLabel('unknown_prio')).toBe('unknown_prio')
+  })
+
+  it('translates invoice status', () => {
+    const { invoiceStatusLabel } = useStatusLabels()
+    expect(invoiceStatusLabel('paid')).toBe('invoices.status.paid')
+    expect(invoiceStatusLabel('unpaid_billing')).toBe('unpaid_billing')
+  })
+
   it('translates role label', () => {
     const { roleLabel } = useStatusLabels()
     expect(roleLabel('admin')).toBe('settings.roles.admin')
+    expect(roleLabel('developer')).toBe('developer')
+  })
+
+  it('translates conversation state', () => {
+    const { conversationStateLabel } = useStatusLabels()
+    expect(conversationStateLabel('in_progress')).toBe('conversations.state.inProgress')
+    expect(conversationStateLabel('not_started')).toBe('not_started')
+  })
+
+  it('translates screening status', () => {
+    const { screeningStatusLabel } = useStatusLabels()
+    expect(screeningStatusLabel('completed')).toBe('applications.screening.completed')
+    expect(screeningStatusLabel('some_random_status')).toBe('some_random_status')
   })
 })

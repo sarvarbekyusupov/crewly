@@ -27,7 +27,8 @@ export function useProfileCompletion(profile: Ref<ProfileCompletionFields | null
       p.yearsExperience,
     ]
     const hasSkills = (p.skills?.length ?? 0) > 0 ? 1 : 0
-    const filled = fields.filter((f) => f !== undefined && f !== null && f !== '').length + hasSkills
+    const filled =
+      fields.filter((f) => f !== undefined && f !== null && f !== '').length + hasSkills
     return Math.round((filled / (fields.length + 1)) * 100)
   })
 }
