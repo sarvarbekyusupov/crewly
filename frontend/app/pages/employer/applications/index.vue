@@ -42,6 +42,7 @@ const showRejectModal = ref(false)
 const rejectReason = ref('')
 const showBulkOutreachModal = ref(false)
 const showCompareModal = ref(false)
+const showSourcingModal = ref(false)
 
 const copilotQuery = ref('')
 
@@ -225,6 +226,13 @@ const statusOptions = computed(() => [
             >
               {{ t('applications.clearJobFilter') }}
             </UButton>
+            <UButton
+              size="sm"
+              icon="i-heroicons-clipboard-document-check"
+              @click="showSourcingModal = true"
+            >
+              Quick Source
+            </UButton>
           </div>
           <span class="font-mono text-xs hidden sm:inline text-ink-subtle">{{ total }} total</span>
         </div>
@@ -307,6 +315,12 @@ const statusOptions = computed(() => [
     <CandidateCompareModal
       v-model:open="showCompareModal"
       :selected-ids="Array.from(selectedIds)"
+    />
+
+    <!-- Sourcing Clipboard Copilot Modal -->
+    <SourcingClipboardModal
+      v-model:open="showSourcingModal"
+      @success="() => refresh()"
     />
   </div>
 </template>

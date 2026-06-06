@@ -94,6 +94,9 @@ async function saveProfile() {
       skills,
     })
 
+    const { triggerConfetti } = useConfetti()
+    triggerConfetti()
+
     toast.add({ title: 'Profile set up completed!', color: 'success' })
     router.push('/candidate/dashboard')
   } catch (e) {

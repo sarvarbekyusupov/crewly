@@ -12,8 +12,40 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
 const { appStatusLabel } = useStatusLabels()
-const columns = computed(() => groupApplicationsByStage(props.applications))
+
+const orderList = ref(['applied', 'delivered', 'screening', 'interview', 'offered', 'hired', 'rejected'])
+
+const columns = computed(() => {
+  const grouped = groupApplicationsByStage(props.applications)
+  // Sort grouped columns by local custom order list
+  return [...grouped].sort((a, b) => orderList.value.indexOf(a.key) - orderList.value.indexOf(b.key))
+})
+
+let draggedColIdx = -1
+
+function onColDragStart(idx: number) {
+  draggedColIdx = idx
+}
+
+function onColDragOver(e: DragEvent) {
+  e.preventDefault()
+}
+
+function onColDrop(targetIdx: number) {
+  if (draggedColIdx === -1 || draggedColIdx === targetIdx) return
+  
+  const list = [...orderList.value]
+  const [removed] = list.splice(draggedColIdx, 1)
+  if (removed) {
+    list.splice(targetIdx, 0, removed)
+    orderList.value = list
+    toast.add({ title: 'Kanban columns reordered!', color: 'success' })
+  }
+  
+  draggedColIdx = -1
+}
 
 function recommendationColor(rec?: string | null) {
   if (rec === 'strong fit') return 'var(--positive)'
@@ -28,10 +60,14 @@ function recommendationColor(rec?: string | null) {
   <div v-else class="overflow-x-auto pb-4">
     <div class="flex gap-3" style="min-width: max-content">
       <div
-        v-for="col in columns"
+        v-for="(col, idx) in columns"
         :key="col.key"
-        class="rounded-xl flex flex-col"
+        class="rounded-xl flex flex-col cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md"
         style="width: 220px; background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+        draggable="true"
+        @dragstart="onColDragStart(idx)"
+        @dragover="onColDragOver"
+        @drop="onColDrop(idx)"
       >
         <div
           class="flex items-center justify-between px-3 py-2.5"

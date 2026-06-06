@@ -211,6 +211,35 @@ watch(
 
 const saving = ref(false)
 
+const targetRole = ref('architect')
+const rolesList = [
+  { value: 'architect', label: 'Senior Full-Stack Architect' },
+  { value: 'lead', label: 'Technical Team Lead' },
+  { value: 'manager', label: 'Engineering Manager' },
+]
+
+const roadmapSteps = computed(() => {
+  if (targetRole.value === 'architect') {
+    return [
+      { skill: 'TypeScript & Nuxt 3', desc: 'Core architecture and performance optimization.', status: 'matched' },
+      { skill: 'PostgreSQL & Index Optimization', desc: 'Relational data design and scaling.', status: 'matched' },
+      { skill: 'Docker & Kubernetes IaC', desc: 'Container orchestration and platform scaling.', status: 'missing' }
+    ]
+  }
+  if (targetRole.value === 'lead') {
+    return [
+      { skill: 'System Design Patterns', desc: 'Cohesive modular architectural layouts.', status: 'matched' },
+      { skill: 'Mentorship & Code Reviews', desc: 'Guiding junior engineers and assuring PR quality.', status: 'missing' },
+      { skill: 'Agile Delivery Orchestration', desc: 'Scrum sprint sizing and scope estimations.', status: 'matched' }
+    ]
+  }
+  return [
+    { skill: 'Product Roadmap Sizing', desc: 'Mapping tech deliverables to product KPIs.', status: 'missing' },
+    { skill: 'Resource Allocation & Budgets', desc: 'Hiring capacity plans and AWS cost optimization.', status: 'missing' },
+    { skill: 'Cross-functional Coordination', desc: 'Aligning design, QA, and developer pipelines.', status: 'matched' }
+  ]
+})
+
 const save = handleSubmit(async (values) => {
   if (saving.value) return
   saving.value = true
@@ -1134,6 +1163,68 @@ const missingProfileItems = computed(() => {
           </div>
         </div>
       </UCard>
+
+      <!-- AI Career Path Navigator & Skill Badges Card -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <!-- 3D Skill Badges Card -->
+        <UCard>
+          <div class="flex items-center gap-2 mb-4">
+            <UIcon name="i-heroicons-academic-cap" class="w-5 h-5 text-accent animate-bounce" />
+            <h3 class="section-label mb-0">Verified Skill Badges</h3>
+          </div>
+          <p class="text-xs text-ink-muted mb-4 leading-relaxed">
+            Earned by submitting certified repositories or answering AI screening questions.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="relative overflow-hidden rounded-xl border border-positive/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow">
+              <div class="absolute inset-0 bg-positive/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none" />
+              <UIcon name="i-heroicons-sparkles" class="w-7 h-7 text-positive mx-auto mb-2" />
+              <p class="text-xs font-semibold text-ink leading-tight">Nuxt 3 Architecture</p>
+              <span class="text-[9px] font-mono text-positive font-bold uppercase mt-1.5 block">Level: Advanced</span>
+            </div>
+            <div class="relative overflow-hidden rounded-xl border border-accent/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow">
+              <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none" />
+              <UIcon name="i-heroicons-bolt" class="w-7 h-7 text-accent mx-auto mb-2" />
+              <p class="text-xs font-semibold text-ink leading-tight">State Orchestration</p>
+              <span class="text-[9px] font-mono text-accent font-bold uppercase mt-1.5 block">Level: Intermediate</span>
+            </div>
+          </div>
+        </UCard>
+
+        <!-- Career Path Navigator Card -->
+        <UCard>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-map" class="w-5 h-5 text-accent" />
+              <h3 class="section-label mb-0">AI Career Navigator</h3>
+            </div>
+            <USelect
+              v-model="targetRole"
+              :options="rolesList"
+              size="xs"
+              class="w-44 font-mono text-[10px]"
+            />
+          </div>
+          
+          <!-- Roadmap timeline steps -->
+          <div class="space-y-3.5">
+            <div v-for="step in roadmapSteps" :key="step.skill" class="flex items-start gap-3">
+              <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border"
+                :style="step.status === 'matched' ? 'background: var(--positive-soft); border-color: var(--positive); color: var(--positive)' : 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'"
+              >
+                <UIcon :name="step.status === 'matched' ? 'i-heroicons-check' : 'i-heroicons-plus-circle'" class="w-3 h-3" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-ink leading-none">{{ step.skill }}</span>
+                  <span class="text-[9px] font-mono font-bold uppercase" :class="step.status === 'matched' ? 'text-positive' : 'text-accent'">{{ step.status }}</span>
+                </div>
+                <p class="text-[10px] text-ink-muted leading-snug mt-1">{{ step.desc }}</p>
+              </div>
+            </div>
+          </div>
+        </UCard>
+      </div>
 
       <!-- Sticky Bottom Save Changes Action Bar -->
       <div

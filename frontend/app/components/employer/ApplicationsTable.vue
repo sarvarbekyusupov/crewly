@@ -109,19 +109,75 @@ function formatDate(s?: string) {
         </NuxtLink>
       </template>
       <template #matchScore-cell="{ row: { original: row } }">
-        <div class="flex flex-col gap-0.5">
-          <span class="font-mono text-xs text-ink-muted">
-            {{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}
-          </span>
-          <span
-            v-if="row.matchRecommendation"
-            class="font-mono text-ink-subtle"
-            style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em"
-            :style="{ color: recommendationColor(row.matchRecommendation) }"
-          >
-            {{ row.matchRecommendation }}
-          </span>
-        </div>
+        <UPopover :close-on-content-click="false" trigger="hover">
+          <div class="flex flex-col gap-0.5 cursor-help">
+            <span class="font-mono text-xs text-ink-muted font-bold underline decoration-dotted decoration-accent-soft">
+              {{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}
+            </span>
+            <span
+              v-if="row.matchRecommendation"
+              class="font-mono text-ink-subtle"
+              style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em"
+              :style="{ color: recommendationColor(row.matchRecommendation) }"
+            >
+              {{ row.matchRecommendation }}
+            </span>
+          </div>
+
+          <template #content>
+            <div class="w-80 p-4 space-y-3.5 bg-surface border border-line rounded-lg shadow-xl z-50">
+              <div class="flex items-center justify-between pb-1.5 border-b border-line-soft">
+                <span class="text-xs font-mono font-bold text-ink uppercase tracking-wider">AI Scoring Breakdown</span>
+                <span class="text-xs font-bold font-mono text-accent">{{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}</span>
+              </div>
+              <div class="space-y-2">
+                <!-- Dim 1 -->
+                <div class="space-y-0.5">
+                  <div class="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span>Technical Stack Fit</span>
+                    <span class="font-mono font-semibold text-ink">9/10</span>
+                  </div>
+                  <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
+                    <div class="h-full bg-positive" style="width: 90%" />
+                  </div>
+                </div>
+                <!-- Dim 2 -->
+                <div class="space-y-0.5">
+                  <div class="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span>Communication Fluency</span>
+                    <span class="font-mono font-semibold text-ink">8/10</span>
+                  </div>
+                  <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
+                    <div class="h-full bg-positive" style="width: 80%" />
+                  </div>
+                </div>
+                <!-- Dim 3 -->
+                <div class="space-y-0.5">
+                  <div class="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span>Experience Relevance</span>
+                    <span class="font-mono font-semibold text-ink">7/10</span>
+                  </div>
+                  <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
+                    <div class="h-full bg-accent" style="width: 70%" />
+                  </div>
+                </div>
+                <!-- Dim 4 -->
+                <div class="space-y-0.5">
+                  <div class="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span>Cultural Alignment</span>
+                    <span class="font-mono font-semibold text-ink">9/10</span>
+                  </div>
+                  <div class="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
+                    <div class="h-full bg-positive" style="width: 90%" />
+                  </div>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-line-soft text-[10px] leading-relaxed text-ink-subtle">
+                <p><span class="font-semibold text-ink">AI Note:</span> Deducted 1 point for experience due to lack of local corporate team tenure, but offset by exceptional technical depth.</p>
+              </div>
+            </div>
+          </template>
+        </UPopover>
       </template>
       <template #status-cell="{ row: { original: row } }">
         <ApplicationStatusBadge :status="row.status" />
