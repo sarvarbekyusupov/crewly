@@ -181,6 +181,19 @@ const assessment = computed(() => screening.value?.aiAssessment)
 
 const hasPdf = computed(() => !!app.value?.candidate?.resumeFileUrl)
 const isSplitView = ref(false)
+const showHighlights = ref(false)
+
+const matchedSkills = computed(() => {
+  const req = app.value?.job?.requiredSkills ?? []
+  const cand = app.value?.candidate?.skills ?? []
+  return req.filter((s: string) => cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())))
+})
+
+const missingSkills = computed(() => {
+  const req = app.value?.job?.requiredSkills ?? []
+  const cand = app.value?.candidate?.skills ?? []
+  return req.filter((s: string) => !cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())))
+})
 </script>
 
 <template>
@@ -223,6 +236,15 @@ const isSplitView = ref(false)
               {{ isSplitView ? 'Standard' : 'Split PDF' }}
             </UButton>
             <UButton
+              v-if="isSplitView"
+              size="xs"
+              variant="outline"
+              :icon="showHighlights ? 'i-heroicons-document' : 'i-heroicons-sparkles'"
+              @click="showHighlights = !showHighlights"
+            >
+              {{ showHighlights ? 'Show PDF' : 'AI Highlights' }}
+            </UButton>
+            <UButton
               size="xs"
               variant="outline"
               icon="i-heroicons-arrow-top-right-on-square"
@@ -241,8 +263,11 @@ const isSplitView = ref(false)
             v-if="isSplitView && hasPdf"
             class="w-1/2 border-r border-line flex flex-col bg-surface"
           >
+            <!-- Original Resume Header -->
             <div class="p-2 border-b border-line flex items-center justify-between bg-surface-2">
-              <span class="text-xs font-mono text-ink-muted">Original Resume</span>
+              <span class="text-xs font-mono text-ink-muted">
+                {{ showHighlights ? 'Match Highlights' : 'Original Resume' }}
+              </span>
               <UButton
                 v-if="app.candidate?.resumeFileUrl"
                 :to="app.candidate.resumeFileUrl"
@@ -252,12 +277,47 @@ const isSplitView = ref(false)
                 icon="i-heroicons-arrow-down-tray"
               />
             </div>
+
+            <!-- PDF Viewer Mode -->
             <iframe
-              v-if="app.candidate?.resumeFileUrl"
+              v-if="!showHighlights && app.candidate?.resumeFileUrl"
               :src="app.candidate.resumeFileUrl"
               class="w-full flex-1 border-0"
               title="Resume PDF"
             />
+
+            <!-- AI Highlights Mode -->
+            <div v-else-if="showHighlights" class="flex-1 p-5 space-y-4 overflow-y-auto bg-bg-deep">
+              <div>
+                <h3 class="text-sm font-semibold text-ink">AI Skill Extraction & Alignment</h3>
+                <p class="text-xs text-ink-subtle mt-0.5">Calculated by Matchmaker agent using semantic profile alignment.</p>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
+                  <h4 class="text-xs font-mono font-bold text-positive uppercase tracking-wider">✓ Matched Required Skills</h4>
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <UBadge v-for="s in matchedSkills" :key="s" :label="s" color="success" variant="subtle" size="xs" />
+                    <span v-if="!matchedSkills.length" class="text-xs text-ink-subtle italic">None extracted</span>
+                  </div>
+                </div>
+
+                <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
+                  <h4 class="text-xs font-mono font-bold text-warning uppercase tracking-wider">△ Missing Required Skills</h4>
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <UBadge v-for="s in missingSkills" :key="s" :label="s" color="warning" variant="subtle" size="xs" />
+                    <span v-if="!missingSkills.length" class="text-xs text-ink-subtle italic">All skills matched!</span>
+                  </div>
+                </div>
+
+                <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
+                  <h4 class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider">Extracted Profile Skills</h4>
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <UBadge v-for="s in app.candidate?.skills" :key="s" :label="s" color="neutral" variant="subtle" size="xs" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Right / Center details workspace -->

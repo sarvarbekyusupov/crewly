@@ -42,7 +42,6 @@ const messages = ref<ChatMessage[]>([])
 const content = ref('')
 const isSending = ref(false)
 const isLoading = ref(true)
-let pollInterval: ReturnType<typeof setInterval> | null = null
 const messagesContainer = ref<HTMLElement | null>(null)
 
 async function fetchMessages() {
@@ -102,6 +101,8 @@ async function sendMessage() {
   }
 }
 
+import { newMessageBus } from '~/composables/useCandidateEventStream'
+
 function isScrolledToBottom() {
   if (!messagesContainer.value) return false
   const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
@@ -114,16 +115,24 @@ function scrollToBottom() {
   }
 }
 
+let unsubscribe: (() => void) | null = null
+
 onMounted(() => {
   clearNewMessage(applicationId)
   fetchMessages().then(() => {
     setTimeout(scrollToBottom, 100)
   })
-  pollInterval = setInterval(fetchMessages, 3000)
+  
+  // Real-time message streaming subscription
+  unsubscribe = newMessageBus.on((event) => {
+    if (event.applicationId === applicationId) {
+      fetchMessages()
+    }
+  })
 })
 
 onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval)
+  if (unsubscribe) unsubscribe()
 })
 
 function formatTime(dateStr: string) {

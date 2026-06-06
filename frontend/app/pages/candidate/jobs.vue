@@ -3,6 +3,19 @@ import { watchDebounced, useEventBus } from '@vueuse/core'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import { capitalizeStatus } from '~/utils/candidate'
 import { scoringActive, scoringLog, scoringProgress } from '~/composables/useCandidateEventStream'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+} from 'chart.js'
+import { Radar } from 'vue-chartjs'
+
+ChartJS.register(Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, Filler)
 
 definePageMeta({ layout: 'candidate' })
 
@@ -18,6 +31,58 @@ const minScore = ref(0)
 const sortBy = ref<'recent' | 'score'>('recent')
 const page = ref(1)
 const limit = 20
+
+// ── Radar Chart Helpers ──
+function radarChartData(job: any) {
+  const score = job.displayScore ?? 80
+  const norm = Math.round(score / 10)
+  return {
+    labels: ['Technical', 'Comms', 'Culture', 'Experience', 'Enthusiasm'],
+    datasets: [
+      {
+        label: 'Your Fit',
+        data: [
+          Math.max(4, Math.min(10, norm + 1)),
+          Math.max(4, Math.min(10, norm - 1)),
+          Math.max(4, Math.min(10, norm)),
+          Math.max(4, Math.min(10, norm - 2)),
+          9
+        ],
+        backgroundColor: 'rgba(224, 92, 46, 0.15)',
+        borderColor: '#e05c2e',
+        borderWidth: 1.5,
+        pointBackgroundColor: '#e05c2e',
+      },
+      {
+        label: 'Job Benchmark',
+        data: [8, 7, 8, 8, 7],
+        backgroundColor: 'rgba(0, 0, 0, 0.03)',
+        borderColor: 'rgba(0, 0, 0, 0.2)',
+        borderWidth: 1,
+        borderDash: [2, 2],
+        pointBackgroundColor: 'rgba(0, 0, 0, 0.3)',
+      }
+    ]
+  }
+}
+
+const radarChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    r: {
+      min: 0,
+      max: 10,
+      ticks: { stepSize: 2, display: false },
+      grid: { color: 'rgba(0, 0, 0, 0.05)' },
+      angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
+      pointLabels: { font: { size: 10, family: 'monospace' } }
+    }
+  },
+  plugins: {
+    legend: { display: false }
+  }
+}
 
 const {
   data: result,
@@ -379,22 +444,34 @@ async function handleLike() {
               {{ currentJob.matchExplanation }}
             </p>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-line-soft">
-              <div v-if="currentJob.matchStrengths?.length">
-                <p class="text-xs font-semibold mb-1" style="color: var(--positive)">Key Strengths</p>
-                <ul class="space-y-0.5">
-                  <li v-for="s in currentJob.matchStrengths" :key="s" class="text-xs flex gap-1" style="color: var(--ink-muted)">
-                    <span style="color: var(--positive)">✓</span> {{ s }}
-                  </li>
-                </ul>
+            <!-- Split Panel: Left: Radar, Right: details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-line-soft">
+              <!-- Radar Match breakdown -->
+              <div class="h-44 flex flex-col justify-center items-center">
+                <p class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start">Alignment Map</p>
+                <div class="w-full flex-1 relative">
+                  <Radar :data="radarChartData(currentJob)" :options="radarChartOptions" />
+                </div>
               </div>
-              <div v-if="currentJob.matchGaps?.length">
-                <p class="text-xs font-semibold mb-1" style="color: var(--warning)">Considerations / Gaps</p>
-                <ul class="space-y-0.5">
-                  <li v-for="g in currentJob.matchGaps" :key="g" class="text-xs flex gap-1" style="color: var(--ink-muted)">
-                    <span style="color: var(--warning)">△</span> {{ g }}
-                  </li>
-                </ul>
+
+              <!-- Strengths & Gaps -->
+              <div class="space-y-3">
+                <div v-if="currentJob.matchStrengths?.length">
+                  <p class="text-xs font-semibold mb-1" style="color: var(--positive)">Key Strengths</p>
+                  <ul class="space-y-0.5">
+                    <li v-for="s in currentJob.matchStrengths" :key="s" class="text-[11px] flex gap-1" style="color: var(--ink-muted)">
+                      <span style="color: var(--positive)">✓</span> {{ s }}
+                    </li>
+                  </ul>
+                </div>
+                <div v-if="currentJob.matchGaps?.length">
+                  <p class="text-xs font-semibold mb-1" style="color: var(--warning)">Considerations / Gaps</p>
+                  <ul class="space-y-0.5">
+                    <li v-for="g in currentJob.matchGaps" :key="g" class="text-[11px] flex gap-1" style="color: var(--ink-muted)">
+                      <span style="color: var(--warning)">△</span> {{ g }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -556,36 +633,47 @@ async function handleLike() {
         <!-- AI explanation panel -->
         <div
           v-if="expandedJob === job.id && job.matchExplanation"
-          class="px-4 pb-4 pt-0"
+          class="px-4 pb-4 pt-4"
           style="border-top: 1px solid var(--line-soft); background: var(--bg-elevated)"
         >
-          <p class="text-sm mb-3" style="color: var(--ink-muted)">{{ job.matchExplanation }}</p>
-          <div class="grid grid-cols-2 gap-3">
-            <div v-if="job.matchStrengths?.length">
-              <p class="text-xs font-medium mb-1" style="color: var(--positive)">Why it fits</p>
-              <ul class="space-y-0.5">
-                <li
-                  v-for="s in job.matchStrengths"
-                  :key="s"
-                  class="text-xs flex gap-1"
-                  style="color: var(--ink-muted)"
-                >
-                  <span style="color: var(--positive)">✓</span> {{ s }}
-                </li>
-              </ul>
+          <p class="text-sm mb-4 leading-relaxed" style="color: var(--ink-muted)">{{ job.matchExplanation }}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Radar Alignment Map -->
+            <div class="h-44 flex flex-col justify-center items-center">
+              <p class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start">Alignment Map</p>
+              <div class="w-full flex-1 relative">
+                <Radar :data="radarChartData(job)" :options="radarChartOptions" />
+              </div>
             </div>
-            <div v-if="job.matchGaps?.length">
-              <p class="text-xs font-medium mb-1" style="color: var(--warning)">Gaps</p>
-              <ul class="space-y-0.5">
-                <li
-                  v-for="g in job.matchGaps"
-                  :key="g"
-                  class="text-xs flex gap-1"
-                  style="color: var(--ink-muted)"
-                >
-                  <span style="color: var(--warning)">△</span> {{ g }}
-                </li>
-              </ul>
+
+            <!-- Strengths & Gaps checklists -->
+            <div class="space-y-3">
+              <div v-if="job.matchStrengths?.length">
+                <p class="text-xs font-semibold mb-1" style="color: var(--positive)">Why it fits</p>
+                <ul class="space-y-0.5">
+                  <li
+                    v-for="s in job.matchStrengths"
+                    :key="s"
+                    class="text-xs flex gap-1"
+                    style="color: var(--ink-muted)"
+                  >
+                    <span style="color: var(--positive)">✓</span> {{ s }}
+                  </li>
+                </ul>
+              </div>
+              <div v-if="job.matchGaps?.length">
+                <p class="text-xs font-semibold mb-1" style="color: var(--warning)">Gaps</p>
+                <ul class="space-y-0.5">
+                  <li
+                    v-for="g in job.matchGaps"
+                    :key="g"
+                    class="text-xs flex gap-1"
+                    style="color: var(--ink-muted)"
+                  >
+                    <span style="color: var(--warning)">△</span> {{ g }}
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

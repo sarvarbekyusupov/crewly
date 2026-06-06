@@ -11,6 +11,7 @@ export const scoringProgress = ref({ done: 0, total: 0 })
 export const scoringLog = ref<ScoringLogEntry[]>([])
 export const resumeParseStatus = ref<'idle' | 'parsing' | 'done' | 'error'>('idle')
 export const newMessageApplicationIds = ref<Set<string>>(new Set())
+export const newMessageBus = useEventBus<{ applicationId: string }>('candidate:new-message')
 
 export function clearNewMessage(applicationId: string) {
   const next = new Set(newMessageApplicationIds.value)
@@ -53,6 +54,7 @@ function handleEvent(type: string, payload: Record<string, unknown>) {
       const next = new Set(newMessageApplicationIds.value)
       next.add(appId)
       newMessageApplicationIds.value = next
+      newMessageBus.emit({ applicationId: appId })
     }
   } else if (type === 'resume_parse_progress') {
     const status = payload.status as 'parsing' | 'done' | 'error'

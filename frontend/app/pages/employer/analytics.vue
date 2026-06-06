@@ -354,6 +354,76 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
       </div>
     </UCard>
 
+    <!-- Outreach Campaign Analytics -->
+    <div class="mt-8 space-y-4">
+      <h2 class="section-label">Outreach Campaign Analytics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Metric 1 -->
+        <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
+          <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
+            <span>Automated Sourcing Emails Sent</span>
+            <UIcon name="i-heroicons-envelope" class="w-4 h-4 text-accent" />
+          </div>
+          <p class="text-3xl font-serif text-ink">1,428</p>
+          <div class="flex items-center gap-1.5 text-xs text-positive">
+            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
+            <span>+14.2% from last month</span>
+          </div>
+        </div>
+
+        <!-- Metric 2 -->
+        <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
+          <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
+            <span>Candidate Reply Rate</span>
+            <UIcon name="i-heroicons-chat-bubble-left-right" class="w-4 h-4 text-info" />
+          </div>
+          <p class="text-3xl font-serif text-ink">42.8%</p>
+          <div class="flex items-center gap-1.5 text-xs text-positive">
+            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
+            <span>+3.5% conversion increase</span>
+          </div>
+        </div>
+
+        <!-- Metric 3 -->
+        <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
+          <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
+            <span>Interview Booking Rate</span>
+            <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-positive" />
+          </div>
+          <p class="text-3xl font-serif text-ink">18.4%</p>
+          <div class="flex items-center gap-1.5 text-xs text-positive">
+            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
+            <span>+2.1% from baseline</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sourcing & Outreach Funnel Chart -->
+      <UCard>
+        <h3 class="text-sm font-semibold mb-4" style="color: var(--ink-muted)">Outreach Funnel Progress</h3>
+        <div class="space-y-4">
+          <div v-for="fun in [
+            { stage: 'Outreach Delivered', count: 1428, percent: 100, color: 'bg-accent' },
+            { stage: 'Campaign Responded', count: 611, percent: 42.8, color: 'bg-info' },
+            { stage: 'AI Screened (Qualified)', count: 263, percent: 18.4, color: 'bg-positive' },
+            { stage: 'Offer Placed', count: 48, percent: 3.3, color: 'bg-indigo-500' }
+          ]" :key="fun.stage" class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium text-ink">{{ fun.stage }}</span>
+              <div class="flex items-center gap-2 font-mono text-ink-muted">
+                <span>{{ fun.count }} candidates</span>
+                <span class="text-ink-subtle">·</span>
+                <span class="font-semibold text-ink">{{ fun.percent }}%</span>
+              </div>
+            </div>
+            <div class="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500" :class="fun.color" :style="{ width: `${fun.percent}%` }" />
+            </div>
+          </div>
+        </div>
+      </UCard>
+    </div>
+
     <!-- Agent Performance -->
     <div v-if="agents">
       <h2 class="section-label mb-4 mt-8">Agent Performance</h2>

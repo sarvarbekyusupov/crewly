@@ -73,6 +73,12 @@ const stats = computed(() => {
 
 const { percent: completeness, missing: missingFields } = useProfileCompletion(profile)
 
+onMounted(() => {
+  if (completeness.value === 0) {
+    navigateTo('/candidate/onboarding')
+  }
+})
+
 function scoreColor(
   score: number | null | undefined,
 ): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {

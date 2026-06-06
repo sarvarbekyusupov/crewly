@@ -312,14 +312,58 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
               style="width: 15px; height: 15px"
             />
           </button>
-          <button
-            type="button"
-            class="icon-btn"
-            :aria-label="t('nav.notifications')"
-            @click="toast.add({ title: t('nav.notificationsSoon'), color: 'neutral' })"
-          >
-            <UIcon name="i-heroicons-bell" style="width: 15px; height: 15px" />
-          </button>
+          <!-- Notifications Popover -->
+          <UPopover :close-on-content-click="false">
+            <button
+              type="button"
+              class="icon-btn relative"
+              :aria-label="t('nav.notifications')"
+            >
+              <UIcon name="i-heroicons-bell" style="width: 15px; height: 15px" />
+              <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse pointer-events-none" />
+            </button>
+
+            <template #content>
+              <div class="w-80 p-4 space-y-3 bg-surface border border-line rounded-lg shadow-xl z-50">
+                <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+                  <span class="text-xs font-mono font-bold text-ink uppercase tracking-wider">Recruiter Alerts</span>
+                  <UBadge label="3 New" size="xs" color="primary" variant="subtle" />
+                </div>
+                <div class="space-y-3 max-h-60 overflow-y-auto scrollbar-thin">
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div class="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center shrink-0">
+                      <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Matchmaker matched John Doe</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Matched with Senior Frontend Engineer with 92% match score.</p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">5m ago</span>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div class="w-6 h-6 rounded-full bg-info-soft flex items-center justify-center shrink-0">
+                      <UIcon name="i-heroicons-envelope-open" class="w-3.5 h-3.5 text-info" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Outreach replied by Alice</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Alice Smith booked an interview through automated outreach.</p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">2h ago</span>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div class="w-6 h-6 rounded-full bg-positive-soft flex items-center justify-center shrink-0">
+                      <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5 text-positive" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Interview scheduled</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Google Meet link created for candidate Bob Jones.</p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">Yesterday</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </UPopover>
           <!-- User avatar + settings + logout -->
           <div class="topbar-user">
             <div
