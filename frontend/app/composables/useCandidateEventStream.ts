@@ -9,6 +9,7 @@ export interface ScoringLogEntry {
 export const scoringActive = ref(false)
 export const scoringProgress = ref({ done: 0, total: 0 })
 export const scoringLog = ref<ScoringLogEntry[]>([])
+export const resumeParseStatus = ref<'idle' | 'parsing' | 'done' | 'error'>('idle')
 
 export const scoringCompleteBus = useEventBus<void>('candidate:scoring-complete')
 
@@ -39,6 +40,12 @@ function handleEvent(type: string, payload: Record<string, unknown>) {
       text: `Batch ${batchNum}/${batchTotal} — ${n} jobs scored`,
       ts: Date.now(),
     })
+  } else if (type === 'resume_parse_progress') {
+    const status = payload.status as 'parsing' | 'done' | 'error'
+    resumeParseStatus.value = status
+    if (status === 'done' || status === 'error') {
+      setTimeout(() => { resumeParseStatus.value = 'idle' }, 5000)
+    }
   } else if (type === 'scoring_complete') {
     scoringActive.value = false
     scoringLog.value.push({

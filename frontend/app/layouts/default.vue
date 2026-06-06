@@ -40,6 +40,8 @@ const { data: counts } = await useAsyncData(
 )
 
 const sseState = useSseConnectionState()
+const eventsStore = useEventsStore()
+const agentThoughts = storeToRefs(eventsStore).agentThoughts
 
 const navGroups = computed(() => [
   {
@@ -197,12 +199,29 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
       <div class="agent-card">
         <div class="agent-head">
           <div class="agent-live">
-            <span class="live-dot" />
+            <span class="live-dot" :class="{ 'live-dot--active': agentThoughts[0]?.action === 'started' }" />
             <span>{{ t('agent.live') }}</span>
           </div>
           <span class="agent-ver">v0.8</span>
         </div>
-        <div class="agent-label">
+        <div v-if="agentThoughts.length" class="agent-thoughts">
+          <div
+            v-for="thought in agentThoughts.slice(0, 4)"
+            :key="thought.ts"
+            class="agent-thought"
+            :class="`agent-thought--${thought.action}`"
+          >
+            <span class="thought-dot" />
+            <span class="thought-text">
+              <span class="thought-agent">{{ thought.agent }}</span>
+              {{ thought.purpose }}
+            </span>
+            <span v-if="thought.latency && thought.action === 'completed'" class="thought-ms">
+              {{ thought.latency }}ms
+            </span>
+          </div>
+        </div>
+        <div v-else class="agent-label">
           {{ t('agent.sourcing', { count: counts?.jobs ?? 0 }) }}
         </div>
       </div>
@@ -530,6 +549,59 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   font-size: 12px;
   color: var(--ink);
   line-height: 1.4;
+}
+.agent-thoughts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.agent-thought {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  min-width: 0;
+}
+.agent-thought--started { color: var(--ink); }
+.agent-thought--completed { color: var(--ink-subtle); }
+.agent-thought--failed { color: var(--warn); }
+.thought-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.agent-thought--started .thought-dot {
+  background: var(--accent);
+  opacity: 1;
+  animation: scan-pulse 1.2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.thought-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thought-agent {
+  font-weight: 600;
+  margin-right: 3px;
+}
+.thought-ms {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+.live-dot--active {
+  animation: scan-pulse 1.2s ease-in-out infinite;
+  background: var(--accent) !important;
 }
 
 /* ── Topbar ── */

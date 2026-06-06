@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { scoringActive, useCandidateEventStream } from '~/composables/useCandidateEventStream'
+import { scoringActive, resumeParseStatus, useCandidateEventStream } from '~/composables/useCandidateEventStream'
 
 const store = useCandidateAuthStore()
 const router = useRouter()
@@ -8,6 +8,16 @@ const toast = useToast()
 const { connect, disconnect } = useCandidateEventStream()
 onMounted(connect)
 onUnmounted(disconnect)
+
+watch(resumeParseStatus, (status) => {
+  if (status === 'parsing') {
+    toast.add({ title: 'Parsing your CV…', color: 'info', duration: 0 })
+  } else if (status === 'done') {
+    toast.add({ title: 'CV parsed — profile updated', color: 'success', duration: 4000 })
+  } else if (status === 'error') {
+    toast.add({ title: 'CV parsing failed', color: 'error', duration: 5000 })
+  }
+})
 
 onErrorCaptured((err) => {
   console.error('[layout:candidate] unhandled error:', err)
