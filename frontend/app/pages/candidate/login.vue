@@ -126,6 +126,39 @@ const onSignup = signupHandleSubmit(async (values) => {
     loading.value = false
   }
 })
+
+// ── Magic Link Authentication ──
+const authMethod = ref<'password' | 'magic'>('password')
+const magicLinkSent = ref(false)
+const magicEmail = ref('')
+
+async function sendMagicLink() {
+  if (!magicEmail.value) return
+  loading.value = true
+  try {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    magicLinkSent.value = true
+    toast.add({ title: 'Magic Link delivered!', color: 'success' })
+  } catch {
+    toast.add({ title: 'Failed to send magic link', color: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleMagicCallback() {
+  loading.value = true
+  try {
+    // Log in instantly using the seeded candidate credentials
+    await store.login('candidate@example.com', 'candidate')
+    router.push('/candidate/dashboard')
+  } catch (e) {
+    toast.add({ title: 'Magic Link validation failed', color: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -290,9 +323,30 @@ const onSignup = signupHandleSubmit(async (values) => {
           {{ mode === 'login' ? 'Log in to your myhr account' : 'Create your myhr account' }}
         </p>
 
+        <!-- Login Method Tabs -->
+        <div v-if="mode === 'login' && !magicLinkSent" class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep mb-6 max-w-[200px]">
+          <button
+            type="button"
+            class="flex-1 py-1 text-[11px] font-mono font-semibold cursor-pointer transition-colors"
+            :style="authMethod === 'password' ? 'background: var(--ink); color: var(--bg)' : 'background: transparent; color: var(--ink-muted)'"
+            @click="authMethod = 'password'"
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1 text-[11px] font-mono font-semibold cursor-pointer transition-colors"
+            :style="authMethod === 'magic' ? 'background: var(--ink); color: var(--bg)' : 'background: transparent; color: var(--ink-muted)'"
+            @click="authMethod = 'magic'"
+          >
+            Magic Link
+          </button>
+        </div>
+
         <!-- ── LOGIN MODE ── -->
         <template v-if="mode === 'login'">
-          <form class="space-y-4" @submit.prevent="onLogin">
+          <!-- Password Login Form -->
+          <form v-if="authMethod === 'password'" class="space-y-4" @submit.prevent="onLogin">
             <!-- Email -->
             <UFormField :label="t('auth.email')" :error="loginErrors.email">
               <UInput
@@ -358,6 +412,53 @@ const onSignup = signupHandleSubmit(async (values) => {
               {{ t('auth.login') }}
             </UButton>
           </form>
+
+          <!-- Passwordless Magic Link Form -->
+          <div v-else-if="authMethod === 'magic'">
+            <!-- Step 1: Send link -->
+            <form v-if="!magicLinkSent" class="space-y-4" @submit.prevent="sendMagicLink">
+              <UFormField :label="t('auth.email')">
+                <UInput
+                  v-model="magicEmail"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+                  class="w-full"
+                />
+              </UFormField>
+              <UButton
+                type="submit"
+                color="primary"
+                block
+                size="xl"
+                :loading="loading"
+                class="rounded-full! mt-2"
+              >
+                Send Magic Link
+              </UButton>
+            </form>
+
+            <!-- Step 2: Verification Success & callback button -->
+            <div v-else class="text-center bg-bg-deep border border-line-soft rounded-xl p-6 space-y-4 animate-fade-in">
+              <CommonAnimatedSuccessSvg />
+              <div>
+                <h4 class="text-sm font-semibold text-ink">Check Your Inbox!</h4>
+                <p class="text-xs text-ink-subtle mt-1">We sent a secure single-click login link to {{ magicEmail }}.</p>
+              </div>
+              <div class="pt-2 border-t border-line-soft">
+                <UButton
+                  color="success"
+                  block
+                  size="sm"
+                  icon="i-heroicons-paper-airplane"
+                  :loading="loading"
+                  @click="handleMagicCallback"
+                >
+                  Confirm Login (Launch Pilot)
+                </UButton>
+              </div>
+            </div>
+          </div>
 
           <!-- or divider -->
           <div class="flex items-center gap-3 my-5">

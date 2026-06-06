@@ -234,6 +234,73 @@ async function handleLike() {
   await applyToJob(job)
   currentIndex.value++
 }
+
+// ── Tinder Drag-Physics swiper ──
+const dragX = ref(0)
+const dragY = ref(0)
+const isDragging = ref(false)
+
+let startX = 0
+let startY = 0
+
+function startDrag(e: MouseEvent | TouchEvent) {
+  isDragging.value = true
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX
+  const clientY = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : e.clientY
+  startX = clientX - dragX.value
+  startY = clientY - dragY.value
+  
+  if ('touches' in e) {
+    document.addEventListener('touchmove', onDrag)
+    document.addEventListener('touchend', endDrag)
+  } else {
+    document.addEventListener('mousemove', onDrag)
+    document.addEventListener('mouseup', endDrag)
+  }
+}
+
+function onDrag(e: MouseEvent | TouchEvent) {
+  if (!isDragging.value) return
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX
+  const clientY = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : e.clientY
+  dragX.value = clientX - startX
+  dragY.value = clientY - startY
+}
+
+function endDrag() {
+  if (!isDragging.value) return
+  isDragging.value = false
+  
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', endDrag)
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', endDrag)
+
+  const threshold = 120
+  if (dragX.value > threshold) {
+    handleLike()
+  } else if (dragX.value < -threshold) {
+    handlePass()
+  }
+  
+  dragX.value = 0
+  dragY.value = 0
+}
+
+const cardStyle = computed(() => {
+  if (!isDragging.value && dragX.value === 0) {
+    return {
+      transform: 'translate3d(0, 0, 0) rotate(0deg)',
+      transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+    }
+  }
+  const rotation = dragX.value * 0.12
+  return {
+    transform: `translate3d(${dragX.value}px, ${dragY.value}px, 0) rotate(${rotation}deg)`,
+    transition: 'none',
+    cursor: 'grabbing'
+  }
+})
 </script>
 
 <template>
@@ -400,7 +467,13 @@ async function handleLike() {
         <UButton variant="outline" size="sm" @click="currentIndex = 0; refresh()">Review Again</UButton>
       </div>
 
-      <div v-else-if="currentJob" class="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col transition-all duration-300">
+      <div
+        v-else-if="currentJob"
+        class="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden flex flex-col select-none touch-none"
+        :style="cardStyle"
+        @mousedown="startDrag"
+        @touchstart="startDrag"
+      >
         <!-- Card Header: Title & Company -->
         <div class="p-6 border-b border-line-soft bg-surface-2">
           <div class="flex items-start justify-between gap-3">

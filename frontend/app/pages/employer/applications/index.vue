@@ -42,6 +42,31 @@ const showRejectModal = ref(false)
 const rejectReason = ref('')
 const showBulkOutreachModal = ref(false)
 
+const copilotQuery = ref('')
+
+watch(copilotQuery, (val) => {
+  const q = val.toLowerCase()
+  if (q.includes('all') || q.includes('clear') || q.includes('reset')) {
+    statusFilter.value = ''
+    copilotQuery.value = ''
+    return
+  }
+
+  if (q.includes('applied')) {
+    statusFilter.value = 'applied'
+  } else if (q.includes('screening') || q.includes('chat') || q.includes('delivered')) {
+    statusFilter.value = 'delivered'
+  } else if (q.includes('interview')) {
+    statusFilter.value = 'interview'
+  } else if (q.includes('offer')) {
+    statusFilter.value = 'offered'
+  } else if (q.includes('hire') || q.includes('placed')) {
+    statusFilter.value = 'hired'
+  } else if (q.includes('reject') || q.includes('pass')) {
+    statusFilter.value = 'rejected'
+  }
+})
+
 const activeSlideoverId = ref<string | null>(null)
 const isSlideoverOpen = ref(false)
 
@@ -137,13 +162,26 @@ const statusOptions = computed(() => [
       eyebrow="Pipeline"
       :title="t('applications.title')"
       subtitle="Track every candidate through the hiring pipeline."
+    />
+
+    <!-- AI Copilot Filter Command Bar -->
+    <div class="bg-accent-soft border border-line-soft rounded-xl p-3 flex items-center gap-3">
+      <div class="w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shrink-0 shadow-sm">
+        <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-pulse" />
+      </div>
+      <UInput
+        v-model="copilotQuery"
+        placeholder="Ask Recruiter AI to filter candidates (e.g. 'Show screened candidates' or 'Clear filters')..."
+        class="flex-1 font-mono text-xs"
+        autocomplete="off"
+      />
+    </div>
+
+    <div
+      class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 flex-wrap gap-4"
     >
-      <template #default>
-        <div
-          class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 flex-wrap gap-4"
-        >
-          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
+      <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
               <button
                 type="button"
                 class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
@@ -189,8 +227,6 @@ const statusOptions = computed(() => [
           </div>
           <span class="font-mono text-xs hidden sm:inline text-ink-subtle">{{ total }} total</span>
         </div>
-      </template>
-    </CommonPageHead>
 
     <template v-if="view === 'kanban'">
       <ApplicationKanban :applications="applications" :loading="pending" @select="openSlideover" />

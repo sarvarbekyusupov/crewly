@@ -76,6 +76,47 @@ async function triggerAiPersonalize() {
   }
 }
 
+// ── Outreach Template Manager ──
+const savedTemplates = [
+  {
+    value: 'intro',
+    label: 'Standard Dev Introduction',
+    text: 'Hi {name},\n\nHope you are doing well!\n\nI reviewed your profile and wanted to reach out regarding the {job} role at our team. Your background looks like an excellent alignment, and we\'d love to chat!\n\nAre you available for a brief call sometime this week?\n\nBest,\nHiring Manager'
+  },
+  {
+    value: 'fast',
+    label: 'Fast-Track AI Screening',
+    text: 'Hi {name},\n\nI reviewed your background, specifically your outstanding skills in {skills}.\n\nYour profile is an exceptional 92% semantic match for our open {job} role. We are automating our pipeline and would love to fast-track you directly to a video screening interview with our agent!\n\nWould you be open to clicking your career-pilot link to do a quick 5-minute screening chat?\n\nBest regards,\nHiring Manager'
+  },
+  {
+    value: 'rejection',
+    label: 'Polite Reject & Hold',
+    text: 'Dear {name},\n\nThank you so much for your interest in the {job} position at our team.\n\nWhile your skills in {skills} are highly impressive, we have decided to move forward with other candidates who more closely align with our current structural goals. We will keep your resume on file for future openings!\n\nWe wish you the absolute best in your job search!\n\nBest regards,\nHR Team'
+  }
+]
+
+const selectedTemplateId = ref('intro')
+
+function applyTemplate(templateId: string) {
+  const tmpl = savedTemplates.find((t) => t.value === templateId)
+  if (!tmpl) return
+
+  applications.value.forEach((app) => {
+    const name = app.candidate?.fullName?.split(' ')[0] ?? 'there'
+    const jobTitle = app.job?.title ?? 'our open position'
+    const skillsList = app.candidate?.skills?.slice(0, 3).join(', ') ?? 'software engineering'
+
+    let hydrated = tmpl.text
+      .replace(/{name}/g, name)
+      .replace(/{job}/g, jobTitle)
+      .replace(/{skills}/g, skillsList)
+
+    drafts.value[app.id] = hydrated
+  })
+  
+  toast.add({ title: `Applied "${tmpl.label}" to all candidates!`, color: 'success' })
+}
+
 const sendingBulk = ref(false)
 async function sendBulkOutreach() {
   sendingBulk.value = true
@@ -140,21 +181,31 @@ async function sendBulkOutreach() {
         <!-- Right / Center: Composer workspace -->
         <div v-if="activeApplication" class="flex-1 flex flex-col bg-surface overflow-hidden">
           <!-- Active candidate header -->
-          <div class="p-4 border-b border-line flex items-center justify-between bg-surface-2">
-            <div>
-              <h4 class="text-sm font-semibold text-ink">Outreach Email to {{ activeApplication.candidate?.fullName }}</h4>
+          <div class="p-4 border-b border-line flex items-center justify-between bg-surface-2 gap-3">
+            <div class="min-w-0">
+              <h4 class="text-sm font-semibold text-ink truncate">Outreach Email to {{ activeApplication.candidate?.fullName }}</h4>
               <p class="text-[10px] text-ink-subtle">Personalize using AI based on extracted resume skills.</p>
             </div>
-            <UButton
-              size="xs"
-              color="primary"
-              variant="subtle"
-              icon="i-heroicons-sparkles"
-              :loading="isAiRewriting"
-              @click="triggerAiPersonalize"
-            >
-              AI Personalize
-            </UButton>
+            <div class="flex items-center gap-2 shrink-0">
+              <USelect
+                v-model="selectedTemplateId"
+                :options="savedTemplates"
+                size="xs"
+                class="w-40 font-mono text-[11px]"
+                placeholder="Select Template"
+                @update:model-value="(val) => applyTemplate(val as string)"
+              />
+              <UButton
+                size="xs"
+                color="primary"
+                variant="subtle"
+                icon="i-heroicons-sparkles"
+                :loading="isAiRewriting"
+                @click="triggerAiPersonalize"
+              >
+                AI Personalize
+              </UButton>
+            </div>
           </div>
 
           <!-- Text composer -->
