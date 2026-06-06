@@ -16,6 +16,30 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 const api = useApi()
 useHead({ title: 'Analytics' })
 
+interface LlmSummaryByPurpose {
+  purpose: string
+  _count: number
+  _sum: { costUsd: number | null; totalTokens: number | null }
+}
+interface LlmSummaryByModel {
+  model: string
+  _count: number
+  _sum: { costUsd: number | null; totalTokens: number | null }
+}
+interface LlmSummary {
+  byPurpose: LlmSummaryByPurpose[]
+  byModel: LlmSummaryByModel[]
+  totalCostUsd: number
+}
+
+const { data: llmSummary } = useAsyncData('llm-summary', () =>
+  api.get<LlmSummary>('/api/v1/llm-calls/summary').catch(() => null),
+)
+const llm = computed(() => llmSummary.value)
+const llmMaxCost = computed(() =>
+  Math.max(...(llm.value?.byPurpose.map((r) => r._sum.costUsd ?? 0) ?? [1]), 0.001),
+)
+
 interface FunnelRow {
   stage: string
   count: number
@@ -392,6 +416,58 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
           </div>
         </UCard>
       </div>
+    </div>
+
+    <!-- LLM Cost Breakdown -->
+    <div v-if="llm">
+      <h2 class="section-label mb-4 mt-8">AI Cost Breakdown</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div
+          class="rounded-lg p-4 lg:col-span-1"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-xs mb-1" style="color: var(--ink-subtle)">Total AI spend</p>
+          <div
+            style="font-family: 'Fraunces', serif; font-size: 36px; font-weight: 400; color: var(--ink); line-height: 1"
+          >
+            ${{ llm.totalCostUsd.toFixed(4) }}
+          </div>
+        </div>
+        <div
+          class="rounded-lg p-4 lg:col-span-2"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-xs mb-3" style="color: var(--ink-subtle)">By model</p>
+          <div class="space-y-2">
+            <div v-for="row in llm.byModel" :key="row.model" class="flex items-center gap-3 text-sm">
+              <span class="font-mono text-xs w-48 truncate shrink-0" style="color: var(--ink-muted)">{{ row.model }}</span>
+              <span class="text-xs w-12 text-right shrink-0" style="color: var(--ink-subtle)">{{ row._count }}×</span>
+              <span class="font-mono text-xs w-20 text-right shrink-0" style="color: var(--ink)">${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <UCard>
+        <h3 class="text-sm font-medium mb-4" style="color: var(--ink-subtle)">Cost by Purpose</h3>
+        <div v-if="!llm.byPurpose.length" class="text-center py-6" style="color: var(--ink-subtle)">No data yet</div>
+        <div v-else class="space-y-3">
+          <div v-for="row in llm.byPurpose" :key="row.purpose" class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span style="color: var(--ink-muted)">{{ row.purpose }}</span>
+              <div class="flex items-center gap-3">
+                <span style="color: var(--ink-subtle)">{{ row._count }} calls · {{ ((row._sum.totalTokens ?? 0) / 1000).toFixed(1) }}k tokens</span>
+                <span class="font-mono font-medium" style="color: var(--ink)">${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span>
+              </div>
+            </div>
+            <div class="h-1.5 rounded-full overflow-hidden" style="background: var(--bg-elevated)">
+              <div
+                class="h-full rounded-full"
+                :style="{ width: `${((row._sum.costUsd ?? 0) / llmMaxCost) * 100}%`, background: 'var(--accent)' }"
+              />
+            </div>
+          </div>
+        </div>
+      </UCard>
     </div>
   </div>
 </template>

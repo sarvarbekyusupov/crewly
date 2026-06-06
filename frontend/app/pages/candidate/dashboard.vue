@@ -71,7 +71,7 @@ const stats = computed(() => {
   }
 })
 
-const completeness = useProfileCompletion(profile)
+const { percent: completeness, missing: missingFields } = useProfileCompletion(profile)
 
 function scoreColor(
   score: number | null | undefined,
@@ -138,16 +138,16 @@ async function triggerScoring() {
     <!-- Profile completeness banner -->
     <div
       v-if="completeness < 80"
-      class="rounded-lg px-4 py-3 flex items-center justify-between gap-4"
+      class="rounded-lg px-4 py-3 flex items-start justify-between gap-4"
       style="background: var(--accent-soft); border: 1px solid var(--accent)"
     >
-      <div class="flex items-center gap-3 min-w-0">
+      <div class="flex items-start gap-3 min-w-0 flex-1">
         <UIcon
           name="i-heroicons-user-circle"
-          class="w-5 h-5 shrink-0"
+          class="w-5 h-5 shrink-0 mt-0.5"
           style="color: var(--accent)"
         />
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <p class="text-sm font-medium" style="color: var(--ink)">
             {{
               completeness > 0
@@ -155,15 +155,28 @@ async function triggerScoring() {
                 : t('candidate.dashboard.profileIncomplete')
             }}
           </p>
-          <div class="w-48 h-1 rounded-full mt-1 overflow-hidden" style="background: var(--line)">
+          <div class="w-full max-w-48 h-1 rounded-full mt-1.5 mb-2 overflow-hidden" style="background: var(--line)">
             <div
-              class="h-full rounded-full"
+              class="h-full rounded-full transition-all duration-500"
               :style="{ width: completeness + '%', background: 'var(--accent)' }"
             />
           </div>
+          <div v-if="missingFields.length" class="flex flex-wrap gap-1">
+            <span
+              v-for="f in missingFields.slice(0, 4)"
+              :key="f"
+              class="text-xs px-1.5 py-0.5 rounded"
+              style="background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent)"
+            >{{ f }}</span>
+            <span
+              v-if="missingFields.length > 4"
+              class="text-xs"
+              style="color: var(--ink-muted)"
+            >+{{ missingFields.length - 4 }} more</span>
+          </div>
         </div>
       </div>
-      <UButton to="/candidate/profile" size="xs" variant="outline">{{
+      <UButton to="/candidate/profile" size="xs" variant="outline" class="shrink-0">{{
         t('candidate.dashboard.completeProfile')
       }}</UButton>
     </div>

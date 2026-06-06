@@ -400,7 +400,7 @@ async function regenerateSummary() {
   }
 }
 
-const completeness = useProfileCompletion(profile)
+const { percent: completeness } = useProfileCompletion(profile)
 
 // Actionable Dropdown list for progress bar
 const missingProfileItems = computed(() => {

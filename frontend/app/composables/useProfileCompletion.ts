@@ -11,24 +11,40 @@ export interface ProfileCompletionFields {
   skills?: string[]
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  fullName: 'Full name',
+  phone: 'Phone',
+  city: 'City',
+  currentPosition: 'Current role',
+  currentCompany: 'Current company',
+  preferredWorkMode: 'Work mode',
+  resumeFileUrl: 'CV / Resume',
+  telegramUsername: 'Telegram',
+  yearsExperience: 'Years experience',
+  skills: 'Skills',
+}
+
 export function useProfileCompletion(profile: Ref<ProfileCompletionFields | null | undefined>) {
-  return computed(() => {
+  const missing = computed(() => {
     const p = profile.value
-    if (!p) return 0
-    const fields = [
-      p.fullName,
-      p.phone,
-      p.city,
-      p.currentPosition,
-      p.currentCompany,
-      p.preferredWorkMode,
-      p.resumeFileUrl,
-      p.telegramUsername,
-      p.yearsExperience,
+    if (!p) return Object.keys(FIELD_LABELS)
+    const gaps: string[] = []
+    const scalar: (keyof ProfileCompletionFields)[] = [
+      'fullName', 'phone', 'city', 'currentPosition', 'currentCompany',
+      'preferredWorkMode', 'resumeFileUrl', 'telegramUsername', 'yearsExperience',
     ]
-    const hasSkills = (p.skills?.length ?? 0) > 0 ? 1 : 0
-    const filled =
-      fields.filter((f) => f !== undefined && f !== null && f !== '').length + hasSkills
-    return Math.round((filled / (fields.length + 1)) * 100)
+    for (const key of scalar) {
+      const v = p[key] as string | number | undefined
+      if (v === undefined || v === null || v === '') gaps.push(FIELD_LABELS[key] ?? key)
+    }
+    if ((p.skills?.length ?? 0) === 0) gaps.push(FIELD_LABELS.skills ?? 'Skills')
+    return gaps
   })
+
+  const percent = computed(() => {
+    const total = Object.keys(FIELD_LABELS).length
+    return Math.round(((total - missing.value.length) / total) * 100)
+  })
+
+  return { percent, missing }
 }
