@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { scoringActive, useCandidateEventStream } from '~/composables/useCandidateEventStream'
+
 const store = useCandidateAuthStore()
 const router = useRouter()
 const toast = useToast()
+
+const { connect, disconnect } = useCandidateEventStream()
+onMounted(connect)
+onUnmounted(disconnect)
 
 onErrorCaptured((err) => {
   console.error('[layout:candidate] unhandled error:', err)
@@ -101,6 +107,12 @@ router.afterEach(() => {
         >
           <UIcon :name="item.icon" class="w-4 h-4 shrink-0" />
           {{ item.label }}
+          <span
+            v-if="item.to === '/candidate/jobs' && scoringActive"
+            class="scanning-pill ml-auto"
+          >
+            <span class="scanning-dot" />AI
+          </span>
         </NuxtLink>
       </nav>
 
@@ -211,6 +223,26 @@ router.afterEach(() => {
 </template>
 
 <style scoped>
+.scanning-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.scanning-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: scan-pulse 1.2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
 .nav-item:hover {
   background: var(--bg-elevated);
   color: var(--ink);

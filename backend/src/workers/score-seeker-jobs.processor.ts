@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
@@ -26,6 +27,7 @@ export class ScoreSeekerJobsProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly agent: MatchmakerAgent,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   @Process()
@@ -94,6 +96,12 @@ export class ScoreSeekerJobsProcessor {
       this.logger.log({ candidateId }, 'No unscored jobs to process');
       return;
     }
+
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'scoring_started',
+      payload: { total: jobs.length },
+    });
 
     // Score in batches of 5 to stay within token limits
     const batchSize = 5;
@@ -165,11 +173,27 @@ export class ScoreSeekerJobsProcessor {
         });
       }
 
+      this.emitter.emit('candidate.event', {
+        candidateId,
+        type: 'scoring_batch',
+        payload: {
+          batchNum: Math.floor(i / batchSize) + 1,
+          batchTotal: Math.ceil(jobs.length / batchSize),
+          scored: batch.length,
+        },
+      });
+
       this.logger.log(
         { candidateId, batch: i / batchSize + 1, count: batch.length },
         'Batch scored',
       );
     }
+
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'scoring_complete',
+      payload: { total: jobs.length },
+    });
 
     this.logger.log(
       { candidateId, total: jobs.length },

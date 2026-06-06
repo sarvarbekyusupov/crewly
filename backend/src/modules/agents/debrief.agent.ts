@@ -58,7 +58,7 @@ export class DebriefAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'feedback_synthesis',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3 },
+      { maxTokens: 700, temperature: 0.3 },
     );
 
     return output.trim().slice(0, 1000);
@@ -98,7 +98,7 @@ export class DebriefAgent extends BaseAgent {
       'shadow_analysis',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 2048,
+        maxTokens: 1200,
         temperature: 0.2,
         responseFormat: { type: 'json_object' },
       },

@@ -43,7 +43,15 @@ export class AnthropicProvider implements LlmProvider {
       const response = await this.client.messages.create({
         model,
         max_tokens: opts.maxTokens ?? 4096,
-        ...(opts.system && { system: opts.system }),
+        ...(opts.system && {
+          system: [
+            {
+              type: 'text' as const,
+              text: opts.system,
+              cache_control: { type: 'ephemeral' as const },
+            },
+          ],
+        }),
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       });
 
@@ -52,6 +60,7 @@ export class AnthropicProvider implements LlmProvider {
         .map((b) => b.text)
         .join('');
 
+      const usage = response.usage as any;
       return {
         output,
         inputTokens: response.usage.input_tokens,
@@ -59,6 +68,8 @@ export class AnthropicProvider implements LlmProvider {
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,
         finishReason: response.stop_reason,
         rawResponse: response,
+        cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
       };
     } catch (e: any) {
       if (e.status === 400 || e.status === 401 || e.status === 403) {

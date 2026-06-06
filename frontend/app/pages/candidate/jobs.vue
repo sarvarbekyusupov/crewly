@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
+import { watchDebounced, useEventBus } from '@vueuse/core'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import { capitalizeStatus } from '~/utils/candidate'
+import { scoringActive, scoringLog, scoringProgress } from '~/composables/useCandidateEventStream'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -79,6 +80,8 @@ async function triggerScoring() {
     scoringInProgress.value = false
   }
 }
+
+useEventBus<void>('candidate:scoring-complete').on(() => refresh())
 
 const applying = ref<Set<string>>(new Set())
 const expandedJob = ref<string | null>(null)
@@ -170,6 +173,32 @@ function formatPostedDate(dateStr?: string) {
         </UButton>
       </div>
     </div>
+
+    <!-- AI activity feed -->
+    <Transition name="feed">
+      <div
+        v-if="scoringActive || scoringLog.length"
+        class="activity-feed"
+      >
+        <div class="feed-header">
+          <span class="pulse-dot" :class="{ active: scoringActive }" />
+          <span class="feed-label">
+            {{ scoringActive ? 'AI scanning jobs…' : 'Scan complete' }}
+          </span>
+          <span v-if="scoringProgress.total" class="feed-count">
+            {{ scoringProgress.done }}/{{ scoringProgress.total }}
+          </span>
+        </div>
+        <div
+          v-for="entry in scoringLog.slice(-5)"
+          :key="entry.ts"
+          class="feed-entry"
+        >
+          <span class="feed-icon">{{ entry.icon }}</span>
+          <span>{{ entry.text }}</span>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Filters -->
     <div class="flex flex-wrap items-center gap-3">
@@ -394,3 +423,67 @@ function formatPostedDate(dateStr?: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.activity-feed {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.feed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feed-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  flex: 1;
+}
+.feed-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.feed-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.feed-icon {
+  font-size: 11px;
+}
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-subtle);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.pulse-dot.active {
+  background: var(--accent);
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 5px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.feed-enter-active,
+.feed-leave-active {
+  transition: opacity 0.25s, transform 0.25s;
+}
+.feed-enter-from,
+.feed-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>

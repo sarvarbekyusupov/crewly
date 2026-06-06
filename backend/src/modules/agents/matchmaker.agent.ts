@@ -140,7 +140,7 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'match_rerank',
       [{ role: 'user', content: rerankPrompt }],
-      { maxTokens: 2048, responseFormat: { type: 'json_object' } },
+      { maxTokens: 1024, responseFormat: { type: 'json_object' } },
       {
         related_entity_type: 'job',
         // agentName is already handled by runLlm
@@ -163,7 +163,7 @@ export class MatchmakerAgent extends BaseAgent {
       [{ role: 'user', content: `Resume:\n${rawText.slice(0, 8000)}` }],
       {
         system: MATCHMAKER_PARSE_RESUME_SYSTEM,
-        maxTokens: 3000,
+        maxTokens: 1500,
         responseFormat: { type: 'json_object' },
       },
       candidateId
@@ -241,7 +241,7 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'seeker_job_score',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, responseFormat: { type: 'json_object' } },
+      { maxTokens: 512, responseFormat: { type: 'json_object' }, provider: 'bedrock' },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
         : {},

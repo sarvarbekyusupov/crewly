@@ -74,7 +74,8 @@ export class SourcingAgent extends BaseAgent {
       'sourcing_queries',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 512,
+        model: 'llama-3.1-8b-instant',
+        maxTokens: 256,
         temperature: 0.5,
         responseFormat: { type: 'json_object' },
       },
@@ -104,9 +105,10 @@ export class SourcingAgent extends BaseAgent {
       'job_discovery_queries',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 512,
+        maxTokens: 256,
         temperature: 0.5,
         responseFormat: { type: 'json_object' },
+        provider: 'bedrock',
       },
     );
 
@@ -153,7 +155,7 @@ export class SourcingAgent extends BaseAgent {
       'candidate_enrichment',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 1024,
+        maxTokens: 600,
         temperature: 0.3,
         responseFormat: { type: 'json_object' },
       },
@@ -186,7 +188,7 @@ export class SourcingAgent extends BaseAgent {
       'sourcing_strategy',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 1024,
+        maxTokens: 700,
         temperature: 0.4,
         responseFormat: { type: 'json_object' },
       },

@@ -5,6 +5,8 @@ export interface LlmCompletionResult {
   totalTokens: number;
   finishReason: string | null;
   rawResponse: unknown;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
 }
 
 export interface LlmCompletionOpts {

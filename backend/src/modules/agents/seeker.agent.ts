@@ -54,7 +54,7 @@ export class SeekerAgent extends BaseAgent {
       'seeker_application_decision',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 1024,
+        maxTokens: 800,
         temperature: 0.3,
         responseFormat: { type: 'json_object' },
       },

@@ -34,12 +34,6 @@ export abstract class BaseAgent {
   }
 
   protected constructSystemPrompt(extraSystem?: string): string {
-    return `You are ${this.metadata.name}, ${this.metadata.role}.
-Goal: ${this.metadata.goal}
-Backstory: ${this.metadata.backstory}
-
-${extraSystem || ''}
-
-Output your response in a clear, professional manner. If a specific JSON format is required, strictly adhere to it.`;
+    return `You are ${this.metadata.name}, ${this.metadata.role}. ${this.metadata.goal}${extraSystem ? '\n' + extraSystem : ''}`;
   }
 }

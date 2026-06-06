@@ -27,6 +27,9 @@ export const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional().default(''),
   OPENAI_API_KEY: z.string().optional().default(''),
 
+  AWS_BEARER_TOKEN_BEDROCK: z.string().optional().or(z.literal('')),
+  AWS_BEDROCK_REGION: z.string().optional().default('us-east-1'),
+
   HH_EMPLOYER_TOKEN: z.string().optional().or(z.literal('')),
   HH_EMPLOYER_ID: z.string().optional().or(z.literal('')),
   HH_CLIENT_ID: z.string().optional().or(z.literal('')),

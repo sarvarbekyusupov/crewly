@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CostCalculatorService } from './cost-calculator.service';
 import { GroqProvider } from './providers/groq.provider';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { BedrockProvider } from './providers/bedrock.provider';
 
 export interface PromptContext {
   related_entity_type?: string;
@@ -18,7 +19,7 @@ export interface PromptContext {
 
 export interface RunOptions {
   model?: string;
-  provider?: 'groq' | 'anthropic';
+  provider?: 'groq' | 'anthropic' | 'bedrock';
   system?: string;
   maxTokens?: number;
   temperature?: number;
@@ -31,6 +32,7 @@ export class PromptRunnerService {
   private readonly openai: OpenAI | null;
   private readonly groq: GroqProvider;
   private readonly anthropic: AnthropicProvider;
+  private readonly bedrock: BedrockProvider;
   private readonly langfuse: Langfuse | null = null;
 
   constructor(
@@ -41,8 +43,13 @@ export class PromptRunnerService {
   ) {
     this.groq = new GroqProvider(config);
     this.anthropic = new AnthropicProvider(config);
+    this.bedrock = new BedrockProvider(config);
 
-    if (!this.groq.isAvailable() && !this.anthropic.isAvailable()) {
+    if (
+      !this.groq.isAvailable() &&
+      !this.anthropic.isAvailable() &&
+      !this.bedrock.isAvailable()
+    ) {
       this.logger.warn(
         'No LLM provider configured — all agent calls will fail',
       );
@@ -133,16 +140,26 @@ export class PromptRunnerService {
     }
 
     try {
-      // Select provider: explicit opt-in, or Groq first, Anthropic as fallback
+      // Select provider: explicit opt-in, or Groq first, Anthropic/Bedrock as fallback
       const preferredProvider = opts.provider ?? 'groq';
-      const primary =
-        preferredProvider === 'anthropic' ? this.anthropic : this.groq;
+      const providerMap = {
+        groq: this.groq,
+        anthropic: this.anthropic,
+        bedrock: this.bedrock,
+      };
+      const primary = providerMap[preferredProvider] ?? this.groq;
       const fallback =
-        preferredProvider === 'anthropic' ? this.groq : this.anthropic;
+        preferredProvider === 'anthropic'
+          ? this.groq
+          : preferredProvider === 'bedrock'
+            ? this.groq
+            : this.anthropic.isAvailable()
+              ? this.anthropic
+              : this.bedrock;
 
       if (!primary.isAvailable() && !fallback.isAvailable()) {
         throw new Error(
-          'No LLM provider available — configure GROQ_API_KEY or ANTHROPIC_API_KEY',
+          'No LLM provider available — configure GROQ_API_KEY, ANTHROPIC_API_KEY, or AWS_BEARER_TOKEN_BEDROCK',
         );
       }
 

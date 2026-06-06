@@ -55,7 +55,8 @@ export class CoordinatorAgent extends BaseAgent {
       'orchestration_decision',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 512,
+        model: 'llama-3.1-8b-instant',
+        maxTokens: 256,
         temperature: 0.3,
         responseFormat: { type: 'json_object' },
       },
