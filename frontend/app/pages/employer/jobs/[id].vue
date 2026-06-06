@@ -203,7 +203,7 @@ const appColumns: any[] = [
             size="sm"
             variant="ghost"
             icon="i-heroicons-pencil-square"
-            :to="`/jobs/${jobId}/edit`"
+            :to="`/employer/jobs/${jobId}/edit`"
             class="flex-1 lg:flex-none justify-center"
             >{{ t('common.edit') }}</UButton
           >
@@ -211,7 +211,7 @@ const appColumns: any[] = [
             size="sm"
             variant="ghost"
             icon="i-heroicons-document-duplicate"
-            :to="`/jobs/create?from=${jobId}`"
+            :to="`/employer/jobs/create?from=${jobId}`"
             class="flex-1 lg:flex-none justify-center"
             >{{ t('jobs.duplicate') }}</UButton
           >
@@ -733,7 +733,7 @@ const appColumns: any[] = [
             variant="ghost"
             size="xs"
             icon="i-heroicons-eye"
-            :to="`/applications/${row.id}`"
+            :to="`/employer/applications/${row.id}`"
           />
         </template>
       </UTable>

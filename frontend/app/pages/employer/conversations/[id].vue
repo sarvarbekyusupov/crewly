@@ -147,7 +147,7 @@ const sendShortcut = computed(() => (isMac.value ? '⌘↵' : 'Ctrl+Enter'))
             {{ t('conversations.candidate') }}
           </p>
           <NuxtLink
-            :to="`/candidates/${conversation.candidateId}`"
+            :to="`/employer/candidates/${conversation.candidateId}`"
             style="font-size: 13px; font-weight: 500; color: var(--accent)"
           >
             {{ conversation.candidate?.fullName ?? conversation.candidateId.slice(0, 8) + '…' }}

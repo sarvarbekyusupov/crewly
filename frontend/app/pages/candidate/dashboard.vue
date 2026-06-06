@@ -397,7 +397,12 @@ async function triggerScoring() {
 
         <!-- HR pipeline apps -->
         <div v-if="hrApps.length" class="mt-4">
-          <h3 class="section-label mb-2">{{ t('candidate.dashboard.inPipeline') }}</h3>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="section-label">{{ t('candidate.dashboard.inPipeline') }}</h3>
+            <UButton v-if="hrApps.length > 3" variant="ghost" size="xs" to="/candidate/offers">
+              See all {{ hrApps.length }} →
+            </UButton>
+          </div>
           <div class="space-y-2">
             <div
               v-for="app in hrApps.slice(0, 3)"

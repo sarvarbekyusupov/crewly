@@ -9,7 +9,10 @@ export function formatDateTime(s?: string): string {
 }
 
 export function formatRelativeTime(s: string): string {
-  const diff = Math.floor((Date.now() - new Date(s).getTime()) / 60000)
+  if (!s) return '—'
+  const date = new Date(s)
+  if (isNaN(date.getTime())) return '—'
+  const diff = Math.floor((Date.now() - date.getTime()) / 60000)
   if (diff < 1) return 'just now'
   if (diff < 60) return `${diff}m ago`
   if (diff < 1440) return `${Math.floor(diff / 60)}h ago`
