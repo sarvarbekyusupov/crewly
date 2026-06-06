@@ -78,54 +78,54 @@ onMounted(() => {
       </button>
     </nav>
     <div class="flex-1 flex items-center justify-center p-6">
-    <div class="text-center max-w-sm">
-      <p
-        style="
-          font-family: 'Fraunces', serif;
-          font-size: 96px;
-          line-height: 1;
-          letter-spacing: -0.06em;
-          color: var(--ink);
-          font-weight: 400;
-          opacity: 0.12;
-        "
-      >
-        {{ error.statusCode }}
-      </p>
-      <div style="margin-top: -32px">
+      <div class="text-center max-w-sm">
         <p
           style="
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--ink-subtle);
-            margin-bottom: 10px;
-          "
-        >
-          {{ isNotFound ? 'Error 404' : `Error ${error.statusCode}` }}
-        </p>
-        <h1
-          style="
             font-family: 'Fraunces', serif;
-            font-size: 32px;
-            line-height: 1.1;
-            letter-spacing: -0.035em;
+            font-size: 96px;
+            line-height: 1;
+            letter-spacing: -0.06em;
             color: var(--ink);
             font-weight: 400;
-            margin-bottom: 10px;
+            opacity: 0.12;
           "
         >
-          {{ isNotFound ? 'Page not found' : 'Something went wrong' }}
-        </h1>
-        <p style="font-size: 14px; color: var(--ink-muted); margin-bottom: 24px">
-          {{
-            isNotFound ? "The page you're looking for doesn't exist or was moved." : error.message
-          }}
+          {{ error.statusCode }}
         </p>
-        <UButton icon="i-heroicons-home" @click="goHome">Go to Dashboard</UButton>
+        <div style="margin-top: -32px">
+          <p
+            style="
+              font-family: 'JetBrains Mono', monospace;
+              font-size: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: var(--ink-subtle);
+              margin-bottom: 10px;
+            "
+          >
+            {{ isNotFound ? 'Error 404' : `Error ${error.statusCode}` }}
+          </p>
+          <h1
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 32px;
+              line-height: 1.1;
+              letter-spacing: -0.035em;
+              color: var(--ink);
+              font-weight: 400;
+              margin-bottom: 10px;
+            "
+          >
+            {{ isNotFound ? 'Page not found' : 'Something went wrong' }}
+          </h1>
+          <p style="font-size: 14px; color: var(--ink-muted); margin-bottom: 24px">
+            {{
+              isNotFound ? "The page you're looking for doesn't exist or was moved." : error.message
+            }}
+          </p>
+          <UButton icon="i-heroicons-home" @click="goHome">Go to Dashboard</UButton>
+        </div>
       </div>
-    </div>
     </div>
   </div>
 </template>
