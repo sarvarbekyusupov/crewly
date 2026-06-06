@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { scoringActive, resumeParseStatus, useCandidateEventStream } from '~/composables/useCandidateEventStream'
+import { scoringActive, resumeParseStatus, newMessageApplicationIds, useCandidateEventStream } from '~/composables/useCandidateEventStream'
+
+const hasNewMessages = computed(() => newMessageApplicationIds.value.size > 0)
 
 const store = useCandidateAuthStore()
 const router = useRouter()
@@ -123,6 +125,10 @@ router.afterEach(() => {
           >
             <span class="scanning-dot" />AI
           </span>
+          <span
+            v-if="item.to === '/candidate/chat' && hasNewMessages"
+            class="new-msg-dot ml-auto"
+          />
         </NuxtLink>
       </nav>
 
@@ -233,6 +239,13 @@ router.afterEach(() => {
 </template>
 
 <style scoped>
+.new-msg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
 .scanning-pill {
   display: inline-flex;
   align-items: center;

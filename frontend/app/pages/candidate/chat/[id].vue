@@ -20,6 +20,8 @@ interface ApplicationContext {
   }
 }
 
+const { clearNewMessage } = await import('~/composables/useCandidateEventStream')
+
 const { data: application } = await useAsyncData(
   `chat-app-${applicationId}`,
   () =>
@@ -113,6 +115,7 @@ function scrollToBottom() {
 }
 
 onMounted(() => {
+  clearNewMessage(applicationId)
   fetchMessages().then(() => {
     setTimeout(scrollToBottom, 100)
   })

@@ -10,6 +10,13 @@ export const scoringActive = ref(false)
 export const scoringProgress = ref({ done: 0, total: 0 })
 export const scoringLog = ref<ScoringLogEntry[]>([])
 export const resumeParseStatus = ref<'idle' | 'parsing' | 'done' | 'error'>('idle')
+export const newMessageApplicationIds = ref<Set<string>>(new Set())
+
+export function clearNewMessage(applicationId: string) {
+  const next = new Set(newMessageApplicationIds.value)
+  next.delete(applicationId)
+  newMessageApplicationIds.value = next
+}
 
 export const scoringCompleteBus = useEventBus<void>('candidate:scoring-complete')
 
@@ -40,6 +47,13 @@ function handleEvent(type: string, payload: Record<string, unknown>) {
       text: `Batch ${batchNum}/${batchTotal} — ${n} jobs scored`,
       ts: Date.now(),
     })
+  } else if (type === 'new_message') {
+    const appId = payload.applicationId as string | undefined
+    if (appId) {
+      const next = new Set(newMessageApplicationIds.value)
+      next.add(appId)
+      newMessageApplicationIds.value = next
+    }
   } else if (type === 'resume_parse_progress') {
     const status = payload.status as 'parsing' | 'done' | 'error'
     resumeParseStatus.value = status

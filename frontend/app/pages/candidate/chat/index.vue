@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { capitalizeStatus } from '~/utils/candidate'
 import { appStatusColor } from '~/utils/statusColors'
+import { newMessageApplicationIds } from '~/composables/useCandidateEventStream'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -115,6 +116,14 @@ const sortedApps = computed(() => {
           <div class="flex items-center gap-2 mt-2">
             <UBadge :color="appStatusColor(app.status)" variant="soft" size="xs">
               {{ capitalizeStatus(app.status) }}
+            </UBadge>
+            <UBadge
+              v-if="newMessageApplicationIds.has(app.id)"
+              color="primary"
+              variant="solid"
+              size="xs"
+            >
+              New
             </UBadge>
           </div>
         </div>

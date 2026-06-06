@@ -170,6 +170,15 @@ export class AdvanceScreeningProcessor {
           payload: { conversationId: screening.conversationId },
         });
 
+        this.emitter.emit('candidate.event', {
+          type: 'new_message',
+          candidateId: screening.application.candidate.id,
+          payload: {
+            applicationId: screening.application.id,
+            conversationId: screening.conversationId,
+          },
+        });
+
         const conv = screening.conversation;
         if (conv?.channel === 'telegram' && conv.channelThreadId) {
           await this.telegram.sendMessage(
