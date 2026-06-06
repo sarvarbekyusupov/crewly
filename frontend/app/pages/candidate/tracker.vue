@@ -25,13 +25,19 @@ const viewMode = ref<'list' | 'kanban'>('kanban')
 const expandedId = ref<string | null>(null)
 const updatingId = ref<string | null>(null)
 
-const COLUMNS = computed(() => [
-  { status: 'queued', label: t('candidate.tracker.queued'), color: 'warning' as const },
-  { status: 'applied', label: t('candidate.tracker.applied'), color: 'primary' as const },
-  { status: 'viewed', label: t('candidate.tracker.viewed'), color: 'info' as const },
-  { status: 'interview', label: t('candidate.tracker.interview'), color: 'success' as const },
-  { status: 'offer', label: t('candidate.tracker.offer'), color: 'success' as const },
-  { status: 'rejected', label: t('candidate.tracker.rejected'), color: 'error' as const },
+interface Column {
+  status: string
+  label: string
+  color: 'warning' | 'primary' | 'info' | 'success' | 'error'
+}
+
+const COLUMNS = computed<Column[]>(() => [
+  { status: 'queued', label: t('candidate.tracker.queued'), color: 'warning' },
+  { status: 'applied', label: t('candidate.tracker.applied'), color: 'primary' },
+  { status: 'viewed', label: t('candidate.tracker.viewed'), color: 'info' },
+  { status: 'interview', label: t('candidate.tracker.interview'), color: 'success' },
+  { status: 'offer', label: t('candidate.tracker.offer'), color: 'success' },
+  { status: 'rejected', label: t('candidate.tracker.rejected'), color: 'error' },
 ])
 
 const statusOptions = computed(() =>
@@ -165,7 +171,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
     <div v-else-if="viewMode === 'kanban'" class="overflow-x-auto pb-4 snap-x snap-mandatory">
       <div class="flex gap-3 min-w-max">
         <div
-          v-for="col in COLUMNS.value"
+          v-for="col in COLUMNS"
           :key="col.status"
           class="w-64 shrink-0 flex flex-col gap-2 snap-start"
         >
@@ -237,14 +243,11 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                 </p>
                 <div class="flex flex-wrap gap-1">
                   <button
-                    v-for="c in COLUMNS.value.filter((c) => c.status !== col.status)"
+                    v-for="c in COLUMNS.filter((c) => c.status !== col.status)"
                     :key="c.status"
                     class="text-xs px-2 py-0.5 rounded transition-opacity hover:opacity-80"
                     :style="`background: var(--bg-elevated); color: var(--ink-muted); border: 1px solid var(--line);`"
-                    @click="
-                      updateStatus(app, c.status);
-                      expandedId = null;
-                    "
+                    @click="(updateStatus(app, c.status), (expandedId = null))"
                   >
                     {{ c.label }}
                   </button>

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /$
+Allow: /candidate$
+Allow: /terms
+Allow: /verify-email
+Disallow: /candidate/
+Disallow: /employer/
+Disallow: /staff/
+Disallow: /api/
+
+# Host and Sitemap
+Host: https://my-hr.com
+Sitemap: https://my-hr.com/sitemap.xml

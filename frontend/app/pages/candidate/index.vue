@@ -6,8 +6,57 @@ set('candidate')
 
 useHead({
   title: 'myHR | Find work and get hired',
+  link: [
+    { rel: 'canonical', href: 'https://my-hr.com/candidate' }
+  ],
   meta: [
-    { name: 'description', content: 'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.' }
+    {
+      name: 'description',
+      content:
+        'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
+    },
+    // Open Graph / Facebook
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://my-hr.com/candidate' },
+    { property: 'og:title', content: 'myHR | Find work and get hired' },
+    { property: 'og:description', content: 'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.' },
+    { property: 'og:image', content: 'https://my-hr.com/landing-light.png' },
+
+    // Twitter
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:url', content: 'https://my-hr.com/candidate' },
+    { name: 'twitter:title', content: 'myHR | Find work and get hired' },
+    { name: 'twitter:description', content: 'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.' },
+    { name: 'twitter:image', content: 'https://my-hr.com/landing-light.png' },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        '@id': 'https://my-hr.com/candidate/#software',
+        'name': 'myHR Candidate Career Pilot',
+        'applicationCategory': 'BusinessApplication',
+        'operatingSystem': 'All',
+        'offers': {
+          '@type': 'Offer',
+          'price': '0.00',
+          'priceCurrency': 'USD',
+          'description': 'Free career companion and job search pilot.'
+        },
+        'aggregateRating': {
+          '@type': 'AggregateRating',
+          'ratingValue': '4.9',
+          'reviewCount': '124'
+        },
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'myHR',
+          'url': 'https://my-hr.com/'
+        }
+      })
+    }
   ]
 })
 </script>

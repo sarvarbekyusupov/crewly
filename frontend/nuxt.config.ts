@@ -70,6 +70,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-05-30',
 
   nitro: {
+    prerender: {
+      routes: ['/', '/candidate', '/terms'],
+    },
     routeRules: {
       '/api/**': {
         proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/**`,
