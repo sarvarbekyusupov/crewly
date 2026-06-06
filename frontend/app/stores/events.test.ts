@@ -39,8 +39,8 @@ describe('Events Store', () => {
     store.pushAgentThought(makeThought({ purpose: 'first' }))
     store.pushAgentThought(makeThought({ purpose: 'second' }))
 
-    expect(store.agentThoughts[0].purpose).toBe('second')
-    expect(store.agentThoughts[1].purpose).toBe('first')
+    expect(store.agentThoughts[0]!.purpose).toBe('second')
+    expect(store.agentThoughts[1]!.purpose).toBe('first')
   })
 
   it('pushAgentThought caps list at 6 entries', () => {
@@ -49,7 +49,7 @@ describe('Events Store', () => {
       store.pushAgentThought(makeThought({ purpose: `call-${i}` }))
     }
     expect(store.agentThoughts).toHaveLength(6)
-    expect(store.agentThoughts[0].purpose).toBe('call-7')
+    expect(store.agentThoughts[0]!.purpose).toBe('call-7')
   })
 
   it('pushAgentThought stores all AgentThought fields', () => {
@@ -71,8 +71,8 @@ describe('Events Store', () => {
   it('pushAgentThought works with minimal fields (no optional)', () => {
     const store = useEventsStore()
     store.pushAgentThought(makeThought({ action: 'failed' }))
-    expect(store.agentThoughts[0].action).toBe('failed')
-    expect(store.agentThoughts[0].latency).toBeUndefined()
-    expect(store.agentThoughts[0].cost).toBeUndefined()
+    expect(store.agentThoughts[0]!.action).toBe('failed')
+    expect(store.agentThoughts[0]!.latency).toBeUndefined()
+    expect(store.agentThoughts[0]!.cost).toBeUndefined()
   })
 })

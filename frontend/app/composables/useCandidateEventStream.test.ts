@@ -83,8 +83,8 @@ describe('useCandidateEventStream', () => {
     expect(scoringProgress.value.total).toBe(20)
     expect(scoringProgress.value.done).toBe(0)
     expect(scoringLog.value).toHaveLength(1)
-    expect(scoringLog.value[0].icon).toBe('🔍')
-    expect(scoringLog.value[0].text).toContain('20')
+    expect(scoringLog.value[0]!.icon).toBe('🔍')
+    expect(scoringLog.value[0]!.text).toContain('20')
   })
 
   it('scoring_batch increments done and appends log entry', async () => {
@@ -97,8 +97,8 @@ describe('useCandidateEventStream', () => {
 
     expect(scoringProgress.value.done).toBe(5)
     expect(scoringLog.value).toHaveLength(2)
-    expect(scoringLog.value[1].icon).toBe('✓')
-    expect(scoringLog.value[1].text).toContain('1/2')
+    expect(scoringLog.value[1]!.icon).toBe('✓')
+    expect(scoringLog.value[1]!.text).toContain('1/2')
 
     send('scoring_batch', { batchNum: 2, batchTotal: 2, scored: 5 })
     expect(scoringProgress.value.done).toBe(10)

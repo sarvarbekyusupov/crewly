@@ -147,6 +147,17 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       </div>
     </div>
 
+    <!-- Cross-link to offers page -->
+    <NuxtLink
+      to="/candidate/offers"
+      class="inline-flex items-center gap-2 text-xs rounded-lg px-3 py-2"
+      style="background: var(--bg-elevated); border: 1px solid var(--line); color: var(--ink-muted); text-decoration: none"
+    >
+      <UIcon name="i-heroicons-briefcase" class="w-3.5 h-3.5 shrink-0" />
+      Looking for employer offers sent to you?
+      <span style="color: var(--accent)">View Applications →</span>
+    </NuxtLink>
+
     <!-- Empty state -->
     <div v-if="!pending && !applications?.length" class="flex flex-col items-center py-16 gap-3">
       <UIcon name="i-heroicons-paper-airplane" class="w-12 h-12" style="color: var(--ink-subtle)" />

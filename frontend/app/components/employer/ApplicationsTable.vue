@@ -11,6 +11,13 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const page = defineModel<number>('page', { default: 1 })
+
+function recommendationColor(rec?: string | null) {
+  if (rec === 'strong fit') return 'var(--positive)'
+  if (rec === 'good fit') return 'var(--info)'
+  if (rec === 'possible fit') return 'var(--warning)'
+  return 'var(--ink-subtle)'
+}
 const selectedIds = defineModel<Set<string>>('selectedIds', { default: () => new Set() })
 
 const allSelected = computed(
@@ -98,9 +105,19 @@ function formatDate(s?: string) {
         </NuxtLink>
       </template>
       <template #matchScore-cell="{ row: { original: row } }">
-        <span class="font-mono text-xs text-ink-muted">
-          {{ row.matchScore ? Number(row.matchScore).toFixed(0) : '—' }}
-        </span>
+        <div class="flex flex-col gap-0.5">
+          <span class="font-mono text-xs text-ink-muted">
+            {{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}
+          </span>
+          <span
+            v-if="row.matchRecommendation"
+            class="font-mono text-ink-subtle"
+            style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em"
+            :style="{ color: recommendationColor(row.matchRecommendation) }"
+          >
+            {{ row.matchRecommendation }}
+          </span>
+        </div>
       </template>
       <template #status-cell="{ row: { original: row } }">
         <ApplicationStatusBadge :status="row.status" />

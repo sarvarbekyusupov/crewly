@@ -10,6 +10,13 @@ const props = defineProps<{
 const { t } = useI18n()
 const { appStatusLabel } = useStatusLabels()
 const columns = computed(() => groupApplicationsByStage(props.applications))
+
+function recommendationColor(rec?: string | null) {
+  if (rec === 'strong fit') return 'var(--positive)'
+  if (rec === 'good fit') return 'var(--info)'
+  if (rec === 'possible fit') return 'var(--warning)'
+  return 'var(--ink-subtle)'
+}
 </script>
 
 <template>
@@ -54,7 +61,7 @@ const columns = computed(() => groupApplicationsByStage(props.applications))
               <div class="flex justify-between items-center mb-1">
                 <span class="match-label">{{ t('applications.matchScore') }}</span>
                 <span class="match-val" :style="{ color: col.color }">
-                  {{ Number(card.matchScore).toFixed(0) }}
+                  {{ Number(card.matchScore).toFixed(0) }}%
                 </span>
               </div>
               <div class="h-0.5 rounded-full overflow-hidden" style="background: var(--bg-deep)">
@@ -63,6 +70,13 @@ const columns = computed(() => groupApplicationsByStage(props.applications))
                   :style="`width: ${Math.min(100, Number(card.matchScore))}%; background: ${col.color};`"
                 />
               </div>
+              <span
+                v-if="card.matchRecommendation"
+                class="match-rec"
+                :style="{ color: recommendationColor(card.matchRecommendation) }"
+              >
+                {{ card.matchRecommendation }}
+              </span>
             </div>
           </NuxtLink>
           <div v-if="!col.cards.length" class="py-6 text-center empty-col">—</div>
@@ -127,6 +141,14 @@ const columns = computed(() => groupApplicationsByStage(props.applications))
 .match-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
+}
+.match-rec {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: 'JetBrains Mono', monospace;
 }
 .empty-col {
   color: var(--ink-subtle);

@@ -60,6 +60,15 @@ const { data: applications, pending } = await useAsyncData('candidate-applicatio
       <p class="mt-1 text-sm" style="color: var(--ink-muted)">
         {{ t('candidate.offers.subtitle') }}
       </p>
+      <NuxtLink
+        to="/candidate/tracker"
+        class="mt-3 inline-flex items-center gap-2 text-xs rounded-lg px-3 py-2"
+        style="background: var(--bg-elevated); border: 1px solid var(--line); color: var(--ink-muted); text-decoration: none"
+      >
+        <UIcon name="i-heroicons-paper-airplane" class="w-3.5 h-3.5 shrink-0" />
+        Looking for jobs you applied to yourself?
+        <span style="color: var(--accent)">View Job Tracker →</span>
+      </NuxtLink>
     </div>
 
     <div v-if="pending" class="text-center py-16">

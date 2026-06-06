@@ -155,6 +155,31 @@ async function disconnectHh() {
       </h1>
     </div>
 
+    <!-- Live settings summary -->
+    <div class="rounded-lg px-4 py-3" style="background: var(--bg-elevated); border: 1px solid var(--line)">
+      <p class="text-xs font-medium mb-2" style="color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em">
+        Current settings
+      </p>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm" style="color: var(--ink)">
+        <span>
+          <span style="color: var(--ink-subtle)">Min match </span>
+          <strong>{{ minMatchScore > 0 ? minMatchScore + '%' : 'None' }}</strong>
+        </span>
+        <span>
+          <span style="color: var(--ink-subtle)">Auto-apply </span>
+          <strong>{{ maxApplicationsPerDay }}/day</strong>
+        </span>
+        <span>
+          <span style="color: var(--ink-subtle)">Salary </span>
+          <strong>{{ expectedSalaryUzs ? Number(expectedSalaryUzs).toLocaleString() + ' UZS' : 'Any' }}</strong>
+        </span>
+        <span>
+          <span style="color: var(--ink-subtle)">Blocked </span>
+          <strong>{{ blacklistedCompanies.length }} {{ blacklistedCompanies.length === 1 ? 'company' : 'companies' }}</strong>
+        </span>
+      </div>
+    </div>
+
     <form class="space-y-6" @submit.prevent="save">
       <UCard>
         <h3 class="section-label mb-4">{{ t('candidate.preferences.title') }}</h3>
