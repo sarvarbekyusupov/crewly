@@ -358,7 +358,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   position: sticky;
   top: 0;
   border-right: 1px solid var(--line);
-  background: var(--bg);
+  background: var(--accent);
   padding: 22px 18px;
   display: flex;
   flex-direction: column;
