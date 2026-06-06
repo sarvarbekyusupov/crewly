@@ -230,8 +230,14 @@ router.afterEach(() => {
           style="color: var(--ink-muted)"
           active-class="mobile-nav-active"
         >
-          <UIcon :name="item.icon" class="w-5 h-5 mb-0.5" />
-          <span>{{ item.label }}</span>
+          <div class="relative">
+            <UIcon :name="item.icon" class="w-5 h-5" />
+            <span
+              v-if="item.to === '/candidate/chat' && hasNewMessages"
+              class="mobile-new-dot"
+            />
+          </div>
+          <span class="mt-0.5">{{ item.label }}</span>
         </NuxtLink>
       </div>
     </div>
@@ -245,6 +251,16 @@ router.afterEach(() => {
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
+}
+.mobile-new-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1.5px solid var(--bg-deep);
 }
 .scanning-pill {
   display: inline-flex;
