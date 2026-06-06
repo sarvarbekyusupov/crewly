@@ -144,38 +144,52 @@ const nextBestAction = computed(() => {
     ctaTo: '/candidate/jobs'
   }
 })
+
+const showCoachModal = ref(false)
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Welcome header -->
     <div class="pb-4" style="border-bottom: 1px solid var(--line)">
-      <p
-        style="
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--ink-subtle);
-          margin-bottom: 6px;
-        "
-      >
-        Overview
-      </p>
-      <h1
-        style="
-          font-family: 'Fraunces', serif;
-          font-size: 28px;
-          line-height: 1.05;
-          letter-spacing: -0.03em;
-          color: var(--ink);
-          font-weight: 400;
-        "
-      >
-        Welcome back<template v-if="store.candidate?.fullName"
-          >, {{ store.candidate.fullName.split(' ')[0] }}</template
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            style="
+              font-family: 'JetBrains Mono', monospace;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: var(--ink-subtle);
+              margin-bottom: 6px;
+            "
+          >
+            Overview
+          </p>
+          <h1
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 28px;
+              line-height: 1.05;
+              letter-spacing: -0.03em;
+              color: var(--ink);
+              font-weight: 400;
+            "
+          >
+            Welcome back<template v-if="store.candidate?.fullName"
+              >, {{ store.candidate.fullName.split(' ')[0] }}</template
+            >
+          </h1>
+        </div>
+        <UButton
+          variant="outline"
+          size="sm"
+          icon="i-heroicons-banknotes"
+          @click="showCoachModal = true"
         >
-      </h1>
+          AI Salary Coach
+        </UButton>
+      </div>
     </div>
 
     <!-- Profile completeness banner (Gamified) -->
@@ -513,5 +527,8 @@ const nextBestAction = computed(() => {
         <span class="text-xs font-medium" style="color: var(--ink)">{{ action.label }}</span>
       </NuxtLink>
     </div>
+
+    <!-- AI Salary Coach Modal -->
+    <SalaryCoachModal v-model:open="showCoachModal" />
   </div>
 </template>

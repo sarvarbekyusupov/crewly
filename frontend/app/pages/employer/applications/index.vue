@@ -40,6 +40,7 @@ const selectedIds = ref<Set<string>>(new Set())
 const bulkLoading = ref(false)
 const showRejectModal = ref(false)
 const rejectReason = ref('')
+const showBulkOutreachModal = ref(false)
 
 const activeSlideoverId = ref<string | null>(null)
 const isSlideoverOpen = ref(false)
@@ -218,6 +219,7 @@ const statusOptions = computed(() => [
         :loading="bulkLoading"
         @approve="bulkApprove"
         @reject="showRejectModal = true"
+        @personalize="showBulkOutreachModal = true"
         @clear="selectedIds = new Set()"
       />
 
@@ -254,6 +256,13 @@ const statusOptions = computed(() => [
       :id="activeSlideoverId"
       v-model:open="isSlideoverOpen"
       @refresh="() => refresh()"
+    />
+
+    <!-- Bulk Outreach Editor Modal -->
+    <BulkOutreachEditorModal
+      v-model:open="showBulkOutreachModal"
+      :selected-ids="Array.from(selectedIds)"
+      @success="() => { refresh(); selectedIds = new Set() }"
     />
   </div>
 </template>

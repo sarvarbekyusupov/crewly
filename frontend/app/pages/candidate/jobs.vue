@@ -202,15 +202,18 @@ watch([search, workMode, minScore, sortBy], () => {
   currentIndex.value = 0
 })
 
+const { playPop } = useAudio()
+
 const showPassFeedback = ref(false)
 const passReasons = [
   'Tech Stack Mismatch',
   'Salary Too Low',
   'Location / Work Mode Mismatch',
   'Not Interested',
-]
+ ]
 
 function handlePass() {
+  playPop()
   showPassFeedback.value = true
 }
 
@@ -226,6 +229,7 @@ function submitPassFeedback(reason: string) {
 
 async function handleLike() {
   if (!currentJob.value) return
+  playPop()
   const job = currentJob.value
   await applyToJob(job)
   currentIndex.value++

@@ -194,6 +194,14 @@ const missingSkills = computed(() => {
   const cand = app.value?.candidate?.skills ?? []
   return req.filter((s: string) => !cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())))
 })
+
+const showRubricModal = ref(false)
+const rubricItems = ref([
+  { id: 'tech', label: 'Technical Stack Competence (e.g. Vue, Node)', active: true },
+  { id: 'comm', label: 'Communication Fluency & Writing clarity', active: true },
+  { id: 'prob', label: 'Analytical Problem Solving & Design', active: true },
+  { id: 'remote', label: 'Remote Autonomy & Trustworthiness', active: false },
+])
 </script>
 
 <template>
@@ -402,6 +410,14 @@ const missingSkills = computed(() => {
                 >
                   Trigger AI Screening
                 </UButton>
+                <UButton
+                  variant="outline"
+                  size="sm"
+                  icon="i-heroicons-adjustments-vertical"
+                  @click="showRubricModal = true"
+                >
+                  Screening Rubric
+                </UButton>
               </div>
             </div>
 
@@ -563,6 +579,30 @@ const missingSkills = computed(() => {
       <UFormField label="Attendee Emails (comma separated)" name="attendeeEmails" description="Emails to invite automatically.">
         <UInput v-model="scheduleForm.attendeeEmails" placeholder="hiring-manager@acme.com, developer@acme.com" class="w-full" />
       </UFormField>
+    </div>
+  </CommonConfirmModal>
+
+  <!-- Nested Rubric Modal -->
+  <CommonConfirmModal
+    v-model:open="showRubricModal"
+    title="Customize AI Screening Rubric"
+    confirm-label="Save Rubric"
+    @confirm="showRubricModal = false; toast.add({ title: 'Screening rubric updated!', color: 'success' })"
+  >
+    <div class="space-y-3">
+      <p class="text-xs text-ink-muted">
+        Select which core areas our AI screening agent should evaluate and grade this candidate on.
+      </p>
+      <div class="space-y-2 pt-2">
+        <div
+          v-for="item in rubricItems"
+          :key="item.id"
+          class="flex items-center justify-between p-3 rounded-xl border border-line-soft bg-surface"
+        >
+          <span class="text-xs font-medium text-ink">{{ item.label }}</span>
+          <USwitch v-model="item.active" color="primary" />
+        </div>
+      </div>
     </div>
   </CommonConfirmModal>
 </template>

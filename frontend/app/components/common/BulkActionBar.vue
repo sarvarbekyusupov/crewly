@@ -8,6 +8,7 @@ defineEmits<{
   approve: []
   reject: []
   clear: []
+  personalize: []
 }>()
 
 const { t } = useI18n()
@@ -25,6 +26,16 @@ const { t } = useI18n()
       <span class="text-sm font-medium flex-1" style="color: var(--ink)">
         {{ t('applications.bulkSelected', { count }) }}
       </span>
+      <UButton
+        size="xs"
+        color="primary"
+        variant="soft"
+        :loading="loading"
+        icon="i-heroicons-sparkles"
+        @click="$emit('personalize')"
+      >
+        Personalize
+      </UButton>
       <UButton
         size="xs"
         color="success"

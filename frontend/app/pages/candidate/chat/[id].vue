@@ -6,6 +6,7 @@ const toast = useToast()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const { playSwoosh } = useAudio()
 const applicationId = route.params.id as string
 const MAX_LENGTH = 500
 
@@ -44,13 +45,79 @@ const isSending = ref(false)
 const isLoading = ref(true)
 const messagesContainer = ref<HTMLElement | null>(null)
 
+// ── Voice Mode Setup ──
+const isVoiceMode = ref(false)
+const isListening = ref(false)
+let recognition: any = null
+
+function initSpeech() {
+  if (typeof window === 'undefined') return
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'en-US'
+
+    recognition.onstart = () => {
+      isListening.value = true
+    }
+
+    recognition.onend = () => {
+      isListening.value = false
+    }
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript
+      content.value = transcript
+    }
+  }
+}
+
+function toggleListening() {
+  if (!recognition) initSpeech()
+  if (!recognition) {
+    toast.add({ title: 'Speech recognition not supported', color: 'error' })
+    return
+  }
+
+  if (isListening.value) {
+    recognition.stop()
+  } else {
+    recognition.start()
+  }
+}
+
+function speakMessage(text: string) {
+  if (typeof window === 'undefined' || !isVoiceMode.value) return
+  try {
+    const synth = window.speechSynthesis
+    synth.cancel() // Stop active speech first
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'en-US'
+    synth.speak(utterance)
+  } catch {
+    // Ignore synthesis failure
+  }
+}
+
 async function fetchMessages() {
   try {
     const res = await api.get<ChatMessage[]>(
       `/api/v1/candidate-portal/applications/${applicationId}/messages`,
     )
     const wasAtBottom = isScrolledToBottom()
+    const oldLength = messages.value.length
     messages.value = res ?? []
+
+    // Voice feedback on new AI messages
+    if (messages.value.length > oldLength) {
+      const lastMsg = messages.value[messages.value.length - 1]
+      if (lastMsg && lastMsg.direction === 'outbound') {
+        speakMessage(lastMsg.content)
+      }
+    }
+
     if (wasAtBottom) {
       await nextTick()
       scrollToBottom()
@@ -72,6 +139,7 @@ async function sendMessage() {
   const text = content.value.trim()
   content.value = ''
   isSending.value = true
+  playSwoosh()
 
   messages.value.push({
     id: 'temp-' + Date.now(),
@@ -144,21 +212,34 @@ function formatTime(dateStr: string) {
 
 <template>
   <div class="max-w-3xl mx-auto h-[calc(100dvh-64px)] flex flex-col pt-6 pb-6 px-4">
-    <div class="flex items-center gap-4 mb-4 shrink-0">
-      <UButton
-        icon="i-heroicons-arrow-left"
-        variant="ghost"
-        color="neutral"
-        @click="router.back()"
-      />
-      <div>
-        <h1 class="text-xl font-medium" style="color: var(--ink)">
-          {{ application?.job?.title ?? t('candidate.chat.title') }}
-        </h1>
-        <p class="text-xs" style="color: var(--ink-subtle)">
-          {{ application?.job?.company?.name ?? t('candidate.chat.subtitle') }}
-        </p>
+    <div class="flex items-center gap-4 mb-4 shrink-0 justify-between">
+      <div class="flex items-center gap-4 min-w-0">
+        <UButton
+          icon="i-heroicons-arrow-left"
+          variant="ghost"
+          size="sm"
+          @click="router.back()"
+        />
+        <div>
+          <h1 class="text-xl font-medium truncate" style="color: var(--ink)">
+            {{ application?.job?.title ?? t('candidate.chat.title') }}
+          </h1>
+          <p class="text-xs" style="color: var(--ink-subtle)">
+            {{ application?.job?.company?.name ?? t('candidate.chat.subtitle') }}
+          </p>
+        </div>
       </div>
+
+      <!-- Voice Mode Switch -->
+      <UButton
+        :color="isVoiceMode ? 'success' : 'neutral'"
+        :variant="isVoiceMode ? 'subtle' : 'outline'"
+        size="xs"
+        :icon="isVoiceMode ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'"
+        @click="isVoiceMode = !isVoiceMode"
+      >
+        {{ isVoiceMode ? 'Voice: On' : 'Voice: Off' }}
+      </UButton>
     </div>
 
     <div
@@ -251,9 +332,20 @@ function formatTime(dateStr: string) {
     <div class="mt-4 shrink-0">
       <form class="space-y-1" @submit.prevent="sendMessage">
         <div class="flex gap-2">
+          <!-- Mic Dictation Button -->
+          <UButton
+            v-if="isVoiceMode"
+            type="button"
+            :color="isListening ? 'error' : 'neutral'"
+            :variant="isListening ? 'solid' : 'outline'"
+            icon="i-heroicons-microphone"
+            class="relative shrink-0"
+            :class="{ 'animate-pulse bg-red-500 text-white': isListening }"
+            @click="toggleListening"
+          />
           <UInput
             v-model="content"
-            :placeholder="t('candidate.chat.placeholder')"
+            :placeholder="isListening ? 'Listening...' : t('candidate.chat.placeholder')"
             class="flex-1"
             :disabled="isSending"
             :maxlength="MAX_LENGTH"
