@@ -3,7 +3,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 </script>
 
 <template>
-  <section class="how-section">
+  <section id="how-it-works" class="how-section">
     <div class="wrap">
       <h2 class="htitle serif">
         {{ audience === 'employer' ? 'How myHR works' : 'How it works' }}
@@ -14,17 +14,25 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
         <div class="card">
           <span class="kicker">Brief</span>
           <h3 class="serif">We hire for you, end-to-end</h3>
-          <p>No software, no team to build. Brief us once — we open the role, source, screen, and send a shortlist ready to interview.</p>
+          <p>
+            No software, no team to build. Brief us once — we open the role, source, screen, and
+            send a shortlist ready to interview.
+          </p>
         </div>
         <div class="card">
           <span class="kicker">Pricing</span>
           <h3 class="serif">15% of salary, only when you hire</h3>
-          <p>No setup fees. No monthly platform charge. You pay on signed offer. No hire, no bill.</p>
+          <p>
+            No setup fees. No monthly platform charge. You pay on signed offer. No hire, no bill.
+          </p>
         </div>
         <div class="card">
           <span class="kicker">Reach</span>
           <h3 class="serif">Our pool. Your network. The whole internet.</h3>
-          <p>Every channel in parallel — our pre-screened pool, your ATS, and the open web — into one ranked shortlist.</p>
+          <p>
+            Every channel in parallel — our pre-screened pool, your ATS, and the open web — into one
+            ranked shortlist.
+          </p>
         </div>
       </div>
 
@@ -122,13 +130,22 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   border-radius: 20px;
   padding: 30px;
   min-height: 280px;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.3s ease, opacity 0.3s ease;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s ease,
+    border-color 0.3s ease,
+    opacity 0.3s ease;
   transform-style: preserve-3d;
 }
 
 @media (min-width: 881px) {
-  .card:nth-child(1) { transform: rotateY(9deg); }
-  .card:nth-child(3) { transform: rotateY(-9deg); }
+  .card:nth-child(1) {
+    transform: rotateY(4deg);
+  }
+  .card:nth-child(3) {
+    transform: rotateY(-4deg);
+  }
 
   .card:hover {
     transform: translateY(-8px) scale(1.02) rotateY(0) !important;
@@ -147,10 +164,13 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 .kicker {
   font-size: 12px;
   letter-spacing: 0.14em;
-  color: var(--l-green);
   font-weight: 700;
   text-transform: uppercase;
   font-family: var(--l-sans);
+  background: linear-gradient(90deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .card h3 {
   font-weight: 400;
@@ -193,8 +213,14 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   padding: 5px 11px;
   border-radius: var(--l-pill);
 }
-.chip--g { background: color-mix(in srgb, var(--l-green) 30%, transparent); color: var(--l-text); }
-.chip--l { background: color-mix(in srgb, var(--l-lilac) 45%, transparent); color: var(--l-text); }
+.chip--g {
+  background: color-mix(in srgb, var(--l-green) 30%, transparent);
+  color: var(--l-text);
+}
+.chip--l {
+  background: color-mix(in srgb, var(--l-lilac) 45%, transparent);
+  color: var(--l-text);
+}
 
 /* Match rows & Progress bars */
 .match {
@@ -234,7 +260,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 }
 .progress-bar {
   height: 100%;
-  background: var(--l-green);
+  background: linear-gradient(90deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
   border-radius: 3px;
 }
 .border-highlight {
@@ -286,8 +312,12 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .card { transition: none; }
+  .card {
+    transition: none;
+  }
   .card:nth-child(1),
-  .card:nth-child(3) { transform: none; }
+  .card:nth-child(3) {
+    transform: none;
+  }
 }
 </style>

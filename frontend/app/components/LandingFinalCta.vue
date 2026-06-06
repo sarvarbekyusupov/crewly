@@ -32,16 +32,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
         </template>
       </h2>
 
-      <NuxtLink
-        v-if="audience === 'employer'"
-        to="/employer/signup"
-        class="cta"
-      >Start hiring</NuxtLink>
-      <NuxtLink
-        v-else
-        to="/candidate/login?mode=signup"
-        class="cta"
-      >Build Your Profile</NuxtLink>
+      <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
+        >Start hiring</NuxtLink
+      >
+      <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build Your Profile</NuxtLink>
     </div>
   </section>
 </template>
@@ -52,17 +46,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   padding: 110px 0;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #fff7f4 0%, #ffffff 45%, #fdf4ec 100%);
 }
 .glow {
-  position: absolute;
-  bottom: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 10%, transparent) 0%, transparent 70%);
-  filter: blur(60px);
-  pointer-events: none;
+  display: none;
 }
 .wrap {
   position: relative;
@@ -92,7 +79,9 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   color: var(--l-line);
   font-size: 16px;
 }
-.serif { font-family: var(--l-display); }
+.serif {
+  font-family: var(--l-display);
+}
 h2 {
   font-weight: 400;
   font-size: 40px;
@@ -101,8 +90,8 @@ h2 {
   color: var(--l-text);
 }
 .cta {
-  background: var(--l-green);
-  color: var(--l-cta-text, #fff);
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  color: #fff;
   font-family: var(--l-display);
   font-style: italic;
   font-weight: 600;
@@ -111,9 +100,15 @@ h2 {
   font-size: 18px;
   cursor: pointer;
   border: none;
-  transition: filter 0.2s;
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
   text-decoration: none;
   display: inline-block;
+  box-shadow: 0 4px 18px rgba(200, 74, 31, 0.28);
 }
-.cta:hover { filter: brightness(1.05); }
+.cta:hover {
+  opacity: 0.9;
+  box-shadow: 0 6px 24px rgba(200, 74, 31, 0.40);
+}
 </style>

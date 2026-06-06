@@ -92,19 +92,41 @@ main {
 </style>
 
 <style>
-/* ── Mist palette — employer landing only ── */
+/* ── Bold White + Gradient — employer landing ── */
 .landing-shell[data-audience='employer'] {
-  --l-bg: #faf7f2;
+  --l-bg: #ffffff;
   --l-surface: #ffffff;
-  --l-surface-2: #f0ece4;
-  --l-text: #1a1714;
-  --l-muted: #8a857e;
-  --l-line: rgba(26, 23, 20, 0.1);
-  --l-dot: rgba(26, 23, 20, 0.06);
+  --l-surface-2: #f5f4f2;
+  --l-text: #0f0d0b;
+  --l-muted: #7a746d;
+  --l-line: rgba(15, 13, 11, 0.1);
+  --l-dot: rgba(15, 13, 11, 0.04);
   --l-green: #c84a1f;
-  --l-green-soft: rgba(200, 74, 31, 0.15);
-  --l-lilac: #c84a1f;
-  --l-lilac-deep: #ffffff;
+  --l-green-soft: rgba(200, 74, 31, 0.12);
+  --l-lilac: #7c6af5;
+  --l-lilac-deep: #5b4fe8;
   --l-cta-text: #ffffff;
+  --l-grad-a: #c84a1f;
+  --l-grad-b: #f97316;
+  --l-grad-c: #fbbf24;
+  --l-hero-glow: rgba(200, 74, 31, 0.18);
+}
+.dark .landing-shell[data-audience='employer'] {
+  --l-bg: #0d0c0b;
+  --l-surface: #1a1918;
+  --l-surface-2: #242320;
+  --l-text: #f5f0eb;
+  --l-muted: #a8a39b;
+  --l-line: rgba(245, 240, 235, 0.1);
+  --l-dot: rgba(245, 240, 235, 0.06);
+  --l-green: #e05c2e;
+  --l-green-soft: rgba(224, 92, 46, 0.15);
+  --l-lilac: #9d8ff8;
+  --l-lilac-deep: #7c6af5;
+  --l-cta-text: #ffffff;
+  --l-grad-a: #e05c2e;
+  --l-grad-b: #fb923c;
+  --l-grad-c: #fcd34d;
+  --l-hero-glow: rgba(224, 92, 46, 0.15);
 }
 </style>

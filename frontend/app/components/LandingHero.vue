@@ -1,9 +1,19 @@
 <script setup lang="ts">
 defineProps<{ audience: 'employer' | 'candidate' }>()
+
+const roleQuery = ref('')
+const router = useRouter()
+
+function submitSearch() {
+  router.push(`/employer/signup?role=${encodeURIComponent(roleQuery.value.trim())}`)
+}
 </script>
 
 <template>
   <div class="hero">
+    <div class="orb orb-1" aria-hidden="true" />
+    <div class="orb orb-2" aria-hidden="true" />
+    <div class="orb orb-3" aria-hidden="true" />
     <div class="hero-inner">
       <!-- Copy -->
       <div class="hero-copy">
@@ -12,10 +22,26 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             Hire the right people,<br />
             <span class="accent-italic">a lot faster.</span>
           </h1>
-          <p class="sub">myHR is your AI hiring team. We source, screen, and shortlist — so you only spend time with candidates who matter.</p>
+          <p class="sub">
+            myHR is your AI hiring team. We source, screen, and shortlist — so you only spend time
+            with candidates who matter.
+          </p>
           <div class="search">
-            <input placeholder="What role are you hiring for?" aria-label="Role to hire for" />
-            <NuxtLink to="/employer/signup" class="search-btn">Get started →</NuxtLink>
+            <input
+              v-model="roleQuery"
+              placeholder="What role are you hiring for?"
+              aria-label="Role to hire for"
+              @keydown.enter="submitSearch"
+            />
+            <NuxtLink
+              :to="
+                roleQuery.trim()
+                  ? `/employer/signup?role=${encodeURIComponent(roleQuery.trim())}`
+                  : '/employer/signup'
+              "
+              class="search-btn"
+              >Get started →</NuxtLink
+            >
           </div>
         </template>
 
@@ -24,13 +50,18 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             Find work. Grow.<br />
             <span class="accent-italic">Get hired.</span>
           </h1>
-          <p class="sub">Your AI career partner. Build your profile, see roles that actually fit, close skill gaps, and get reached out to when you're a match.</p>
+          <p class="sub">
+            Your AI career partner. Build your profile, see roles that actually fit, close skill
+            gaps, and get reached out to when you're a match.
+          </p>
           <div class="pill-cta-wrap">
             <NuxtLink to="/candidate/login?mode=signup" class="pill-cta">
               Start your career assessment
               <span class="round">→</span>
             </NuxtLink>
-            <span class="browse">or <NuxtLink to="/candidate/login">browse open roles</NuxtLink></span>
+            <span class="browse"
+              >or <NuxtLink to="/candidate/login">browse open roles</NuxtLink></span
+            >
           </div>
         </template>
       </div>
@@ -100,34 +131,55 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="mc-footer">↑ Profile 82% complete · 3 skills to unlock more</div>
         </div>
 
-        <div class="grass" />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* ── Hero shell ── */
 .hero {
   position: relative;
   overflow: hidden;
   min-height: 100dvh;
-  background-image: radial-gradient(var(--l-dot) 1.4px, transparent 1.4px);
-  background-size: 26px 26px;
+  background: var(--l-bg);
 }
-.hero::before {
-  content: "";
+
+/* Gradient orbs */
+.orb {
   position: absolute;
-  top: -15%;
-  left: -5%;
-  width: 50%;
-  height: 60%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--l-green) 10%, transparent) 0%, transparent 70%);
-  filter: blur(100px);
-  z-index: 1;
+  border-radius: 50%;
   pointer-events: none;
+  z-index: 0;
 }
+.orb-1 {
+  width: 560px;
+  height: 560px;
+  top: -140px;
+  left: -80px;
+  background: radial-gradient(circle, var(--l-hero-glow) 0%, transparent 70%);
+  filter: blur(80px);
+}
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  top: 10%;
+  right: 5%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, transparent 70%);
+  filter: blur(80px);
+}
+.orb-3 {
+  width: 320px;
+  height: 320px;
+  bottom: -60px;
+  left: 30%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.10) 0%, transparent 70%);
+  filter: blur(60px);
+}
+
 .hero-inner {
   position: relative;
+  z-index: 1;
   min-height: 100dvh;
   display: flex;
   align-items: center;
@@ -153,8 +205,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 }
 .accent-italic {
   font-style: italic;
-  color: var(--l-green);
-  background: linear-gradient(transparent 70%, color-mix(in srgb, var(--l-green) 22%, transparent) 0);
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .sub {
   color: var(--l-muted);
@@ -174,6 +228,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   padding: 7px 7px 7px 24px;
   max-width: 480px;
   gap: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 .search input {
   flex: 1;
@@ -194,18 +249,22 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   height: 46px;
   padding: 0 22px;
   border-radius: var(--l-pill);
-  background: var(--l-green);
-  color: var(--l-cta-text, #fff);
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  color: #fff;
   font-family: var(--l-sans);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: filter 0.15s;
+  transition:
+    opacity 0.15s,
+    box-shadow 0.15s;
+  box-shadow: 0 2px 12px rgba(200, 74, 31, 0.30);
 }
 .search-btn:hover {
-  filter: brightness(1.05);
+  opacity: 0.9;
+  box-shadow: 0 4px 20px rgba(200, 74, 31, 0.40);
 }
 
 /* Candidate pill CTA */
@@ -229,6 +288,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   color: var(--l-text);
   transition: border-color 0.15s;
   width: fit-content;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 .pill-cta:hover {
   border-color: var(--l-green);
@@ -250,18 +310,18 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   height: 46px;
   border-radius: 50%;
   border: none;
-  background: var(--l-green);
-  color: var(--l-cta-text, #fff);
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  color: #fff;
   font-size: 20px;
   cursor: pointer;
   display: grid;
   place-items: center;
   flex-shrink: 0;
   text-decoration: none;
-  transition: filter 0.15s;
+  transition: opacity 0.15s;
 }
 .round:hover {
-  filter: brightness(1.05);
+  opacity: 0.88;
 }
 
 /* Art panel */
@@ -283,8 +343,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   border: 1px solid var(--l-line);
   border-radius: 20px;
   padding: 24px;
-  transform: rotate(4deg) translateY(-20px);
-  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 1;
   display: flex;
@@ -307,7 +366,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 .sl-badge {
   font-size: 11px;
   font-weight: 600;
-  background: color-mix(in srgb, var(--l-green) 25%, transparent);
+  background: color-mix(in srgb, var(--l-green) 15%, transparent);
   color: var(--l-green);
   padding: 3px 10px;
   border-radius: 999px;
@@ -322,13 +381,13 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   border: 1px solid transparent;
 }
 .sl-row--top {
-  border-color: color-mix(in srgb, var(--l-green) 40%, transparent);
+  border-color: color-mix(in srgb, var(--l-green) 30%, transparent);
 }
 .sl-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--l-green) 30%, var(--l-surface));
+  background: color-mix(in srgb, var(--l-green) 20%, var(--l-surface-2));
   color: var(--l-text);
   font-size: 12px;
   font-weight: 700;
@@ -338,10 +397,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   letter-spacing: 0.02em;
 }
 .sl-avatar--2 {
-  background: color-mix(in srgb, var(--l-lilac) 40%, var(--l-surface));
+  background: color-mix(in srgb, var(--l-lilac) 25%, var(--l-surface-2));
 }
 .sl-avatar--3 {
-  background: color-mix(in srgb, #7dd3fc 30%, var(--l-surface));
+  background: color-mix(in srgb, #7dd3fc 25%, var(--l-surface-2));
 }
 .sl-info {
   flex: 1;
@@ -370,16 +429,16 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   flex-shrink: 0;
 }
 .sl-score--1 {
-  background: var(--l-green);
-  color: #1a1a18;
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  color: #fff;
 }
 .sl-score--2 {
-  background: color-mix(in srgb, var(--l-green) 55%, transparent);
+  background: color-mix(in srgb, var(--l-green) 20%, var(--l-surface-2));
   color: var(--l-text);
 }
 .sl-score--3 {
-  background: color-mix(in srgb, var(--l-green) 30%, transparent);
-  color: var(--l-text);
+  background: color-mix(in srgb, var(--l-green) 12%, var(--l-surface-2));
+  color: var(--l-muted);
 }
 .sl-footer {
   font-size: 12px;
@@ -395,8 +454,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   border: 1px solid var(--l-line);
   border-radius: 20px;
   padding: 24px;
-  transform: rotate(4deg) translateY(-20px);
-  box-shadow: 0 60px 120px rgba(120, 90, 60, 0.28);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 1;
   display: flex;
@@ -419,8 +477,8 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 .mc-new {
   font-size: 11px;
   font-weight: 600;
-  background: color-mix(in srgb, var(--l-lilac) 40%, transparent);
-  color: var(--l-text);
+  background: color-mix(in srgb, var(--l-lilac) 20%, transparent);
+  color: var(--l-lilac);
   padding: 3px 10px;
   border-radius: 999px;
 }
@@ -435,7 +493,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   border: 1px solid transparent;
 }
 .mc-role--top {
-  border-color: color-mix(in srgb, var(--l-green) 40%, transparent);
+  border-color: color-mix(in srgb, var(--l-green) 30%, transparent);
 }
 .mc-role-info {
   display: flex;
@@ -457,34 +515,22 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   padding: 4px 10px;
   border-radius: 999px;
   flex-shrink: 0;
-  background: var(--l-green);
-  color: #1a1a18;
+  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+  color: #fff;
 }
 .mc-fit--2 {
-  background: color-mix(in srgb, var(--l-green) 55%, transparent);
-  color: var(--l-text);
+  background: color-mix(in srgb, var(--l-lilac) 20%, var(--l-surface-2));
+  color: var(--l-lilac);
 }
 .mc-fit--3 {
-  background: color-mix(in srgb, var(--l-green) 30%, transparent);
-  color: var(--l-text);
+  background: color-mix(in srgb, var(--l-green) 12%, var(--l-surface-2));
+  color: var(--l-muted);
 }
 .mc-footer {
   font-size: 12px;
   color: var(--l-muted);
   text-align: center;
   padding-top: 4px;
-}
-
-/* Grass decoration */
-.grass {
-  position: absolute;
-  bottom: 0;
-  left: -20%;
-  right: -5%;
-  height: 260px;
-  background: linear-gradient(transparent 5%, color-mix(in srgb, var(--l-green) 65%, var(--l-bg)));
-  -webkit-mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 7px);
-  mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 7px);
 }
 
 @media (max-width: 880px) {
@@ -501,6 +547,14 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   }
   .headline {
     font-size: 48px;
+  }
+  .orb-2,
+  .orb-3 {
+    display: none;
+  }
+  .orb-1 {
+    width: 300px;
+    height: 300px;
   }
 }
 </style>

@@ -12,7 +12,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <summary>What does it cost? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>15% of first-year salary, billed only on a signed offer. No setup fees, no monthly platform charge.</p>
+                <p>
+                  15% of first-year salary, billed only on a signed offer. No setup fees, no monthly
+                  platform charge.
+                </p>
               </div>
             </div>
           </details>
@@ -20,7 +23,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <summary>Where do you source from? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>Our pre-screened pool, your ATS or network, and the open web — ranked into one shortlist.</p>
+                <p>
+                  Our pre-screened pool, your ATS or network, and the open web — ranked into one
+                  shortlist.
+                </p>
               </div>
             </div>
           </details>
@@ -54,7 +60,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <summary>How does matching work? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>We match your profile against live roles from our network and the open web, ranking by fit.</p>
+                <p>
+                  We match your profile against live roles from our network and the open web,
+                  ranking by fit.
+                </p>
               </div>
             </div>
           </details>
@@ -70,7 +79,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <summary>What roles do you have? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>Tech, product, design, data, ops — across startups and scale-ups, primarily in Central Asia and remote.</p>
+                <p>
+                  Tech, product, design, data, ops — across startups and scale-ups, primarily in
+                  Central Asia and remote.
+                </p>
               </div>
             </div>
           </details>
@@ -96,7 +108,9 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   margin-bottom: 48px;
   color: var(--l-text);
 }
-.serif { font-family: var(--l-display); }
+.serif {
+  font-family: var(--l-display);
+}
 .faq {
   max-width: 760px;
   margin: 0 auto;
@@ -115,8 +129,12 @@ summary {
   color: var(--l-text);
   font-family: var(--l-sans);
 }
-summary::-webkit-details-marker { display: none; }
-details[open] summary .pm { transform: rotate(45deg); }
+summary::-webkit-details-marker {
+  display: none;
+}
+details[open] summary .pm {
+  transform: rotate(45deg);
+}
 .pm {
   transition: transform 0.2s;
   color: var(--l-muted);

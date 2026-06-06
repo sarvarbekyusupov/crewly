@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { audience, set } = useAudience()
+const colorMode = useColorMode()
 
 const scrolled = ref(false)
 
@@ -18,7 +19,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
       <!-- Logo -->
       <NuxtLink to="/" class="brand" @click="set('employer')">
-        <svg class="brand-icon" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <svg
+          class="brand-icon"
+          viewBox="0 0 30 28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
           <path d="M15 2L28 26H2L15 2Z" fill="currentColor" />
         </svg>
         <span class="brand-name">myHR</span>
@@ -32,32 +39,53 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           class="tab-btn"
           :class="{ active: audience === 'employer' }"
           @click="set('employer')"
-        >Employers</NuxtLink>
+          >Employers</NuxtLink
+        >
         <NuxtLink
           to="/candidate"
           class="tab-btn"
           :class="{ active: audience === 'candidate' }"
           @click="set('candidate')"
-        >Candidates</NuxtLink>
+          >Candidates</NuxtLink
+        >
       </div>
 
       <!-- Right: links + CTA -->
       <div class="nav-r">
-        <a href="#about" class="nav-link">About</a>
+        <a href="#how-it-works" class="nav-link">How it works</a>
         <NuxtLink
           :to="audience === 'employer' ? '/employer/login' : '/candidate/login'"
           class="nav-link"
-        >Login</NuxtLink>
-        <NuxtLink
-          v-if="audience === 'employer'"
-          to="/employer/signup"
-          class="cta"
-        >Start hiring</NuxtLink>
-        <NuxtLink
-          v-else
-          to="/candidate/login?mode=signup"
-          class="cta"
-        >Build profile</NuxtLink>
+          >Login</NuxtLink
+        >
+        <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
+          >Start hiring</NuxtLink
+        >
+        <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build profile</NuxtLink>
+
+        <!-- Theme Toggle -->
+        <button
+          type="button"
+          class="icon-btn theme-toggle-btn"
+          :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
+          style="
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            color: var(--l-text);
+            transition: opacity 0.2s;
+          "
+          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+        >
+          <UIcon
+            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+            style="width: 18px; height: 18px"
+          />
+        </button>
       </div>
     </nav>
   </header>
@@ -94,7 +122,9 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   background: transparent;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+  transition:
+    all 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
   border-bottom: 1px solid transparent;
   border-radius: 0;
 }
@@ -230,18 +260,36 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .tab-pill {
-    display: none;
-  }
-
   .nav {
     grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    height: auto;
+    padding: 12px 24px;
+    gap: 12px;
+  }
+
+  .tab-pill {
+    grid-row: 2;
+    grid-column: 1 / span 2;
+    justify-self: center;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .brand {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .nav-r {
+    grid-row: 1;
+    grid-column: 2;
   }
 }
 
 @media (max-width: 480px) {
   .nav {
-    padding: 8px 16px;
+    padding: 12px 16px;
   }
 
   .nav-link {

@@ -31,7 +31,7 @@ html {
 
 /* ============ Design tokens ============ */
 :root {
-  --bg: #C84A1F;
+  --bg: #FAF8F4;
   --bg-elevated: #FAF8F4;
   --bg-deep: #EFE9DD;
   --paper: #FDFCF8;
@@ -212,6 +212,15 @@ tbody tr {
   --l-line: rgba(26, 23, 20, 0.1);
   --l-dot: rgba(26, 23, 20, 0.06);
 }
+.dark [data-audience="employer"] {
+  --l-bg: #1a1a18;
+  --l-surface: #232320;
+  --l-surface-2: #2c2c28;
+  --l-text: #f5f0eb;
+  --l-muted: #a8a39b;
+  --l-line: rgba(245, 240, 235, 0.12);
+  --l-dot: rgba(245, 240, 235, 0.07);
+}
 [data-audience="candidate"] {
   --l-bg: #ece9e2;
   --l-surface: #ffffff;
@@ -220,6 +229,15 @@ tbody tr {
   --l-muted: #6b675f;
   --l-line: rgba(26, 26, 24, 0.12);
   --l-dot: rgba(26, 26, 24, 0.06);
+}
+.dark [data-audience="candidate"] {
+  --l-bg: #15140f;
+  --l-surface: #1c1b16;
+  --l-surface-2: #232118;
+  --l-text: #f5f1ea;
+  --l-muted: #a8a39a;
+  --l-line: rgba(245, 241, 234, 0.12);
+  --l-dot: rgba(245, 241, 234, 0.06);
 }
 :root {
   --l-green: #c84a1f;

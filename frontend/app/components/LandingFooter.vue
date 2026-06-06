@@ -6,7 +6,13 @@
         <!-- Left: logo + tagline -->
         <div class="col col-brand">
           <div class="logo">
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg
+              class="logo-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
               <path d="M12 3L22 20H2L12 3Z" fill="white" />
             </svg>
             <span class="logo-name">myHR</span>
@@ -27,7 +33,9 @@
         <!-- Right: Contact -->
         <div class="col col-contact">
           <h4 class="col-heading">Contact</h4>
-          <a href="mailto:founders@tryprism.com" class="link link--underline">founders@tryprism.com</a>
+          <a href="mailto:founders@tryprism.com" class="link link--underline"
+            >founders@tryprism.com</a
+          >
           <span class="link">San Francisco, CA</span>
         </div>
       </div>
@@ -52,7 +60,11 @@
   width: 100%;
   padding: 0 24px 32px;
   box-sizing: border-box;
-  font-family: system-ui, 'Inter', -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    'Inter',
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
