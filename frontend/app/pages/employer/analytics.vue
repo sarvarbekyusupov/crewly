@@ -422,6 +422,59 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
           </div>
         </div>
       </UCard>
+
+      <!-- Campaign A/B Test Dashboard Card -->
+      <UCard>
+        <div class="flex items-center justify-between pb-3 border-b border-line-soft mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-ink">Outreach Campaign A/B Testing</h3>
+            <p class="text-[11px] text-ink-subtle">Compare conversion reply rates across different messaging vectors head-to-head.</p>
+          </div>
+          <UBadge label="Active Experiment" size="xs" color="success" variant="subtle" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-line-soft">
+          <!-- Column A -->
+          <div class="space-y-3.5 pr-0 md:pr-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider">Template A: Tech-Focused</span>
+              <span class="text-xs font-mono font-bold text-ink">42.8% Reply Rate</span>
+            </div>
+            <p class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft">
+              "Hi {name}, I saw your impressive skills in {skills}... Let's chat."
+            </p>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[10px] text-ink-subtle">
+                <span>Outreach Sent: 714</span>
+                <span>Replies: 305</span>
+              </div>
+              <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
+                <div class="h-full bg-accent rounded-full animate-all duration-500" style="width: 42.8%" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Column B -->
+          <div class="space-y-3.5 pt-4 md:pt-0 pl-0 md:pl-6">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-info uppercase tracking-wider">Template B: Culture-Focused</span>
+              <span class="text-xs font-mono font-bold text-ink">28.4% Reply Rate</span>
+            </div>
+            <p class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft">
+              "Hi {name}, we love your remote autonomy goals and fit for our culture..."
+            </p>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[10px] text-ink-subtle">
+                <span>Outreach Sent: 714</span>
+                <span>Replies: 202</span>
+              </div>
+              <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
+                <div class="h-full bg-info rounded-full animate-all duration-500" style="width: 28.4%" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
     </div>
 
     <!-- Agent Performance -->

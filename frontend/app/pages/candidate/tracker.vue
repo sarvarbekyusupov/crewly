@@ -46,6 +46,18 @@ const statusOptions = computed(() =>
 
 const statusColor = seekerAppStatusColor
 
+function getCoachingTip(status: string) {
+  const map: Record<string, string> = {
+    queued: 'Our Matchmaker agent is aligning your skills with company requirements. Ensure your profile has core keywords!',
+    applied: 'Application successfully received. Recruiter agent has been notified and is scanning your CV.',
+    viewed: 'Great news! Recruiter has read your CV and dossier. Prepare for automated outreach email delivery.',
+    interview: 'Screening interview is active! Practice your verbal Nuxt/SPA architectures inside our Interview Prep Cockpit first.',
+    offer: 'Congratulations! An offer is placed. Evaluate compensation and leverage talking points inside the Salary Negotiator!',
+    rejected: 'This role was not a fit, but our AI agent has logged your skills and is searching for alternative roles as we speak.'
+  }
+  return map[status] ?? 'Keep pushing! Perfect fits are discovered daily.'
+}
+
 function columnApps(status: string) {
   return (applications.value ?? []).filter((a) =>
     status === 'rejected' ? a.status === 'rejected' || a.status === 'failed' : a.status === status,
@@ -249,6 +261,22 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                 style="border-top: 1px solid var(--line-soft)"
                 @click.stop
               >
+                <!-- Journey Milestone Timeline -->
+                <div class="mb-3 p-3 bg-bg-deep border border-line-soft rounded-lg space-y-2">
+                  <span class="text-[9px] font-mono font-bold text-accent uppercase tracking-wider block">AI Recruiter Advice</span>
+                  <p class="text-[11px] leading-relaxed text-ink-muted">
+                    {{ getCoachingTip(app.status) }}
+                  </p>
+                  
+                  <!-- Compact Stepper visualizer -->
+                  <div class="flex items-center gap-1 pt-1 border-t border-line-soft/40">
+                    <div v-for="s in ['queued', 'applied', 'viewed', 'interview', 'offer']" :key="s" class="flex-1 h-1 rounded-full transition-all"
+                      :style="app.status === s || (s === 'queued' && app.status !== 'queued') || (s === 'applied' && ['viewed', 'interview', 'offer'].includes(app.status)) || (s === 'viewed' && ['interview', 'offer'].includes(app.status)) || (s === 'interview' && app.status === 'offer')
+                        ? 'background: var(--accent)' : 'background: var(--line)'"
+                    />
+                  </div>
+                </div>
+
                 <p class="text-xs mb-1.5" style="color: var(--ink-subtle)">
                   {{ t('candidate.tracker.moveTo') }}:
                 </p>

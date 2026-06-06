@@ -118,6 +118,47 @@ const scheduleForm = reactive({
   attendeeEmails: '',
 })
 const schedulingInProgress = ref(false)
+
+const scheduleSlots = [
+  { day: 'Monday', time: '10:00 AM', startOffset: 1, hour: 10 },
+  { day: 'Tuesday', time: '11:00 AM', startOffset: 2, hour: 11 },
+  { day: 'Wednesday', time: '2:00 PM', startOffset: 3, hour: 14 },
+  { day: 'Thursday', time: '3:00 PM', startOffset: 4, hour: 15 },
+  { day: 'Friday', time: '4:00 PM', startOffset: 5, hour: 16 }
+]
+
+const activeSlotIndex = ref<number | null>(null)
+
+function selectScheduleSlot(idx: number) {
+  activeSlotIndex.value = idx
+  const slot = scheduleSlots[idx]
+  if (!slot) return
+
+  const d = new Date()
+  const currentDay = d.getDay()
+  const distance = (slot.startOffset + 7 - currentDay) % 7
+  d.setDate(d.getDate() + (distance === 0 ? 7 : distance))
+  d.setHours(slot.hour, 0, 0, 0)
+  
+  const endD = new Date(d)
+  endD.setHours(slot.hour + 1)
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const toLocalString = (date: Date) => {
+    const y = date.getFullYear()
+    const m = pad(date.getMonth() + 1)
+    const day = pad(date.getDate())
+    const h = pad(date.getHours())
+    const min = pad(date.getMinutes())
+    return `${y}-${m}-${day}T${h}:${min}`
+  }
+
+  scheduleForm.startTime = toLocalString(d)
+  scheduleForm.endTime = toLocalString(endD)
+  
+  toast.add({ title: `Selected slot: ${slot.day} at ${slot.time}`, color: 'info' })
+}
+
 async function scheduleInterview() {
   schedulingInProgress.value = true
   try {
@@ -568,6 +609,26 @@ const rubricItems = ref([
     @confirm="scheduleInterview"
   >
     <div class="space-y-4">
+      <!-- Calendar Quick Slots Grid -->
+      <div class="space-y-1.5">
+        <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider block">Weekly Sourced Slots</span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2 border-b border-line-soft">
+          <button
+            v-for="(slot, idx) in scheduleSlots"
+            :key="idx"
+            type="button"
+            class="p-2.5 rounded-xl border text-center transition-all cursor-pointer block bg-surface"
+            :style="activeSlotIndex === idx
+              ? 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'
+              : 'border-color: var(--line-soft); color: var(--ink-muted)'"
+            @click="selectScheduleSlot(idx)"
+          >
+            <p class="text-xs font-semibold">{{ slot.day }}</p>
+            <p class="text-[10px] font-mono mt-0.5">{{ slot.time }}</p>
+          </button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-3">
         <UFormField label="Start Date/Time" name="startTime">
           <UInput v-model="scheduleForm.startTime" type="datetime-local" class="w-full" />

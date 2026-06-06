@@ -41,6 +41,7 @@ const bulkLoading = ref(false)
 const showRejectModal = ref(false)
 const rejectReason = ref('')
 const showBulkOutreachModal = ref(false)
+const showCompareModal = ref(false)
 
 const copilotQuery = ref('')
 
@@ -256,6 +257,7 @@ const statusOptions = computed(() => [
         @approve="bulkApprove"
         @reject="showRejectModal = true"
         @personalize="showBulkOutreachModal = true"
+        @compare="showCompareModal = true"
         @clear="selectedIds = new Set()"
       />
 
@@ -299,6 +301,12 @@ const statusOptions = computed(() => [
       v-model:open="showBulkOutreachModal"
       :selected-ids="Array.from(selectedIds)"
       @success="() => { refresh(); selectedIds = new Set() }"
+    />
+
+    <!-- Candidate Compare Modal -->
+    <CandidateCompareModal
+      v-model:open="showCompareModal"
+      :selected-ids="Array.from(selectedIds)"
     />
   </div>
 </template>
