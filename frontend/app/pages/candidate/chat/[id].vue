@@ -9,6 +9,25 @@ const router = useRouter()
 const applicationId = route.params.id as string
 const MAX_LENGTH = 500
 
+interface ApplicationContext {
+  id: string
+  status: string
+  matchScore?: string
+  job?: {
+    title: string
+    workMode?: string
+    company: { name: string }
+  }
+}
+
+const { data: application } = await useAsyncData(
+  `chat-app-${applicationId}`,
+  () =>
+    api
+      .get<ApplicationContext>(`/api/v1/candidate-portal/applications/${applicationId}`)
+      .catch(() => null),
+)
+
 interface ChatMessage {
   id: string
   direction: 'inbound' | 'outbound'
@@ -122,9 +141,11 @@ function formatTime(dateStr: string) {
       />
       <div>
         <h1 class="text-xl font-medium" style="color: var(--ink)">
-          {{ t('candidate.chat.title') }}
+          {{ application?.job?.title ?? t('candidate.chat.title') }}
         </h1>
-        <p class="text-xs" style="color: var(--ink-subtle)">{{ t('candidate.chat.subtitle') }}</p>
+        <p class="text-xs" style="color: var(--ink-subtle)">
+          {{ application?.job?.company?.name ?? t('candidate.chat.subtitle') }}
+        </p>
       </div>
     </div>
 
@@ -133,6 +154,23 @@ function formatTime(dateStr: string) {
       class="flex-1 overflow-y-auto rounded-xl p-4 flex flex-col gap-4"
       style="background: var(--paper); border: 1px solid var(--line)"
     >
+      <!-- Job context card -->
+      <div
+        v-if="application?.job"
+        class="shrink-0 rounded-xl px-4 py-3 flex items-start gap-3"
+        style="background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent)"
+      >
+        <UIcon name="i-heroicons-sparkles" class="w-4 h-4 mt-0.5 shrink-0" style="color: var(--accent)" />
+        <div class="text-xs" style="color: var(--ink-muted); line-height: 1.6">
+          <p>
+            <strong style="color: var(--ink)">AI screening</strong> for
+            <strong style="color: var(--ink)">{{ application.job.title }}</strong>
+            at {{ application.job.company.name }}.
+          </p>
+          <p>Answer naturally — you can return to this conversation anytime.</p>
+        </div>
+      </div>
+
       <div v-if="isLoading" class="flex-1 flex items-center justify-center">
         <UIcon
           name="i-heroicons-arrow-path"

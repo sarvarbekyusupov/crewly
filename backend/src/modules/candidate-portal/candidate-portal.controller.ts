@@ -170,6 +170,14 @@ export class CandidatePortalController {
     return this.portalService.getApplications(candidate.id);
   }
 
+  @Get('applications/:id')
+  async getApplication(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') id: string,
+  ) {
+    return this.portalService.getApplication(candidate.id, id);
+  }
+
   @Get('applications/:id/messages')
   async getMessages(
     @CurrentCandidate() candidate: { id: string },

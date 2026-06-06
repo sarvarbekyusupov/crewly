@@ -405,4 +405,22 @@ export class CandidatePortalService {
       orderBy: { matchedAt: 'desc' },
     });
   }
+
+  async getApplication(candidateId: string, applicationId: string) {
+    return this.db.application.findFirst({
+      where: { id: applicationId, candidateId },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            workMode: true,
+            employmentType: true,
+            officeLocation: true,
+            company: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+  }
 }
