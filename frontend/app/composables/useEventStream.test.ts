@@ -17,14 +17,18 @@ class MockEventSource {
   static instance: MockEventSource | null = null
 }
 
-const { mockToastAdd, mockPush, mockEventsStore } = vi.hoisted(() => {
+const { mockToastAdd, mockPush, mockPushAgentThought, mockEventsStore } = vi.hoisted(() => {
+  const mockPushAgentThought = vi.fn()
   return {
     mockToastAdd: vi.fn(),
     mockPush: vi.fn(),
+    mockPushAgentThought,
     mockEventsStore: {
       connectionState: 'idle',
       eventCount: 0,
       lastEvent: null,
+      agentThoughts: [] as any[],
+      pushAgentThought: mockPushAgentThought,
     },
   }
 })
@@ -75,6 +79,7 @@ describe('useEventStream', () => {
     mockEventsStore.connectionState = 'idle'
     mockEventsStore.eventCount = 0
     mockEventsStore.lastEvent = null
+    mockEventsStore.agentThoughts = []
   })
 
   afterEach(() => {
@@ -126,5 +131,83 @@ describe('useEventStream', () => {
 
     expect(esInstance?.close).toHaveBeenCalled()
     expect(mockEventsStore.connectionState).toBe('idle')
+  })
+
+  it('agent.thought started event calls pushAgentThought with correct shape', () => {
+    const { connect } = useEventStream()
+    connect()
+    MockEventSource.instance?.onopen?.()
+
+    MockEventSource.instance?.onmessage?.({
+      data: JSON.stringify({
+        type: 'agent.thought',
+        payload: {
+          agent: 'Matchmaker',
+          action: 'started',
+          purpose: 'match_rerank',
+        },
+      }),
+    })
+
+    expect(mockPushAgentThought).toHaveBeenCalledOnce()
+    expect(mockPushAgentThought).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agent: 'Matchmaker',
+        action: 'started',
+        purpose: 'match_rerank',
+        ts: expect.any(Number),
+      }),
+    )
+  })
+
+  it('agent.thought completed event includes latency and cost', () => {
+    const { connect } = useEventStream()
+    connect()
+    MockEventSource.instance?.onopen?.()
+
+    MockEventSource.instance?.onmessage?.({
+      data: JSON.stringify({
+        type: 'agent.thought',
+        payload: {
+          agent: 'SourcingHunter',
+          action: 'completed',
+          purpose: 'sourcing_queries',
+          latency: 1240,
+          cost: 0.00041,
+          provider: 'groq',
+        },
+      }),
+    })
+
+    expect(mockPushAgentThought).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agent: 'SourcingHunter',
+        action: 'completed',
+        latency: 1240,
+        cost: 0.00041,
+        provider: 'groq',
+      }),
+    )
+  })
+
+  it('agent.thought with missing fields falls back to defaults', () => {
+    const { connect } = useEventStream()
+    connect()
+    MockEventSource.instance?.onopen?.()
+
+    MockEventSource.instance?.onmessage?.({
+      data: JSON.stringify({
+        type: 'agent.thought',
+        payload: {},
+      }),
+    })
+
+    expect(mockPushAgentThought).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agent: 'Agent',
+        action: 'started',
+        purpose: '',
+      }),
+    )
   })
 })
