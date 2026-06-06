@@ -6,7 +6,7 @@ const toast = useToast()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { playSwoosh } = useAudio()
+const { playPop, playSwoosh } = useAudio()
 const applicationId = route.params.id as string
 const MAX_LENGTH = 500
 
@@ -49,6 +49,41 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const isVoiceMode = ref(false)
 const isListening = ref(false)
 let recognition: any = null
+
+// ── Video Mode Setup ──
+const isVideoMode = ref(false)
+const localVideoStream = ref<MediaStream | null>(null)
+const videoElement = ref<HTMLVideoElement | null>(null)
+
+async function toggleVideoMode() {
+  isVideoMode.value = !isVideoMode.value
+  
+  if (isVideoMode.value) {
+    playPop()
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      localVideoStream.value = stream
+      nextTick(() => {
+        if (videoElement.value) {
+          videoElement.value.srcObject = stream
+        }
+      })
+    } catch {
+      toast.add({ title: 'Webcam permission denied or unavailable', color: 'error' })
+      isVideoMode.value = false
+    }
+  } else {
+    playSwoosh()
+    stopVideo()
+  }
+}
+
+function stopVideo() {
+  if (localVideoStream.value) {
+    localVideoStream.value.getTracks().forEach((track) => track.stop())
+    localVideoStream.value = null
+  }
+}
 
 function initSpeech() {
   if (typeof window === 'undefined') return
@@ -200,6 +235,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopVideo()
   if (unsubscribe) unsubscribe()
 })
 
@@ -230,16 +266,27 @@ function formatTime(dateStr: string) {
         </div>
       </div>
 
-      <!-- Voice Mode Switch -->
-      <UButton
-        :color="isVoiceMode ? 'success' : 'neutral'"
-        :variant="isVoiceMode ? 'subtle' : 'outline'"
-        size="xs"
-        :icon="isVoiceMode ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'"
-        @click="isVoiceMode = !isVoiceMode"
-      >
-        {{ isVoiceMode ? 'Voice: On' : 'Voice: Off' }}
-      </UButton>
+      <!-- Voice & Video Mode Switches -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <UButton
+          :color="isVideoMode ? 'success' : 'neutral'"
+          :variant="isVideoMode ? 'subtle' : 'outline'"
+          size="xs"
+          :icon="isVideoMode ? 'i-heroicons-video-camera' : 'i-heroicons-video-camera-slash'"
+          @click="toggleVideoMode"
+        >
+          {{ isVideoMode ? 'Video: On' : 'Video: Off' }}
+        </UButton>
+        <UButton
+          :color="isVoiceMode ? 'success' : 'neutral'"
+          :variant="isVoiceMode ? 'subtle' : 'outline'"
+          size="xs"
+          :icon="isVoiceMode ? 'i-heroicons-speaker-wave' : 'i-heroicons-speaker-x-mark'"
+          @click="isVoiceMode = !isVoiceMode"
+        >
+          {{ isVoiceMode ? 'Voice: On' : 'Voice: Off' }}
+        </UButton>
+      </div>
     </div>
 
     <div
@@ -247,6 +294,25 @@ function formatTime(dateStr: string) {
       class="flex-1 overflow-y-auto rounded-xl p-4 flex flex-col gap-4"
       style="background: var(--paper); border: 1px solid var(--line)"
     >
+      <!-- Live Video Screening Simulator Cockpit -->
+      <div v-if="isVideoMode" class="flex gap-4 shrink-0 animate-fade-in pb-3 border-b border-line-soft">
+        <!-- Left Pane: Candidate Webcam stream -->
+        <div class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-black shadow-inner flex items-center justify-center">
+          <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover" />
+          <span class="absolute bottom-2 left-2 text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-black/60 text-white">LIVE FEED (YOU)</span>
+        </div>
+        <!-- Right Pane: Recruiter AI Avatar -->
+        <div class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-bg-deep flex flex-col items-center justify-center shadow-inner">
+          <div class="relative w-12 h-12 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full bg-accent/25" :class="{ 'animate-ping': isSending }" />
+            <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shadow-md" :class="{ 'animate-pulse': !isSending }">
+              <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-white" />
+            </div>
+          </div>
+          <p class="text-[9px] font-mono font-bold text-accent uppercase mt-2.5 tracking-wider">myHR AI Recruiter</p>
+        </div>
+      </div>
+
       <!-- Job context card -->
       <div
         v-if="application?.job"

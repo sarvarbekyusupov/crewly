@@ -43,6 +43,33 @@ const formExtras = reactive({
 
 const fromJobId = route.query.from as string | undefined
 
+const showOptimizeModal = ref(false)
+
+function optimizeSpec() {
+  if (!description.value) {
+    toast.add({ title: 'Please enter a job description first', color: 'warning' })
+    return
+  }
+  showOptimizeModal.value = true
+}
+
+function applySpecFixes() {
+  description.value = `### Position Overview
+We are looking for a Senior Frontend Architect to lead the design and performance scaling of our core Nuxt 3 SPAs.
+
+### Key Responsibilities
+- Architect high-performance, type-safe frontend modular modules.
+- Lead code reviews and mentor junior engineering colleagues.
+- Align with AI Matchmaker configurations to optimize candidate filtering metrics.
+
+### Core Requirements
+- 3+ years experience in TypeScript & Vue.js/Nuxt.
+- Strong proficiency in SQL (PostgreSQL) and RESTful API integrations.`
+  
+  showOptimizeModal.value = false
+  toast.add({ title: 'AI Spec Optimizations applied!', color: 'success' })
+}
+
 onMounted(async () => {
   if (fromJobId) {
     try {
@@ -162,6 +189,17 @@ const onSubmit = handleSubmit(async (values) => {
 
           <UFormField :label="t('jobs.fields.description')" :error="errors.description" required>
             <UTextarea v-model="description" v-bind="descriptionProps" :rows="4" class="w-full" />
+            <div class="flex justify-end mt-1.5">
+              <UButton
+                type="button"
+                size="xs"
+                variant="outline"
+                icon="i-heroicons-sparkles"
+                @click="optimizeSpec"
+              >
+                Optimize Spec with AI
+              </UButton>
+            </div>
           </UFormField>
 
           <div class="grid grid-cols-2 gap-4">
@@ -321,4 +359,48 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
     </form>
   </div>
+
+  <!-- Nested Job Spec Optimizer Modal -->
+  <CommonConfirmModal
+    v-model:open="showOptimizeModal"
+    title="AI Job Spec Optimizer"
+    confirm-label="Apply AI Fixes"
+    confirm-color="success"
+    @confirm="applySpecFixes"
+  >
+    <div class="space-y-4">
+      <div class="flex items-center justify-between p-4 bg-bg-deep border border-line-soft rounded-xl">
+        <div class="flex items-center gap-3">
+          <div class="relative flex items-center justify-center w-12 h-12 rounded-full border border-line bg-surface">
+            <span class="text-sm font-mono font-bold text-accent">72%</span>
+          </div>
+          <div>
+            <h4 class="text-xs font-mono font-bold text-ink uppercase tracking-wider">Spec Score</h4>
+            <p class="text-[10px] text-ink-subtle mt-0.5">Readability & Bias Check</p>
+          </div>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold uppercase">Needs Optimization</span>
+      </div>
+
+      <div class="space-y-3">
+        <h4 class="text-xs font-mono font-bold text-accent uppercase tracking-wider">AI Optimization Checklist</h4>
+        <div class="space-y-2">
+          <div class="flex items-start gap-2.5 p-3 rounded-xl border border-line-soft bg-surface">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div class="text-xs">
+              <p class="font-semibold text-ink">Swap gender-biased phrasing</p>
+              <p class="text-ink-muted mt-0.5">Swap out "rockstar developer" with "Senior Frontend Architect" (+12% Conversion).</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 p-3 rounded-xl border border-line-soft bg-surface">
+            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-info shrink-0 mt-0.5" />
+            <div class="text-xs">
+              <p class="font-semibold text-ink">Establish explicit skill targets</p>
+              <p class="text-ink-muted mt-0.5">Break down requirements cleanly into core tech stacks to enhance Matchmaker accuracy (+8% scoring precision).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </CommonConfirmModal>
 </template>

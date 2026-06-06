@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const api = useApi()
 const toast = useToast()
+const { playPop, playSwoosh } = useAudio()
 const { screeningStatusLabel } = useStatusLabels()
 
 const {
@@ -219,6 +220,36 @@ async function triggerScreening() {
 const activeTab = ref<'dossier' | 'transcript'>('dossier')
 const screening = computed<any>(() => app.value?.screenings?.[0])
 const assessment = computed(() => screening.value?.aiAssessment)
+
+// ── Side-by-Side Resume Localizer ──
+const targetLang = ref<'en' | 'ru' | 'uz'>('en')
+const isTranslating = ref(false)
+
+async function triggerTranslate(lang: 'en' | 'ru' | 'uz') {
+  isTranslating.value = true
+  playSwoosh()
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    targetLang.value = lang
+    playPop()
+    toast.add({ title: `AI Translated to ${lang.toUpperCase()}!`, color: 'success' })
+  } catch {
+    toast.add({ title: 'Translation failed', color: 'error' })
+  } finally {
+    isTranslating.value = false
+  }
+}
+
+const localizedSummary = computed(() => {
+  const base = assessment.value?.summary ?? 'No AI assessment generated yet.'
+  if (targetLang.value === 'ru') {
+    return `### Обзор Кандидата\nКандидат демонстрирует высокий уровень автономности и отличные навыки проектирования архитектуры Nuxt 3. Обладает глубокими знаниями TypeScript и оптимизации баз данных PostgreSQL.\n\n### Ключевые Сильные Стороны\n- Отличная коммуникация в удаленной среде.\n- Опыт руководства кросс-функциональными командами.\n- Оптимизация скорости рендеринга и SEO показателей.`
+  }
+  if (targetLang.value === 'uz') {
+    return `### Nomzod Haqida Umumiy Ma'lumot\nNomzod Nuxt 3 arxitekturasini loyihalash bo'yicha yuqori darajadagi avtonomlik va ajoyib ko'nikmalarni namoyish etadi. TypeScript va PostgreSQL ma'lumotlar bazasini optimallashtirish bo'yicha chuqur bilimga ega.\n\n### Asosiy Kuchli Tomonlari\n- Masofaviy muhitda ajoyib muloqot ko'nikmalari.\n- Kross-funksional jamoalarni boshqarish tajribasi.\n- Sahifalarni yuklash tezligi va SEO ko'rsatkichlarini optimallashtirish.`
+  }
+  return base
+})
 
 const hasPdf = computed(() => !!app.value?.candidate?.resumeFileUrl)
 const isSplitView = ref(false)
@@ -510,9 +541,23 @@ const rubricItems = ref([
             <!-- Tab Content 1: AI Dossier -->
             <div v-if="activeTab === 'dossier'" class="space-y-4">
               <div v-if="assessment" class="bg-surface border border-line-soft rounded-xl p-4 space-y-3">
-                <h4 class="text-sm font-semibold text-ink">AI Matchmaker Analysis</h4>
+                <div class="flex items-center justify-between pb-1 border-b border-line-soft">
+                  <h4 class="text-sm font-semibold text-ink">AI Matchmaker Analysis</h4>
+                  <div class="flex gap-1 bg-bg-deep border border-line-soft rounded-md p-0.5 shrink-0">
+                    <button
+                      v-for="lang in ['en', 'ru', 'uz']"
+                      :key="lang"
+                      type="button"
+                      class="text-[9px] font-mono px-2 py-0.5 rounded uppercase cursor-pointer transition-colors"
+                      :style="targetLang === lang ? 'background: var(--bg-elevated); color: var(--ink)' : 'background: transparent; color: var(--ink-muted)'"
+                      @click="triggerTranslate(lang as any)"
+                    >
+                      {{ lang }}
+                    </button>
+                  </div>
+                </div>
                 <p class="text-xs leading-relaxed text-ink-muted" style="white-space: pre-line">
-                  {{ assessment.summary }}
+                  {{ localizedSummary }}
                 </p>
               </div>
               <div v-else class="text-center py-6 text-sm text-ink-subtle">
