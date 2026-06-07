@@ -54,10 +54,15 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           class="nav-link"
           >Login</NuxtLink
         >
-        <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
-          >Start hiring</NuxtLink
-        >
-        <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build profile</NuxtLink>
+        <template v-if="useRuntimeConfig().public.waitlistMode">
+          <a href="#waitlist" class="cta">Join waitlist</a>
+        </template>
+        <template v-else>
+          <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
+            >Start hiring</NuxtLink
+          >
+          <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build profile</NuxtLink>
+        </template>
 
         <!-- Theme Toggle -->
         <button

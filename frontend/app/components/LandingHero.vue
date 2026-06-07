@@ -3,6 +3,7 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 
 const roleQuery = ref('')
 const router = useRouter()
+const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 
 function submitSearch() {
   router.push(`/employer/signup?role=${encodeURIComponent(roleQuery.value.trim())}`)
@@ -26,7 +27,10 @@ function submitSearch() {
             Tell us the role. Our AI sources candidates, runs outreach, and screens them — you spend
             time only with people worth meeting.
           </p>
-          <div class="search">
+          <div v-if="waitlistMode" class="search">
+            <LandingWaitlistForm audience="employer" />
+          </div>
+          <div v-else class="search">
             <input
               v-model="roleQuery"
               placeholder="What role are you hiring for?"
@@ -54,7 +58,10 @@ function submitSearch() {
             Build your profile once. We match you to roles across our network and the open web —
             then reach out when there's a real fit. No cover letters, no job boards.
           </p>
-          <div class="pill-cta-wrap">
+          <div v-if="waitlistMode" class="pill-cta-wrap">
+            <LandingWaitlistForm audience="candidate" />
+          </div>
+          <div v-else class="pill-cta-wrap">
             <NuxtLink to="/candidate/login?mode=signup" class="pill-cta">
               Build your free profile
               <span class="round">→</span>

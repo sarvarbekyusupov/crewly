@@ -38,6 +38,7 @@ import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { SourcingModule } from './modules/sourcing/sourcing.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { HealthController } from './common/health.controller';
@@ -95,6 +96,7 @@ import { HealthController } from './common/health.controller';
     FeatureFlagsModule,
     AgentsModule,
     SourcingModule,
+    WaitlistModule,
     WorkersModule,
     WebhooksModule,
   ],

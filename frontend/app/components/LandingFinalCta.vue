@@ -1,5 +1,6 @@
 <script setup lang="ts">
 defineProps<{ audience: 'employer' | 'candidate' }>()
+const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 </script>
 
 <template>
@@ -32,10 +33,15 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
         </template>
       </h2>
 
-      <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
-        >Start hiring</NuxtLink
-      >
-      <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build My Profile</NuxtLink>
+      <div v-if="waitlistMode" id="waitlist" style="width:100%;max-width:440px;margin:0 auto">
+        <LandingWaitlistForm :audience="audience" />
+      </div>
+      <template v-else>
+        <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
+          >Start hiring</NuxtLink
+        >
+        <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build My Profile</NuxtLink>
+      </template>
     </div>
   </section>
 </template>

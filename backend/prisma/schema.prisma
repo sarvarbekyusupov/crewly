@@ -726,3 +726,14 @@ model JobDiscoveryRun {
   @@index([source, startedAt(sort: Desc)], map: "idx_job_discovery_runs_source")
   @@map("job_discovery_runs")
 }
+
+model WaitlistEntry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String
+  role      String   // "employer" | "candidate"
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([email, role])
+  @@index([role], map: "idx_waitlist_role")
+  @@map("waitlist_entries")
+}

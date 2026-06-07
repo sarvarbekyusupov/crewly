@@ -530,7 +530,16 @@
     "candidatesStep2Title": "Mos kelishlarni oling",
     "candidatesStep2Body": "AI mos vakansiyalarni topadi. Mustaqil qidirish shart emas.",
     "candidatesStep3Title": "Murojaat kiting",
-    "candidatesStep3Body": "Haqiqiy mos kelganda Telegram yoki email orqali rol tafsilotlari bilan bog'lanamiz."
+    "candidatesStep3Body": "Haqiqiy mos kelganda Telegram yoki email orqali rol tafsilotlari bilan bog'lanamiz.",
+    "waitlist": {
+      "emailPlaceholder": "Emailingizni kiriting",
+      "cta": "Ro'yxatga qo'shilish",
+      "successEmployer": "Ro'yxatdasiz — ishga tayyor bo'lganimizda xabar beramiz.",
+      "successCandidate": "Qabul qilindi! Crewly ochilganda bildirtiramiz.",
+      "duplicate": "Siz allaqachon ro'yxatdasiz.",
+      "error": "Xatolik yuz berdi. Qayta urinib ko'ring.",
+      "navCta": "Ro'yxatga"
+    }
   },
   "terms": {
     "title": "Tijorat shartlari",

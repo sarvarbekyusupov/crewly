@@ -724,7 +724,16 @@
     "candidatesStep2Title": "Get matched",
     "candidatesStep2Body": "Our AI finds open roles that fit your background. No searching, no applications required.",
     "candidatesStep3Title": "Get contacted",
-    "candidatesStep3Body": "When there's a real match, we reach out via Telegram or email with the specific role details."
+    "candidatesStep3Body": "When there's a real match, we reach out via Telegram or email with the specific role details.",
+    "waitlist": {
+      "emailPlaceholder": "Enter your email",
+      "cta": "Join the waitlist",
+      "successEmployer": "You're on the list — we'll reach out when we're ready for you.",
+      "successCandidate": "Got it! We'll notify you when Crewly opens up.",
+      "duplicate": "You're already on the list.",
+      "error": "Something went wrong. Try again.",
+      "navCta": "Join waitlist"
+    }
   },
   "terms": {
     "title": "Commercial terms",
