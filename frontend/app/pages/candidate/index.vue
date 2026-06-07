@@ -5,7 +5,7 @@ const { set } = useAudience()
 set('candidate')
 
 useHead({
-  title: 'myHR | Find work and get hired',
+  title: 'Crewly | Find work and get hired',
   link: [{ rel: 'canonical', href: 'https://crewly.com/candidate' }],
   meta: [
     {
@@ -16,7 +16,7 @@ useHead({
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
     { property: 'og:url', content: 'https://crewly.com/candidate' },
-    { property: 'og:title', content: 'myHR | Find work and get hired' },
+    { property: 'og:title', content: 'Crewly | Find work and get hired' },
     {
       property: 'og:description',
       content:
@@ -27,7 +27,7 @@ useHead({
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:url', content: 'https://crewly.com/candidate' },
-    { name: 'twitter:title', content: 'myHR | Find work and get hired' },
+    { name: 'twitter:title', content: 'Crewly | Find work and get hired' },
     {
       name: 'twitter:description',
       content:
@@ -42,7 +42,7 @@ useHead({
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
         '@id': 'https://crewly.com/candidate/#software',
-        name: 'myHR Candidate Career Pilot',
+        name: 'Crewly Candidate Career Pilot',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'All',
         offers: {
@@ -58,7 +58,7 @@ useHead({
         },
         publisher: {
           '@type': 'Organization',
-          name: 'myHR',
+          name: 'Crewly',
           url: 'https://crewly.com/',
         },
       }),

@@ -165,8 +165,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
     <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
       <!-- Brand -->
       <NuxtLink to="/employer/dashboard" class="brand-row">
-        <div class="brand-mark">m</div>
-        <div class="brand-name">my<em>-hr</em></div>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="brand-logo" />
       </NuxtLink>
 
       <!-- Portal indicator -->
@@ -468,39 +467,19 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   padding: 4px 6px;
   border-radius: 7px;
   text-decoration: none;
-  transition: background 0.12s;
+  transition: opacity 0.12s;
 }
 .brand-row:hover {
-  background: var(--bg-elevated);
+  opacity: 0.85;
 }
 
-.brand-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--bg);
-  display: grid;
-  place-items: center;
-  font-family: 'Fraunces', serif;
-  font-size: 16px;
-  font-style: italic;
-  letter-spacing: -0.04em;
-  flex-shrink: 0;
-}
-.brand-name {
-  font-family: 'Fraunces', serif;
-  font-size: 19px;
-  letter-spacing: -0.04em;
-  color: var(--ink);
-}
-.brand-name em {
-  font-style: italic;
-  color: var(--accent);
+.brand-logo {
+  height: 20px;
+  width: auto;
+  display: block;
 }
 
 .portal-indicator {

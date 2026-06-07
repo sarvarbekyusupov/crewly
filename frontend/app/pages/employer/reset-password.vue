@@ -74,9 +74,7 @@ const onSubmit = handleSubmit(async (values) => {
       />
 
       <NuxtLink to="/" class="relative z-10">
-        <span class="font-serif text-3xl font-normal" style="letter-spacing: -0.04em; color: white">
-          my<em style="font-style: italic; color: var(--accent)">hr</em>
-        </span>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" style="height: 24px; width: auto; display: block" />
       </NuxtLink>
 
       <div class="relative z-10">
@@ -130,12 +128,7 @@ const onSubmit = handleSubmit(async (values) => {
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
           <NuxtLink to="/employer/login">
-            <h1
-              class="font-serif text-4xl font-normal"
-              style="letter-spacing: -0.04em; color: var(--ink)"
-            >
-              my<em style="font-style: italic; color: var(--accent)">hr</em>
-            </h1>
+            <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 26px; width: auto; display: inline-block" />
           </NuxtLink>
           <p
             class="mt-2 text-sm"

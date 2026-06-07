@@ -6,32 +6,33 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   <section id="how-it-works" class="how-section">
     <div class="wrap">
       <h2 class="htitle serif">
-        {{ audience === 'employer' ? 'How myHR works' : 'How it works' }}
+        {{ audience === 'employer' ? 'How Crewly works' : 'How it works' }}
       </h2>
 
       <!-- Employer cards -->
       <div v-if="audience === 'employer'" class="cards">
         <div class="card">
           <span class="kicker">Brief</span>
-          <h3 class="serif">We hire for you, end-to-end</h3>
+          <h3 class="serif">We run the whole search for you</h3>
           <p>
-            No software, no team to build. Brief us once — we open the role, source, screen, and
-            send a shortlist ready to interview.
+            No software to configure. Tell us the role once — we source, screen, and deliver a
+            shortlist ready to interview.
           </p>
         </div>
         <div class="card">
           <span class="kicker">Pricing</span>
-          <h3 class="serif">15% of salary, only when you hire</h3>
+          <h3 class="serif">15% of salary. Only when you hire.</h3>
           <p>
-            No setup fees. No monthly platform charge. You pay on signed offer. No hire, no bill.
+            No setup fees. No monthly charge. You pay on a signed offer — and not a penny before
+            that.
           </p>
         </div>
         <div class="card">
           <span class="kicker">Reach</span>
-          <h3 class="serif">Our pool. Your network. The whole internet.</h3>
+          <h3 class="serif">Our pool. Your network. The open web.</h3>
           <p>
-            Every channel in parallel — our pre-screened pool, your ATS, and the open web — into one
-            ranked shortlist.
+            We search every channel in parallel — our pre-screened pool, your ATS, and the web —
+            ranked into one shortlist.
           </p>
         </div>
       </div>

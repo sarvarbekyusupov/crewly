@@ -5,7 +5,7 @@ const { set } = useAudience()
 set('employer')
 
 useHead({
-  title: 'myHR | Hire the right people, faster',
+  title: 'Crewly | Hire the right people, faster',
   link: [{ rel: 'canonical', href: 'https://crewly.com/' }],
   meta: [
     {
@@ -15,7 +15,7 @@ useHead({
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
     { property: 'og:url', content: 'https://crewly.com/' },
-    { property: 'og:title', content: 'myHR | Hire the right people, faster' },
+    { property: 'og:title', content: 'Crewly | Hire the right people, faster' },
     {
       property: 'og:description',
       content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
@@ -25,7 +25,7 @@ useHead({
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:url', content: 'https://crewly.com/' },
-    { name: 'twitter:title', content: 'myHR | Hire the right people, faster' },
+    { name: 'twitter:title', content: 'Crewly | Hire the right people, faster' },
     {
       name: 'twitter:description',
       content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
@@ -41,9 +41,9 @@ useHead({
           {
             '@type': 'Organization',
             '@id': 'https://crewly.com/#organization',
-            name: 'myHR',
+            name: 'Crewly',
             url: 'https://crewly.com/',
-            logo: 'https://crewly.com/landing-dark.png',
+            logo: 'https://crewly.com/app-icon-512.png',
             sameAs: [
               'https://twitter.com/crewly_recruiter',
               'https://www.linkedin.com/company/crewly-recruiting',
@@ -52,7 +52,7 @@ useHead({
           {
             '@type': 'SoftwareApplication',
             '@id': 'https://crewly.com/#software',
-            name: 'myHR Recruiting Automation',
+            name: 'Crewly Recruiting Automation',
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'All',
             offers: {

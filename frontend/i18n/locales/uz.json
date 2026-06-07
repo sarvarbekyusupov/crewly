@@ -37,8 +37,8 @@
     "haveAccount": "Hisobingiz bormi?",
     "noAccount": "Hisobingiz yo'qmi?",
     "loginTitle": "Xush kelibsiz",
-    "loginSubtitle": "Hisobingizga kiring",
-    "signupTitle": "Boshlash",
+    "loginSubtitle": "Davom etish uchun kiring",
+    "signupTitle": "Aqlliroq yollang",
     "signupSubtitle": "Kompaniya hisobini yarating",
     "forgotPassword": "Parolni unutdingizmi?",
     "forgotPasswordTitle": "Parolni tiklash",
@@ -71,7 +71,7 @@
     "tosLink": "Foydalanish shartlariga rozisiz",
     "sectionCompany": "Kompaniyangiz",
     "sectionAccount": "Hisobingiz",
-    "candidateSubtitle": "Ish izlovchilar portali",
+    "candidateSubtitle": "Keyingi ish o'rningizni toping",
     "continueWithGoogle": "Google orqali davom etish",
     "createAccount": "Hisob yaratish",
     "signupError": "Hisob yaratib bo'lmadi",
@@ -131,7 +131,7 @@
     "agentActivity": "Agent faoliyati",
     "agentNoActivity": "Yaqinda faollik yo'q",
     "liveBrainFeed": "AI faollik tasmasi",
-    "brainFeedEmpty": "Agentlar faolligi kutilmoqda...",
+    "brainFeedEmpty": "Agentlar tayyor. Boshlash uchun lavozimni faollashtiring.",
     "agents": {
       "Matchmaker": "Matchmaker",
       "ScreeningBot": "Skrining boti",
@@ -159,9 +159,9 @@
     "viewAll": "Hammasi →",
     "moreApplications": "ko'proq ko'rib chiqish kutmoqda",
     "onboarding": {
-      "title": "Xush kelibsiz — birinchi pipelingizni yarating",
-      "description": "Birinchi vakansiyangizni joylashtiring — agent avtomatik qidiruv va skriningni boshlaydi.",
-      "cta": "Birinchi vakansiyani yaratish"
+      "title": "Xush kelibsiz — birinchi vakansiyangizni yoping",
+      "description": "Vakansiya joylashtiring — AI darhol qidiruv va skriningni boshlaydi. Sozlash shart emas.",
+      "cta": "Birinchi vakansiyani joylashtirish"
     }
   },
   "events": {
@@ -177,8 +177,8 @@
     "title": "Vakansiyalar",
     "create": "Vakansiya yaratish",
     "empty": "Vakansiyalar yo'q",
-    "emptyTitle": "Lavozimlar topilmadi",
-    "emptyDesc": "Pipeline boshlash uchun birinchi vakansiyani yarating.",
+    "emptyTitle": "Hali vakansiyalar yo'q",
+    "emptyDesc": "Nomzodlarni qidirish uchun birinchi lavozimni yarating.",
     "eyebrow": "Rekruting",
     "createEyebrow": "Rekruting · Yangi lavozim",
     "sections": {
@@ -242,7 +242,7 @@
     "stats": "Statistika",
     "pipelineHub": "Pipeline",
     "pipelineHubSubtitle": "{count} nomzod bu lavozimda",
-    "pipelineEmpty": "Vakansiyani faollashtiring va pipelineni to'ldirish uchun outreach boshlang.",
+    "pipelineEmpty": "Bu lavozimni faollashtiring va pipelineni to'ldirish uchun outreach boshlang.",
     "startOutreach": "Outreach boshlash",
     "viewFullPipeline": "To'liq pipeline",
     "topMatches": "Eng yaxshi mosliklar"
@@ -250,7 +250,7 @@
   "applications": {
     "title": "Arizalar",
     "empty": "Arizalar yo'q",
-    "emptyDescription": "Mos nomzodlar vakansiya faollashtirilgach va outreach boshlangach bu yerda paydo bo'ladi.",
+    "emptyDescription": "Nomzodlar lavozim faollashtirilgach va outreach boshlanganidan keyin bu yerda ko'rinadi.",
     "bulkSelected": "{count} tanlandi",
     "bulkApproved": "{count} tasdiqlandi",
     "bulkRejected": "{count} rad etildi",
@@ -682,18 +682,18 @@
       "eyebrow": "Xabarlar",
       "listTitle": "Xabarlar",
       "listSubtitle": "Arizalaringiz haqida AI rekruterlar bilan suhbatlashing.",
-      "noConversations": "Faol suhbatlar yo'q",
-      "noConversationsDesc": "Rekruterlar siz bilan bog'langanida, suhbatlar bu yerda ko'rinadi."
+      "noConversations": "Hali suhbatlar yo'q",
+      "noConversationsDesc": "Rekruter siz bilan bog'langanda, suhbat bu yerda paydo bo'ladi."
     },
     "dashboard": {
-      "scoringQueued": "AI baholash navbatga qo'yildi",
-      "scoringDesc": "Balllar 1–2 daqiqada ko'rinadi",
-      "profileComplete": "{n}% to'ldirilgan — to'liq profil yanada yaxshi natijalar beradi",
-      "profileIncomplete": "Profil to'ldirilmagan — to'liq profil yanada yaxshi natijalar beradi",
+      "scoringQueued": "AI baholash boshlandi",
+      "scoringDesc": "Mos kelish ballari 1–2 daqiqada ko'rinadi",
+      "profileComplete": "{n}% to'ldirilgan — to'liqroq profil yanada yaxshi mosliklarni ochadi",
+      "profileIncomplete": "Profilni to'ldiring — yaxshiroq mosliklarni oching",
       "completeProfile": "Profilni to'ldirish",
-      "aiScreening": "AI suhbat jarayonda",
-      "aiScreeningDesc": "Rekruter agent javobingizni kutmoqda.",
-      "replyNow": "Suhbatga o'tish",
+      "aiScreening": "Rekruter javobingizni kutmoqda",
+      "aiScreeningDesc": "AI rekruter siz bilan bog'landi — arizangizni davom ettirish uchun javob bering.",
+      "replyNow": "Hozir javob berish",
       "statDiscovered": "Topilgan vakansiyalar",
       "statApplied": "Ariza berildi",
       "statInterviews": "Suhbatlar",
@@ -720,15 +720,15 @@
       "mostRecent": "Eng yangi",
       "bestMatch": "Eng mos",
       "noJobs": "Vakansiyalar topilmadi",
-      "noJobsFiltered": "Filtrlarni o'zgartiring yoki AI baholashni ishga tushiring.",
-      "noJobsDiscovered": "Profilingiz uchun hali vakansiyalar topilmagan."
+      "noJobsFiltered": "Filtrlarni o'zgartiring yoki reytingni yaxshilash uchun AI baholashni ishga tushiring.",
+      "noJobsDiscovered": "Hali vakansiyalar topilmadi. Mosliklarni yaxshilash uchun profilingizga ko'proq ko'nikma qo'shing."
     },
     "offers": {
       "eyebrow": "Arizalar",
       "title": "Arizalar",
       "subtitle": "Barcha ish arizalaringiz bir joyda.",
       "empty": "Hali arizalar yo'q",
-      "emptyDesc": "Rekruterlar siz uchun vakansiya topganda, ular bu yerda ko'rinadi.",
+      "emptyDesc": "Rekruter siz uchun mos rol topganda, u bu yerda ko'rinadi.",
       "match": "Moslik",
       "chat": "Suhbat"
     },

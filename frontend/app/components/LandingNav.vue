@@ -19,16 +19,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
       <!-- Logo -->
       <NuxtLink to="/" class="brand" @click="set('employer')">
-        <svg
-          class="brand-icon"
-          viewBox="0 0 30 28"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path d="M15 2L28 26H2L15 2Z" fill="currentColor" />
-        </svg>
-        <span class="brand-name">myHR</span>
+        <img
+          :src="colorMode.value === 'dark' ? '/crewly-logo-horizontal-white.svg' : '/crewly-logo-horizontal.svg'"
+          alt="Crewly"
+          class="brand-logo"
+          height="32"
+        />
       </NuxtLink>
 
       <!-- Tab switcher pill -->
@@ -151,18 +147,11 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   opacity: 0.8;
 }
 
-.brand-icon {
-  width: 30px;
-  height: 28px;
+.brand-logo {
+  height: 32px;
+  width: auto;
   flex-shrink: 0;
-}
-
-.brand-name {
-  font-family: var(--l-sans);
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--l-text);
-  line-height: 28px;
+  display: block;
 }
 
 /* ── Tab pill ── */

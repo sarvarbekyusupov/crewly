@@ -320,7 +320,7 @@ function formatTime(dateStr: string) {
             </div>
           </div>
           <p class="text-[9px] font-mono font-bold text-accent uppercase mt-2.5 tracking-wider">
-            myHR AI Recruiter
+            Crewly AI Recruiter
           </p>
         </div>
       </div>
@@ -409,7 +409,7 @@ function formatTime(dateStr: string) {
           <span class="typing-dot animate-bounce" style="animation-delay: 0.4s" />
         </div>
         <span class="text-[10px] mt-1 px-1 text-ink-subtle text-left">
-          myHR Recruiter is thinking...
+          Crewly Recruiter is thinking...
         </span>
       </div>
     </div>

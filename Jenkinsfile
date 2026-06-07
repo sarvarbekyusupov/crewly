@@ -1,4 +1,4 @@
-// Jenkinsfile — my-hr monorepo CI/CD
+// Jenkinsfile — crewly monorepo CI/CD
 //
 // Required Jenkins credentials:
 //   docker-registry-url    — String: e.g. "registry.example.com"
@@ -59,10 +59,10 @@ pipeline {
               pnpm config set store-dir /pnpm/store
               pnpm install --frozen-lockfile --prefer-offline
               pnpm --filter backend run lint
-              pnpm --filter my-hr-frontend run lint || true
+              pnpm --filter crewly-frontend run lint || true
               pnpm typecheck
               pnpm --filter backend run test
-              pnpm --filter my-hr-frontend run test
+              pnpm --filter crewly-frontend run test
             '''
           }
         }
@@ -109,10 +109,10 @@ pipeline {
                 echo "$REG_PASS" | docker login "$REGISTRY" -u "$REG_USER" --password-stdin
                 docker buildx build \
                   --builder     ci-builder \
-                  --cache-from "type=registry,ref=$REGISTRY/my-hr/backend:buildcache" \
-                  --cache-to   "type=registry,ref=$REGISTRY/my-hr/backend:buildcache,mode=max" \
-                  --tag        "$REGISTRY/my-hr/backend:$GIT_SHORT_SHA" \
-                  --tag        "$REGISTRY/my-hr/backend:$SAFE_BRANCH" \
+                  --cache-from "type=registry,ref=$REGISTRY/crewly/backend:buildcache" \
+                  --cache-to   "type=registry,ref=$REGISTRY/crewly/backend:buildcache,mode=max" \
+                  --tag        "$REGISTRY/crewly/backend:$GIT_SHORT_SHA" \
+                  --tag        "$REGISTRY/crewly/backend:$SAFE_BRANCH" \
                   --file       backend/Dockerfile \
                   --push \
                   .
@@ -135,10 +135,10 @@ pipeline {
                 echo "$REG_PASS" | docker login "$REGISTRY" -u "$REG_USER" --password-stdin
                 docker buildx build \
                   --builder     ci-builder \
-                  --cache-from "type=registry,ref=$REGISTRY/my-hr/frontend:buildcache" \
-                  --cache-to   "type=registry,ref=$REGISTRY/my-hr/frontend:buildcache,mode=max" \
-                  --tag        "$REGISTRY/my-hr/frontend:$GIT_SHORT_SHA" \
-                  --tag        "$REGISTRY/my-hr/frontend:$SAFE_BRANCH" \
+                  --cache-from "type=registry,ref=$REGISTRY/crewly/frontend:buildcache" \
+                  --cache-to   "type=registry,ref=$REGISTRY/crewly/frontend:buildcache,mode=max" \
+                  --tag        "$REGISTRY/crewly/frontend:$GIT_SHORT_SHA" \
+                  --tag        "$REGISTRY/crewly/frontend:$SAFE_BRANCH" \
                   --build-arg  "NUXT_PUBLIC_API_BASE=$API_URL" \
                   --file       frontend/Dockerfile \
                   --push \
@@ -165,7 +165,7 @@ pipeline {
                 --exit-code 1 \
                 --severity CRITICAL \
                 --format table \
-                "$REGISTRY/my-hr/backend:$GIT_SHORT_SHA"
+                "$REGISTRY/crewly/backend:$GIT_SHORT_SHA"
             '''
           }
         }
@@ -178,7 +178,7 @@ pipeline {
                 --exit-code 1 \
                 --severity CRITICAL \
                 --format table \
-                "$REGISTRY/my-hr/frontend:$GIT_SHORT_SHA"
+                "$REGISTRY/crewly/frontend:$GIT_SHORT_SHA"
             '''
           }
         }
@@ -212,14 +212,14 @@ pipeline {
                 -o BatchMode=yes \
                 "$DEPLOY_USER@$DEPLOY_HOST" \
               "set -euo pipefail
-               cd /srv/my-hr
+               cd /srv/crewly
 
                # Preflight: production secrets must exist — copy .env.example and fill values
                test -f .env.production \
                  || { echo 'ERROR: .env.production missing on deploy server'; exit 1; }
 
                # Write image tags for this build
-               printf 'IMAGE_BACKEND=%s/my-hr/backend:%s\\nIMAGE_FRONTEND=%s/my-hr/frontend:%s\\n' \
+               printf 'IMAGE_BACKEND=%s/crewly/backend:%s\\nIMAGE_FRONTEND=%s/crewly/frontend:%s\\n' \
                  $REGISTRY $GIT_SHORT_SHA $REGISTRY $GIT_SHORT_SHA > .env.image
 
                # Merge: .env.production has all compose vars; .env.image overrides image tags.

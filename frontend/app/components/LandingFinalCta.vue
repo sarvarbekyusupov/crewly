@@ -28,14 +28,14 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           Spend time with candidates who matter —<br />not on sourcing.
         </template>
         <template v-else>
-          One profile. Matched to roles through<br />our network, yours, and the world.
+          One profile. Matched to the right role<br />from every corner of the market.
         </template>
       </h2>
 
       <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
         >Start hiring</NuxtLink
       >
-      <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build Your Profile</NuxtLink>
+      <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build My Profile</NuxtLink>
     </div>
   </section>
 </template>

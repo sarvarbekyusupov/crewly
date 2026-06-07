@@ -45,7 +45,7 @@ async function triggerParse() {
       form.fullName = 'Sarvarbek Yusupov'
       form.email = 'sarvar@acme.com'
       form.position = 'Senior Full-Stack Architect'
-      form.company = 'myHR'
+      form.company = 'Crewly'
       form.skillsText = 'TypeScript, Nuxt 3, Node.js, PostgreSQL'
     } else if (text.includes('alice') || text.includes('smith')) {
       form.fullName = 'Alice Smith'
@@ -131,7 +131,7 @@ async function saveCandidate() {
               >
               <UTextarea
                 v-model="rawText"
-                placeholder="Paste LinkedIn bio or text here (e.g. 'Sarvarbek Yusupov is a Full-Stack developer at myHR with skills in TypeScript...')"
+                placeholder="Paste LinkedIn bio or text here (e.g. 'Sarvarbek Yusupov is a Full-Stack developer at Crewly with skills in TypeScript...')"
                 :rows="12"
                 class="font-mono text-xs w-full flex-1"
                 autoresize

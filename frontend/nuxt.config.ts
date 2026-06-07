@@ -3,6 +3,16 @@ export default defineNuxtConfig({
 
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/app-icon-180.png' },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#1A1815' },
+      ],
+    },
   },
 
   modules: [

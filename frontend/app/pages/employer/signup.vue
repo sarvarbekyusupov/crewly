@@ -350,9 +350,7 @@ async function resendVerification() {
 
       <!-- Logo -->
       <NuxtLink to="/" class="relative z-10">
-        <span class="font-serif text-3xl font-normal" style="letter-spacing: -0.04em; color: white">
-          my<em style="font-style: italic; color: var(--accent)">hr</em>
-        </span>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" style="height: 24px; width: auto; display: block" />
       </NuxtLink>
 
       <!-- Middle: headline + features -->
@@ -412,7 +410,7 @@ async function resendVerification() {
       <div class="relative z-10 space-y-6">
         <div class="pl-4" style="border-left: 2px solid #2a2a27">
           <p class="text-sm italic leading-relaxed" style="color: rgba(255, 255, 255, 0.55)">
-            "We hired our key Product Managers 3x faster using myHR. The pre-screened list is
+            "We hired our key Product Managers 3x faster using Crewly. The pre-screened list is
             incredibly accurate."
           </p>
           <p class="text-xs mt-2" style="color: rgba(255, 255, 255, 0.35)">
@@ -454,12 +452,7 @@ async function resendVerification() {
       <div class="w-full max-w-md flex-1 flex flex-col justify-center">
         <!-- Mobile logo -->
         <div class="lg:hidden text-center mb-8">
-          <h1
-            class="font-serif text-4xl font-normal"
-            style="letter-spacing: -0.04em; color: var(--ink-strong)"
-          >
-            my<em style="font-style: italic; color: var(--accent)">hr</em>
-          </h1>
+          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 26px; width: auto; display: inline-block" />
           <p
             class="mt-2 text-sm"
             style="
@@ -914,7 +907,7 @@ async function resendVerification() {
                       class="text-[11px] leading-relaxed block mt-1"
                       style="color: var(--ink-muted)"
                     >
-                      By launching this campaign, you authorize myHR to search, reach out to, and
+                      By launching this campaign, you authorize Crewly to search, reach out to, and
                       pre-screen candidates. You pay a standard 15% success fee on signed offer base
                       salary. No hire, no bill.
                     </span>

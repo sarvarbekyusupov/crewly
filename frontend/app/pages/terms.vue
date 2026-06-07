@@ -3,7 +3,7 @@ definePageMeta({ layout: 'empty', auth: false })
 const { t } = useI18n()
 
 useHead({
-  title: computed(() => `${t('terms.title')} | myHR`),
+  title: computed(() => `${t('terms.title')} | Crewly`),
   link: [{ rel: 'canonical', href: 'https://crewly.com/terms' }],
   meta: [
     {
@@ -13,13 +13,13 @@ useHead({
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
     { property: 'og:url', content: 'https://crewly.com/terms' },
-    { property: 'og:title', content: computed(() => `${t('terms.title')} | myHR`) },
+    { property: 'og:title', content: computed(() => `${t('terms.title')} | Crewly`) },
     { property: 'og:description', content: computed(() => t('terms.subtitle')) },
 
     // Twitter
     { name: 'twitter:card', content: 'summary' },
     { name: 'twitter:url', content: 'https://crewly.com/terms' },
-    { name: 'twitter:title', content: computed(() => `${t('terms.title')} | myHR`) },
+    { name: 'twitter:title', content: computed(() => `${t('terms.title')} | Crewly`) },
     { name: 'twitter:description', content: computed(() => t('terms.subtitle')) },
   ],
 })
@@ -29,8 +29,7 @@ useHead({
   <div class="terms-page">
     <nav class="terms-nav">
       <NuxtLink to="/" class="brand">
-        <div class="brand-mark">m</div>
-        <div class="brand-name">my<em>-hr</em></div>
+        <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 20px; width: auto; display: block" />
       </NuxtLink>
       <NuxtLink to="/employer/login?mode=signup" class="cta-btn">{{
         t('landing.doorCompanyCta')
@@ -90,22 +89,7 @@ useHead({
   text-decoration: none;
   color: inherit;
 }
-.brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: #1a1a1a;
-  color: #f5f1ea;
-  display: grid;
-  place-items: center;
-  font-family: 'Fraunces', serif;
-  font-size: 17px;
-  font-style: italic;
-}
-.brand-name em {
-  font-style: italic;
-  color: #c84a1f;
-}
+
 .cta-btn {
   font-size: 13px;
   padding: 8px 16px;

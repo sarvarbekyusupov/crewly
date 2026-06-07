@@ -13,14 +13,14 @@ const { audience } = useAudience()
     </main>
     <footer class="landing-footer">
       <div class="footer-wrap">
-        <span class="footer-brand">myHR</span>
+        <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="footer-brand" style="height: 18px; width: auto; display: block" />
         <div class="footer-links">
           <NuxtLink to="/terms">Terms</NuxtLink>
           <NuxtLink to="/employer/signup">For companies</NuxtLink>
           <NuxtLink to="/candidate/login">For candidates</NuxtLink>
           <NuxtLink to="/employer/login">Login</NuxtLink>
         </div>
-        <span class="footer-copy">© {{ new Date().getFullYear() }} myHR</span>
+        <span class="footer-copy">© {{ new Date().getFullYear() }} Crewly</span>
       </div>
     </footer>
   </div>

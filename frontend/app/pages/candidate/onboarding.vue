@@ -114,11 +114,7 @@ async function saveProfile() {
     >
       <!-- Brand logo -->
       <div class="text-center">
-        <div
-          class="inline-flex w-12 h-12 rounded-xl bg-accent text-white items-center justify-center font-serif text-2xl font-bold italic shadow-sm mb-4"
-        >
-          m
-        </div>
+        <img src="/crewly-app-icon.svg" alt="Crewly" class="w-12 h-12 mb-4 mx-auto" />
         <h2 class="text-3xl font-serif text-ink tracking-tight">Set Up Your Career Pilot</h2>
         <p class="text-sm text-ink-muted mt-1">
           Our AI Matchmaker will help find the best job fits for your skill stack.

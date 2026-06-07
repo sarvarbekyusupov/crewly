@@ -52,29 +52,7 @@ router.afterEach(() => {
     >
       <!-- Brand -->
       <div class="flex items-center gap-3 px-5 py-5" style="border-bottom: 1px solid var(--line)">
-        <div
-          class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-          style="
-            background: var(--ink);
-            color: var(--bg);
-            font-family: 'Fraunces', serif;
-            font-size: 16px;
-            font-style: italic;
-            letter-spacing: -0.04em;
-          "
-        >
-          m
-        </div>
-        <span
-          style="
-            font-family: 'Fraunces', serif;
-            font-size: 18px;
-            letter-spacing: -0.04em;
-            color: var(--ink);
-          "
-        >
-          my<em style="font-style: italic; color: var(--accent)">hr</em>
-        </span>
+        <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 20px; width: auto; display: block" />
         <UBadge :label="t('staff.portal')" color="warning" variant="subtle" class="ml-auto" />
       </div>
 
@@ -150,30 +128,8 @@ router.afterEach(() => {
           size="sm"
           @click="sidebarOpen = !sidebarOpen"
         />
-        <div class="flex items-center gap-2">
-          <div
-            class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-            style="
-              background: var(--ink);
-              color: var(--bg);
-              font-family: 'Fraunces', serif;
-              font-size: 14px;
-              font-style: italic;
-              letter-spacing: -0.04em;
-            "
-          >
-            m
-          </div>
-          <span
-            style="
-              font-family: 'Fraunces', serif;
-              font-size: 16px;
-              letter-spacing: -0.04em;
-              color: var(--ink);
-            "
-          >
-            my<em style="font-style: italic; color: var(--accent)">hr</em>
-          </span>
+        <div class="flex items-center">
+          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 18px; width: auto; display: block" />
         </div>
         <div class="w-8" />
         <!-- Spacer -->

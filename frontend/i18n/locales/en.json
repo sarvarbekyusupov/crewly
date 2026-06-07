@@ -37,8 +37,8 @@
     "haveAccount": "Already have an account?",
     "noAccount": "Don't have an account?",
     "loginTitle": "Welcome back",
-    "loginSubtitle": "Sign in to your account",
-    "signupTitle": "Get started",
+    "loginSubtitle": "Sign in to continue",
+    "signupTitle": "Start hiring smarter",
     "signupSubtitle": "Create your company account",
     "forgotPassword": "Forgot password?",
     "forgotPasswordTitle": "Reset password",
@@ -71,7 +71,7 @@
     "tosLink": "Terms of Service",
     "sectionCompany": "Your company",
     "sectionAccount": "Your account",
-    "candidateSubtitle": "Job Seeker Portal",
+    "candidateSubtitle": "Find your next role",
     "continueWithGoogle": "Continue with Google",
     "createAccount": "Create account",
     "signupError": "Could not create account",
@@ -131,7 +131,7 @@
     "agentActivity": "Agent activity",
     "agentNoActivity": "No recent activity",
     "liveBrainFeed": "Live Brain Feed",
-    "brainFeedEmpty": "Waiting for agent activity...",
+    "brainFeedEmpty": "Agents are on standby. Activate a role to start.",
     "agents": {
       "Matchmaker": "Matchmaker",
       "ScreeningBot": "Screening Bot",
@@ -159,9 +159,9 @@
     "viewAll": "View all →",
     "moreApplications": "more awaiting review",
     "onboarding": {
-      "title": "Welcome — let's build your first pipeline",
-      "description": "Post your first role and the AI agent will begin sourcing and screening candidates automatically.",
-      "cta": "Create your first role"
+      "title": "Welcome — let's fill your first role",
+      "description": "Post a role and AI starts sourcing and screening candidates automatically. No setup needed.",
+      "cta": "Post your first role"
     }
   },
   "events": {
@@ -178,8 +178,8 @@
     "subtitle": "Manage open positions and track hiring progress.",
     "create": "Create job",
     "empty": "No jobs yet",
-    "emptyTitle": "No positions found",
-    "emptyDesc": "Create your first job to start building the pipeline.",
+    "emptyTitle": "No positions yet",
+    "emptyDesc": "Create your first role to start sourcing candidates.",
     "eyebrow": "Recruiting",
     "createEyebrow": "Recruiting · New Position",
     "sections": {
@@ -242,7 +242,7 @@
     "stats": "Stats",
     "pipelineHub": "Pipeline",
     "pipelineHubSubtitle": "{count} candidates in this role",
-    "pipelineEmpty": "Activate the job and run outreach to fill the pipeline.",
+    "pipelineEmpty": "Activate this role and run outreach to start filling your pipeline.",
     "startOutreach": "Start outreach",
     "viewFullPipeline": "Full pipeline",
     "topMatches": "Top matches"
@@ -251,7 +251,7 @@
     "title": "Applications",
     "subtitle": "Track every candidate through the hiring pipeline.",
     "empty": "No applications yet",
-    "emptyDescription": "Matched candidates appear here after you activate a job and start outreach.",
+    "emptyDescription": "Shortlisted candidates appear here once you activate a role and run outreach.",
     "bulkSelected": "{count} selected",
     "bulkApproved": "{count} approved",
     "bulkRejected": "{count} rejected",
@@ -596,18 +596,18 @@
       "eyebrow": "Messages",
       "listTitle": "Messages",
       "listSubtitle": "Chat with AI recruiters about your applications.",
-      "noConversations": "No active conversations",
-      "noConversationsDesc": "When recruiters reach out, conversations will appear here."
+      "noConversations": "No conversations yet",
+      "noConversationsDesc": "When a recruiter reaches out to you, the conversation will appear here."
     },
     "dashboard": {
-      "scoringQueued": "AI scoring queued",
-      "scoringDesc": "Scores will appear in 1–2 minutes",
-      "profileComplete": "{n}% complete — better profiles get better matches",
-      "profileIncomplete": "Profile incomplete — better profiles get better matches",
-      "completeProfile": "Complete profile",
-      "aiScreening": "AI Screening in progress",
-      "aiScreeningDesc": "The recruiter agent is waiting for your reply.",
-      "replyNow": "Go to Chat",
+      "scoringQueued": "AI scoring in progress",
+      "scoringDesc": "Match scores will appear in 1–2 minutes",
+      "profileComplete": "{n}% complete — a fuller profile unlocks better matches",
+      "profileIncomplete": "Complete your profile to unlock better matches",
+      "completeProfile": "Complete your profile",
+      "aiScreening": "Recruiter is waiting for your reply",
+      "aiScreeningDesc": "An AI recruiter reached out — reply now to keep your application moving.",
+      "replyNow": "Reply now",
       "statDiscovered": "Jobs discovered",
       "statApplied": "Applied",
       "statInterviews": "Interviews",
@@ -634,15 +634,15 @@
       "mostRecent": "Most recent",
       "bestMatch": "Best match",
       "noJobs": "No jobs found",
-      "noJobsFiltered": "Try adjusting filters or run AI scoring to improve ranking.",
-      "noJobsDiscovered": "No jobs have been discovered for your profile yet."
+      "noJobsFiltered": "Adjust filters or run AI scoring to improve ranking.",
+      "noJobsDiscovered": "No roles discovered yet. Add more skills to your profile to improve matches."
     },
     "offers": {
       "eyebrow": "Applications",
       "title": "Applications",
       "subtitle": "All your job applications in one place.",
       "empty": "No applications yet",
-      "emptyDesc": "When recruiters match you to jobs, they'll appear here.",
+      "emptyDesc": "When a recruiter matches you to a role, it will appear here.",
       "match": "Match",
       "chat": "Chat"
     },

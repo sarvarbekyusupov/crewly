@@ -649,7 +649,7 @@ const rubricItems = ref([
                       color: msg.senderType === 'candidate' ? 'var(--ink-muted)' : 'var(--accent)',
                     }"
                   >
-                    {{ msg.senderType === 'candidate' ? 'Candidate' : 'myHR Recruiter' }}
+                    {{ msg.senderType === 'candidate' ? 'Candidate' : 'Crewly Recruiter' }}
                   </p>
                   <p class="text-xs mt-1 leading-relaxed">{{ msg.text }}</p>
                 </div>

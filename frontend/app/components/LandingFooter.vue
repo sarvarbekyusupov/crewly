@@ -6,18 +6,9 @@
         <!-- Left: logo + tagline -->
         <div class="col col-brand">
           <div class="logo">
-            <svg
-              class="logo-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path d="M12 3L22 20H2L12 3Z" fill="white" />
-            </svg>
-            <span class="logo-name">myHR</span>
+            <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="logo-img" />
           </div>
-          <p class="tagline">Match people with opportunities that actually fit.</p>
+          <p class="tagline">AI hiring that works for both sides of the table.</p>
         </div>
 
         <!-- Middle: Product links -->
@@ -45,7 +36,7 @@
 
       <!-- Bottom bar -->
       <div class="footer-bottom">
-        <p class="copy">© 2026 myHR. Stop sorting. Start hiring.</p>
+        <p class="copy">© 2026 Crewly. Stop sorting. Start hiring.</p>
         <div class="legal">
           <a href="/terms" class="legal-link">Terms of Service</a>
           <a href="/privacy" class="legal-link">Privacy Policy</a>
@@ -92,17 +83,10 @@
   margin-bottom: 14px;
 }
 
-.logo-icon {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.logo-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.01em;
+.logo-img {
+  height: 24px;
+  width: auto;
+  display: block;
 }
 
 .tagline {

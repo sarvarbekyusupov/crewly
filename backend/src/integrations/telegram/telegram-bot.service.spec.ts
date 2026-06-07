@@ -1,8 +1,11 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { getQueueToken } from '@nestjs/bull';
 import { TelegramBotService } from './telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../storage/s3.service';
+import { QUEUES } from '../../workers/queue-names';
 
 jest.mock('grammy', () => {
   const sendMessage = jest.fn().mockResolvedValue({});
@@ -11,10 +14,12 @@ jest.mock('grammy', () => {
   const start = jest.fn().mockReturnValue(Promise.resolve());
   const command = jest.fn();
   const on = jest.fn();
+  const hears = jest.fn();
 
   const Bot = jest.fn().mockImplementation(() => ({
     command,
     on,
+    hears,
     start,
     handleUpdate,
     api: { sendMessage, setWebhook },
@@ -28,10 +33,29 @@ jest.mock('grammy', () => {
   };
 });
 
+jest.mock('openai', () => {
+  const create = jest.fn().mockResolvedValue({ text: 'mock transcription' });
+  const MockOpenAI = jest.fn().mockImplementation(() => ({
+    audio: {
+      transcriptions: { create },
+    },
+  }));
+  return {
+    __esModule: true,
+    default: MockOpenAI,
+    OpenAI: MockOpenAI,
+    toFile: jest.fn().mockResolvedValue({}),
+    __mockCreateTranscription: create,
+  };
+});
+
 describe('TelegramBotService', () => {
   let service: TelegramBotService;
   let configGet: jest.Mock;
   let db: any;
+  let s3: any;
+  let parseQueue: any;
+  let screeningQueue: any;
 
   beforeEach(async () => {
     // Reset bot singleton
@@ -40,17 +64,32 @@ describe('TelegramBotService', () => {
 
     configGet = jest.fn((key: string) => {
       if (key === 'TELEGRAM_BOT_TOKEN') return 'test-token';
+      if (key === 'OPENAI_API_KEY') return 'openai-key';
       if (key === 'NODE_ENV') return 'test';
       return undefined;
     });
 
-    db = { user: { findFirst: jest.fn(), update: jest.fn() } };
+    db = {
+      user: { findFirst: jest.fn(), update: jest.fn() },
+      job: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
+      candidate: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
+      application: { findUnique: jest.fn(), create: jest.fn() },
+      conversation: { create: jest.fn(), findFirst: jest.fn() },
+      screening: { create: jest.fn() },
+    };
+
+    s3 = { upload: jest.fn() };
+    parseQueue = { add: jest.fn() };
+    screeningQueue = { add: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TelegramBotService,
         { provide: ConfigService, useValue: { get: configGet } },
         { provide: PrismaService, useValue: db },
+        { provide: S3Service, useValue: s3 },
+        { provide: getQueueToken(QUEUES.PARSE_CANDIDATE), useValue: parseQueue },
+        { provide: getQueueToken(QUEUES.ADVANCE_SCREENING), useValue: screeningQueue },
       ],
     }).compile();
 
@@ -68,7 +107,11 @@ describe('TelegramBotService', () => {
           expect.any(Function),
         );
         expect(botInstance.on).toHaveBeenCalledWith(
-          'message:text',
+          'message:document',
+          expect.any(Function),
+        );
+        expect(botInstance.hears).toHaveBeenCalledWith(
+          /^\/app_(.+)$/,
           expect.any(Function),
         );
         expect(botInstance.start).toHaveBeenCalled();
@@ -78,6 +121,7 @@ describe('TelegramBotService', () => {
     it('sets webhook in production', async () => {
       configGet.mockImplementation((key: string) => {
         if (key === 'TELEGRAM_BOT_TOKEN') return 'test-token';
+        if (key === 'OPENAI_API_KEY') return 'openai-key';
         if (key === 'NODE_ENV') return 'production';
         if (key === 'TELEGRAM_WEBHOOK_URL')
           return 'https://prod.example.com/webhook';
@@ -87,6 +131,15 @@ describe('TelegramBotService', () => {
       const { __mockSetWebhook } = require('grammy');
       await service.onModuleInit();
       expect(__mockSetWebhook).toHaveBeenCalled();
+    });
+  });
+
+  describe('transcribeAudio', () => {
+    it('calls OpenAI audio transcriptions create', async () => {
+      const { __mockCreateTranscription } = require('openai');
+      const text = await service.transcribeAudio(Buffer.from('hello'), 'voice.ogg');
+      expect(text).toBe('mock transcription');
+      expect(__mockCreateTranscription).toHaveBeenCalled();
     });
   });
 
@@ -131,6 +184,9 @@ describe('TelegramBotService', () => {
           TelegramBotService,
           { provide: ConfigService, useValue: { get: configGet } },
           { provide: PrismaService, useValue: db },
+          { provide: S3Service, useValue: s3 },
+          { provide: getQueueToken(QUEUES.PARSE_CANDIDATE), useValue: parseQueue },
+          { provide: getQueueToken(QUEUES.ADVANCE_SCREENING), useValue: screeningQueue },
         ],
       }).compile();
 

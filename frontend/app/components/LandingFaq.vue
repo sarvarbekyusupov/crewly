@@ -14,27 +14,29 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
               <div class="faq-inner">
                 <p>
                   15% of first-year salary, billed only on a signed offer. No setup fees, no monthly
-                  platform charge.
+                  charge, no commitment.
                 </p>
               </div>
             </div>
           </details>
           <details>
-            <summary>Where do you source from? <span class="pm">+</span></summary>
+            <summary>Where do you find candidates? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
                 <p>
-                  Our pre-screened pool, your ATS or network, and the open web — ranked into one
-                  shortlist.
+                  Our pre-screened talent pool, your ATS or referral network, and the open web —
+                  searched in parallel and ranked into one shortlist.
                 </p>
               </div>
             </div>
           </details>
           <details>
-            <summary>How fast is it? <span class="pm">+</span></summary>
+            <summary>How quickly will I see candidates? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>Most first shortlists land within days of briefing us.</p>
+                <p>
+                  Most companies receive their first shortlist within a few days of briefing us.
+                </p>
               </div>
             </div>
           </details>
@@ -42,17 +44,19 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <summary>What if we don't hire anyone? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>You owe nothing. No hire, no bill.</p>
+                <p>You owe nothing. No hire, no invoice — ever.</p>
               </div>
             </div>
           </details>
         </template>
         <template v-else>
           <details>
-            <summary>Is this free for me? <span class="pm">+</span></summary>
+            <summary>Is this free for candidates? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>Yes — myHR is completely free for candidates. Employers pay when they hire.</p>
+                <p>
+                  Always. Crewly is 100% free for candidates — employers pay when they make a hire.
+                </p>
               </div>
             </div>
           </details>
@@ -61,27 +65,30 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
             <div class="faq-content">
               <div class="faq-inner">
                 <p>
-                  We match your profile against live roles from our network and the open web,
-                  ranking by fit.
+                  We score your profile against live roles from our network and the open web, then
+                  rank by fit. You only hear from us when there's a real match.
                 </p>
               </div>
             </div>
           </details>
           <details>
-            <summary>What if I'm not actively looking? <span class="pm">+</span></summary>
+            <summary>What if I'm not actively looking right now? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
-                <p>Keep a profile and we reach out when you're a match. No need to check daily.</p>
+                <p>
+                  Keep your profile active and we'll reach out when a role fits. No daily checking,
+                  no cold applications.
+                </p>
               </div>
             </div>
           </details>
           <details>
-            <summary>What roles do you have? <span class="pm">+</span></summary>
+            <summary>What kind of roles do you have? <span class="pm">+</span></summary>
             <div class="faq-content">
               <div class="faq-inner">
                 <p>
-                  Tech, product, design, data, ops — across startups and scale-ups, primarily in
-                  Central Asia and remote.
+                  Tech, product, design, data, and ops — at startups and scale-ups, primarily in
+                  Central Asia and remote-friendly companies.
                 </p>
               </div>
             </div>

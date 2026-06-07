@@ -6,13 +6,13 @@ const dismissed = useState('annc_dismissed', () => false)
 <template>
   <div v-if="!dismissed" class="annc-wrap">
     <div v-if="audience === 'employer'" class="annc">
-      Looking for a new job? myHR matches you with the right roles.
-      <NuxtLink to="/candidate" @click="set('candidate')">See myHR for candidates →</NuxtLink>
+      Looking for a new job? Crewly matches you with the right roles.
+      <NuxtLink to="/candidate" @click="set('candidate')">See Crewly for candidates →</NuxtLink>
       <button class="x" aria-label="Dismiss" @click="dismissed = true">✕</button>
     </div>
     <div v-else class="annc">
-      Hiring? Let myHR source and screen for you.
-      <NuxtLink to="/" @click="set('employer')">See myHR for employers →</NuxtLink>
+      Hiring? Let Crewly source and screen for you.
+      <NuxtLink to="/" @click="set('employer')">See Crewly for employers →</NuxtLink>
       <button class="x" aria-label="Dismiss" @click="dismissed = true">✕</button>
     </div>
   </div>

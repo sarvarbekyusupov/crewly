@@ -20,11 +20,11 @@ function submitSearch() {
         <template v-if="audience === 'employer'">
           <h1 class="headline serif">
             Hire the right people,<br />
-            <span class="accent-italic">a lot faster.</span>
+            <span class="accent-italic">without the search.</span>
           </h1>
           <p class="sub">
-            myHR is your AI hiring team. We source, screen, and shortlist — so you only spend time
-            with candidates who matter.
+            Tell us the role. Our AI sources candidates, runs outreach, and screens them — you spend
+            time only with people worth meeting.
           </p>
           <div class="search">
             <input
@@ -40,27 +40,27 @@ function submitSearch() {
                   : '/employer/signup'
               "
               class="search-btn"
-              >Get started →</NuxtLink
+              >Post a role →</NuxtLink
             >
           </div>
         </template>
 
         <template v-else>
           <h1 class="headline serif">
-            Find work. Grow.<br />
-            <span class="accent-italic">Get hired.</span>
+            Your next role is already<br />
+            <span class="accent-italic">looking for you.</span>
           </h1>
           <p class="sub">
-            Your AI career partner. Build your profile, see roles that actually fit, close skill
-            gaps, and get reached out to when you're a match.
+            Build your profile once. We match you to roles across our network and the open web —
+            then reach out when there's a real fit. No cover letters, no job boards.
           </p>
           <div class="pill-cta-wrap">
             <NuxtLink to="/candidate/login?mode=signup" class="pill-cta">
-              Start your career assessment
+              Build your free profile
               <span class="round">→</span>
             </NuxtLink>
             <span class="browse"
-              >or <NuxtLink to="/candidate/login">browse open roles</NuxtLink></span
+              >or <NuxtLink to="/candidate/login">see open roles</NuxtLink></span
             >
           </div>
         </template>

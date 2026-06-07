@@ -158,9 +158,7 @@ const onSignup = signupHandleSubmit(async (values) => {
 
       <!-- Logo -->
       <NuxtLink to="/" class="relative z-10">
-        <span class="font-serif text-3xl font-normal" style="letter-spacing: -0.04em; color: white">
-          my<em style="font-style: italic; color: var(--accent)">hr</em>
-        </span>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" style="height: 24px; width: auto; display: block" />
       </NuxtLink>
 
       <!-- Middle: headline + features -->
@@ -261,12 +259,7 @@ const onSignup = signupHandleSubmit(async (values) => {
       <div class="w-full max-w-sm flex-1 flex flex-col justify-center">
         <!-- Mobile logo -->
         <div class="lg:hidden text-center mb-8">
-          <h1
-            class="font-serif text-4xl font-normal"
-            style="letter-spacing: -0.04em; color: var(--ink-strong)"
-          >
-            my<em style="font-style: italic; color: var(--accent)">hr</em>
-          </h1>
+          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 26px; width: auto; display: inline-block" />
           <p
             class="mt-2 text-sm"
             style="
