@@ -20,16 +20,16 @@ clean:
 # ── Production (uses pre-built images via IMAGE_BACKEND / IMAGE_FRONTEND) ─────
 build:
 	DOCKER_BUILDKIT=1 docker buildx build \
-	  --file backend/Dockerfile  --tag my-hr/backend:local  . &
+	  --file backend/Dockerfile  --tag crewly/backend:local  . &
 	DOCKER_BUILDKIT=1 docker buildx build \
-	  --file frontend/Dockerfile --tag my-hr/frontend:local . &
+	  --file frontend/Dockerfile --tag crewly/frontend:local . &
 	wait
 
 pull:
-	docker compose -f docker-compose.prod.yml pull
+	docker compose -f docker-compose.prod.yml --env-file .env.production pull
 
 deploy:
-	docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans
+	docker compose -f docker-compose.prod.yml --env-file .env.production up -d --no-build --remove-orphans
 
 # ── Dev infra only (postgres + redis exposed on localhost) ────────────────────
 dev-db:

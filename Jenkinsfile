@@ -59,7 +59,7 @@ pipeline {
               pnpm config set store-dir /pnpm/store
               pnpm install --frozen-lockfile --prefer-offline
               pnpm --filter backend run lint
-              pnpm --filter crewly-frontend run lint || true
+              pnpm --filter crewly-frontend run lint
               pnpm typecheck
               pnpm --filter backend run test
               pnpm --filter crewly-frontend run test
@@ -204,7 +204,7 @@ pipeline {
           sh '''
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
-            echo "$KNOWN_HOSTS_ENTRY" >> ~/.ssh/known_hosts
+            echo "$KNOWN_HOSTS_ENTRY" > ~/.ssh/known_hosts
             chmod 600 ~/.ssh/known_hosts
 
             ssh -i "$SSH_KEY_FILE" \
