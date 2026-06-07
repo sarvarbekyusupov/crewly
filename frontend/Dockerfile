@@ -17,7 +17,9 @@ RUN --mount=type=cache,id=pnpm-frontend,target=/pnpm/store \
 # ── build ─────────────────────────────────────────────────────────────────────
 FROM deps AS builder
 ARG NUXT_PUBLIC_API_BASE=http://localhost:3030
+ARG NUXT_PUBLIC_WAITLIST_MODE=false
 ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE
+ENV NUXT_PUBLIC_WAITLIST_MODE=$NUXT_PUBLIC_WAITLIST_MODE
 ENV NODE_ENV=production
 
 COPY packages/types ./packages/types
