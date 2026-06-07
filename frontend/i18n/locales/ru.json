@@ -530,7 +530,18 @@
     "candidatesStep2Title": "Получайте совпадения",
     "candidatesStep2Body": "AI находит подходящие вакансии. Не нужно искать самостоятельно.",
     "candidatesStep3Title": "Ждите контакта",
-    "candidatesStep3Body": "При реальном совпадении мы напишем в Telegram или по email с деталями роли."
+    "candidatesStep3Body": "При реальном совпадении мы напишем в Telegram или по email с деталями роли.",
+    "waitlist": {
+      "emailPlaceholder": "Введите email",
+      "cta": "Попасть в список",
+      "successEmployer": "Вы в списке — напишем, когда откроемся для найма.",
+      "successCandidate": "Принято! Уведомим, когда Crewly заработает.",
+      "duplicate": "Вы уже в списке.",
+      "error": "Что-то пошло не так. Попробуйте ещё раз.",
+      "heroEmployerSub": "Будьте первыми среди работодателей.",
+      "heroCandidateSub": "Ранний доступ к подходящим ролям.",
+      "navCta": "В список"
+    }
   },
   "terms": {
     "title": "Коммерческие условия",

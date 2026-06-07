@@ -2,6 +2,8 @@
 definePageMeta({ layout: 'empty', auth: 'guest' })
 
 const { t } = useI18n()
+const config = useRuntimeConfig()
+const waitlistMode = config.public.waitlistMode as boolean
 
 const showPortalModal = ref(false)
 const portalIntent = ref<'login' | 'signup'>('login')
@@ -48,7 +50,8 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
           <span class="live-dot" />
           Agent · live
         </span>
-        <button class="signin-btn" @click="openPortalModal('login')">{{ t('landing.signIn') }}</button>
+        <a v-if="waitlistMode" href="#waitlist" class="signin-btn">{{ t('landing.waitlist.navCta') }}</a>
+        <button v-else class="signin-btn" @click="openPortalModal('login')">{{ t('landing.signIn') }}</button>
       </div>
     </nav>
 
@@ -78,33 +81,58 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
         </div>
 
         <div id="how-it-works" class="doors">
-          <NuxtLink class="door" to="/employer/signup">
-            <span class="ribbon">{{ t('landing.doorCompanyRibbon') }}</span>
-            <h2>
-              {{ t('landing.doorCompanyTitle') }}<br /><em>{{
-                t('landing.doorCompanyTitleEm')
-              }}</em>
-            </h2>
-            <p>{{ t('landing.doorCompanyBody') }}</p>
-            <div class="door-foot">
-              <span class="door-stat">{{ t('landing.pillar2Title') }}</span>
-              <span class="arrow-btn">{{ t('landing.doorCompanyCta') }}</span>
+          <template v-if="waitlistMode">
+            <div id="waitlist" class="door door--waitlist">
+              <span class="ribbon">{{ t('landing.doorCompanyRibbon') }}</span>
+              <h2>
+                {{ t('landing.doorCompanyTitle') }}<br /><em>{{
+                  t('landing.doorCompanyTitleEm')
+                }}</em>
+              </h2>
+              <p>{{ t('landing.waitlist.heroEmployerSub') }}</p>
+              <LandingWaitlistForm audience="employer" />
             </div>
-          </NuxtLink>
 
-          <NuxtLink class="door" to="/candidate/login">
-            <span class="ribbon">{{ t('landing.doorCandidateRibbon') }}</span>
-            <h2>
-              {{ t('landing.doorCandidateTitle') }}<br /><em>{{
-                t('landing.doorCandidateTitleEm')
-              }}</em>
-            </h2>
-            <p>{{ t('landing.doorCandidateBodyNew') }}</p>
-            <div class="door-foot">
-              <span class="door-stat">{{ t('landing.pillar3Title') }}</span>
-              <span class="arrow-btn">{{ t('landing.doorCandidateCtaNew') }}</span>
+            <div class="door door--waitlist door--candidate">
+              <span class="ribbon">{{ t('landing.doorCandidateRibbon') }}</span>
+              <h2>
+                {{ t('landing.doorCandidateTitle') }}<br /><em>{{
+                  t('landing.doorCandidateTitleEm')
+                }}</em>
+              </h2>
+              <p>{{ t('landing.waitlist.heroCandidateSub') }}</p>
+              <LandingWaitlistForm audience="candidate" />
             </div>
-          </NuxtLink>
+          </template>
+          <template v-else>
+            <NuxtLink class="door" to="/employer/signup">
+              <span class="ribbon">{{ t('landing.doorCompanyRibbon') }}</span>
+              <h2>
+                {{ t('landing.doorCompanyTitle') }}<br /><em>{{
+                  t('landing.doorCompanyTitleEm')
+                }}</em>
+              </h2>
+              <p>{{ t('landing.doorCompanyBody') }}</p>
+              <div class="door-foot">
+                <span class="door-stat">{{ t('landing.pillar2Title') }}</span>
+                <span class="arrow-btn">{{ t('landing.doorCompanyCta') }}</span>
+              </div>
+            </NuxtLink>
+
+            <NuxtLink class="door" to="/candidate/login">
+              <span class="ribbon">{{ t('landing.doorCandidateRibbon') }}</span>
+              <h2>
+                {{ t('landing.doorCandidateTitle') }}<br /><em>{{
+                  t('landing.doorCandidateTitleEm')
+                }}</em>
+              </h2>
+              <p>{{ t('landing.doorCandidateBodyNew') }}</p>
+              <div class="door-foot">
+                <span class="door-stat">{{ t('landing.pillar3Title') }}</span>
+                <span class="arrow-btn">{{ t('landing.doorCandidateCtaNew') }}</span>
+              </div>
+            </NuxtLink>
+          </template>
         </div>
       </div>
     </section>
@@ -151,7 +179,8 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
             </div>
           </div>
         </div>
-        <NuxtLink to="/employer/signup" class="how-cta">{{
+        <a v-if="waitlistMode" href="#waitlist" class="how-cta">{{ t('landing.waitlist.navCta') }}</a>
+        <NuxtLink v-else to="/employer/signup" class="how-cta">{{
           t('landing.doorCompanyCta')
         }}</NuxtLink>
       </div>
@@ -184,7 +213,8 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
             </div>
           </div>
         </div>
-        <NuxtLink to="/candidate/login?mode=signup" class="how-cta how-cta--candidate">{{
+        <a v-if="waitlistMode" href="#waitlist" class="how-cta how-cta--candidate">{{ t('landing.waitlist.navCta') }}</a>
+        <NuxtLink v-else to="/candidate/login?mode=signup" class="how-cta how-cta--candidate">{{
           t('landing.doorCandidateCtaNew')
         }}</NuxtLink>
       </div>
@@ -242,11 +272,13 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
     </Teleport>
 
     <footer class="lfoot">
-      <span>© 2025 my-hr</span>
+      <span>© 2025 Crewly</span>
       <div style="display: flex; gap: 22px">
         <NuxtLink to="/terms">{{ t('landing.navPricing') }}</NuxtLink>
-        <NuxtLink to="/employer/login">{{ t('auth.login') }}</NuxtLink>
-        <NuxtLink to="/candidate/login">{{ t('landing.navForCandidates') }}</NuxtLink>
+        <template v-if="!waitlistMode">
+          <NuxtLink to="/employer/login">{{ t('auth.login') }}</NuxtLink>
+          <NuxtLink to="/candidate/login">{{ t('landing.navForCandidates') }}</NuxtLink>
+        </template>
       </div>
     </footer>
   </div>
@@ -572,6 +604,22 @@ onUnmounted(() => window.removeEventListener('keydown', onEsc))
 }
 .door:hover .arrow-btn {
   background: #c84a1f;
+}
+
+.door--waitlist {
+  cursor: default;
+  gap: 18px;
+}
+.door--waitlist:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #d9d3c7;
+}
+.door--candidate {
+  border-color: rgba(200, 74, 31, 0.25);
+}
+.door--candidate:hover {
+  border-color: rgba(200, 74, 31, 0.5);
 }
 
 /* ── Stats strip ── */

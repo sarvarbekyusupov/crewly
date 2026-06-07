@@ -34,6 +34,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:3000',
       sentryDsn: process.env.NUXT_PUBLIC_SENTRY_DSN ?? '',
+      waitlistMode: process.env.NUXT_PUBLIC_WAITLIST_MODE === 'true',
     },
   },
 
