@@ -61,11 +61,6 @@ async function ingestCandidate(profile: LinkedInProfile) {
     ingestingIds.value.delete(id)
   }
 }
-
-function truncate(str: string | undefined, length: number) {
-  if (!str) return ''
-  return str.length > length ? str.substring(0, length) + '...' : str
-}
 </script>
 
 <template>

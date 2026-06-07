@@ -16,8 +16,8 @@ export class EmailService {
 
   constructor(private readonly config: ConfigService) {
     this.apiKey = config.get('RESEND_API_KEY') ?? '';
-    const fromEmail = config.get<string>('FROM_EMAIL') ?? 'noreply@myhr.uz';
-    this.from = `MyHR <${fromEmail}>`;
+    const fromEmail = config.get<string>('FROM_EMAIL') ?? 'noreply@crewly.uz';
+    this.from = `Crewly <${fromEmail}>`;
   }
 
   async send(opts: SendEmailOptions): Promise<string | null> {
@@ -71,9 +71,9 @@ export class EmailService {
   async sendPasswordReset(email: string, resetUrl: string) {
     await this.send({
       to: email,
-      subject: 'Сброс пароля — MyHR',
+      subject: 'Сброс пароля — Crewly',
       html: `
-        <p>Вы запросили сброс пароля для вашего аккаунта MyHR.</p>
+        <p>Вы запросили сброс пароля для вашего аккаунта Crewly.</p>
         <p><a href="${resetUrl}" style="color:#2563eb;">Нажмите здесь для сброса пароля</a></p>
         <p>Ссылка действительна <strong>1 час</strong>. Если вы не запрашивали сброс — проигнорируйте это письмо.</p>
       `,
@@ -83,9 +83,9 @@ export class EmailService {
   async sendEmailVerification(email: string, verifyUrl: string) {
     await this.send({
       to: email,
-      subject: 'Подтвердите email — MyHR',
+      subject: 'Подтвердите email — Crewly',
       html: `
-        <p>Добро пожаловать в MyHR!</p>
+        <p>Добро пожаловать в Crewly!</p>
         <p>Пожалуйста, подтвердите ваш email:</p>
         <p><a href="${verifyUrl}" style="color:#2563eb;">Подтвердить email</a></p>
         <p>Ссылка действительна <strong>24 часа</strong>.</p>
@@ -101,10 +101,10 @@ export class EmailService {
   ) {
     await this.send({
       to: email,
-      subject: `Вас пригласили в ${companyName} — MyHR`,
+      subject: `Вас пригласили в ${companyName} — Crewly`,
       html: `
         <p>Здравствуйте, ${fullName}!</p>
-        <p>Вас пригласили в команду <strong>${companyName}</strong> на платформе MyHR.</p>
+        <p>Вас пригласили в команду <strong>${companyName}</strong> на платформе Crewly.</p>
         <p><a href="${setupUrl}" style="color:#2563eb;">Нажмите здесь, чтобы задать пароль и войти</a></p>
         <p>Ссылка действительна <strong>72 часа</strong>.</p>
       `,

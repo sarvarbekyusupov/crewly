@@ -23,7 +23,7 @@ export class HhDictionaryService {
   ) {}
 
   private get headers() {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return { 'User-Agent': userAgent, 'HH-User-Agent': userAgent };
   }
 

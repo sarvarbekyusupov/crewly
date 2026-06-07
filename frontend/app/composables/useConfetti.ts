@@ -4,7 +4,7 @@ export function useConfetti() {
 
     const colors = ['#e05c2e', '#fb923c', '#fcd34d', '#4ade80', '#60a5fa']
     const container = document.createElement('div')
-    
+
     container.style.position = 'fixed'
     container.style.top = '0'
     container.style.left = '0'
@@ -35,13 +35,13 @@ export function useConfetti() {
       particle.style.bottom = '0px'
 
       // Animation parameters
-      const travelX = (Math.random() * 40 - 20) // shift -20vw to +20vw
-      const travelY = (Math.random() * 60 + 50) // rise 50vh to 110vh
+      const travelX = Math.random() * 40 - 20 // shift -20vw to +20vw
+      const travelY = Math.random() * 60 + 50 // rise 50vh to 110vh
       const rotate = Math.random() * 720 - 360 // spin -360deg to +360deg
 
       const animName = `confetti-anim-${i}`
       const styleSheet = document.createElement('style')
-      
+
       styleSheet.textContent = `
         @keyframes ${animName} {
           0% {

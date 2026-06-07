@@ -42,8 +42,7 @@ onMounted(() => {
         "
         @click="goHome"
       >
-        my-hr
-      </span>
+Crewly      </span>
       <button
         style="
           font-family: 'JetBrains Mono', monospace;

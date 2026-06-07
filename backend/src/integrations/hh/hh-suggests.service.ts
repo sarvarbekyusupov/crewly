@@ -19,7 +19,7 @@ export class HhSuggestsService {
   ) {}
 
   private get headers() {
-    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return { 'User-Agent': ua, 'HH-User-Agent': ua };
   }
 

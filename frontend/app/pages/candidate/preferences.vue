@@ -156,8 +156,14 @@ async function disconnectHh() {
     </div>
 
     <!-- Live settings summary -->
-    <div class="rounded-lg px-4 py-3" style="background: var(--bg-elevated); border: 1px solid var(--line)">
-      <p class="text-xs font-medium mb-2" style="color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em">
+    <div
+      class="rounded-lg px-4 py-3"
+      style="background: var(--bg-elevated); border: 1px solid var(--line)"
+    >
+      <p
+        class="text-xs font-medium mb-2"
+        style="color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em"
+      >
         Current settings
       </p>
       <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm" style="color: var(--ink)">
@@ -171,11 +177,16 @@ async function disconnectHh() {
         </span>
         <span>
           <span style="color: var(--ink-subtle)">Salary </span>
-          <strong>{{ expectedSalaryUzs ? Number(expectedSalaryUzs).toLocaleString() + ' UZS' : 'Any' }}</strong>
+          <strong>{{
+            expectedSalaryUzs ? Number(expectedSalaryUzs).toLocaleString() + ' UZS' : 'Any'
+          }}</strong>
         </span>
         <span>
           <span style="color: var(--ink-subtle)">Blocked </span>
-          <strong>{{ blacklistedCompanies.length }} {{ blacklistedCompanies.length === 1 ? 'company' : 'companies' }}</strong>
+          <strong
+            >{{ blacklistedCompanies.length }}
+            {{ blacklistedCompanies.length === 1 ? 'company' : 'companies' }}</strong
+          >
         </span>
       </div>
     </div>

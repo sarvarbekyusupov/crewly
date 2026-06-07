@@ -65,14 +65,20 @@ const filteredLogs = computed(() => {
   <div class="space-y-2">
     <!-- Filter control header -->
     <div class="flex items-center justify-between">
-      <span class="text-xs font-mono font-semibold" style="color: var(--ink-subtle)">LIVE AGENT ACTIONS</span>
+      <span class="text-xs font-mono font-semibold" style="color: var(--ink-subtle)"
+        >LIVE AGENT ACTIONS</span
+      >
       <div class="flex gap-1 bg-bg-deep border border-line-soft rounded-md p-0.5">
         <button
           v-for="opt in ['all', 'matchmaker', 'outreach', 'error']"
           :key="opt"
           type="button"
           class="text-[10px] font-mono px-2 py-0.5 rounded capitalize cursor-pointer transition-colors"
-          :style="filterType === opt ? 'background: var(--bg-elevated); color: var(--ink)' : 'background: transparent; color: var(--ink-muted)'"
+          :style="
+            filterType === opt
+              ? 'background: var(--bg-elevated); color: var(--ink)'
+              : 'background: transparent; color: var(--ink-muted)'
+          "
           @click="filterType = opt as any"
         >
           {{ opt }}

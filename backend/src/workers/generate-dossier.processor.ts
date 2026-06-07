@@ -81,16 +81,19 @@ Write a structured 3-section report:
     const { width, height } = page.getSize();
     let y = height - 50;
 
-    page.drawText(`Candidate Dossier: ${screening.application.candidate.fullName}`, {
-      x: 50,
-      y,
-      size: 20,
-      font: boldFont,
-      color: rgb(0.1, 0.1, 0.1),
-    });
-    
+    page.drawText(
+      `Candidate Dossier: ${screening.application.candidate.fullName}`,
+      {
+        x: 50,
+        y,
+        size: 20,
+        font: boldFont,
+        color: rgb(0.1, 0.1, 0.1),
+      },
+    );
+
     y -= 40;
-    
+
     // Simple text wrapping logic
     const lines = output.split('\n');
     for (const line of lines) {
@@ -98,10 +101,10 @@ Write a structured 3-section report:
         page = pdfDoc.addPage([595, 842]);
         y = height - 50;
       }
-      
+
       const words = line.split(' ');
       let currentLine = '';
-      
+
       for (const word of words) {
         const testLine = currentLine + word + ' ';
         const textWidth = font.widthOfTextAtSize(testLine, 11);

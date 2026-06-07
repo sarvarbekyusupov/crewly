@@ -7,7 +7,7 @@ import {
   MATCHMAKER_PARSE_JOB_SYSTEM,
   matchmakerRankCandidatesPrompt,
   matchmakerScoreSeekerJobsPrompt,
-} from '@my-hr/prompts';
+} from '@crewly/prompts';
 
 export interface MatchmakerResult {
   id: string;
@@ -241,7 +241,11 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'seeker_job_score',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, responseFormat: { type: 'json_object' }, provider: 'bedrock' },
+      {
+        maxTokens: 512,
+        responseFormat: { type: 'json_object' },
+        provider: 'bedrock',
+      },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
         : {},

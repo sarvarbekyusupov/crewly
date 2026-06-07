@@ -11,7 +11,9 @@ describe('HhWebhookService', () => {
   let db: any;
   let hhClient: any;
 
-  const newNegPayload = (overrides: Partial<HhWebhookPayload> = {}): HhWebhookPayload => ({
+  const newNegPayload = (
+    overrides: Partial<HhWebhookPayload> = {},
+  ): HhWebhookPayload => ({
     type: 'NEW_NEGOTIATION',
     created_at: '2024-01-01T00:00:00+00:00',
     negotiation: { id: 'neg-1' },
@@ -20,7 +22,9 @@ describe('HhWebhookService', () => {
     ...overrides,
   });
 
-  const statePayload = (overrides: Partial<HhWebhookPayload> = {}): HhWebhookPayload => ({
+  const statePayload = (
+    overrides: Partial<HhWebhookPayload> = {},
+  ): HhWebhookPayload => ({
     type: 'NEGOTIATION_STATE_CHANGE',
     created_at: '2024-01-01T00:00:00+00:00',
     negotiation: { id: 'neg-1' },
@@ -59,7 +63,9 @@ describe('HhWebhookService', () => {
         { provide: HhClientService, useValue: hhClient },
         {
           provide: HttpService,
-          useValue: { get: jest.fn().mockReturnValue(of({ data: { items: [] } })) },
+          useValue: {
+            get: jest.fn().mockReturnValue(of({ data: { items: [] } })),
+          },
         },
         {
           provide: ConfigService,
@@ -67,7 +73,7 @@ describe('HhWebhookService', () => {
             get: jest.fn((key: string) => {
               const map: Record<string, string> = {
                 NODE_ENV: 'test',
-                HH_USER_AGENT: 'my-hr/1.0',
+                HH_USER_AGENT: 'crewly/1.0',
                 HH_EMPLOYER_TOKEN: 'emp-token',
               };
               return map[key] ?? '';
@@ -88,7 +94,10 @@ describe('HhWebhookService', () => {
     });
 
     it('routes NEGOTIATION_STATE_CHANGE to handleStateChange', async () => {
-      db.application.findFirst.mockResolvedValue({ id: 'app-1', status: 'applied' });
+      db.application.findFirst.mockResolvedValue({
+        id: 'app-1',
+        status: 'applied',
+      });
       await service.handleEvent(statePayload());
       expect(db.application.update).toHaveBeenCalled();
     });
@@ -135,12 +144,18 @@ describe('HhWebhookService', () => {
 
       expect(db.candidate.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ externalId: 'res-1', fullName: 'Alice Smith' }),
+          data: expect.objectContaining({
+            externalId: 'res-1',
+            fullName: 'Alice Smith',
+          }),
         }),
       );
       expect(db.application.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({ hhNegotiationId: 'neg-1', status: 'applied' }),
+          create: expect.objectContaining({
+            hhNegotiationId: 'neg-1',
+            status: 'applied',
+          }),
         }),
       );
     });
@@ -177,9 +192,14 @@ describe('HhWebhookService', () => {
 
   describe('handleStateChange', () => {
     it('updates employer application status on known state', async () => {
-      db.application.findFirst.mockResolvedValue({ id: 'app-1', status: 'applied' });
+      db.application.findFirst.mockResolvedValue({
+        id: 'app-1',
+        status: 'applied',
+      });
 
-      await service.handleEvent(statePayload({ state: { id: 'interview', name: 'Интервью' } }));
+      await service.handleEvent(
+        statePayload({ state: { id: 'interview', name: 'Интервью' } }),
+      );
 
       expect(db.application.update).toHaveBeenCalledWith({
         where: { id: 'app-1' },
@@ -188,18 +208,28 @@ describe('HhWebhookService', () => {
     });
 
     it('does not update employer app if status already matches', async () => {
-      db.application.findFirst.mockResolvedValue({ id: 'app-1', status: 'interviewed' });
+      db.application.findFirst.mockResolvedValue({
+        id: 'app-1',
+        status: 'interviewed',
+      });
 
-      await service.handleEvent(statePayload({ state: { id: 'interview', name: 'Интервью' } }));
+      await service.handleEvent(
+        statePayload({ state: { id: 'interview', name: 'Интервью' } }),
+      );
 
       expect(db.application.update).not.toHaveBeenCalled();
     });
 
     it('falls through to seeker app when no employer app found', async () => {
       db.application.findFirst.mockResolvedValue(null);
-      db.seekerApplication.findFirst.mockResolvedValue({ id: 'sapp-1', status: 'applied' });
+      db.seekerApplication.findFirst.mockResolvedValue({
+        id: 'sapp-1',
+        status: 'applied',
+      });
 
-      await service.handleEvent(statePayload({ state: { id: 'invitation', name: 'Приглашение' } }));
+      await service.handleEvent(
+        statePayload({ state: { id: 'invitation', name: 'Приглашение' } }),
+      );
 
       expect(db.seekerApplication.update).toHaveBeenCalledWith({
         where: { id: 'sapp-1' },
@@ -208,9 +238,14 @@ describe('HhWebhookService', () => {
     });
 
     it('skips update when state not in map', async () => {
-      db.application.findFirst.mockResolvedValue({ id: 'app-1', status: 'applied' });
+      db.application.findFirst.mockResolvedValue({
+        id: 'app-1',
+        status: 'applied',
+      });
 
-      await service.handleEvent(statePayload({ state: { id: 'unknown_state', name: '?' } }));
+      await service.handleEvent(
+        statePayload({ state: { id: 'unknown_state', name: '?' } }),
+      );
 
       expect(db.application.update).not.toHaveBeenCalled();
     });

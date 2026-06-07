@@ -329,4 +329,33 @@ export class JobsService {
 
     return { ...byStatus, ...(hhStats && { hh: hhStats }) };
   }
+
+  async findOnePublic(id: string) {
+    const job = await this.db.job.findFirst({
+      where: { id, status: 'active', deletedAt: null },
+      include: {
+        company: {
+          select: {
+            name: true,
+            industry: true,
+            size: true,
+            website: true,
+          },
+        },
+      },
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    return job;
+  }
+
+  async findAllPublic() {
+    return this.db.job.findMany({
+      where: { status: 'active', deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+      },
+    });
+  }
 }

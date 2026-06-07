@@ -5,7 +5,7 @@ import { PromptRunnerService } from '../../integrations/llm/prompt-runner.servic
 import {
   debriefSynthesizeFeedbackPrompt,
   debriefAnalyzeTranscriptPrompt,
-} from '@my-hr/prompts';
+} from '@crewly/prompts';
 
 const TranscriptAnalysisSchema = z.object({
   sentiment: z.enum(['positive', 'neutral', 'negative']),

@@ -188,7 +188,7 @@ const userColumns: any[] = [
             <USelect
               v-model="companySize"
               v-bind="companySizeProps"
-              :options="[
+              :items="[
                 { label: '1-10', value: '1-10' },
                 { label: '11-50', value: '11-50' },
                 { label: '51-200', value: '51-200' },
@@ -265,7 +265,7 @@ const userColumns: any[] = [
               <USelect
                 v-model="inviteRole"
                 v-bind="inviteRoleProps"
-                :options="roleOptions"
+                :items="roleOptions"
                 class="w-full"
               />
             </UFormField>

@@ -117,7 +117,7 @@ const onSubmit = handleSubmit(async (values) => {
           letter-spacing: 0.06em;
         "
       >
-        my-hr / employers
+        Crewly / employers
       </p>
     </div>
 

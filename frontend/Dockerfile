@@ -16,13 +16,13 @@ RUN --mount=type=cache,id=pnpm-frontend,target=/pnpm/store \
 
 # ── build ─────────────────────────────────────────────────────────────────────
 FROM deps AS builder
-ARG NUXT_PUBLIC_API_BASE=http://localhost:4000
+ARG NUXT_PUBLIC_API_BASE=http://localhost:3030
 ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE
 ENV NODE_ENV=production
 
 COPY packages/types ./packages/types
 COPY frontend        ./frontend
-RUN pnpm --filter my-hr-frontend run build
+RUN pnpm --filter crewly-frontend run build
 
 # ── runtime ───────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

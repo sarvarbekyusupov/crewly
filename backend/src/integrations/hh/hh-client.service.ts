@@ -124,7 +124,7 @@ export class HhClientService {
   async refreshCandidateToken(refreshToken: string): Promise<HhTokenResponse> {
     const clientId = this.config.get('HH_CLIENT_ID');
     const clientSecret = this.config.get('HH_CLIENT_SECRET');
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
 
     const response = await firstValueFrom(
       this.http.post<HhTokenResponse>(
@@ -197,7 +197,7 @@ export class HhClientService {
 
   /** Returns info about the authenticated user (employer or applicant). */
   async getMe(token: string): Promise<HhMeResponse> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
       this.http.get<HhMeResponse>(`${this.baseUrl}/me`, {
         headers: {
@@ -214,7 +214,7 @@ export class HhClientService {
   async getActiveNegotiations(
     candidateToken: string,
   ): Promise<HhNegotiationItem[]> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
       this.http.get<{ items: HhNegotiationItem[] }>(
         `${this.baseUrl}/negotiations/active`,
@@ -236,7 +236,7 @@ export class HhClientService {
     negotiationId: string,
     candidateToken: string,
   ): Promise<void> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     await firstValueFrom(
       this.http.delete(`${this.baseUrl}/negotiations/active/${negotiationId}`, {
         headers: {
@@ -259,7 +259,7 @@ export class HhClientService {
           {
             headers: {
               Authorization: `Bearer ${candidateToken}`,
-              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'myhr/1.0',
+              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'crewly/1.0',
             },
           },
         ),

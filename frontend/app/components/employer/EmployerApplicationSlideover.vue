@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Application } from '~/types/api'
-import { capitalizeStatus } from '~/utils/candidate'
 
 const props = defineProps<{
   id: string
@@ -16,7 +15,7 @@ const { t } = useI18n()
 const api = useApi()
 const toast = useToast()
 const { playPop, playSwoosh } = useAudio()
-const { screeningStatusLabel } = useStatusLabels()
+useStatusLabels()
 
 const {
   data: app,
@@ -125,7 +124,7 @@ const scheduleSlots = [
   { day: 'Tuesday', time: '11:00 AM', startOffset: 2, hour: 11 },
   { day: 'Wednesday', time: '2:00 PM', startOffset: 3, hour: 14 },
   { day: 'Thursday', time: '3:00 PM', startOffset: 4, hour: 15 },
-  { day: 'Friday', time: '4:00 PM', startOffset: 5, hour: 16 }
+  { day: 'Friday', time: '4:00 PM', startOffset: 5, hour: 16 },
 ]
 
 const activeSlotIndex = ref<number | null>(null)
@@ -140,7 +139,7 @@ function selectScheduleSlot(idx: number) {
   const distance = (slot.startOffset + 7 - currentDay) % 7
   d.setDate(d.getDate() + (distance === 0 ? 7 : distance))
   d.setHours(slot.hour, 0, 0, 0)
-  
+
   const endD = new Date(d)
   endD.setHours(slot.hour + 1)
 
@@ -156,7 +155,7 @@ function selectScheduleSlot(idx: number) {
 
   scheduleForm.startTime = toLocalString(d)
   scheduleForm.endTime = toLocalString(endD)
-  
+
   toast.add({ title: `Selected slot: ${slot.day} at ${slot.time}`, color: 'info' })
 }
 
@@ -258,13 +257,17 @@ const showHighlights = ref(false)
 const matchedSkills = computed(() => {
   const req = app.value?.job?.requiredSkills ?? []
   const cand = app.value?.candidate?.skills ?? []
-  return req.filter((s: string) => cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())))
+  return req.filter((s: string) =>
+    cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())),
+  )
 })
 
 const missingSkills = computed(() => {
   const req = app.value?.job?.requiredSkills ?? []
   const cand = app.value?.candidate?.skills ?? []
-  return req.filter((s: string) => !cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())))
+  return req.filter(
+    (s: string) => !cand.some((cs: string) => cs.toLowerCase().includes(s.toLowerCase())),
+  )
 })
 
 const showRubricModal = ref(false)
@@ -280,7 +283,7 @@ const rubricItems = ref([
   <USlideover
     :model-value="open"
     title="Application Details"
-    :class="isSplitView ? 'w-[1100px] max-w-full' : 'w-full sm:max-w-2xl lg:max-w-4xl'"
+    :class="isSplitView ? 'w-275 max-w-full' : 'w-full sm:max-w-2xl lg:max-w-4xl'"
     @update:model-value="emit('update:open', $event)"
   >
     <template #body>
@@ -370,30 +373,63 @@ const rubricItems = ref([
             <div v-else-if="showHighlights" class="flex-1 p-5 space-y-4 overflow-y-auto bg-bg-deep">
               <div>
                 <h3 class="text-sm font-semibold text-ink">AI Skill Extraction & Alignment</h3>
-                <p class="text-xs text-ink-subtle mt-0.5">Calculated by Matchmaker agent using semantic profile alignment.</p>
+                <p class="text-xs text-ink-subtle mt-0.5">
+                  Calculated by Matchmaker agent using semantic profile alignment.
+                </p>
               </div>
-              
+
               <div class="space-y-4">
                 <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
-                  <h4 class="text-xs font-mono font-bold text-positive uppercase tracking-wider">✓ Matched Required Skills</h4>
+                  <h4 class="text-xs font-mono font-bold text-positive uppercase tracking-wider">
+                    ✓ Matched Required Skills
+                  </h4>
                   <div class="flex flex-wrap gap-1.5 pt-1">
-                    <UBadge v-for="s in matchedSkills" :key="s" :label="s" color="success" variant="subtle" size="xs" />
-                    <span v-if="!matchedSkills.length" class="text-xs text-ink-subtle italic">None extracted</span>
+                    <UBadge
+                      v-for="s in matchedSkills"
+                      :key="s"
+                      :label="s"
+                      color="success"
+                      variant="subtle"
+                      size="xs"
+                    />
+                    <span v-if="!matchedSkills.length" class="text-xs text-ink-subtle italic"
+                      >None extracted</span
+                    >
                   </div>
                 </div>
 
                 <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
-                  <h4 class="text-xs font-mono font-bold text-warning uppercase tracking-wider">△ Missing Required Skills</h4>
+                  <h4 class="text-xs font-mono font-bold text-warning uppercase tracking-wider">
+                    △ Missing Required Skills
+                  </h4>
                   <div class="flex flex-wrap gap-1.5 pt-1">
-                    <UBadge v-for="s in missingSkills" :key="s" :label="s" color="warning" variant="subtle" size="xs" />
-                    <span v-if="!missingSkills.length" class="text-xs text-ink-subtle italic">All skills matched!</span>
+                    <UBadge
+                      v-for="s in missingSkills"
+                      :key="s"
+                      :label="s"
+                      color="warning"
+                      variant="subtle"
+                      size="xs"
+                    />
+                    <span v-if="!missingSkills.length" class="text-xs text-ink-subtle italic"
+                      >All skills matched!</span
+                    >
                   </div>
                 </div>
 
                 <div class="bg-surface border border-line-soft rounded-xl p-4 space-y-2">
-                  <h4 class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider">Extracted Profile Skills</h4>
+                  <h4 class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider">
+                    Extracted Profile Skills
+                  </h4>
                   <div class="flex flex-wrap gap-1.5 pt-1">
-                    <UBadge v-for="s in app.candidate?.skills" :key="s" :label="s" color="neutral" variant="subtle" size="xs" />
+                    <UBadge
+                      v-for="s in app.candidate?.skills"
+                      :key="s"
+                      :label="s"
+                      color="neutral"
+                      variant="subtle"
+                      size="xs"
+                    />
                   </div>
                 </div>
               </div>
@@ -495,7 +531,9 @@ const rubricItems = ref([
 
             <!-- Match Score card -->
             <div class="grid grid-cols-2 gap-4">
-              <div class="bg-surface border border-line-soft rounded-xl p-4 flex flex-col justify-center">
+              <div
+                class="bg-surface border border-line-soft rounded-xl p-4 flex flex-col justify-center"
+              >
                 <span class="text-xs text-ink-subtle">Match Score</span>
                 <span class="text-3xl font-serif text-ink font-semibold mt-1">
                   {{ app.matchScore ? `${Number(app.matchScore).toFixed(0)}%` : '—' }}
@@ -507,11 +545,18 @@ const rubricItems = ref([
                   />
                 </div>
               </div>
-              <div class="bg-surface border border-line-soft rounded-xl p-4 flex flex-col justify-center">
+              <div
+                class="bg-surface border border-line-soft rounded-xl p-4 flex flex-col justify-center"
+              >
                 <span class="text-xs text-ink-subtle">Recommendation</span>
                 <span
                   class="text-sm font-semibold mt-2 capitalize"
-                  :style="{ color: app.matchRecommendation === 'strong fit' ? 'var(--positive)' : 'var(--accent)' }"
+                  :style="{
+                    color:
+                      app.matchRecommendation === 'strong fit'
+                        ? 'var(--positive)'
+                        : 'var(--accent)',
+                  }"
                 >
                   {{ app.matchRecommendation ?? 'No Recommendation' }}
                 </span>
@@ -523,7 +568,11 @@ const rubricItems = ref([
               <button
                 type="button"
                 class="pb-2 text-sm font-medium border-b-2 transition-colors cursor-pointer"
-                :class="activeTab === 'dossier' ? 'border-accent text-ink' : 'border-transparent text-ink-muted'"
+                :class="
+                  activeTab === 'dossier'
+                    ? 'border-accent text-ink'
+                    : 'border-transparent text-ink-muted'
+                "
                 @click="activeTab = 'dossier'"
               >
                 AI Dossier
@@ -531,7 +580,11 @@ const rubricItems = ref([
               <button
                 type="button"
                 class="pb-2 text-sm font-medium border-b-2 transition-colors cursor-pointer"
-                :class="activeTab === 'transcript' ? 'border-accent text-ink' : 'border-transparent text-ink-muted'"
+                :class="
+                  activeTab === 'transcript'
+                    ? 'border-accent text-ink'
+                    : 'border-transparent text-ink-muted'
+                "
                 @click="activeTab = 'transcript'"
               >
                 Screening Transcript
@@ -540,16 +593,25 @@ const rubricItems = ref([
 
             <!-- Tab Content 1: AI Dossier -->
             <div v-if="activeTab === 'dossier'" class="space-y-4">
-              <div v-if="assessment" class="bg-surface border border-line-soft rounded-xl p-4 space-y-3">
+              <div
+                v-if="assessment"
+                class="bg-surface border border-line-soft rounded-xl p-4 space-y-3"
+              >
                 <div class="flex items-center justify-between pb-1 border-b border-line-soft">
                   <h4 class="text-sm font-semibold text-ink">AI Matchmaker Analysis</h4>
-                  <div class="flex gap-1 bg-bg-deep border border-line-soft rounded-md p-0.5 shrink-0">
+                  <div
+                    class="flex gap-1 bg-bg-deep border border-line-soft rounded-md p-0.5 shrink-0"
+                  >
                     <button
                       v-for="lang in ['en', 'ru', 'uz']"
                       :key="lang"
                       type="button"
                       class="text-[9px] font-mono px-2 py-0.5 rounded uppercase cursor-pointer transition-colors"
-                      :style="targetLang === lang ? 'background: var(--bg-elevated); color: var(--ink)' : 'background: transparent; color: var(--ink-muted)'"
+                      :style="
+                        targetLang === lang
+                          ? 'background: var(--bg-elevated); color: var(--ink)'
+                          : 'background: transparent; color: var(--ink-muted)'
+                      "
                       @click="triggerTranslate(lang as any)"
                     >
                       {{ lang }}
@@ -573,14 +635,20 @@ const rubricItems = ref([
                   :key="msg.id"
                   class="rounded-xl p-3 max-w-[85%]"
                   :style="{
-                    background: msg.senderType === 'candidate' ? 'var(--bg-elevated)' : 'var(--accent-soft)',
+                    background:
+                      msg.senderType === 'candidate' ? 'var(--bg-elevated)' : 'var(--accent-soft)',
                     color: 'var(--ink)',
                     alignSelf: msg.senderType === 'candidate' ? 'flex-start' : 'flex-end',
                     marginLeft: msg.senderType === 'candidate' ? '0' : 'auto',
-                    border: '1px solid var(--line-soft)'
+                    border: '1px solid var(--line-soft)',
                   }"
                 >
-                  <p class="text-xs font-mono font-semibold" :style="{ color: msg.senderType === 'candidate' ? 'var(--ink-muted)' : 'var(--accent)' }">
+                  <p
+                    class="text-xs font-mono font-semibold"
+                    :style="{
+                      color: msg.senderType === 'candidate' ? 'var(--ink-muted)' : 'var(--accent)',
+                    }"
+                  >
                     {{ msg.senderType === 'candidate' ? 'Candidate' : 'myHR Recruiter' }}
                   </p>
                   <p class="text-xs mt-1 leading-relaxed">{{ msg.text }}</p>
@@ -603,7 +671,12 @@ const rubricItems = ref([
                 />
               </UFormField>
               <div class="flex justify-end">
-                <UButton size="xs" variant="outline" icon="i-heroicons-document-check" @click="saveNotes">
+                <UButton
+                  size="xs"
+                  variant="outline"
+                  icon="i-heroicons-document-check"
+                  @click="saveNotes"
+                >
                   Save Notes
                 </UButton>
               </div>
@@ -623,7 +696,11 @@ const rubricItems = ref([
     @confirm="reject"
   >
     <UFormField label="Reason for rejection (optional)" name="reason">
-      <UInput v-model="rejectReason" placeholder="e.g. Compensation expectation too high" class="w-full" />
+      <UInput
+        v-model="rejectReason"
+        placeholder="e.g. Compensation expectation too high"
+        class="w-full"
+      />
     </UFormField>
   </CommonConfirmModal>
 
@@ -637,7 +714,12 @@ const rubricItems = ref([
   >
     <div class="space-y-4">
       <UFormField label="Agreed Salary (UZS / Year)" name="agreedSalaryUzs">
-        <UInput v-model="hireForm.agreedSalaryUzs" type="number" placeholder="e.g. 120000000" class="w-full" />
+        <UInput
+          v-model="hireForm.agreedSalaryUzs"
+          type="number"
+          placeholder="e.g. 120000000"
+          class="w-full"
+        />
       </UFormField>
       <UFormField label="Start Date" name="startDate">
         <UInput v-model="hireForm.startDate" type="date" class="w-full" />
@@ -656,16 +738,20 @@ const rubricItems = ref([
     <div class="space-y-4">
       <!-- Calendar Quick Slots Grid -->
       <div class="space-y-1.5">
-        <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider block">Weekly Sourced Slots</span>
+        <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider block"
+          >Weekly Sourced Slots</span
+        >
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2 border-b border-line-soft">
           <button
             v-for="(slot, idx) in scheduleSlots"
             :key="idx"
             type="button"
             class="p-2.5 rounded-xl border text-center transition-all cursor-pointer block bg-surface"
-            :style="activeSlotIndex === idx
-              ? 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'
-              : 'border-color: var(--line-soft); color: var(--ink-muted)'"
+            :style="
+              activeSlotIndex === idx
+                ? 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'
+                : 'border-color: var(--line-soft); color: var(--ink-muted)'
+            "
             @click="selectScheduleSlot(idx)"
           >
             <p class="text-xs font-semibold">{{ slot.day }}</p>
@@ -682,8 +768,16 @@ const rubricItems = ref([
           <UInput v-model="scheduleForm.endTime" type="datetime-local" class="w-full" />
         </UFormField>
       </div>
-      <UFormField label="Attendee Emails (comma separated)" name="attendeeEmails" description="Emails to invite automatically.">
-        <UInput v-model="scheduleForm.attendeeEmails" placeholder="hiring-manager@acme.com, developer@acme.com" class="w-full" />
+      <UFormField
+        label="Attendee Emails (comma separated)"
+        name="attendeeEmails"
+        description="Emails to invite automatically."
+      >
+        <UInput
+          v-model="scheduleForm.attendeeEmails"
+          placeholder="hiring-manager@acme.com, developer@acme.com"
+          class="w-full"
+        />
       </UFormField>
     </div>
   </CommonConfirmModal>
@@ -693,7 +787,12 @@ const rubricItems = ref([
     v-model:open="showRubricModal"
     title="Customize AI Screening Rubric"
     confirm-label="Save Rubric"
-    @confirm="showRubricModal = false; toast.add({ title: 'Screening rubric updated!', color: 'success' })"
+    @confirm="
+      () => {
+        showRubricModal = false
+        toast.add({ title: 'Screening rubric updated!', color: 'success' })
+      }
+    "
   >
     <div class="space-y-3">
       <p class="text-xs text-ink-muted">

@@ -11,7 +11,6 @@ const emit = defineEmits<{
   (e: 'success'): void
 }>()
 
-const { t } = useI18n()
 const api = useApi()
 const toast = useToast()
 
@@ -19,7 +18,9 @@ const applications = ref<Application[]>([])
 const pending = ref(false)
 
 const activeAppId = ref<string>('')
-const activeApplication = computed(() => applications.value.find((a) => a.id === activeAppId.value) ?? null)
+const activeApplication = computed(
+  () => applications.value.find((a) => a.id === activeAppId.value) ?? null,
+)
 
 // Map to hold personalized email templates per application ID
 const drafts = ref<Record<string, string>>({})
@@ -44,11 +45,16 @@ watch(
       res.forEach((app) => {
         const name = app.candidate?.fullName?.split(' ')[0] ?? 'there'
         const jobTitle = app.job?.title ?? 'our open position'
-        nextDrafts[app.id] = `Hi ${name},\n\nHope you are doing well!\n\nI reviewed your profile and wanted to reach out regarding the ${jobTitle} role at our team. Your background looks like an excellent alignment, and we'd love to chat!\n\nAre you available for a brief call sometime this week?\n\nBest,\nHiring Manager`
+        nextDrafts[app.id] =
+          `Hi ${name},\n\nHope you are doing well!\n\nI reviewed your profile and wanted to reach out regarding the ${jobTitle} role at our team. Your background looks like an excellent alignment, and we'd love to chat!\n\nAre you available for a brief call sometime this week?\n\nBest,\nHiring Manager`
       })
       drafts.value = nextDrafts
     } catch (e) {
-      toast.add({ title: 'Failed to load application details', description: extractApiErrorMessage(e), color: 'error' })
+      toast.add({
+        title: 'Failed to load application details',
+        description: extractApiErrorMessage(e),
+        color: 'error',
+      })
     } finally {
       pending.value = false
     }
@@ -63,14 +69,18 @@ async function triggerAiPersonalize() {
     const app = activeApplication.value
     const name = app.candidate?.fullName?.split(' ')[0] ?? 'there'
     const skills = app.candidate?.skills?.slice(0, 3).join(', ') ?? ''
-    
+
     // Programmatic high-quality personalization based on candidate skills
-    let customText = `Hi ${name},\n\nI was reviewing your impressive background, specifically your outstanding skills in ${skills || 'frontend engineering'}.\n\nYour profile is an exceptional 92% semantic match for our open ${app.job?.title ?? 'Developer'} role. We are automating our pipeline and would love to fast-track you directly to a video screening interview with our agent!\n\nWould you be open to clicking your career-pilot link to do a quick 5-minute screening chat?\n\nBest regards,\nHiring Manager`
-    
+    const customText = `Hi ${name},\n\nI was reviewing your impressive background, specifically your outstanding skills in ${skills || 'frontend engineering'}.\n\nYour profile is an exceptional 92% semantic match for our open ${app.job?.title ?? 'Developer'} role. We are automating our pipeline and would love to fast-track you directly to a video screening interview with our agent!\n\nWould you be open to clicking your career-pilot link to do a quick 5-minute screening chat?\n\nBest regards,\nHiring Manager`
+
     drafts.value[app.id] = customText
     toast.add({ title: `AI Personalized for ${name}!`, color: 'success' })
   } catch (e) {
-    toast.add({ title: 'AI Personalizer failed', description: extractApiErrorMessage(e), color: 'error' })
+    toast.add({
+      title: 'AI Personalizer failed',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
   } finally {
     isAiRewriting.value = false
   }
@@ -81,18 +91,18 @@ const savedTemplates = [
   {
     value: 'intro',
     label: 'Standard Dev Introduction',
-    text: 'Hi {name},\n\nHope you are doing well!\n\nI reviewed your profile and wanted to reach out regarding the {job} role at our team. Your background looks like an excellent alignment, and we\'d love to chat!\n\nAre you available for a brief call sometime this week?\n\nBest,\nHiring Manager'
+    text: "Hi {name},\n\nHope you are doing well!\n\nI reviewed your profile and wanted to reach out regarding the {job} role at our team. Your background looks like an excellent alignment, and we'd love to chat!\n\nAre you available for a brief call sometime this week?\n\nBest,\nHiring Manager",
   },
   {
     value: 'fast',
     label: 'Fast-Track AI Screening',
-    text: 'Hi {name},\n\nI reviewed your background, specifically your outstanding skills in {skills}.\n\nYour profile is an exceptional 92% semantic match for our open {job} role. We are automating our pipeline and would love to fast-track you directly to a video screening interview with our agent!\n\nWould you be open to clicking your career-pilot link to do a quick 5-minute screening chat?\n\nBest regards,\nHiring Manager'
+    text: 'Hi {name},\n\nI reviewed your background, specifically your outstanding skills in {skills}.\n\nYour profile is an exceptional 92% semantic match for our open {job} role. We are automating our pipeline and would love to fast-track you directly to a video screening interview with our agent!\n\nWould you be open to clicking your career-pilot link to do a quick 5-minute screening chat?\n\nBest regards,\nHiring Manager',
   },
   {
     value: 'rejection',
     label: 'Polite Reject & Hold',
-    text: 'Dear {name},\n\nThank you so much for your interest in the {job} position at our team.\n\nWhile your skills in {skills} are highly impressive, we have decided to move forward with other candidates who more closely align with our current structural goals. We will keep your resume on file for future openings!\n\nWe wish you the absolute best in your job search!\n\nBest regards,\nHR Team'
-  }
+    text: 'Dear {name},\n\nThank you so much for your interest in the {job} position at our team.\n\nWhile your skills in {skills} are highly impressive, we have decided to move forward with other candidates who more closely align with our current structural goals. We will keep your resume on file for future openings!\n\nWe wish you the absolute best in your job search!\n\nBest regards,\nHR Team',
+  },
 ]
 
 const selectedTemplateId = ref('intro')
@@ -106,14 +116,14 @@ function applyTemplate(templateId: string) {
     const jobTitle = app.job?.title ?? 'our open position'
     const skillsList = app.candidate?.skills?.slice(0, 3).join(', ') ?? 'software engineering'
 
-    let hydrated = tmpl.text
+    const hydrated = tmpl.text
       .replace(/{name}/g, name)
       .replace(/{job}/g, jobTitle)
       .replace(/{skills}/g, skillsList)
 
     drafts.value[app.id] = hydrated
   })
-  
+
   toast.add({ title: `Applied "${tmpl.label}" to all candidates!`, color: 'success' })
 }
 
@@ -129,11 +139,18 @@ async function sendBulkOutreach() {
         }),
       ),
     )
-    toast.add({ title: `Success! Outreach delivered to ${applications.value.length} candidates.`, color: 'success' })
+    toast.add({
+      title: `Success! Outreach delivered to ${applications.value.length} candidates.`,
+      color: 'success',
+    })
     emit('success')
     emit('update:open', false)
   } catch (e) {
-    toast.add({ title: 'Bulk outreach delivery failed', description: extractApiErrorMessage(e), color: 'error' })
+    toast.add({
+      title: 'Bulk outreach delivery failed',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
   } finally {
     sendingBulk.value = false
   }
@@ -155,8 +172,12 @@ async function sendBulkOutreach() {
 
       <div v-else class="flex flex-col md:flex-row h-[550px] overflow-hidden">
         <!-- Left: Candidates list sidebar -->
-        <div class="w-full md:w-1/3 border-r border-line bg-surface-2 flex flex-col overflow-y-auto">
-          <div class="p-3 border-b border-line bg-surface font-mono text-[10px] uppercase font-bold text-ink-subtle">
+        <div
+          class="w-full md:w-1/3 border-r border-line bg-surface-2 flex flex-col overflow-y-auto"
+        >
+          <div
+            class="p-3 border-b border-line bg-surface font-mono text-[10px] uppercase font-bold text-ink-subtle"
+          >
             Selected Candidates ({{ applications.length }})
           </div>
           <div class="divide-y divide-line-soft">
@@ -165,14 +186,26 @@ async function sendBulkOutreach() {
               :key="app.id"
               type="button"
               class="w-full text-left p-3 cursor-pointer transition-colors text-xs space-y-1 block"
-              :style="activeAppId === app.id ? 'background: var(--bg); border-left: 3px solid var(--accent);' : 'background: transparent'"
+              :style="
+                activeAppId === app.id
+                  ? 'background: var(--bg); border-left: 3px solid var(--accent);'
+                  : 'background: transparent'
+              "
               @click="activeAppId = app.id"
             >
               <p class="font-semibold text-ink">{{ app.candidate?.fullName }}</p>
               <p class="text-[10px] text-ink-subtle truncate">{{ app.candidate?.email }}</p>
               <div class="flex items-center gap-1.5 pt-1">
-                <UBadge :label="app.job?.title" size="xs" color="neutral" variant="subtle" class="truncate max-w-28" />
-                <span class="text-[10px] font-mono text-accent font-semibold">{{ app.matchScore ? `${Number(app.matchScore).toFixed(0)}%` : '—' }}</span>
+                <UBadge
+                  :label="app.job?.title"
+                  size="xs"
+                  color="neutral"
+                  variant="subtle"
+                  class="truncate max-w-28"
+                />
+                <span class="text-[10px] font-mono text-accent font-semibold">{{
+                  app.matchScore ? `${Number(app.matchScore).toFixed(0)}%` : '—'
+                }}</span>
               </div>
             </button>
           </div>
@@ -181,15 +214,21 @@ async function sendBulkOutreach() {
         <!-- Right / Center: Composer workspace -->
         <div v-if="activeApplication" class="flex-1 flex flex-col bg-surface overflow-hidden">
           <!-- Active candidate header -->
-          <div class="p-4 border-b border-line flex items-center justify-between bg-surface-2 gap-3">
+          <div
+            class="p-4 border-b border-line flex items-center justify-between bg-surface-2 gap-3"
+          >
             <div class="min-w-0">
-              <h4 class="text-sm font-semibold text-ink truncate">Outreach Email to {{ activeApplication.candidate?.fullName }}</h4>
-              <p class="text-[10px] text-ink-subtle">Personalize using AI based on extracted resume skills.</p>
+              <h4 class="text-sm font-semibold text-ink truncate">
+                Outreach Email to {{ activeApplication.candidate?.fullName }}
+              </h4>
+              <p class="text-[10px] text-ink-subtle">
+                Personalize using AI based on extracted resume skills.
+              </p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <USelect
                 v-model="selectedTemplateId"
-                :options="savedTemplates"
+                :items="savedTemplates"
                 size="xs"
                 class="w-40 font-mono text-[11px]"
                 placeholder="Select Template"
@@ -224,7 +263,9 @@ async function sendBulkOutreach() {
           <div class="p-4 border-t border-line bg-surface-2 flex items-center justify-between">
             <span class="text-[10px] text-ink-subtle">All drafts are editable before sending.</span>
             <div class="flex gap-2">
-              <UButton variant="outline" size="sm" @click="emit('update:open', false)">Cancel</UButton>
+              <UButton variant="outline" size="sm" @click="emit('update:open', false)"
+                >Cancel</UButton
+              >
               <UButton
                 color="success"
                 size="sm"

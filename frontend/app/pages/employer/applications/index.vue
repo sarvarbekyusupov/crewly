@@ -168,7 +168,9 @@ const statusOptions = computed(() => [
 
     <!-- AI Copilot Filter Command Bar -->
     <div class="bg-accent-soft border border-line-soft rounded-xl p-3 flex items-center gap-3">
-      <div class="w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shrink-0 shadow-sm">
+      <div
+        class="w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shrink-0 shadow-sm"
+      >
         <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-pulse" />
       </div>
       <UInput
@@ -184,58 +186,58 @@ const statusOptions = computed(() => [
     >
       <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
         <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
-              <button
-                type="button"
-                class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                :class="{
-                  'bg-paper text-ink': view === 'kanban',
-                  'text-ink-muted': view !== 'kanban',
-                }"
-                :aria-pressed="view === 'kanban'"
-                @click="view = 'kanban'"
-              >
-                <UIcon name="i-heroicons-view-columns" class="w-3.5 h-3.5" />
-                {{ t('applications.viewKanban') }}
-              </button>
-              <button
-                type="button"
-                class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                :class="{
-                  'bg-paper text-ink': view === 'table',
-                  'text-ink-muted': view !== 'table',
-                }"
-                :aria-pressed="view === 'table'"
-                @click="view = 'table'"
-              >
-                <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
-                {{ t('applications.viewTable') }}
-              </button>
-            </div>
-            <USelect
-              v-if="view === 'table'"
-              v-model="statusFilter"
-              :options="statusOptions"
-              class="w-full sm:w-48"
-            />
-            <UButton
-              v-if="jobIdFilter"
-              size="sm"
-              variant="ghost"
-              to="/employer/applications"
-              class="justify-center"
-            >
-              {{ t('applications.clearJobFilter') }}
-            </UButton>
-            <UButton
-              size="sm"
-              icon="i-heroicons-clipboard-document-check"
-              @click="showSourcingModal = true"
-            >
-              Quick Source
-            </UButton>
-          </div>
-          <span class="font-mono text-xs hidden sm:inline text-ink-subtle">{{ total }} total</span>
+          <button
+            type="button"
+            class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="{
+              'bg-paper text-ink': view === 'kanban',
+              'text-ink-muted': view !== 'kanban',
+            }"
+            :aria-pressed="view === 'kanban'"
+            @click="view = 'kanban'"
+          >
+            <UIcon name="i-heroicons-view-columns" class="w-3.5 h-3.5" />
+            {{ t('applications.viewKanban') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="{
+              'bg-paper text-ink': view === 'table',
+              'text-ink-muted': view !== 'table',
+            }"
+            :aria-pressed="view === 'table'"
+            @click="view = 'table'"
+          >
+            <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
+            {{ t('applications.viewTable') }}
+          </button>
         </div>
+        <USelect
+          v-if="view === 'table'"
+          v-model="statusFilter"
+          :items="statusOptions"
+          class="w-full sm:w-48"
+        />
+        <UButton
+          v-if="jobIdFilter"
+          size="sm"
+          variant="ghost"
+          to="/employer/applications"
+          class="justify-center"
+        >
+          {{ t('applications.clearJobFilter') }}
+        </UButton>
+        <UButton
+          size="sm"
+          icon="i-heroicons-clipboard-document-check"
+          @click="showSourcingModal = true"
+        >
+          Quick Source
+        </UButton>
+      </div>
+      <span class="font-mono text-xs hidden sm:inline text-ink-subtle">{{ total }} total</span>
+    </div>
 
     <template v-if="view === 'kanban'">
       <ApplicationKanban :applications="applications" :loading="pending" @select="openSlideover" />
@@ -308,7 +310,12 @@ const statusOptions = computed(() => [
     <BulkOutreachEditorModal
       v-model:open="showBulkOutreachModal"
       :selected-ids="Array.from(selectedIds)"
-      @success="() => { refresh(); selectedIds = new Set() }"
+      @success="
+        () => {
+          refresh()
+          selectedIds = new Set()
+        }
+      "
     />
 
     <!-- Candidate Compare Modal -->
@@ -318,9 +325,6 @@ const statusOptions = computed(() => [
     />
 
     <!-- Sourcing Clipboard Copilot Modal -->
-    <SourcingClipboardModal
-      v-model:open="showSourcingModal"
-      @success="() => refresh()"
-    />
+    <SourcingClipboardModal v-model:open="showSourcingModal" @success="() => refresh()" />
   </div>
 </template>

@@ -15,12 +15,22 @@ const { t } = useI18n()
 const toast = useToast()
 const { appStatusLabel } = useStatusLabels()
 
-const orderList = ref(['applied', 'delivered', 'screening', 'interview', 'offered', 'hired', 'rejected'])
+const orderList = ref([
+  'applied',
+  'delivered',
+  'screening',
+  'interview',
+  'offered',
+  'hired',
+  'rejected',
+])
 
 const columns = computed(() => {
   const grouped = groupApplicationsByStage(props.applications)
   // Sort grouped columns by local custom order list
-  return [...grouped].sort((a, b) => orderList.value.indexOf(a.key) - orderList.value.indexOf(b.key))
+  return [...grouped].sort(
+    (a, b) => orderList.value.indexOf(a.key) - orderList.value.indexOf(b.key),
+  )
 })
 
 let draggedColIdx = -1
@@ -35,7 +45,7 @@ function onColDragOver(e: DragEvent) {
 
 function onColDrop(targetIdx: number) {
   if (draggedColIdx === -1 || draggedColIdx === targetIdx) return
-  
+
   const list = [...orderList.value]
   const [removed] = list.splice(draggedColIdx, 1)
   if (removed) {
@@ -43,7 +53,7 @@ function onColDrop(targetIdx: number) {
     orderList.value = list
     toast.add({ title: 'Kanban columns reordered!', color: 'success' })
   }
-  
+
   draggedColIdx = -1
 }
 

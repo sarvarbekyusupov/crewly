@@ -111,7 +111,7 @@ async function closeJob(id: string) {
   >
     <template #header-actions>
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4">
-        <USelect v-model="statusFilter" :options="statusOptions" class="w-full sm:w-44" />
+        <USelect v-model="statusFilter" :items="statusOptions" class="w-full sm:w-44" />
         <NuxtLink
           v-if="auth.can('hiring_manager')"
           to="/employer/jobs/create"
@@ -188,7 +188,7 @@ async function closeJob(id: string) {
           </template>
 
           <template #actions-cell="{ row: { original: row } }">
-            <UDropdown
+            <UDropdownMenu
               :items="[
                 ...(row.status === 'draft'
                   ? [
@@ -225,7 +225,7 @@ async function closeJob(id: string) {
               ]"
             >
               <UButton variant="ghost" icon="i-heroicons-ellipsis-horizontal" size="xs" />
-            </UDropdown>
+            </UDropdownMenu>
           </template>
         </UTable>
 

@@ -427,7 +427,7 @@ async function resendVerification() {
             letter-spacing: 0.06em;
           "
         >
-          © 2026 myhr
+          © 2026 Crewly
         </p>
       </div>
     </div>
@@ -859,7 +859,7 @@ async function resendVerification() {
                   <div class="col-span-3">
                     <USelect
                       v-model="wizardForm.salaryCurrency"
-                      :options="[
+                      :items="[
                         { label: 'USD', value: 'USD' },
                         { label: 'UZS', value: 'UZS' },
                       ]"
@@ -980,7 +980,7 @@ async function resendVerification() {
           >Privacy</NuxtLink
         >
         <span class="mx-2">·</span>
-        <span>© 2026 myhr</span>
+        <span>© 2026 Crewly</span>
       </footer>
     </div>
   </div>

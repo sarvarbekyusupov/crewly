@@ -65,7 +65,7 @@ const totalPending = computed(() => Number(result.value?.pendingTotal ?? 0))
   >
     <template #header-actions>
       <div class="mt-4">
-        <USelect v-model="statusFilter" :options="statusOptions" class="w-44" />
+        <USelect v-model="statusFilter" :items="statusOptions" class="w-44" />
       </div>
     </template>
 

@@ -66,16 +66,13 @@ export class HhWebhookService implements OnModuleInit {
     try {
       await this.ensureSubscription(webhookUrl, secret, token);
     } catch (err: any) {
-      this.logger.error(
-        { err: err.message },
-        'HH webhook subscription failed',
-      );
+      this.logger.error({ err: err.message }, 'HH webhook subscription failed');
     }
   }
 
   private get authHeaders() {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
-    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
       Authorization: `Bearer ${token}`,
       'User-Agent': ua,
@@ -113,7 +110,10 @@ export class HhWebhookService implements OnModuleInit {
       ),
     );
 
-    this.logger.log({ webhookUrl, types: SUBSCRIBED_TYPES }, 'HH webhook registered');
+    this.logger.log(
+      { webhookUrl, types: SUBSCRIBED_TYPES },
+      'HH webhook registered',
+    );
   }
 
   async handleEvent(payload: HhWebhookPayload): Promise<void> {

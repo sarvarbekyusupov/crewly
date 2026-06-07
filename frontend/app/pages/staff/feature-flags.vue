@@ -45,7 +45,7 @@ async function saveFlag() {
     let overrides = {}
     try {
       overrides = JSON.parse(form.companyOverridesJson)
-    } catch (e) {
+    } catch {
       toast.add({ title: 'Invalid JSON in overrides', color: 'error' })
       return
     }

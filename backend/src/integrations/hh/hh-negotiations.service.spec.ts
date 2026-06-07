@@ -15,7 +15,7 @@ describe('HhNegotiationsService', () => {
     const map: Record<string, string> = {
       HH_EMPLOYER_TOKEN: 'emp-token',
       HH_EMPLOYER_ID: 'emp-123',
-      HH_USER_AGENT: 'my-hr/1.0',
+      HH_USER_AGENT: 'crewly/1.0',
     };
     return map[key] ?? '';
   });
@@ -56,7 +56,9 @@ describe('HhNegotiationsService', () => {
       // Must hit /negotiations not the non-existent /negotiations/employer_states
       expect(httpGet).toHaveBeenCalledWith(
         'https://api.hh.ru/negotiations',
-        expect.objectContaining({ params: expect.objectContaining({ vacancy_id: 'vac-1' }) }),
+        expect.objectContaining({
+          params: expect.objectContaining({ vacancy_id: 'vac-1' }),
+        }),
       );
     });
 
@@ -68,17 +70,22 @@ describe('HhNegotiationsService', () => {
   });
 
   describe('getVacancyResponses', () => {
-    const collectionUrl = 'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
+    const collectionUrl =
+      'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
     const negotiationItems = [{ id: 'neg-1', state: { id: 'response' } }];
 
     it('fetches collections then items from each collection URL', async () => {
       httpGet
         .mockReturnValueOnce(
-          of({ data: { collections: [{ id: 'response', url: collectionUrl }] } }),
+          of({
+            data: { collections: [{ id: 'response', url: collectionUrl }] },
+          }),
         )
         .mockReturnValueOnce(of({ data: { items: negotiationItems } }));
 
-      const result = await service.getVacancyResponses('vac-1', { perPage: 50 });
+      const result = await service.getVacancyResponses('vac-1', {
+        perPage: 50,
+      });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe('neg-1');
@@ -127,9 +134,13 @@ describe('HhNegotiationsService', () => {
     it('skips failed collection fetches and returns others', async () => {
       httpGet
         .mockReturnValueOnce(
-          of({ data: { collections: [{ id: 'response', url: collectionUrl }] } }),
+          of({
+            data: { collections: [{ id: 'response', url: collectionUrl }] },
+          }),
         )
-        .mockImplementationOnce(() => { throw new Error('network error'); });
+        .mockImplementationOnce(() => {
+          throw new Error('network error');
+        });
 
       const result = await service.getVacancyResponses('vac-1');
       expect(result.items).toEqual([]);
@@ -153,9 +164,7 @@ describe('HhNegotiationsService', () => {
     });
 
     it('fetches available actions then executes first enabled action', async () => {
-      httpGet.mockReturnValue(
-        of({ data: { items: [makeVacancyItem(true)] } }),
-      );
+      httpGet.mockReturnValue(of({ data: { items: [makeVacancyItem(true)] } }));
       httpRequest.mockReturnValue(
         of({ headers: { location: '/negotiations/new-neg-id' }, data: {} }),
       );
@@ -192,8 +201,20 @@ describe('HhNegotiationsService', () => {
               {
                 id: 'vac-1',
                 negotiations_actions: [
-                  { id: 'a', enabled: false, method: 'POST', url: 'https://api.hh.ru/negotiations/a', arguments: [] },
-                  { id: 'b', enabled: true, method: 'POST', url: 'https://api.hh.ru/negotiations/b', arguments: [] },
+                  {
+                    id: 'a',
+                    enabled: false,
+                    method: 'POST',
+                    url: 'https://api.hh.ru/negotiations/a',
+                    arguments: [],
+                  },
+                  {
+                    id: 'b',
+                    enabled: true,
+                    method: 'POST',
+                    url: 'https://api.hh.ru/negotiations/b',
+                    arguments: [],
+                  },
                 ],
               },
             ],
@@ -222,7 +243,11 @@ describe('HhNegotiationsService', () => {
       );
 
       await expect(
-        service.inviteCandidate({ vacancyId: 'vac-1', resumeId: 'res-1', message: 'Hi' }),
+        service.inviteCandidate({
+          vacancyId: 'vac-1',
+          resumeId: 'res-1',
+          message: 'Hi',
+        }),
       ).rejects.toThrow('No enabled invitation action found');
     });
 
@@ -230,7 +255,11 @@ describe('HhNegotiationsService', () => {
       httpGet.mockReturnValue(of({ data: { items: [] } }));
 
       await expect(
-        service.inviteCandidate({ vacancyId: 'vac-1', resumeId: 'res-1', message: 'Hi' }),
+        service.inviteCandidate({
+          vacancyId: 'vac-1',
+          resumeId: 'res-1',
+          message: 'Hi',
+        }),
       ).rejects.toThrow('No enabled invitation action found');
     });
   });
@@ -278,7 +307,12 @@ describe('HhNegotiationsService', () => {
   describe('getMessages', () => {
     it('returns message items from thread', async () => {
       const msgs = [
-        { id: 'msg-1', text: 'Hi', created_at: '2024-01-01', author: { participant_type: 'employer' } },
+        {
+          id: 'msg-1',
+          text: 'Hi',
+          created_at: '2024-01-01',
+          author: { participant_type: 'employer' },
+        },
       ];
       httpGet.mockReturnValue(of({ data: { items: msgs } }));
 
@@ -312,13 +346,26 @@ describe('HhNegotiationsService', () => {
     });
 
     it('rethrows 404 errors', async () => {
-      const err = Object.assign(new Error('not found'), { response: { status: 404 } });
-      httpGet.mockReturnValue({ pipe: () => { throw err; }, subscribe: () => { throw err; } });
+      const err = Object.assign(new Error('not found'), {
+        response: { status: 404 },
+      });
+      httpGet.mockReturnValue({
+        pipe: () => {
+          throw err;
+        },
+        subscribe: () => {
+          throw err;
+        },
+      });
 
       // Use throwError pattern
-      httpGet.mockImplementation(() => { throw err; });
+      httpGet.mockImplementation(() => {
+        throw err;
+      });
 
-      await expect(service.getEmployerNegotiationState('neg-1')).rejects.toThrow();
+      await expect(
+        service.getEmployerNegotiationState('neg-1'),
+      ).rejects.toThrow();
     });
   });
 });

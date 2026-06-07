@@ -117,7 +117,7 @@ const handleLogin = handleSubmit(async (values) => {
           letter-spacing: 0.06em;
         "
       >
-        my-hr / staff
+        Crewly / staff
       </p>
     </div>
 
@@ -157,7 +157,7 @@ const handleLogin = handleSubmit(async (values) => {
               v-bind="emailProps"
               type="email"
               autocomplete="email"
-              placeholder="you@my-hr.com"
+              placeholder="you@crewly.com"
               autofocus
               class="w-full"
             />

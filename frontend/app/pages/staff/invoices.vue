@@ -93,7 +93,7 @@ const columns: any[] = [
       </div>
     </div>
 
-    <USelect v-model="statusFilter" :options="statusOptions" class="w-44" />
+    <USelect v-model="statusFilter" :items="statusOptions" class="w-44" />
 
     <UCard :ui="{ body: 'p-0' }">
       <UTable

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { coordinatorDecidePrompt } from '@my-hr/prompts';
+import { coordinatorDecidePrompt } from '@crewly/prompts';
 
 const CoordinatorDecisionSchema = z.object({
   action: z.enum([

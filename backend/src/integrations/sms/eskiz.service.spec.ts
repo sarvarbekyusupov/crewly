@@ -11,7 +11,7 @@ describe('EskizService', () => {
       get: jest.fn((key: string) => {
         if (key === 'ESKIZ_EMAIL') return 'test@eskiz.uz';
         if (key === 'ESKIZ_PASSWORD') return 'secret';
-        if (key === 'ESKIZ_FROM') return 'myhr';
+        if (key === 'ESKIZ_FROM') return 'crewly';
         return null;
       }),
     };
@@ -79,7 +79,7 @@ describe('EskizService', () => {
         body: JSON.stringify({
           mobile_phone: '998901234567',
           message: 'Test message',
-          from: 'myhr',
+          from: 'crewly',
         }),
       }),
     );
@@ -111,7 +111,7 @@ describe('EskizService', () => {
         body: JSON.stringify({
           mobile_phone: '998901234567',
           message: 'Test message',
-          from: 'myhr',
+          from: 'crewly',
         }),
       }),
     );

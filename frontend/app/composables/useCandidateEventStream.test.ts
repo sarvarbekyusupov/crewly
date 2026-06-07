@@ -109,7 +109,7 @@ describe('useCandidateEventStream', () => {
       await import('./useCandidateEventStream')
     useCandidateEventStream().connect()
 
-    const bus = useEventBus<void>('candidate:scoring-complete')
+    const bus = useEventBus<undefined>('candidate:scoring-complete')
     const busEmitted = vi.fn()
     bus.on(busEmitted)
 
@@ -126,8 +126,7 @@ describe('useCandidateEventStream', () => {
   })
 
   it('resume_parse_progress sets resumeParseStatus', async () => {
-    const { useCandidateEventStream, resumeParseStatus } =
-      await import('./useCandidateEventStream')
+    const { useCandidateEventStream, resumeParseStatus } = await import('./useCandidateEventStream')
     useCandidateEventStream().connect()
 
     send('resume_parse_progress', { status: 'parsing' })
@@ -142,8 +141,7 @@ describe('useCandidateEventStream', () => {
   })
 
   it('resume_parse_progress error resets to idle after 5s', async () => {
-    const { useCandidateEventStream, resumeParseStatus } =
-      await import('./useCandidateEventStream')
+    const { useCandidateEventStream, resumeParseStatus } = await import('./useCandidateEventStream')
     useCandidateEventStream().connect()
 
     send('resume_parse_progress', { status: 'error' })
@@ -162,8 +160,7 @@ describe('useCandidateEventStream', () => {
   })
 
   it('ignores empty data message', async () => {
-    const { useCandidateEventStream, scoringActive } =
-      await import('./useCandidateEventStream')
+    const { useCandidateEventStream, scoringActive } = await import('./useCandidateEventStream')
     useCandidateEventStream().connect()
 
     MockEventSource.instance?.onmessage?.({ data: '' })

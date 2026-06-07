@@ -80,7 +80,7 @@ const sortOptions = [
           :placeholder="t('common.search')"
           class="w-full sm:max-w-xs"
         />
-        <USelect v-model="sortBy" :options="sortOptions" size="sm" class="w-full sm:w-44" />
+        <USelect v-model="sortBy" :items="sortOptions" size="sm" class="w-full sm:w-44" />
       </div>
     </template>
 

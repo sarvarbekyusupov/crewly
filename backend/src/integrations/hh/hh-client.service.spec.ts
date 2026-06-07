@@ -51,7 +51,9 @@ describe('HhClientService', () => {
           data: { errors: [{ type: 'api_access_payment' }] },
         },
       });
-      httpGet.mockImplementation(() => { throw err; });
+      httpGet.mockImplementation(() => {
+        throw err;
+      });
 
       await expect(service.getResume('ext-1')).rejects.toMatchObject({
         code: 'HH_QUOTA_EXCEEDED',
@@ -62,7 +64,9 @@ describe('HhClientService', () => {
       const err = Object.assign(new Error('Forbidden'), {
         response: { status: 403, data: { errors: [{ type: 'forbidden' }] } },
       });
-      httpGet.mockImplementation(() => { throw err; });
+      httpGet.mockImplementation(() => {
+        throw err;
+      });
 
       await expect(service.getResume('ext-1')).rejects.toThrow('Forbidden');
       await expect(service.getResume('ext-1')).rejects.not.toMatchObject({

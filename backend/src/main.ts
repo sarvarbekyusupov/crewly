@@ -105,7 +105,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('MyHR API')
+      .setTitle('Crewly API')
       .setDescription('AI-powered recruiting platform API')
       .setVersion('1.0')
       .addCookieAuth('hr_access_token', {

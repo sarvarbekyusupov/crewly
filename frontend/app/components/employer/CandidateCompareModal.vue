@@ -23,11 +23,17 @@ watch(
     pending.value = true
     try {
       const res = await Promise.all(
-        props.selectedIds.slice(0, 3).map((id) => api.get<Application>(`/api/v1/applications/${id}`)),
+        props.selectedIds
+          .slice(0, 3)
+          .map((id) => api.get<Application>(`/api/v1/applications/${id}`)),
       )
       applications.value = res
     } catch (e) {
-      toast.add({ title: 'Failed to load comparison data', description: extractApiErrorMessage(e), color: 'error' })
+      toast.add({
+        title: 'Failed to load comparison data',
+        description: extractApiErrorMessage(e),
+        color: 'error',
+      })
     } finally {
       pending.value = false
     }
@@ -51,11 +57,15 @@ watch(
       <div v-else-if="applications.length" class="p-6 space-y-6 overflow-x-auto min-w-full">
         <!-- Matrix title -->
         <div class="text-center">
-          <div class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3">
+          <div
+            class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3"
+          >
             <UIcon name="i-heroicons-squares-plus" class="w-5 h-5" />
           </div>
           <h3 class="text-lg font-serif font-semibold text-ink">Side-by-Side Comparison</h3>
-          <p class="text-xs text-ink-subtle mt-0.5">Juxtapose candidates head-to-head on key AI metrics.</p>
+          <p class="text-xs text-ink-subtle mt-0.5">
+            Juxtapose candidates head-to-head on key AI metrics.
+          </p>
         </div>
 
         <!-- Sleek Responsive Matrix Table -->
@@ -63,9 +73,17 @@ watch(
           <thead>
             <tr class="bg-surface-2 border-b border-line">
               <th class="p-3 font-mono uppercase tracking-wider text-ink-subtle w-1/4">Criteria</th>
-              <th v-for="app in applications" :key="app.id" class="p-3 text-center border-l border-line-soft">
-                <p class="text-sm font-semibold text-ink leading-tight">{{ app.candidate?.fullName }}</p>
-                <p class="text-[10px] text-ink-subtle mt-0.5 truncate max-w-44">{{ app.candidate?.email }}</p>
+              <th
+                v-for="app in applications"
+                :key="app.id"
+                class="p-3 text-center border-l border-line-soft"
+              >
+                <p class="text-sm font-semibold text-ink leading-tight">
+                  {{ app.candidate?.fullName }}
+                </p>
+                <p class="text-[10px] text-ink-subtle mt-0.5 truncate max-w-44">
+                  {{ app.candidate?.email }}
+                </p>
               </th>
             </tr>
           </thead>
@@ -73,7 +91,11 @@ watch(
             <!-- Row 1: Match Score -->
             <tr>
               <td class="p-3 font-semibold text-ink-muted">Match Score</td>
-              <td v-for="app in applications" :key="app.id" class="p-3 text-center border-l border-line-soft font-mono text-base font-bold text-accent">
+              <td
+                v-for="app in applications"
+                :key="app.id"
+                class="p-3 text-center border-l border-line-soft font-mono text-base font-bold text-accent"
+              >
                 {{ app.matchScore ? `${Number(app.matchScore).toFixed(0)}%` : '—' }}
               </td>
             </tr>
@@ -81,11 +103,18 @@ watch(
             <!-- Row 2: Recommendation -->
             <tr>
               <td class="p-3 font-semibold text-ink-muted">AI Recommendation</td>
-              <td v-for="app in applications" :key="app.id" class="p-3 text-center border-l border-line-soft">
-                <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-bold"
-                  :style="app.matchRecommendation === 'strong fit'
-                    ? 'background: var(--positive-soft); color: var(--positive)'
-                    : 'background: var(--accent-soft); color: var(--accent)'"
+              <td
+                v-for="app in applications"
+                :key="app.id"
+                class="p-3 text-center border-l border-line-soft"
+              >
+                <span
+                  class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-bold"
+                  :style="
+                    app.matchRecommendation === 'strong fit'
+                      ? 'background: var(--positive-soft); color: var(--positive)'
+                      : 'background: var(--accent-soft); color: var(--accent)'
+                  "
                 >
                   {{ app.matchRecommendation ?? 'possible fit' }}
                 </span>
@@ -97,7 +126,14 @@ watch(
               <td class="p-3 font-semibold text-ink-muted">Extracted Skills</td>
               <td v-for="app in applications" :key="app.id" class="p-3 border-l border-line-soft">
                 <div class="flex flex-wrap gap-1 justify-center max-w-48 mx-auto">
-                  <UBadge v-for="s in app.candidate?.skills?.slice(0, 6)" :key="s" :label="s" color="neutral" variant="subtle" size="xs" />
+                  <UBadge
+                    v-for="s in app.candidate?.skills?.slice(0, 6)"
+                    :key="s"
+                    :label="s"
+                    color="neutral"
+                    variant="subtle"
+                    size="xs"
+                  />
                 </div>
               </td>
             </tr>
@@ -105,7 +141,11 @@ watch(
             <!-- Row 4: AI Match Analysis -->
             <tr>
               <td class="p-3 font-semibold text-ink-muted">Matchmaker Insight</td>
-              <td v-for="app in applications" :key="app.id" class="p-3 border-l border-line-soft leading-relaxed text-ink-muted text-justify">
+              <td
+                v-for="app in applications"
+                :key="app.id"
+                class="p-3 border-l border-line-soft leading-relaxed text-ink-muted text-justify"
+              >
                 <p class="text-[11px] line-clamp-4 max-w-xs mx-auto">
                   {{ app.screenings?.[0]?.aiAssessment?.summary ?? 'No assessment generated yet.' }}
                 </p>
@@ -115,7 +155,11 @@ watch(
             <!-- Row 5: Actions -->
             <tr class="bg-surface-2 border-t border-line">
               <td class="p-3 font-semibold text-ink-muted">Profiles</td>
-              <td v-for="app in applications" :key="app.id" class="p-3 text-center border-l border-line-soft">
+              <td
+                v-for="app in applications"
+                :key="app.id"
+                class="p-3 text-center border-l border-line-soft"
+              >
                 <div class="flex items-center justify-center gap-2">
                   <UButton
                     v-if="app.candidate?.resumeFileUrl"

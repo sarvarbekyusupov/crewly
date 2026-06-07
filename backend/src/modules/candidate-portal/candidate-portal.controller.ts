@@ -72,7 +72,9 @@ export class CandidatePortalController {
   ) {}
 
   @Sse('events')
-  stream(@CurrentCandidate() candidate: { id: string }): Observable<MessageEvent> {
+  stream(
+    @CurrentCandidate() candidate: { id: string },
+  ): Observable<MessageEvent> {
     const keepalive$ = interval(30_000).pipe(
       map((): MessageEvent => ({ data: '' })),
     );

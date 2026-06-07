@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   open: boolean
 }>()
 
@@ -17,16 +17,36 @@ const marketRange = {
 
 const comparison = computed(() => {
   const val = expectedSalaryUzs.value
-  if (val < marketRange.min) return { status: 'Under market rate', color: 'text-amber-500', feedback: 'Your expectation is below standard ranges. Consider bumping it up!' }
-  if (val <= marketRange.mid) return { status: 'Competitive market alignment', color: 'text-positive', feedback: 'Your expectation aligns perfectly with current Tashkent market averages.' }
-  if (val <= marketRange.max) return { status: 'High-tier candidate range', color: 'text-accent', feedback: 'An excellent premium range. Highlight your complex project history!' }
-  return { status: 'Above market threshold', color: 'text-red-500', feedback: 'This is a premium executive salary. Highlight clear business ROI / leadership achievements.' }
+  if (val < marketRange.min)
+    return {
+      status: 'Under market rate',
+      color: 'text-amber-500',
+      feedback: 'Your expectation is below standard ranges. Consider bumping it up!',
+    }
+  if (val <= marketRange.mid)
+    return {
+      status: 'Competitive market alignment',
+      color: 'text-positive',
+      feedback: 'Your expectation aligns perfectly with current Tashkent market averages.',
+    }
+  if (val <= marketRange.max)
+    return {
+      status: 'High-tier candidate range',
+      color: 'text-accent',
+      feedback: 'An excellent premium range. Highlight your complex project history!',
+    }
+  return {
+    status: 'Above market threshold',
+    color: 'text-red-500',
+    feedback:
+      'This is a premium executive salary. Highlight clear business ROI / leadership achievements.',
+  }
 })
 
 const talkingPoints = [
   'Highlight your TypeScript & Nuxt 3 full-stack autonomy: "I build responsive, type-safe SPAs from scratch, saving 40% in frontend overhead."',
   'Leverage Matchmaker alignment: "Our semantic mapping ranks my skills as a 92% strong fit for your performance criteria."',
-  'Discuss local cost efficiency: "My expected rate reflects direct regional market expertise with zero onboarding overhead."'
+  'Discuss local cost efficiency: "My expected rate reflects direct regional market expertise with zero onboarding overhead."',
 ]
 </script>
 
@@ -41,22 +61,28 @@ const talkingPoints = [
       <div class="p-6 space-y-6">
         <!-- Header -->
         <div class="text-center">
-          <div class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3">
+          <div
+            class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3"
+          >
             <UIcon name="i-heroicons-banknotes" class="w-5 h-5" />
           </div>
           <h3 class="text-lg font-serif font-semibold text-ink">AI Salary Coach & Negotiator</h3>
-          <p class="text-xs text-ink-subtle mt-0.5">Evaluate and align your expected salary with real-time market data.</p>
+          <p class="text-xs text-ink-subtle mt-0.5">
+            Evaluate and align your expected salary with real-time market data.
+          </p>
         </div>
 
         <!-- Slider calculator -->
         <div class="space-y-3.5 bg-bg-deep border border-line-soft rounded-xl p-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider">Your Expected Salary</span>
+            <span class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider"
+              >Your Expected Salary</span
+            >
             <span class="text-sm font-semibold text-accent font-mono">
               {{ (expectedSalaryUzs / 1_000_000).toFixed(0) }}M UZS / Yr
             </span>
           </div>
-          
+
           <input
             v-model.number="expectedSalaryUzs"
             type="range"
@@ -97,14 +123,18 @@ const talkingPoints = [
 
         <!-- AI Talking Points -->
         <div class="space-y-3">
-          <h4 class="text-xs font-mono font-bold text-accent uppercase tracking-wider">Your 3-Tap Negotiation Script</h4>
+          <h4 class="text-xs font-mono font-bold text-accent uppercase tracking-wider">
+            Your 3-Tap Negotiation Script
+          </h4>
           <div class="space-y-2.5">
             <div
               v-for="(point, idx) in talkingPoints"
               :key="idx"
               class="flex items-start gap-2.5 text-xs bg-bg-deep border border-line-soft p-3 rounded-xl"
             >
-              <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center font-mono font-bold shrink-0 text-[10px]">
+              <span
+                class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center font-mono font-bold shrink-0 text-[10px]"
+              >
                 {{ idx + 1 }}
               </span>
               <p class="text-ink-muted leading-relaxed">{{ point }}</p>

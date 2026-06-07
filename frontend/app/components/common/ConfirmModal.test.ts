@@ -11,11 +11,11 @@ globalThis.localStorage = {
     storageMock[key] = value
   }),
   removeItem: vi.fn((key: string) => {
-    delete storageMock[key]
+    Reflect.deleteProperty(storageMock, key)
   }),
   clear: vi.fn(() => {
     for (const key in storageMock) {
-      delete storageMock[key]
+      Reflect.deleteProperty(storageMock, key)
     }
   }),
   length: 0,

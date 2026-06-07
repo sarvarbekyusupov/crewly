@@ -8,7 +8,7 @@ import {
   sourcingJobSearchQueriesPrompt,
   sourcingEnrichCandidatePrompt,
   sourcingDraftStrategyPrompt,
-} from '@my-hr/prompts';
+} from '@crewly/prompts';
 
 const CandidateSearchQueriesSchema = z.object({
   hh_query: z.string(),

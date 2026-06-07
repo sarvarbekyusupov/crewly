@@ -30,8 +30,15 @@ export function useProfileCompletion(profile: Ref<ProfileCompletionFields | null
     if (!p) return Object.keys(FIELD_LABELS)
     const gaps: string[] = []
     const scalar: (keyof ProfileCompletionFields)[] = [
-      'fullName', 'phone', 'city', 'currentPosition', 'currentCompany',
-      'preferredWorkMode', 'resumeFileUrl', 'telegramUsername', 'yearsExperience',
+      'fullName',
+      'phone',
+      'city',
+      'currentPosition',
+      'currentCompany',
+      'preferredWorkMode',
+      'resumeFileUrl',
+      'telegramUsername',
+      'yearsExperience',
     ]
     for (const key of scalar) {
       const v = p[key] as string | number | undefined

@@ -111,7 +111,9 @@ function formatDate(s?: string) {
       <template #matchScore-cell="{ row: { original: row } }">
         <UPopover :close-on-content-click="false" trigger="hover">
           <div class="flex flex-col gap-0.5 cursor-help">
-            <span class="font-mono text-xs text-ink-muted font-bold underline decoration-dotted decoration-accent-soft">
+            <span
+              class="font-mono text-xs text-ink-muted font-bold underline decoration-dotted decoration-accent-soft"
+            >
               {{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}
             </span>
             <span
@@ -125,10 +127,16 @@ function formatDate(s?: string) {
           </div>
 
           <template #content>
-            <div class="w-80 p-4 space-y-3.5 bg-surface border border-line rounded-lg shadow-xl z-50">
+            <div
+              class="w-80 p-4 space-y-3.5 bg-surface border border-line rounded-lg shadow-xl z-50"
+            >
               <div class="flex items-center justify-between pb-1.5 border-b border-line-soft">
-                <span class="text-xs font-mono font-bold text-ink uppercase tracking-wider">AI Scoring Breakdown</span>
-                <span class="text-xs font-bold font-mono text-accent">{{ row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—' }}</span>
+                <span class="text-xs font-mono font-bold text-ink uppercase tracking-wider"
+                  >AI Scoring Breakdown</span
+                >
+                <span class="text-xs font-bold font-mono text-accent">{{
+                  row.matchScore ? Number(row.matchScore).toFixed(0) + '%' : '—'
+                }}</span>
               </div>
               <div class="space-y-2">
                 <!-- Dim 1 -->
@@ -172,8 +180,14 @@ function formatDate(s?: string) {
                   </div>
                 </div>
               </div>
-              <div class="pt-2 border-t border-line-soft text-[10px] leading-relaxed text-ink-subtle">
-                <p><span class="font-semibold text-ink">AI Note:</span> Deducted 1 point for experience due to lack of local corporate team tenure, but offset by exceptional technical depth.</p>
+              <div
+                class="pt-2 border-t border-line-soft text-[10px] leading-relaxed text-ink-subtle"
+              >
+                <p>
+                  <span class="font-semibold text-ink">AI Note:</span> Deducted 1 point for
+                  experience due to lack of local corporate team tenure, but offset by exceptional
+                  technical depth.
+                </p>
               </div>
             </div>
           </template>

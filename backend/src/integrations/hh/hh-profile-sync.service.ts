@@ -17,7 +17,7 @@ export class HhProfileSyncService {
   ) {}
 
   private get headers() {
-    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return { 'User-Agent': ua, 'HH-User-Agent': ua };
   }
 
@@ -98,7 +98,7 @@ export class HhProfileSyncService {
       },
     });
 
-    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       'User-Agent': ua,
@@ -155,7 +155,7 @@ export class HhProfileSyncService {
 
   /** Publish (make visible to employers) the candidate's HH resume. */
   async publishResume(resumeId: string, accessToken: string): Promise<void> {
-    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     await firstValueFrom(
       this.http.post(
         `${this.baseUrl}/resumes/${resumeId}/publish`,

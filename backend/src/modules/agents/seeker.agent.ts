@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { seekerDecideAndDraftPrompt } from '@my-hr/prompts';
+import { seekerDecideAndDraftPrompt } from '@crewly/prompts';
 
 const SeekerApplicationDecisionSchema = z.object({
   should_apply: z.boolean(),

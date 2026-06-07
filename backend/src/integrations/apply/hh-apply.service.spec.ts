@@ -19,7 +19,7 @@ describe('HhApplyService', () => {
         { provide: HttpService, useValue: { post: httpPost, get: httpGet } },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('MyHR/1.0') },
+          useValue: { get: jest.fn().mockReturnValue('Crewly/1.0') },
         },
       ],
     }).compile();

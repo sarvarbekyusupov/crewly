@@ -65,7 +65,7 @@ export class GoogleCalendarService {
       attendees: input.attendeeEmails.map((email) => ({ email })),
       conferenceData: {
         createRequest: {
-          requestId: `myhr-${Date.now()}`,
+          requestId: `crewly-${Date.now()}`,
           conferenceSolutionKey: { type: 'hangoutsMeet' },
         },
       },

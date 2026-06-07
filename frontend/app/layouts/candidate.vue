@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { scoringActive, resumeParseStatus, newMessageApplicationIds, useCandidateEventStream } from '~/composables/useCandidateEventStream'
+import {
+  scoringActive,
+  resumeParseStatus,
+  newMessageApplicationIds,
+  useCandidateEventStream,
+} from '~/composables/useCandidateEventStream'
 
 const hasNewMessages = computed(() => newMessageApplicationIds.value.size > 0)
 
@@ -107,7 +112,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 </script>
 
 <template>
-  <div class="min-h-screen flex" style="background: var(--bg); color: var(--ink)">
+  <div class="h-screen overflow-hidden flex" style="background: var(--bg); color: var(--ink)">
     <!-- Mobile backdrop -->
     <div
       v-if="sidebarOpen"
@@ -162,10 +167,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
         >
           <UIcon :name="item.icon" class="w-4 h-4 shrink-0" />
           {{ item.label }}
-          <span
-            v-if="item.to === '/candidate/jobs' && scoringActive"
-            class="scanning-pill ml-auto"
-          >
+          <span v-if="item.to === '/candidate/jobs' && scoringActive" class="scanning-pill ml-auto">
             <span class="scanning-dot" />AI
           </span>
           <span
@@ -225,6 +227,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
           icon="i-heroicons-bars-3"
           variant="ghost"
           size="sm"
+          aria-label="Toggle sidebar"
           @click="sidebarOpen = !sidebarOpen"
         />
         <div class="flex items-center gap-2">
@@ -275,10 +278,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
         >
           <div class="relative">
             <UIcon :name="item.icon" class="w-5 h-5" />
-            <span
-              v-if="item.to === '/candidate/chat' && hasNewMessages"
-              class="mobile-new-dot"
-            />
+            <span v-if="item.to === '/candidate/chat' && hasNewMessages" class="mobile-new-dot" />
           </div>
           <span class="mt-0.5">{{ item.label }}</span>
         </NuxtLink>
@@ -334,8 +334,13 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
   animation: scan-pulse 1.2s ease-in-out infinite;
 }
 @keyframes scan-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 .nav-item:hover {
   background: var(--bg-elevated);

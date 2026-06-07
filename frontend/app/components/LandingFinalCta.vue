@@ -109,6 +109,6 @@ h2 {
 }
 .cta:hover {
   opacity: 0.9;
-  box-shadow: 0 6px 24px rgba(200, 74, 31, 0.40);
+  box-shadow: 0 6px 24px rgba(200, 74, 31, 0.4);
 }
 </style>

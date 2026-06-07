@@ -55,7 +55,7 @@ export class HhOAuthService {
       throw new UnauthorizedException('Invalid or expired HH OAuth state');
     }
 
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
 
     const response = await firstValueFrom(
       this.http.post<HhTokenResponse>(

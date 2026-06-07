@@ -112,36 +112,41 @@ const nextBestAction = computed(() => {
   const missing = missingFields.value
   if (missing.includes('resumeFileUrl') || missing.includes('cv')) {
     return {
-      message: 'Upload your latest resume (PDF) so our AI Matchmaker can find high-scoring matches for you.',
+      message:
+        'Upload your latest resume (PDF) so our AI Matchmaker can find high-scoring matches for you.',
       ctaLabel: 'Upload CV',
-      ctaTo: '/candidate/profile'
+      ctaTo: '/candidate/profile',
     }
   }
   if (missing.includes('skills')) {
     return {
-      message: 'Add your core professional skills to optimize your matching alignment with employers.',
+      message:
+        'Add your core professional skills to optimize your matching alignment with employers.',
       ctaLabel: 'Add Skills',
-      ctaTo: '/candidate/profile'
+      ctaTo: '/candidate/profile',
     }
   }
   if (missing.includes('telegramUsername') || missing.includes('phone')) {
     return {
-      message: 'Set up your contact information (Telegram / Phone) so recruiters can reach out directly.',
+      message:
+        'Set up your contact information (Telegram / Phone) so recruiters can reach out directly.',
       ctaLabel: 'Add Contacts',
-      ctaTo: '/candidate/profile'
+      ctaTo: '/candidate/profile',
     }
   }
   if (missing.includes('preferredWorkMode') || missing.includes('city')) {
     return {
-      message: 'Define your preferred location and work mode (Remote / Hybrid) to filter out unfitting jobs.',
+      message:
+        'Define your preferred location and work mode (Remote / Hybrid) to filter out unfitting jobs.',
       ctaLabel: 'Update Preferences',
-      ctaTo: '/candidate/profile'
+      ctaTo: '/candidate/profile',
     }
   }
   return {
-    message: 'Your profile looks fantastic! Go to Job Discovery to find and apply for top AI-matched roles.',
+    message:
+      'Your profile looks fantastic! Go to Job Discovery to find and apply for top AI-matched roles.',
     ctaLabel: 'Explore Jobs',
-    ctaTo: '/candidate/jobs'
+    ctaTo: '/candidate/jobs',
   }
 })
 
@@ -196,13 +201,23 @@ const showCoachModal = ref(false)
     <div
       v-if="completeness < 100"
       class="rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all duration-300 hover:shadow-md"
-      style="background: var(--surface); border: 1px solid var(--accent); position: relative; overflow: hidden"
+      style="
+        background: var(--surface);
+        border: 1px solid var(--accent);
+        position: relative;
+        overflow: hidden;
+      "
     >
-      <div class="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-xl pointer-events-none" style="background: var(--accent)" />
-      
+      <div
+        class="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-xl pointer-events-none"
+        style="background: var(--accent)"
+      />
+
       <div class="flex items-start gap-4 min-w-0 flex-1">
         <!-- Progress circle / ring simulation -->
-        <div class="relative shrink-0 flex items-center justify-center w-14 h-14 rounded-full border border-line bg-bg-deep">
+        <div
+          class="relative shrink-0 flex items-center justify-center w-14 h-14 rounded-full border border-line bg-bg-deep"
+        >
           <span class="text-sm font-semibold font-mono" style="color: var(--accent)">
             {{ completeness }}%
           </span>
@@ -210,8 +225,16 @@ const showCoachModal = ref(false)
 
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-mono font-semibold uppercase tracking-wide" style="color: var(--accent)">Profile Strength</span>
-            <span v-if="completeness < 80" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold font-mono">Needs Completion</span>
+            <span
+              class="text-xs font-mono font-semibold uppercase tracking-wide"
+              style="color: var(--accent)"
+              >Profile Strength</span
+            >
+            <span
+              v-if="completeness < 80"
+              class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold font-mono"
+              >Needs Completion</span
+            >
           </div>
           <p class="text-sm font-medium mt-1 leading-snug" style="color: var(--ink)">
             {{ nextBestAction.message }}
@@ -225,7 +248,7 @@ const showCoachModal = ref(false)
           </div>
         </div>
       </div>
-      
+
       <UButton :to="nextBestAction.ctaTo" size="sm" class="shrink-0 font-medium">
         {{ nextBestAction.ctaLabel }}
       </UButton>

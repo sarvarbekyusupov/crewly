@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "nuxt-ui-local",
-  "description": "Local nuxt-ui skill for my-hr project",
+  "description": "Local nuxt-ui skill for crewly project",
   "owner": {
     "name": "Local",
     "url": ""

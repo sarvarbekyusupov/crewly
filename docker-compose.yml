@@ -2,13 +2,13 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: myhr
-      POSTGRES_PASSWORD: myhr
-      POSTGRES_DB: myhr
+      POSTGRES_USER: crewly
+      POSTGRES_PASSWORD: crewly
+      POSTGRES_DB: crewly
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myhr"]
+      test: ["CMD-SHELL", "pg_isready -U crewly"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,8 +32,8 @@ services:
       PORT: "3000"
       PUBLIC_URL: http://localhost:3030
       FRONTEND_URL: http://localhost:4001
-      DATABASE_URL: postgresql://myhr:myhr@postgres:5432/myhr
-      DIRECT_URL: postgresql://myhr:myhr@postgres:5432/myhr
+      DATABASE_URL: postgresql://crewly:crewly@postgres:5432/crewly
+      DIRECT_URL: postgresql://crewly:crewly@postgres:5432/crewly
       REDIS_URL: redis://redis:6379
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set (min 32 chars)}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET must be set (min 32 chars)}
@@ -73,10 +73,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE: http://localhost:3030
     ports:
       - "4001:3000"
     environment:
-      NUXT_PUBLIC_API_BASE: http://localhost:3030
       NUXT_HOST: 0.0.0.0
     depends_on:
       backend:

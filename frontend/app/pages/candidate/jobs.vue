@@ -26,7 +26,7 @@ const { t } = useI18n()
 useHead({ title: 'Job Discovery' })
 
 const search = ref('')
-const workMode = ref('')
+const workMode = ref('all')
 const minScore = ref(0)
 const sortBy = ref<'recent' | 'score'>('recent')
 const page = ref(1)
@@ -46,7 +46,7 @@ function radarChartData(job: any) {
           Math.max(4, Math.min(10, norm - 1)),
           Math.max(4, Math.min(10, norm)),
           Math.max(4, Math.min(10, norm - 2)),
-          9
+          9,
         ],
         backgroundColor: 'rgba(224, 92, 46, 0.15)',
         borderColor: '#e05c2e',
@@ -61,8 +61,8 @@ function radarChartData(job: any) {
         borderWidth: 1,
         borderDash: [2, 2],
         pointBackgroundColor: 'rgba(0, 0, 0, 0.3)',
-      }
-    ]
+      },
+    ],
   }
 }
 
@@ -76,12 +76,12 @@ const radarChartOptions = {
       ticks: { stepSize: 2, display: false },
       grid: { color: 'rgba(0, 0, 0, 0.05)' },
       angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
-      pointLabels: { font: { size: 10, family: 'monospace' } }
-    }
+      pointLabels: { font: { size: 10, family: 'monospace' } },
+    },
   },
   plugins: {
-    legend: { display: false }
-  }
+    legend: { display: false },
+  },
 }
 
 const {
@@ -93,7 +93,7 @@ const {
   () =>
     api.get<PaginatedResponse<DiscoveredJob>>('/api/v1/candidate-portal/discovered-jobs', {
       ...(search.value && { search: search.value }),
-      ...(workMode.value && { workMode: workMode.value }),
+      ...(workMode.value && workMode.value !== 'all' && { workMode: workMode.value }),
       ...(minScore.value > 0 && { minScore: minScore.value }),
       sortBy: sortBy.value,
       page: page.value,
@@ -117,7 +117,7 @@ watch([workMode, minScore, sortBy], () => {
 })
 
 const workModeOptions = computed(() => [
-  { label: t('candidate.jobs.allModes'), value: '' },
+  { label: t('candidate.jobs.allModes'), value: 'all' },
   { label: t('candidate.jobs.office'), value: 'office' },
   { label: t('candidate.jobs.hybrid'), value: 'hybrid' },
   { label: t('candidate.jobs.remote'), value: 'remote' },
@@ -146,7 +146,7 @@ async function triggerScoring() {
   }
 }
 
-useEventBus<void>('candidate:scoring-complete').on(() => refresh())
+useEventBus<undefined>('candidate:scoring-complete').on(() => refresh())
 
 const applying = ref<Set<string>>(new Set())
 const expandedJob = ref<string | null>(null)
@@ -210,7 +210,7 @@ const passReasons = [
   'Salary Too Low',
   'Location / Work Mode Mismatch',
   'Not Interested',
- ]
+]
 
 function handlePass() {
   playPop()
@@ -249,7 +249,7 @@ function startDrag(e: MouseEvent | TouchEvent) {
   const clientY = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : e.clientY
   startX = clientX - dragX.value
   startY = clientY - dragY.value
-  
+
   if ('touches' in e) {
     document.addEventListener('touchmove', onDrag)
     document.addEventListener('touchend', endDrag)
@@ -270,7 +270,7 @@ function onDrag(e: MouseEvent | TouchEvent) {
 function endDrag() {
   if (!isDragging.value) return
   isDragging.value = false
-  
+
   document.removeEventListener('touchmove', onDrag)
   document.removeEventListener('touchend', endDrag)
   document.removeEventListener('mousemove', onDrag)
@@ -282,7 +282,7 @@ function endDrag() {
   } else if (dragX.value < -threshold) {
     handlePass()
   }
-  
+
   dragX.value = 0
   dragY.value = 0
 }
@@ -291,14 +291,14 @@ const cardStyle = computed(() => {
   if (!isDragging.value && dragX.value === 0) {
     return {
       transform: 'translate3d(0, 0, 0) rotate(0deg)',
-      transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+      transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     }
   }
   const rotation = dragX.value * 0.12
   return {
     transform: `translate3d(${dragX.value}px, ${dragY.value}px, 0) rotate(${rotation}deg)`,
     transition: 'none',
-    cursor: 'grabbing'
+    cursor: 'grabbing',
   }
 })
 </script>
@@ -337,7 +337,7 @@ const cardStyle = computed(() => {
             {{ t('candidate.jobs.matchingJobs', { n: total }) }}
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           <!-- View toggle -->
           <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
             <button
@@ -364,6 +364,7 @@ const cardStyle = computed(() => {
             size="sm"
             icon="i-heroicons-bolt"
             :loading="scoringInProgress"
+            class="whitespace-nowrap"
             @click="triggerScoring"
           >
             {{ t('candidate.jobs.scoreAll') }}
@@ -374,10 +375,7 @@ const cardStyle = computed(() => {
 
     <!-- AI activity feed -->
     <Transition name="feed">
-      <div
-        v-if="scoringActive || scoringLog.length"
-        class="activity-feed"
-      >
+      <div v-if="scoringActive || scoringLog.length" class="activity-feed">
         <div class="feed-header">
           <span class="pulse-dot" :class="{ active: scoringActive }" />
           <span class="feed-label">
@@ -387,11 +385,7 @@ const cardStyle = computed(() => {
             {{ scoringProgress.done }}/{{ scoringProgress.total }}
           </span>
         </div>
-        <div
-          v-for="entry in scoringLog.slice(-5)"
-          :key="entry.ts"
-          class="feed-entry"
-        >
+        <div v-for="entry in scoringLog.slice(-5)" :key="entry.ts" class="feed-entry">
           <span class="feed-icon">{{ entry.icon }}</span>
           <span>{{ entry.text }}</span>
         </div>
@@ -408,18 +402,12 @@ const cardStyle = computed(() => {
       />
       <USelect
         v-model="workMode"
-        :options="workModeOptions"
+        :items="workModeOptions"
         size="sm"
         class="w-36"
         aria-label="Work mode"
       />
-      <USelect
-        v-model="sortBy"
-        :options="sortOptions"
-        size="sm"
-        class="w-36"
-        aria-label="Sort by"
-      />
+      <USelect v-model="sortBy" :items="sortOptions" size="sm" class="w-36" aria-label="Sort by" />
       <div class="flex items-center gap-2 text-sm" style="color: var(--ink-muted)">
         <span>{{ t('candidate.jobs.minScore') }}:</span>
         <UInput
@@ -430,6 +418,7 @@ const cardStyle = computed(() => {
           step="10"
           class="w-20"
           size="sm"
+          @blur="minScore = Math.min(100, Math.max(0, minScore || 0))"
         />
       </div>
       <UButton
@@ -437,6 +426,7 @@ const cardStyle = computed(() => {
         size="sm"
         icon="i-heroicons-arrow-path"
         :loading="pending"
+        aria-label="Refresh jobs"
         @click="() => refresh()"
       />
     </div>
@@ -451,7 +441,7 @@ const cardStyle = computed(() => {
       </p>
       <p class="text-sm" style="color: var(--ink-muted)">
         {{
-          search || workMode || minScore > 0
+          search || (workMode && workMode !== 'all') || minScore > 0
             ? t('candidate.jobs.noJobsFiltered')
             : t('candidate.jobs.noJobsDiscovered')
         }}
@@ -460,11 +450,26 @@ const cardStyle = computed(() => {
 
     <!-- Tinder-Style Discovery Feed -->
     <div v-else-if="viewMode === 'discovery'" class="max-w-xl mx-auto py-4 space-y-6">
-      <div v-if="currentIndex >= jobs.length" class="bg-surface border border-line-soft rounded-xl p-8 text-center flex flex-col items-center gap-3">
+      <div
+        v-if="jobs.length > 0 && currentIndex >= jobs.length"
+        class="bg-surface border border-line-soft rounded-xl p-8 text-center flex flex-col items-center gap-3"
+      >
         <UIcon name="i-heroicons-sparkles" class="w-12 h-12 text-accent animate-bounce" />
         <h3 class="text-xl font-serif">All Caught Up!</h3>
-        <p class="text-sm text-ink-muted">You have reviewed all the AI-discovered roles matching your preferences.</p>
-        <UButton variant="outline" size="sm" @click="currentIndex = 0; refresh()">Review Again</UButton>
+        <p class="text-sm text-ink-muted">
+          You have reviewed all the AI-discovered roles matching your preferences.
+        </p>
+        <UButton
+          variant="outline"
+          size="sm"
+          @click="
+            () => {
+              currentIndex = 0
+              refresh()
+            }
+          "
+          >Review Again</UButton
+        >
       </div>
 
       <div
@@ -482,7 +487,10 @@ const cardStyle = computed(() => {
                 {{ currentJob.title }}
               </h3>
               <p class="text-sm text-ink-muted mt-1 font-medium">
-                {{ currentJob.company }}<span class="text-xs font-normal text-ink-subtle"> · {{ currentJob.location ?? 'No location' }}</span>
+                {{ currentJob.company
+                }}<span class="text-xs font-normal text-ink-subtle">
+                  · {{ currentJob.location ?? 'No location' }}</span
+                >
               </p>
             </div>
             <UBadge
@@ -500,32 +508,61 @@ const cardStyle = computed(() => {
         <div class="p-6 flex-1 space-y-5">
           <!-- Metadata row -->
           <div class="flex flex-wrap items-center gap-3 text-xs" style="color: var(--ink-subtle)">
-            <span v-if="currentJob.workMode" class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]">{{ currentJob.workMode }}</span>
-            <span v-if="currentJob.employmentType" class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]">{{ currentJob.employmentType }}</span>
-            <span v-if="currentJob.salaryMinUzs || currentJob.salaryMaxUzs" class="font-medium text-ink-muted">
-              {{ formatSalary(currentJob.salaryMinUzs) }}<span v-if="currentJob.salaryMaxUzs"> – {{ formatSalary(currentJob.salaryMaxUzs) }}</span>
+            <span
+              v-if="currentJob.workMode"
+              class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]"
+              >{{ currentJob.workMode }}</span
+            >
+            <span
+              v-if="currentJob.employmentType"
+              class="px-2 py-0.5 rounded bg-bg-deep uppercase tracking-wider font-mono text-[10px]"
+              >{{ currentJob.employmentType }}</span
+            >
+            <span
+              v-if="currentJob.salaryMinUzs || currentJob.salaryMaxUzs"
+              class="font-medium text-ink-muted"
+            >
+              {{ formatSalary(currentJob.salaryMinUzs)
+              }}<span v-if="currentJob.salaryMaxUzs">
+                – {{ formatSalary(currentJob.salaryMaxUzs) }}</span
+              >
             </span>
           </div>
 
           <!-- Skills tags -->
           <div v-if="currentJob.skills?.length" class="flex flex-wrap gap-1">
-            <UBadge v-for="s in currentJob.skills" :key="s" color="neutral" variant="subtle" size="xs">
+            <UBadge
+              v-for="s in currentJob.skills"
+              :key="s"
+              color="neutral"
+              variant="subtle"
+              size="xs"
+            >
               {{ s }}
             </UBadge>
           </div>
 
           <!-- Match Explanation (Why it fits) -->
-          <div v-if="currentJob.matchExplanation" class="bg-accent-soft border border-line-soft rounded-xl p-4 space-y-3.5">
-            <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-accent">AI Matchmaker Analysis</h4>
+          <div
+            v-if="currentJob.matchExplanation"
+            class="bg-accent-soft border border-line-soft rounded-xl p-4 space-y-3.5"
+          >
+            <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-accent">
+              AI Matchmaker Analysis
+            </h4>
             <p class="text-sm leading-relaxed text-ink-muted">
               {{ currentJob.matchExplanation }}
             </p>
-            
+
             <!-- Split Panel: Left: Radar, Right: details -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-line-soft">
               <!-- Radar Match breakdown -->
               <div class="h-44 flex flex-col justify-center items-center">
-                <p class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start">Alignment Map</p>
+                <p
+                  class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start"
+                >
+                  Alignment Map
+                </p>
                 <div class="w-full flex-1 relative">
                   <Radar :data="radarChartData(currentJob)" :options="radarChartOptions" />
                 </div>
@@ -534,17 +571,31 @@ const cardStyle = computed(() => {
               <!-- Strengths & Gaps -->
               <div class="space-y-3">
                 <div v-if="currentJob.matchStrengths?.length">
-                  <p class="text-xs font-semibold mb-1" style="color: var(--positive)">Key Strengths</p>
+                  <p class="text-xs font-semibold mb-1" style="color: var(--positive)">
+                    Key Strengths
+                  </p>
                   <ul class="space-y-0.5">
-                    <li v-for="s in currentJob.matchStrengths" :key="s" class="text-[11px] flex gap-1" style="color: var(--ink-muted)">
+                    <li
+                      v-for="s in currentJob.matchStrengths"
+                      :key="s"
+                      class="text-[11px] flex gap-1"
+                      style="color: var(--ink-muted)"
+                    >
                       <span style="color: var(--positive)">✓</span> {{ s }}
                     </li>
                   </ul>
                 </div>
                 <div v-if="currentJob.matchGaps?.length">
-                  <p class="text-xs font-semibold mb-1" style="color: var(--warning)">Considerations / Gaps</p>
+                  <p class="text-xs font-semibold mb-1" style="color: var(--warning)">
+                    Considerations / Gaps
+                  </p>
                   <ul class="space-y-0.5">
-                    <li v-for="g in currentJob.matchGaps" :key="g" class="text-[11px] flex gap-1" style="color: var(--ink-muted)">
+                    <li
+                      v-for="g in currentJob.matchGaps"
+                      :key="g"
+                      class="text-[11px] flex gap-1"
+                      style="color: var(--ink-muted)"
+                    >
                       <span style="color: var(--warning)">△</span> {{ g }}
                     </li>
                   </ul>
@@ -569,7 +620,11 @@ const cardStyle = computed(() => {
 
           <!-- Apply / Interested Button -->
           <template v-if="currentJob.application">
-            <UBadge :color="appStatusColor(currentJob.application.status)" variant="subtle" size="md">
+            <UBadge
+              :color="appStatusColor(currentJob.application.status)"
+              variant="subtle"
+              size="md"
+            >
               {{ capitalizeStatus(currentJob.application.status) }}
             </UBadge>
           </template>
@@ -713,11 +768,17 @@ const cardStyle = computed(() => {
           class="px-4 pb-4 pt-4"
           style="border-top: 1px solid var(--line-soft); background: var(--bg-elevated)"
         >
-          <p class="text-sm mb-4 leading-relaxed" style="color: var(--ink-muted)">{{ job.matchExplanation }}</p>
+          <p class="text-sm mb-4 leading-relaxed" style="color: var(--ink-muted)">
+            {{ job.matchExplanation }}
+          </p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Radar Alignment Map -->
             <div class="h-44 flex flex-col justify-center items-center">
-              <p class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start">Alignment Map</p>
+              <p
+                class="text-[10px] font-mono font-semibold uppercase tracking-wider text-ink-subtle mb-1 self-start"
+              >
+                Alignment Map
+              </p>
               <div class="w-full flex-1 relative">
                 <Radar :data="radarChartData(job)" :options="radarChartOptions" />
               </div>
@@ -840,13 +901,21 @@ const cardStyle = computed(() => {
   animation: pulse-ring 1.4s ease-out infinite;
 }
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
-  70%  { box-shadow: 0 0 0 5px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 .feed-enter-active,
 .feed-leave-active {
-  transition: opacity 0.25s, transform 0.25s;
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
 }
 .feed-enter-from,
 .feed-leave-to {

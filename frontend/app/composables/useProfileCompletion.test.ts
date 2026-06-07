@@ -51,13 +51,15 @@ describe('useProfileCompletion', () => {
 
   it('calculates correct percent for partial profile', () => {
     // Fill 5 of 10 fields
-    const { percent } = useProfileCompletion(ref({
-      fullName: 'Sarvar',
-      city: 'Tashkent',
-      currentPosition: 'Dev',
-      yearsExperience: 2,
-      skills: ['Vue'],
-    }))
+    const { percent } = useProfileCompletion(
+      ref({
+        fullName: 'Sarvar',
+        city: 'Tashkent',
+        currentPosition: 'Dev',
+        yearsExperience: 2,
+        skills: ['Vue'],
+      }),
+    )
     expect(percent.value).toBe(50)
   })
 

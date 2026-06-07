@@ -126,7 +126,6 @@ const onSignup = signupHandleSubmit(async (values) => {
     loading.value = false
   }
 })
-
 </script>
 
 <template>
@@ -235,7 +234,7 @@ const onSignup = signupHandleSubmit(async (values) => {
             letter-spacing: 0.06em;
           "
         >
-          © 2026 myhr
+          © 2026 Crewly
         </p>
       </div>
     </div>
@@ -288,7 +287,7 @@ const onSignup = signupHandleSubmit(async (values) => {
           {{ mode === 'login' ? t('auth.loginTitle') : t('auth.signupTitle') }}
         </h2>
         <p class="text-sm mb-7" style="color: var(--ink-muted)">
-          {{ mode === 'login' ? 'Log in to your myhr account' : 'Create your myhr account' }}
+          {{ mode === 'login' ? 'Log in to your Crewly account' : 'Create your Crewly account' }}
         </p>
 
         <!-- ── LOGIN MODE ── -->
@@ -359,7 +358,6 @@ const onSignup = signupHandleSubmit(async (values) => {
               {{ t('auth.login') }}
             </UButton>
           </form>
-
 
           <!-- or divider -->
           <div class="flex items-center gap-3 my-5">
@@ -559,7 +557,7 @@ const onSignup = signupHandleSubmit(async (values) => {
           >Privacy</NuxtLink
         >
         <span class="mx-2">·</span>
-        <span>© 2026 myhr</span>
+        <span>© 2026 Crewly</span>
       </footer>
     </div>
   </div>

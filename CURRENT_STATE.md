@@ -1,10 +1,10 @@
-# Project Current State: my-hr
+# Project Current State: crewly
 
 _Last updated: Sunday, May 31, 2026_
 
 ## 1. Project Overview
 
-**my-hr** is an AI-native recruiting platform that automates the full recruitment lifecycle using a "software-as-an-agency" model. It serves three audiences: Company users (hiring managers), Candidates (job seekers), and Staff (internal platform admins).
+**Crewly** is an AI-native recruiting platform that automates the full recruitment lifecycle using a "software-as-an-agency" model. It serves three audiences: Company users (hiring managers), Candidates (job seekers), and Staff (internal platform admins).
 
 ### Tech Stack
 
@@ -26,18 +26,18 @@ _Last updated: Sunday, May 31, 2026_
 ## 2. Monorepo Structure
 
 ```plaintext
-my-hr/
+crewly/
 ├── backend/              # NestJS API, Prisma, BullMQ workers
 ├── frontend/             # Nuxt 3 SPA (company + candidate + staff portals)
 ├── packages/
-│   └── types/            # Shared TypeScript types (@my-hr/types)
+│   └── types/            # Shared TypeScript types (@crewly/types)
 ├── e2e/                  # Playwright end-to-end tests
 ├── nginx/                # nginx.conf — SSL, HTTP→HTTPS, /api proxy to backend
 ├── docker-compose.yml    # Local dev stack (postgres/pgvector, redis, backend, frontend)
 ├── docker-compose.prod.yml # Production stack with resource limits and health checks
 ├── Makefile              # Dev/prod/db helper commands
 ├── Jenkinsfile           # CI/CD pipeline (build Docker images, deploy)
-└── design_handoff_my-hr/ # Design assets and documentation
+└── design_handoff_crewly/ # Design assets and documentation
 ```
 
 ---

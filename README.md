@@ -1,4 +1,4 @@
-# my-hr
+# Crewly
 
 AI-native recruiting platform for companies: post roles, AI sourcing and screening, outreach, hires with placement billing.
 
@@ -44,7 +44,7 @@ Staff: `staff@agency.local` / `staff1234`
 
 | File | Purpose |
 |------|---------|
-| [backend/.env.example](backend/.env.example) | Local API (DB `myhr` on port 5432) |
+| [backend/.env.example](backend/.env.example) | Local API (DB `crewly` on port 5432) |
 | [.env.example](.env.example) | Production Docker Compose template |
 
 Key variables:

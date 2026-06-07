@@ -4,9 +4,7 @@ const { t } = useI18n()
 
 useHead({
   title: computed(() => `${t('terms.title')} | myHR`),
-  link: [
-    { rel: 'canonical', href: 'https://my-hr.com/terms' }
-  ],
+  link: [{ rel: 'canonical', href: 'https://crewly.com/terms' }],
   meta: [
     {
       name: 'description',
@@ -14,13 +12,13 @@ useHead({
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://my-hr.com/terms' },
+    { property: 'og:url', content: 'https://crewly.com/terms' },
     { property: 'og:title', content: computed(() => `${t('terms.title')} | myHR`) },
     { property: 'og:description', content: computed(() => t('terms.subtitle')) },
 
     // Twitter
     { name: 'twitter:card', content: 'summary' },
-    { name: 'twitter:url', content: 'https://my-hr.com/terms' },
+    { name: 'twitter:url', content: 'https://crewly.com/terms' },
     { name: 'twitter:title', content: computed(() => `${t('terms.title')} | myHR`) },
     { name: 'twitter:description', content: computed(() => t('terms.subtitle')) },
   ],

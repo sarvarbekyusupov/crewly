@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { newMessageBus } from '~/composables/useCandidateEventStream'
+
 definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
@@ -23,12 +25,10 @@ interface ApplicationContext {
 
 const { clearNewMessage } = await import('~/composables/useCandidateEventStream')
 
-const { data: application } = await useAsyncData(
-  `chat-app-${applicationId}`,
-  () =>
-    api
-      .get<ApplicationContext>(`/api/v1/candidate-portal/applications/${applicationId}`)
-      .catch(() => null),
+const { data: application } = await useAsyncData(`chat-app-${applicationId}`, () =>
+  api
+    .get<ApplicationContext>(`/api/v1/candidate-portal/applications/${applicationId}`)
+    .catch(() => null),
 )
 
 interface ChatMessage {
@@ -57,7 +57,7 @@ const videoElement = ref<HTMLVideoElement | null>(null)
 
 async function toggleVideoMode() {
   isVideoMode.value = !isVideoMode.value
-  
+
   if (isVideoMode.value) {
     playPop()
     try {
@@ -87,7 +87,8 @@ function stopVideo() {
 
 function initSpeech() {
   if (typeof window === 'undefined') return
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   if (SpeechRecognition) {
     recognition = new SpeechRecognition()
     recognition.continuous = false
@@ -204,8 +205,6 @@ async function sendMessage() {
   }
 }
 
-import { newMessageBus } from '~/composables/useCandidateEventStream'
-
 function isScrolledToBottom() {
   if (!messagesContainer.value) return false
   const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
@@ -225,7 +224,7 @@ onMounted(() => {
   fetchMessages().then(() => {
     setTimeout(scrollToBottom, 100)
   })
-  
+
   // Real-time message streaming subscription
   unsubscribe = newMessageBus.on((event) => {
     if (event.applicationId === applicationId) {
@@ -250,12 +249,7 @@ function formatTime(dateStr: string) {
   <div class="max-w-3xl mx-auto h-[calc(100dvh-64px)] flex flex-col pt-6 pb-6 px-4">
     <div class="flex items-center gap-4 mb-4 shrink-0 justify-between">
       <div class="flex items-center gap-4 min-w-0">
-        <UButton
-          icon="i-heroicons-arrow-left"
-          variant="ghost"
-          size="sm"
-          @click="router.back()"
-        />
+        <UButton icon="i-heroicons-arrow-left" variant="ghost" size="sm" @click="router.back()" />
         <div>
           <h1 class="text-xl font-medium truncate" style="color: var(--ink)">
             {{ application?.job?.title ?? t('candidate.chat.title') }}
@@ -295,21 +289,39 @@ function formatTime(dateStr: string) {
       style="background: var(--paper); border: 1px solid var(--line)"
     >
       <!-- Live Video Screening Simulator Cockpit -->
-      <div v-if="isVideoMode" class="flex gap-4 shrink-0 animate-fade-in pb-3 border-b border-line-soft">
+      <div
+        v-if="isVideoMode"
+        class="flex gap-4 shrink-0 animate-fade-in pb-3 border-b border-line-soft"
+      >
         <!-- Left Pane: Candidate Webcam stream -->
-        <div class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-black shadow-inner flex items-center justify-center">
+        <div
+          class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-black shadow-inner flex items-center justify-center"
+        >
           <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover" />
-          <span class="absolute bottom-2 left-2 text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-black/60 text-white">LIVE FEED (YOU)</span>
+          <span
+            class="absolute bottom-2 left-2 text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-black/60 text-white"
+            >LIVE FEED (YOU)</span
+          >
         </div>
         <!-- Right Pane: Recruiter AI Avatar -->
-        <div class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-bg-deep flex flex-col items-center justify-center shadow-inner">
+        <div
+          class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-bg-deep flex flex-col items-center justify-center shadow-inner"
+        >
           <div class="relative w-12 h-12 flex items-center justify-center">
-            <div class="absolute inset-0 rounded-full bg-accent/25" :class="{ 'animate-ping': isSending }" />
-            <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shadow-md" :class="{ 'animate-pulse': !isSending }">
+            <div
+              class="absolute inset-0 rounded-full bg-accent/25"
+              :class="{ 'animate-ping': isSending }"
+            />
+            <div
+              class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center shadow-md"
+              :class="{ 'animate-pulse': !isSending }"
+            >
               <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-white" />
             </div>
           </div>
-          <p class="text-[9px] font-mono font-bold text-accent uppercase mt-2.5 tracking-wider">myHR AI Recruiter</p>
+          <p class="text-[9px] font-mono font-bold text-accent uppercase mt-2.5 tracking-wider">
+            myHR AI Recruiter
+          </p>
         </div>
       </div>
 
@@ -317,9 +329,16 @@ function formatTime(dateStr: string) {
       <div
         v-if="application?.job"
         class="shrink-0 rounded-xl px-4 py-3 flex items-start gap-3"
-        style="background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent)"
+        style="
+          background: var(--accent-soft);
+          border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+        "
       >
-        <UIcon name="i-heroicons-sparkles" class="w-4 h-4 mt-0.5 shrink-0" style="color: var(--accent)" />
+        <UIcon
+          name="i-heroicons-sparkles"
+          class="w-4 h-4 mt-0.5 shrink-0"
+          style="color: var(--accent)"
+        />
         <div class="text-xs" style="color: var(--ink-muted); line-height: 1.6">
           <p>
             <strong style="color: var(--ink)">AI screening</strong> for

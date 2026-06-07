@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { outreachFallback, outreachPersonalizedPrompt } from '@my-hr/prompts';
+import { outreachFallback, outreachPersonalizedPrompt } from '@crewly/prompts';
 
 @Injectable()
 export class OutreachAgent extends BaseAgent {

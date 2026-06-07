@@ -4,7 +4,6 @@ import { formatSalary } from '~/utils/formatters'
 
 definePageMeta({ layout: 'default' })
 
-const { t } = useI18n()
 const api = useApi()
 
 useHead({ title: 'Jobs' })
@@ -41,9 +40,7 @@ const STATUS_TABS = [
   { label: 'Cancelled', value: 'cancelled' },
 ]
 
-function statusColor(
-  s: string,
-): 'neutral' | 'success' | 'warning' | 'info' | 'error' {
+function statusColor(s: string): 'neutral' | 'success' | 'warning' | 'info' | 'error' {
   const map: Record<string, 'neutral' | 'success' | 'warning' | 'info' | 'error'> = {
     active: 'success',
     draft: 'neutral',
@@ -54,15 +51,15 @@ function statusColor(
   return map[s] ?? 'neutral'
 }
 
-function priorityColor(
-  p?: string,
-): 'neutral' | 'warning' | 'error' {
+function priorityColor(p?: string): 'neutral' | 'warning' | 'error' {
   if (p === 'urgent') return 'error'
   if (p === 'high') return 'warning'
   return 'neutral'
 }
 
-watch(statusFilter, () => { page.value = 1 })
+watch(statusFilter, () => {
+  page.value = 1
+})
 </script>
 
 <template>
@@ -99,13 +96,7 @@ watch(statusFilter, () => { page.value = 1 })
             {{ total }} role{{ total !== 1 ? 's' : '' }} total
           </p>
         </div>
-        <UButton
-          to="/employer/jobs/create"
-          icon="i-heroicons-plus"
-          size="sm"
-        >
-          New Role
-        </UButton>
+        <UButton to="/employer/jobs/create" icon="i-heroicons-plus" size="sm"> New Role </UButton>
       </div>
     </div>
 
@@ -148,10 +139,7 @@ watch(statusFilter, () => { page.value = 1 })
     </div>
 
     <!-- Empty state -->
-    <div
-      v-else-if="!jobs.length"
-      class="flex flex-col items-center py-20 gap-4"
-    >
+    <div v-else-if="!jobs.length" class="flex flex-col items-center py-20 gap-4">
       <UIcon
         name="i-heroicons-briefcase"
         class="w-14 h-14 opacity-30"
@@ -159,12 +147,21 @@ watch(statusFilter, () => { page.value = 1 })
       />
       <div class="text-center">
         <p
-          style="font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); font-weight: 400"
+          style="
+            font-family: 'Fraunces', serif;
+            font-size: 20px;
+            color: var(--ink);
+            font-weight: 400;
+          "
         >
           {{ statusFilter ? 'No jobs with this status' : 'No roles yet' }}
         </p>
         <p class="text-sm mt-1" style="color: var(--ink-muted)">
-          {{ statusFilter ? 'Try a different filter.' : 'Create your first role to start sourcing candidates.' }}
+          {{
+            statusFilter
+              ? 'Try a different filter.'
+              : 'Create your first role to start sourcing candidates.'
+          }}
         </p>
       </div>
       <UButton
@@ -185,16 +182,17 @@ watch(statusFilter, () => { page.value = 1 })
         :key="job.id"
         :to="`/employer/jobs/${job.id}`"
         class="block rounded-xl p-4 transition-all hover:opacity-90"
-        style="background: var(--surface); border: 1px solid var(--line-soft); text-decoration: none"
+        style="
+          background: var(--surface);
+          border: 1px solid var(--line-soft);
+          text-decoration: none;
+        "
       >
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <!-- Title row -->
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <span
-                class="font-medium"
-                style="color: var(--ink); font-size: 15px"
-              >
+              <span class="font-medium" style="color: var(--ink); font-size: 15px">
                 {{ job.title }}
               </span>
               <UBadge :color="statusColor(job.status)" variant="subtle" size="xs">

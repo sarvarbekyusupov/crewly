@@ -22,7 +22,7 @@ describe('HhSuggestsService', () => {
         { provide: HttpService, useValue: { get: httpGet } },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('my-hr/1.0') },
+          useValue: { get: jest.fn().mockReturnValue('crewly/1.0') },
         },
       ],
     }).compile();

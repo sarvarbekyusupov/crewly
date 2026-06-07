@@ -130,7 +130,6 @@ function submitSearch() {
           </div>
           <div class="mc-footer">↑ Profile 82% complete · 3 skills to unlock more</div>
         </div>
-
       </div>
     </div>
   </div>
@@ -173,7 +172,7 @@ function submitSearch() {
   height: 320px;
   bottom: -60px;
   left: 30%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.10) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
   filter: blur(60px);
 }
 
@@ -260,11 +259,11 @@ function submitSearch() {
   transition:
     opacity 0.15s,
     box-shadow 0.15s;
-  box-shadow: 0 2px 12px rgba(200, 74, 31, 0.30);
+  box-shadow: 0 2px 12px rgba(200, 74, 31, 0.3);
 }
 .search-btn:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 20px rgba(200, 74, 31, 0.40);
+  box-shadow: 0 4px 20px rgba(200, 74, 31, 0.4);
 }
 
 /* Candidate pill CTA */
@@ -343,7 +342,9 @@ function submitSearch() {
   border: 1px solid var(--l-line);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 1;
   display: flex;
@@ -454,7 +455,9 @@ function submitSearch() {
   border: 1px solid var(--l-line);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 1;
   display: flex;

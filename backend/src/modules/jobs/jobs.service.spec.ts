@@ -362,4 +362,39 @@ describe('JobsService', () => {
       expect(result).toEqual({ matched: 3, hired: 1 });
     });
   });
+
+  describe('findOnePublic', () => {
+    it('returns active job without companyId restriction', async () => {
+      const job = { id: jobId, status: 'active', deletedAt: null, company: { name: 'Acme' } };
+      db.job.findFirst.mockResolvedValue(job);
+
+      const result = await service.findOnePublic(jobId);
+      expect(db.job.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: jobId, status: 'active', deletedAt: null }),
+        }),
+      );
+      expect(result).toEqual(job);
+    });
+
+    it('throws NotFoundException if active job not found', async () => {
+      db.job.findFirst.mockResolvedValue(null);
+      await expect(service.findOnePublic(jobId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAllPublic', () => {
+    it('returns all active non-deleted jobs', async () => {
+      const jobs = [{ id: jobId, title: 'Dev' }];
+      db.job.findMany.mockResolvedValue(jobs);
+
+      const result = await service.findAllPublic();
+      expect(db.job.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'active', deletedAt: null }),
+        }),
+      );
+      expect(result).toEqual(jobs);
+    });
+  });
 });

@@ -65,7 +65,7 @@ We are looking for a Senior Frontend Architect to lead the design and performanc
 ### Core Requirements
 - 3+ years experience in TypeScript & Vue.js/Nuxt.
 - Strong proficiency in SQL (PostgreSQL) and RESTful API integrations.`
-  
+
   showOptimizeModal.value = false
   toast.add({ title: 'AI Spec Optimizations applied!', color: 'success' })
 }
@@ -206,7 +206,7 @@ const onSubmit = handleSubmit(async (values) => {
             <UFormField :label="t('jobs.fields.priority')">
               <USelect
                 v-model="formExtras.priority"
-                :options="[
+                :items="[
                   { label: t('jobs.priority.low'), value: 'low' },
                   { label: t('jobs.priority.normal'), value: 'normal' },
                   { label: t('jobs.priority.high'), value: 'high' },
@@ -304,7 +304,7 @@ const onSubmit = handleSubmit(async (values) => {
           <UFormField :label="t('jobs.fields.employmentType')">
             <USelect
               v-model="formExtras.employmentType"
-              :options="[
+              :items="[
                 { label: t('jobs.employmentType.fullTime'), value: 'full-time' },
                 { label: t('jobs.employmentType.partTime'), value: 'part-time' },
                 { label: t('jobs.employmentType.contract'), value: 'contract' },
@@ -315,7 +315,7 @@ const onSubmit = handleSubmit(async (values) => {
           <UFormField :label="t('jobs.fields.workMode')">
             <USelect
               v-model="formExtras.workMode"
-              :options="[
+              :items="[
                 { label: t('jobs.workMode.office'), value: 'office' },
                 { label: t('jobs.workMode.hybrid'), value: 'hybrid' },
                 { label: t('jobs.workMode.remote'), value: 'remote' },
@@ -343,7 +343,7 @@ const onSubmit = handleSubmit(async (values) => {
           <UFormField :label="t('jobs.fields.feeBasis')">
             <USelect
               v-model="formExtras.feeBasis"
-              :options="[
+              :items="[
                 { label: t('jobs.feeBasis.annual'), value: 'annual' },
                 { label: t('jobs.feeBasis.monthly'), value: 'monthly' },
               ]"
@@ -369,34 +369,56 @@ const onSubmit = handleSubmit(async (values) => {
     @confirm="applySpecFixes"
   >
     <div class="space-y-4">
-      <div class="flex items-center justify-between p-4 bg-bg-deep border border-line-soft rounded-xl">
+      <div
+        class="flex items-center justify-between p-4 bg-bg-deep border border-line-soft rounded-xl"
+      >
         <div class="flex items-center gap-3">
-          <div class="relative flex items-center justify-center w-12 h-12 rounded-full border border-line bg-surface">
+          <div
+            class="relative flex items-center justify-center w-12 h-12 rounded-full border border-line bg-surface"
+          >
             <span class="text-sm font-mono font-bold text-accent">72%</span>
           </div>
           <div>
-            <h4 class="text-xs font-mono font-bold text-ink uppercase tracking-wider">Spec Score</h4>
+            <h4 class="text-xs font-mono font-bold text-ink uppercase tracking-wider">
+              Spec Score
+            </h4>
             <p class="text-[10px] text-ink-subtle mt-0.5">Readability & Bias Check</p>
           </div>
         </div>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold uppercase">Needs Optimization</span>
+        <span
+          class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 font-bold uppercase"
+          >Needs Optimization</span
+        >
       </div>
 
       <div class="space-y-3">
-        <h4 class="text-xs font-mono font-bold text-accent uppercase tracking-wider">AI Optimization Checklist</h4>
+        <h4 class="text-xs font-mono font-bold text-accent uppercase tracking-wider">
+          AI Optimization Checklist
+        </h4>
         <div class="space-y-2">
           <div class="flex items-start gap-2.5 p-3 rounded-xl border border-line-soft bg-surface">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
+            />
             <div class="text-xs">
               <p class="font-semibold text-ink">Swap gender-biased phrasing</p>
-              <p class="text-ink-muted mt-0.5">Swap out "rockstar developer" with "Senior Frontend Architect" (+12% Conversion).</p>
+              <p class="text-ink-muted mt-0.5">
+                Swap out "rockstar developer" with "Senior Frontend Architect" (+12% Conversion).
+              </p>
             </div>
           </div>
           <div class="flex items-start gap-2.5 p-3 rounded-xl border border-line-soft bg-surface">
-            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-info shrink-0 mt-0.5" />
+            <UIcon
+              name="i-heroicons-information-circle"
+              class="w-4 h-4 text-info shrink-0 mt-0.5"
+            />
             <div class="text-xs">
               <p class="font-semibold text-ink">Establish explicit skill targets</p>
-              <p class="text-ink-muted mt-0.5">Break down requirements cleanly into core tech stacks to enhance Matchmaker accuracy (+8% scoring precision).</p>
+              <p class="text-ink-muted mt-0.5">
+                Break down requirements cleanly into core tech stacks to enhance Matchmaker accuracy
+                (+8% scoring precision).
+              </p>
             </div>
           </div>
         </div>

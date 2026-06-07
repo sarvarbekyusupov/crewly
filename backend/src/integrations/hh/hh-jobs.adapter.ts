@@ -46,7 +46,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
 
   private get headers() {
     const token = this.config.get('HH_EMPLOYER_TOKEN');
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,

@@ -13,7 +13,21 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@sentry/nuxt/module',
     '@nuxt/test-utils/module',
+    '@nuxtjs/seo',
   ],
+
+  site: {
+    url: 'https://crewly.com',
+    name: 'Crewly',
+    description: 'AI-Native Recruiting Platform',
+    defaultLocale: 'en',
+  },
+
+  sitemap: {
+    sources: [
+      '/api/sitemap-urls',
+    ],
+  },
 
   sentry: {
     sourceMapsUploadOptions: {
@@ -48,7 +62,8 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'en',
     langDir: 'locales',
-    strategy: 'no_prefix',
+    strategy: 'prefix_except_default',
+    baseUrl: 'https://crewly.com',
   },
 
   imports: {
@@ -60,7 +75,7 @@ export default defineNuxtConfig({
     tsConfig: {
       compilerOptions: {
         paths: {
-          '@my-hr/types': ['../packages/types/src/index.ts'],
+          '@crewly/types': ['../packages/types/src/index.ts'],
         },
       },
     },

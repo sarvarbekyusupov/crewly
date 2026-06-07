@@ -19,7 +19,7 @@ export function clearNewMessage(applicationId: string) {
   newMessageApplicationIds.value = next
 }
 
-export const scoringCompleteBus = useEventBus<void>('candidate:scoring-complete')
+export const scoringCompleteBus = useEventBus<undefined>('candidate:scoring-complete')
 
 let es: EventSource | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -36,9 +36,7 @@ function handleEvent(type: string, payload: Record<string, unknown>) {
   if (type === 'scoring_started') {
     scoringActive.value = true
     scoringProgress.value = { done: 0, total: Number(payload.total ?? 0) }
-    scoringLog.value = [
-      { icon: '🔍', text: `Scanning ${payload.total} jobs…`, ts: Date.now() },
-    ]
+    scoringLog.value = [{ icon: '🔍', text: `Scanning ${payload.total} jobs…`, ts: Date.now() }]
   } else if (type === 'scoring_batch') {
     const { batchNum, batchTotal, scored } = payload as Record<string, number>
     const n = scored ?? 0
@@ -60,7 +58,9 @@ function handleEvent(type: string, payload: Record<string, unknown>) {
     const status = payload.status as 'parsing' | 'done' | 'error'
     resumeParseStatus.value = status
     if (status === 'done' || status === 'error') {
-      setTimeout(() => { resumeParseStatus.value = 'idle' }, 5000)
+      setTimeout(() => {
+        resumeParseStatus.value = 'idle'
+      }, 5000)
     }
   } else if (type === 'scoring_complete') {
     scoringActive.value = false

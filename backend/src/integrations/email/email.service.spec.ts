@@ -10,7 +10,7 @@ describe('EmailService', () => {
   beforeEach(async () => {
     configGet = jest.fn((key: string) => {
       if (key === 'RESEND_API_KEY') return 'test-key';
-      if (key === 'FROM_EMAIL') return 'no-reply@myhr.uz';
+      if (key === 'FROM_EMAIL') return 'no-reply@crewly.uz';
       return undefined;
     });
 
@@ -38,7 +38,7 @@ describe('EmailService', () => {
   describe('send', () => {
     it('returns null when no API key configured', async () => {
       configGet.mockImplementation((key: string) =>
-        key === 'RESEND_API_KEY' ? '' : 'no-reply@myhr.uz',
+        key === 'RESEND_API_KEY' ? '' : 'no-reply@crewly.uz',
       );
       const module = await Test.createTestingModule({
         providers: [
@@ -105,14 +105,14 @@ describe('EmailService', () => {
     });
 
     it('sendPasswordReset calls send', async () => {
-      await service.sendPasswordReset('u@x.com', 'https://myhr.uz/reset');
+      await service.sendPasswordReset('u@x.com', 'https://crewly.uz/reset');
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'u@x.com' }),
       );
     });
 
     it('sendEmailVerification calls send', async () => {
-      await service.sendEmailVerification('u@x.com', 'https://myhr.uz/verify');
+      await service.sendEmailVerification('u@x.com', 'https://crewly.uz/verify');
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'u@x.com' }),
       );
@@ -122,7 +122,7 @@ describe('EmailService', () => {
       await service.sendInvite(
         'u@x.com',
         'Bob',
-        'https://myhr.uz/setup',
+        'https://crewly.uz/setup',
         'Acme',
       );
       expect(service.send).toHaveBeenCalledWith(

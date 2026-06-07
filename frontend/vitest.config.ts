@@ -6,6 +6,8 @@ export default defineVitestConfig({
     environment: 'nuxt',
     include: ['**/*.{test,spec}.ts'],
     exclude: ['node_modules', '.nuxt', '.output'],
+    setupFiles: ['./app/test-setup.ts'],
+    dangerouslyIgnoreUnhandledRejections: true,
   },
   resolve: {
     alias: {

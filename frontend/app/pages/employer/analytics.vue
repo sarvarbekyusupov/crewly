@@ -70,9 +70,9 @@ const { data: jobs } = useAsyncData('analytics-jobs', () =>
 )
 
 const jobOptions = computed(() => {
-  const options = [{ id: '', title: 'All Jobs' }]
+  const options = [{ value: '', label: 'All Jobs' }]
   if (jobs.value) {
-    options.push(...jobs.value.map((j) => ({ id: j.id, title: j.title })))
+    options.push(...jobs.value.map((j) => ({ value: j.id, label: j.title })))
   }
   return options
 })
@@ -248,13 +248,7 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
       </div>
 
       <div class="w-full sm:w-64">
-        <USelectMenu
-          v-model="selectedJobId"
-          :options="jobOptions"
-          value-attribute="id"
-          option-attribute="title"
-          placeholder="Filter by job..."
-        />
+        <USelect v-model="selectedJobId" :items="jobOptions" placeholder="Filter by job..." />
       </div>
     </div>
 
@@ -400,14 +394,20 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
 
       <!-- Sourcing & Outreach Funnel Chart -->
       <UCard>
-        <h3 class="text-sm font-semibold mb-4" style="color: var(--ink-muted)">Outreach Funnel Progress</h3>
+        <h3 class="text-sm font-semibold mb-4" style="color: var(--ink-muted)">
+          Outreach Funnel Progress
+        </h3>
         <div class="space-y-4">
-          <div v-for="fun in [
-            { stage: 'Outreach Delivered', count: 1428, percent: 100, color: 'bg-accent' },
-            { stage: 'Campaign Responded', count: 611, percent: 42.8, color: 'bg-info' },
-            { stage: 'AI Screened (Qualified)', count: 263, percent: 18.4, color: 'bg-positive' },
-            { stage: 'Offer Placed', count: 48, percent: 3.3, color: 'bg-indigo-500' }
-          ]" :key="fun.stage" class="space-y-1.5">
+          <div
+            v-for="fun in [
+              { stage: 'Outreach Delivered', count: 1428, percent: 100, color: 'bg-accent' },
+              { stage: 'Campaign Responded', count: 611, percent: 42.8, color: 'bg-info' },
+              { stage: 'AI Screened (Qualified)', count: 263, percent: 18.4, color: 'bg-positive' },
+              { stage: 'Offer Placed', count: 48, percent: 3.3, color: 'bg-indigo-500' },
+            ]"
+            :key="fun.stage"
+            class="space-y-1.5"
+          >
             <div class="flex items-center justify-between text-xs">
               <span class="font-medium text-ink">{{ fun.stage }}</span>
               <div class="flex items-center gap-2 font-mono text-ink-muted">
@@ -417,7 +417,11 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
               </div>
             </div>
             <div class="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-500" :class="fun.color" :style="{ width: `${fun.percent}%` }" />
+              <div
+                class="h-full rounded-full transition-all duration-500"
+                :class="fun.color"
+                :style="{ width: `${fun.percent}%` }"
+              />
             </div>
           </div>
         </div>
@@ -428,19 +432,27 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
         <div class="flex items-center justify-between pb-3 border-b border-line-soft mb-4">
           <div>
             <h3 class="text-sm font-semibold text-ink">Outreach Campaign A/B Testing</h3>
-            <p class="text-[11px] text-ink-subtle">Compare conversion reply rates across different messaging vectors head-to-head.</p>
+            <p class="text-[11px] text-ink-subtle">
+              Compare conversion reply rates across different messaging vectors head-to-head.
+            </p>
           </div>
           <UBadge label="Active Experiment" size="xs" color="success" variant="subtle" />
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-line-soft">
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-line-soft"
+        >
           <!-- Column A -->
           <div class="space-y-3.5 pr-0 md:pr-4">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider">Template A: Tech-Focused</span>
+              <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider"
+                >Template A: Tech-Focused</span
+              >
               <span class="text-xs font-mono font-bold text-ink">42.8% Reply Rate</span>
             </div>
-            <p class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft">
+            <p
+              class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft"
+            >
               "Hi {name}, I saw your impressive skills in {skills}... Let's chat."
             </p>
             <div class="space-y-1">
@@ -449,7 +461,10 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
                 <span>Replies: 305</span>
               </div>
               <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
-                <div class="h-full bg-accent rounded-full animate-all duration-500" style="width: 42.8%" />
+                <div
+                  class="h-full bg-accent rounded-full animate-all duration-500"
+                  style="width: 42.8%"
+                />
               </div>
             </div>
           </div>
@@ -457,10 +472,14 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
           <!-- Column B -->
           <div class="space-y-3.5 pt-4 md:pt-0 pl-0 md:pl-6">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-bold text-info uppercase tracking-wider">Template B: Culture-Focused</span>
+              <span class="text-xs font-mono font-bold text-info uppercase tracking-wider"
+                >Template B: Culture-Focused</span
+              >
               <span class="text-xs font-mono font-bold text-ink">28.4% Reply Rate</span>
             </div>
-            <p class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft">
+            <p
+              class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft"
+            >
               "Hi {name}, we love your remote autonomy goals and fit for our culture..."
             </p>
             <div class="space-y-1">
@@ -469,7 +488,10 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
                 <span>Replies: 202</span>
               </div>
               <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
-                <div class="h-full bg-info rounded-full animate-all duration-500" style="width: 28.4%" />
+                <div
+                  class="h-full bg-info rounded-full animate-all duration-500"
+                  style="width: 28.4%"
+                />
               </div>
             </div>
           </div>
@@ -551,7 +573,13 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
         >
           <p class="text-xs mb-1" style="color: var(--ink-subtle)">Total AI spend</p>
           <div
-            style="font-family: 'Fraunces', serif; font-size: 36px; font-weight: 400; color: var(--ink); line-height: 1"
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 36px;
+              font-weight: 400;
+              color: var(--ink);
+              line-height: 1;
+            "
           >
             ${{ llm.totalCostUsd.toFixed(4) }}
           </div>
@@ -562,30 +590,52 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
         >
           <p class="text-xs mb-3" style="color: var(--ink-subtle)">By model</p>
           <div class="space-y-2">
-            <div v-for="row in llm.byModel" :key="row.model" class="flex items-center gap-3 text-sm">
-              <span class="font-mono text-xs w-48 truncate shrink-0" style="color: var(--ink-muted)">{{ row.model }}</span>
-              <span class="text-xs w-12 text-right shrink-0" style="color: var(--ink-subtle)">{{ row._count }}×</span>
-              <span class="font-mono text-xs w-20 text-right shrink-0" style="color: var(--ink)">${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span>
+            <div
+              v-for="row in llm.byModel"
+              :key="row.model"
+              class="flex items-center gap-3 text-sm"
+            >
+              <span
+                class="font-mono text-xs w-48 truncate shrink-0"
+                style="color: var(--ink-muted)"
+                >{{ row.model }}</span
+              >
+              <span class="text-xs w-12 text-right shrink-0" style="color: var(--ink-subtle)"
+                >{{ row._count }}×</span
+              >
+              <span class="font-mono text-xs w-20 text-right shrink-0" style="color: var(--ink)"
+                >${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span
+              >
             </div>
           </div>
         </div>
       </div>
       <UCard>
         <h3 class="text-sm font-medium mb-4" style="color: var(--ink-subtle)">Cost by Purpose</h3>
-        <div v-if="!llm.byPurpose.length" class="text-center py-6" style="color: var(--ink-subtle)">No data yet</div>
+        <div v-if="!llm.byPurpose.length" class="text-center py-6" style="color: var(--ink-subtle)">
+          No data yet
+        </div>
         <div v-else class="space-y-3">
           <div v-for="row in llm.byPurpose" :key="row.purpose" class="space-y-1">
             <div class="flex items-center justify-between text-xs">
               <span style="color: var(--ink-muted)">{{ row.purpose }}</span>
               <div class="flex items-center gap-3">
-                <span style="color: var(--ink-subtle)">{{ row._count }} calls · {{ ((row._sum.totalTokens ?? 0) / 1000).toFixed(1) }}k tokens</span>
-                <span class="font-mono font-medium" style="color: var(--ink)">${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span>
+                <span style="color: var(--ink-subtle)"
+                  >{{ row._count }} calls · {{ ((row._sum.totalTokens ?? 0) / 1000).toFixed(1) }}k
+                  tokens</span
+                >
+                <span class="font-mono font-medium" style="color: var(--ink)"
+                  >${{ (row._sum.costUsd ?? 0).toFixed(4) }}</span
+                >
               </div>
             </div>
             <div class="h-1.5 rounded-full overflow-hidden" style="background: var(--bg-elevated)">
               <div
                 class="h-full rounded-full"
-                :style="{ width: `${((row._sum.costUsd ?? 0) / llmMaxCost) * 100}%`, background: 'var(--accent)' }"
+                :style="{
+                  width: `${((row._sum.costUsd ?? 0) / llmMaxCost) * 100}%`,
+                  background: 'var(--accent)',
+                }"
               />
             </div>
           </div>

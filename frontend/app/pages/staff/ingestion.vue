@@ -221,7 +221,7 @@ const jobColumns: any[] = [
       <form class="space-y-4" @submit.prevent="triggerIngestion">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <UFormField label="Source">
-            <USelect v-model="triggerForm.source" :options="sourceOptions" class="w-full" />
+            <USelect v-model="triggerForm.source" :items="sourceOptions" class="w-full" />
           </UFormField>
 
           <template v-if="triggerForm.source === 'hh.ru'">
@@ -329,7 +329,7 @@ const jobColumns: any[] = [
       <form class="space-y-4" @submit.prevent="triggerJobDiscovery">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <UFormField label="Source">
-            <USelect v-model="jobDiscoveryForm.source" :options="sourceOptions" class="w-full" />
+            <USelect v-model="jobDiscoveryForm.source" :items="sourceOptions" class="w-full" />
           </UFormField>
           <UFormField label="Search query">
             <UInput

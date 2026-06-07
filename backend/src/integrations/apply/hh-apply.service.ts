@@ -28,7 +28,7 @@ export class HhApplyService {
     hhResumeId: string;
     coverLetter?: string;
   }): Promise<HhApplyResult> {
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
 
     const response = await firstValueFrom(
       this.http.post(
@@ -68,7 +68,7 @@ export class HhApplyService {
           {
             headers: {
               Authorization: `Bearer ${hhOauthToken}`,
-              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'my-hr/1.0',
+              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'crewly/1.0',
             },
           },
         ),

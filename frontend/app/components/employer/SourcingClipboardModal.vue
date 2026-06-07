@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   open: boolean
 }>()
 
@@ -29,17 +29,17 @@ async function triggerParse() {
     toast.add({ title: 'Please paste candidate details first', color: 'warning' })
     return
   }
-  
+
   isParsing.value = true
   playSwoosh()
-  
+
   try {
     // Simulate AI parsing delay
     await new Promise((resolve) => setTimeout(resolve, 1500))
     playPop()
 
     const text = rawText.value.toLowerCase()
-    
+
     // Programmatic keyword extraction
     if (text.includes('sarvar') || text.includes('yusupov')) {
       form.fullName = 'Sarvarbek Yusupov'
@@ -82,7 +82,7 @@ async function saveCandidate() {
     toast.add({ title: `Successfully sourced ${form.fullName}!`, color: 'success' })
     emit('success')
     emit('update:open', false)
-    
+
     // Reset state
     rawText.value = ''
     isParsed.value = false
@@ -110,18 +110,25 @@ async function saveCandidate() {
       <div class="p-6 space-y-6">
         <!-- Header -->
         <div class="text-center pb-3 border-b border-line-soft">
-          <div class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3">
+          <div
+            class="inline-flex w-10 h-10 rounded-full bg-accent-soft text-accent items-center justify-center mb-3"
+          >
             <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5" />
           </div>
           <h3 class="text-lg font-serif font-semibold text-ink">Clipboard Sourcing Copilot</h3>
-          <p class="text-xs text-ink-subtle mt-0.5">Paste a raw LinkedIn bio, resume text, or email and extract candidate details instantly.</p>
+          <p class="text-xs text-ink-subtle mt-0.5">
+            Paste a raw LinkedIn bio, resume text, or email and extract candidate details instantly.
+          </p>
         </div>
 
         <div class="flex flex-col md:flex-row gap-6 h-[400px] overflow-hidden min-h-0">
           <!-- Left: Paste clipboard -->
           <div class="w-full md:w-1/2 flex flex-col justify-between">
             <div class="flex-1 flex flex-col">
-              <span class="text-xs font-mono font-bold text-ink-subtle uppercase tracking-wider mb-2">Raw Copied Text</span>
+              <span
+                class="text-xs font-mono font-bold text-ink-subtle uppercase tracking-wider mb-2"
+                >Raw Copied Text</span
+              >
               <UTextarea
                 v-model="rawText"
                 placeholder="Paste LinkedIn bio or text here (e.g. 'Sarvarbek Yusupov is a Full-Stack developer at myHR with skills in TypeScript...')"
@@ -147,9 +154,15 @@ async function saveCandidate() {
           <!-- Right: Structured, editable form -->
           <div class="w-full md:w-1/2 flex flex-col justify-between overflow-y-auto pr-2">
             <div class="space-y-3 flex-1">
-              <span class="text-xs font-mono font-bold text-ink-subtle uppercase tracking-wider mb-2 block">Structured Candidate Form</span>
-              
-              <div v-if="!isParsed && !isParsing" class="text-center py-12 text-xs text-ink-subtle border border-dashed border-line-soft rounded-xl bg-bg-deep">
+              <span
+                class="text-xs font-mono font-bold text-ink-subtle uppercase tracking-wider mb-2 block"
+                >Structured Candidate Form</span
+              >
+
+              <div
+                v-if="!isParsed && !isParsing"
+                class="text-center py-12 text-xs text-ink-subtle border border-dashed border-line-soft rounded-xl bg-bg-deep"
+              >
                 Paste raw profile data and click "Parse with AI" to generate candidate profile.
               </div>
 
@@ -158,24 +171,40 @@ async function saveCandidate() {
                   <UInput v-model="form.fullName" placeholder="e.g. John Doe" class="w-full" />
                 </UFormField>
                 <UFormField label="Email" name="email">
-                  <UInput v-model="form.email" type="email" placeholder="john@example.com" class="w-full" />
+                  <UInput
+                    v-model="form.email"
+                    type="email"
+                    placeholder="john@example.com"
+                    class="w-full"
+                  />
                 </UFormField>
                 <div class="grid grid-cols-2 gap-3">
                   <UFormField label="Position" name="position">
-                    <UInput v-model="form.position" placeholder="e.g. Senior Architect" class="w-full" />
+                    <UInput
+                      v-model="form.position"
+                      placeholder="e.g. Senior Architect"
+                      class="w-full"
+                    />
                   </UFormField>
                   <UFormField label="Current Company" name="company">
                     <UInput v-model="form.company" placeholder="e.g. Stripe" class="w-full" />
                   </UFormField>
                 </div>
                 <UFormField label="Extracted Skills (comma separated)" name="skillsText">
-                  <UTextarea v-model="form.skillsText" placeholder="TypeScript, Vue.js, Node.js" :rows="2" class="w-full font-mono text-xs" />
+                  <UTextarea
+                    v-model="form.skillsText"
+                    placeholder="TypeScript, Vue.js, Node.js"
+                    :rows="2"
+                    class="w-full font-mono text-xs"
+                  />
                 </UFormField>
               </div>
             </div>
 
             <div class="pt-4 border-t border-line-soft flex justify-end gap-2">
-              <UButton variant="outline" size="sm" @click="emit('update:open', false)">Cancel</UButton>
+              <UButton variant="outline" size="sm" @click="emit('update:open', false)"
+                >Cancel</UButton
+              >
               <UButton
                 color="success"
                 size="sm"
@@ -189,7 +218,6 @@ async function saveCandidate() {
             </div>
           </div>
         </div>
-
       </div>
     </template>
   </UModal>

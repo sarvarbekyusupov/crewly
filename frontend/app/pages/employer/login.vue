@@ -189,7 +189,7 @@ async function resendVerification() {
             letter-spacing: 0.06em;
           "
         >
-          © 2026 myhr
+          © 2026 Crewly
         </p>
       </div>
     </div>
@@ -242,7 +242,7 @@ async function resendVerification() {
           {{ t('auth.loginTitle') }}
         </h2>
         <p class="text-sm mb-7" style="color: var(--ink-muted)">
-          Log in to your myhr employer portal
+          Log in to your Crewly employer portal
         </p>
 
         <!-- ── LOGIN FORM ── -->
@@ -346,7 +346,7 @@ async function resendVerification() {
           >Privacy</NuxtLink
         >
         <span class="mx-2">·</span>
-        <span>© 2026 myhr</span>
+        <span>© 2026 Crewly</span>
       </footer>
     </div>
   </div>

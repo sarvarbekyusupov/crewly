@@ -97,9 +97,7 @@ describe('applyApiFieldErrors', () => {
     const mockCallback = vi.fn()
     const directBody = {
       error: {
-        details: [
-          { field: 'email', message: 'Email must be valid' },
-        ],
+        details: [{ field: 'email', message: 'Email must be valid' }],
       },
     }
     expect(applyApiFieldErrors(directBody, mockCallback)).toBe(true)
@@ -123,8 +121,8 @@ describe('extractApiErrorMessage', () => {
       data: {
         statusCode: 409,
         message: 'Email already registered',
-        error: 'Conflict'
-      }
+        error: 'Conflict',
+      },
     }
     expect(extractApiErrorMessage(err)).toBe('Email already registered')
   })
@@ -135,9 +133,9 @@ describe('extractApiErrorMessage', () => {
         error: {
           statusCode: 409,
           message: 'Email already registered',
-          error: 'Conflict'
-        }
-      }
+          error: 'Conflict',
+        },
+      },
     }
     expect(extractApiErrorMessage(err)).toBe('Email already registered')
   })
@@ -146,4 +144,3 @@ describe('extractApiErrorMessage', () => {
     expect(extractApiErrorMessage(null, 'fallback')).toBe('fallback')
   })
 })
-

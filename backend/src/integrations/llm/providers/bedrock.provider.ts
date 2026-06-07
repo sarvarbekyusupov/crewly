@@ -28,7 +28,9 @@ export class BedrockProvider implements LlmProvider {
       this.client = new AnthropicBedrock({ awsRegion: region });
     } else {
       this.client = null;
-      this.logger.warn('AWS_BEARER_TOKEN_BEDROCK not set — Bedrock unavailable');
+      this.logger.warn(
+        'AWS_BEARER_TOKEN_BEDROCK not set — Bedrock unavailable',
+      );
     }
   }
 
@@ -44,7 +46,8 @@ export class BedrockProvider implements LlmProvider {
 
     const groqModel = opts.model ?? 'llama-3.3-70b-versatile';
     const model =
-      GROQ_TO_BEDROCK[groqModel] ?? 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
+      GROQ_TO_BEDROCK[groqModel] ??
+      'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 
     try {
       const response = await this.client.messages.create({

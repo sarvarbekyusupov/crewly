@@ -41,7 +41,7 @@ export const EnvSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
 
   RESEND_API_KEY: z.string().optional().or(z.literal('')),
-  FROM_EMAIL: z.string().email().default('noreply@myhr.uz'),
+  FROM_EMAIL: z.string().email().default('noreply@crewly.uz'),
   BULL_BOARD_PASSWORD: z.string().min(16),
 
   S3_ENDPOINT: z.string().optional().or(z.literal('')),

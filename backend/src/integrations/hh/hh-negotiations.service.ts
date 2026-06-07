@@ -36,7 +36,7 @@ export class HhNegotiationsService {
 
   private get headers() {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -116,7 +116,7 @@ export class HhNegotiationsService {
   }): Promise<string> {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
     const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const authHeaders = {
       Authorization: `Bearer ${token}`,
       'User-Agent': userAgent,
@@ -135,21 +135,16 @@ export class HhNegotiationsService {
             arguments: Array<{ id: string; required: boolean }>;
           }>;
         }>;
-      }>(
-        `${this.baseUrl}/employers/${employerId}/vacancies/active`,
-        {
-          params: { resume_id: params.resumeId },
-          headers: authHeaders,
-        },
-      ),
+      }>(`${this.baseUrl}/employers/${employerId}/vacancies/active`, {
+        params: { resume_id: params.resumeId },
+        headers: authHeaders,
+      }),
     );
 
     const vacancyItem = actionsResp.data.items?.find(
       (v: any) => v.id === params.vacancyId,
     );
-    const action = vacancyItem?.negotiations_actions?.find(
-      (a) => a.enabled,
-    );
+    const action = vacancyItem?.negotiations_actions?.find((a) => a.enabled);
 
     if (!action) {
       throw new Error(

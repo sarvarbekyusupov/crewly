@@ -15,7 +15,6 @@ import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 // @ts-ignore
 import { PDFParse } from 'pdf-parse';
 
-
 @Injectable()
 export class CandidatePortalService {
   private readonly logger = new Logger(CandidatePortalService.name);

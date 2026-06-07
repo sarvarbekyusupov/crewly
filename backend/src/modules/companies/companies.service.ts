@@ -108,7 +108,7 @@ export class CompaniesService {
         user.email,
         user.fullName,
         `${frontendUrl}/reset-password?token=${token}`,
-        company?.name ?? 'MyHR',
+        company?.name ?? 'Crewly',
       )
       .catch(() => {});
 
