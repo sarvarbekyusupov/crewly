@@ -28,3 +28,9 @@ Thumbs.db
 
 # Docker image metadata
 .env.image
+
+# TLS certificates (generated locally — never commit private keys)
+nginx/certs/
+
+# Planning docs (ephemeral, not repo assets)
+conductor/
