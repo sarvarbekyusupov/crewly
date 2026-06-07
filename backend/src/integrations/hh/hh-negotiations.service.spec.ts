@@ -46,45 +46,93 @@ describe('HhNegotiationsService', () => {
   });
 
   describe('getVacancyCollections', () => {
-    it('returns employer states for vacancy', async () => {
+    it('extracts states from GET /negotiations response', async () => {
       const states = [{ id: 'response', name: 'Неразобранные' }];
-      httpGet.mockReturnValue(of({ data: { states } }));
+      httpGet.mockReturnValue(of({ data: { states, collections: [] } }));
 
       const result = await service.getVacancyCollections('vac-1');
 
       expect(result).toEqual(states);
+      // Must hit /negotiations not the non-existent /negotiations/employer_states
       expect(httpGet).toHaveBeenCalledWith(
-        expect.stringContaining('/negotiations/employer_states'),
+        'https://api.hh.ru/negotiations',
         expect.objectContaining({ params: expect.objectContaining({ vacancy_id: 'vac-1' }) }),
       );
     });
 
-    it('returns [] when states missing from response', async () => {
-      httpGet.mockReturnValue(of({ data: {} }));
+    it('returns [] when states absent from response', async () => {
+      httpGet.mockReturnValue(of({ data: { collections: [] } }));
       const result = await service.getVacancyCollections('vac-1');
       expect(result).toEqual([]);
     });
   });
 
   describe('getVacancyResponses', () => {
-    it('returns negotiation items with pagination', async () => {
-      const payload = {
-        items: [{ id: 'neg-1', state: { id: 'response' } }],
-        pages: 2,
-        page: 0,
-      };
-      httpGet.mockReturnValue(of({ data: payload }));
+    const collectionUrl = 'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
+    const negotiationItems = [{ id: 'neg-1', state: { id: 'response' } }];
+
+    it('fetches collections then items from each collection URL', async () => {
+      httpGet
+        .mockReturnValueOnce(
+          of({ data: { collections: [{ id: 'response', url: collectionUrl }] } }),
+        )
+        .mockReturnValueOnce(of({ data: { items: negotiationItems } }));
 
       const result = await service.getVacancyResponses('vac-1', { perPage: 50 });
 
       expect(result.items).toHaveLength(1);
-      expect(result.pages).toBe(2);
-      expect(httpGet).toHaveBeenCalledWith(
-        expect.stringContaining('/negotiations'),
-        expect.objectContaining({
-          params: expect.objectContaining({ vacancy_id: 'vac-1', per_page: 50 }),
-        }),
+      expect(result.items[0].id).toBe('neg-1');
+      // First call: get collections
+      expect(httpGet).toHaveBeenNthCalledWith(
+        1,
+        'https://api.hh.ru/negotiations',
+        expect.objectContaining({ params: { vacancy_id: 'vac-1' } }),
       );
+      // Second call: get items from collection URL
+      expect(httpGet).toHaveBeenNthCalledWith(
+        2,
+        collectionUrl,
+        expect.objectContaining({ params: { per_page: 50 } }),
+      );
+    });
+
+    it('returns empty items when no collections', async () => {
+      httpGet.mockReturnValue(of({ data: { collections: [] } }));
+      const result = await service.getVacancyResponses('vac-1');
+      expect(result.items).toEqual([]);
+      expect(httpGet).toHaveBeenCalledTimes(1);
+    });
+
+    it('combines items from multiple collections', async () => {
+      const url1 = 'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
+      const url2 = 'https://api.hh.ru/negotiations/interview?vacancy_id=vac-1';
+      httpGet
+        .mockReturnValueOnce(
+          of({
+            data: {
+              collections: [
+                { id: 'response', url: url1 },
+                { id: 'interview', url: url2 },
+              ],
+            },
+          }),
+        )
+        .mockReturnValueOnce(of({ data: { items: [{ id: 'neg-1' }] } }))
+        .mockReturnValueOnce(of({ data: { items: [{ id: 'neg-2' }] } }));
+
+      const result = await service.getVacancyResponses('vac-1');
+      expect(result.items).toHaveLength(2);
+    });
+
+    it('skips failed collection fetches and returns others', async () => {
+      httpGet
+        .mockReturnValueOnce(
+          of({ data: { collections: [{ id: 'response', url: collectionUrl }] } }),
+        )
+        .mockImplementationOnce(() => { throw new Error('network error'); });
+
+      const result = await service.getVacancyResponses('vac-1');
+      expect(result.items).toEqual([]);
     });
   });
 

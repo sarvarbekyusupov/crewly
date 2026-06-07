@@ -45,13 +45,13 @@ export class HhNegotiationsService {
   }
 
   /**
-   * Fetch the pipeline stage collections for a vacancy.
-   * Must be called before any negotiation work to know valid collection IDs.
+   * Fetch employer pipeline states for a vacancy.
+   * GET /negotiations?vacancy_id= returns {collections, states} — extract states.
    */
   async getVacancyCollections(vacancyId: string): Promise<HhEmployerState[]> {
     const response = await firstValueFrom(
-      this.http.get<{ states: HhEmployerState[] }>(
-        `${this.baseUrl}/negotiations/employer_states`,
+      this.http.get<{ states?: HhEmployerState[]; collections?: unknown[] }>(
+        `${this.baseUrl}/negotiations`,
         { params: { vacancy_id: vacancyId }, headers: this.headers },
       ),
     );
@@ -59,29 +59,49 @@ export class HhNegotiationsService {
   }
 
   /**
-   * Fetch all responses/applications for a vacancy.
+   * Fetch all inbound negotiations for a vacancy by iterating every collection.
+   * GET /negotiations?vacancy_id= returns {collections:[{url}]} not items.
+   * Items live at each collection.url — must be fetched individually.
    */
   async getVacancyResponses(
     vacancyId: string,
-    opts: { status?: string; page?: number; perPage?: number } = {},
-  ): Promise<{ items: HhNegotiationItem[]; pages: number; page: number }> {
-    const response = await firstValueFrom(
+    opts: { perPage?: number } = {},
+  ): Promise<{ items: HhNegotiationItem[] }> {
+    // Step 1: get collection URLs for this vacancy
+    const collectionsResp = await firstValueFrom(
       this.http.get<{
-        items: HhNegotiationItem[];
-        pages: number;
-        page: number;
+        collections?: Array<{ id: string; url: string }>;
       }>(`${this.baseUrl}/negotiations`, {
-        params: {
-          vacancy_id: vacancyId,
-          order_by: 'updated_at',
-          per_page: opts.perPage ?? 100,
-          page: opts.page ?? 0,
-          ...(opts.status && { status: opts.status }),
-        },
+        params: { vacancy_id: vacancyId },
         headers: this.headers,
       }),
     );
-    return response.data;
+
+    const collections = collectionsResp.data.collections ?? [];
+    if (!collections.length) return { items: [] };
+
+    // Step 2: fetch items from every collection
+    const allItems: HhNegotiationItem[] = [];
+    await Promise.all(
+      collections.map(async (col) => {
+        try {
+          const res = await firstValueFrom(
+            this.http.get<{ items?: HhNegotiationItem[] }>(col.url, {
+              params: { per_page: opts.perPage ?? 100 },
+              headers: this.headers,
+            }),
+          );
+          allItems.push(...(res.data.items ?? []));
+        } catch (err: any) {
+          this.logger.warn(
+            { collectionId: col.id, err: err.message },
+            'Failed to fetch HH negotiation collection',
+          );
+        }
+      }),
+    );
+
+    return { items: allItems };
   }
 
   /**
