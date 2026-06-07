@@ -86,6 +86,7 @@ export class HhNegotiationsService {
 
   /**
    * Invite a candidate to apply (employer → candidate invitation).
+   * Fetches available action URLs from HH first, then executes the first enabled action.
    * Returns the negotiation ID for tracking.
    */
   async inviteCandidate(params: {
@@ -93,36 +94,75 @@ export class HhNegotiationsService {
     resumeId: string;
     message: string;
   }): Promise<string> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const authHeaders = {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': userAgent,
+      'HH-User-Agent': userAgent,
+    };
 
-    const response = await firstValueFrom(
-      this.http.post(
-        `${this.baseUrl}/negotiations`,
+    // Step 1: fetch available invitation actions for this vacancy+resume combo
+    const actionsResp = await firstValueFrom(
+      this.http.get<{
+        items: Array<{
+          negotiations_actions: Array<{
+            id: string;
+            enabled: boolean;
+            method: string;
+            url: string;
+            arguments: Array<{ id: string; required: boolean }>;
+          }>;
+        }>;
+      }>(
+        `${this.baseUrl}/employers/${employerId}/vacancies/active`,
         {
-          vacancy_id: params.vacancyId,
-          resume_id: params.resumeId,
-          message: params.message,
-          send_sms: false,
-          notify_applicant: true,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-            'Content-Type': 'application/json',
-          },
+          params: { resume_id: params.resumeId },
+          headers: authHeaders,
         },
       ),
     );
 
-    // HH returns 201 with Location header: /negotiations/{id}
+    const vacancyItem = actionsResp.data.items?.find(
+      (v: any) => v.id === params.vacancyId,
+    );
+    const action = vacancyItem?.negotiations_actions?.find(
+      (a) => a.enabled,
+    );
+
+    if (!action) {
+      throw new Error(
+        `No enabled invitation action found for vacancy ${params.vacancyId} and resume ${params.resumeId}`,
+      );
+    }
+
+    // Step 2: execute the action using its dynamic URL and method
+    const queryParams: Record<string, string> = {
+      resume_id: params.resumeId,
+      vacancy_id: params.vacancyId,
+      message: params.message,
+    };
+
+    const response = await firstValueFrom(
+      this.http.request({
+        method: action.method,
+        url: action.url,
+        params: queryParams,
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      }),
+    );
+
     const location: string = response.headers['location'] ?? '';
     const negotiationId = location.split('/').pop() ?? 'unknown';
     this.logger.log(
-      { vacancyId: params.vacancyId, resumeId: params.resumeId, negotiationId },
-      'HH candidate invited',
+      {
+        vacancyId: params.vacancyId,
+        resumeId: params.resumeId,
+        action: action.id,
+        negotiationId,
+      },
+      'HH candidate invited via action URL',
     );
     return negotiationId;
   }
@@ -151,6 +191,8 @@ export class HhNegotiationsService {
 
   /**
    * Send a message in an existing negotiation thread.
+   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
+   * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
   async sendMessage(negotiationId: string, message: string): Promise<void> {
     await firstValueFrom(
@@ -185,6 +227,8 @@ export class HhNegotiationsService {
 
   /**
    * Fetch the full message thread for a negotiation.
+   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
+   * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
   async getMessages(negotiationId: string): Promise<HhNegotiationMessage[]> {
     const response = await firstValueFrom(

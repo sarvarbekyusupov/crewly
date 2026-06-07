@@ -145,14 +145,17 @@ export class HhVacancyService {
     this.logger.log({ hhVacancyId }, 'HH vacancy archived');
   }
 
-  /** Delete a vacancy on HH. */
+  /** Move a vacancy to hidden (HH "delete" = add to hidden list). */
   async deleteVacancy(hhVacancyId: string): Promise<void> {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
     await firstValueFrom(
-      this.http.delete(`${this.baseUrl}/vacancies/${hhVacancyId}`, {
-        headers: this.headers,
-      }),
+      this.http.put(
+        `${this.baseUrl}/employers/${employerId}/vacancies/hidden`,
+        { vacancy_id: hhVacancyId },
+        { headers: this.headers },
+      ),
     );
-    this.logger.log({ hhVacancyId }, 'HH vacancy deleted');
+    this.logger.log({ hhVacancyId }, 'HH vacancy moved to hidden');
   }
 
   /** Resumes viewed by candidates on this vacancy (warm outreach leads). */

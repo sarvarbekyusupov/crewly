@@ -34,8 +34,15 @@ interface Profile {
   parsedResume?: {
     summary?: string
     positions?: { title?: string; company?: string; start?: string; end?: string }[]
-    education?: { degree?: string; field?: string; institution?: string }[]
+    education?: {
+      degree?: string
+      field?: string
+      institution?: string
+      start?: string
+      end?: string
+    }[]
     languages?: { name?: string; level?: string }[]
+    skillLevels?: Record<string, string>
   }
 }
 
@@ -114,6 +121,7 @@ function setupSSE() {
 
 onMounted(() => {
   setupSSE()
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onUnmounted(() => {
@@ -125,10 +133,11 @@ onUnmounted(() => {
     clearTimeout(parsingTimeoutId)
     parsingTimeoutId = null
   }
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 // --- VeeValidate form ---
-const { errors, handleSubmit, defineField, setValues, setFieldError } = useForm({
+const { errors, handleSubmit, defineField, setFieldError, resetForm } = useForm({
   validationSchema: toTypedSchema(candidateProfileSchema),
 })
 
@@ -149,6 +158,25 @@ const [telegramUsername, telegramUsernameProps] = defineField('telegramUsername'
 const skills = ref<string[]>([])
 const editingSkillIndex = ref<number | null>(null)
 
+const { searchAreas, searchSkills } = useHhSuggests()
+const cityItems = ref<string[]>([])
+const citySearching = ref(false)
+const skillItems = ref<string[]>([])
+
+async function onCitySearch(text: string) {
+  if (!text || text.length < 2) { cityItems.value = []; return }
+  citySearching.value = true
+  const items = await searchAreas(text)
+  cityItems.value = items.map((i) => i.text)
+  citySearching.value = false
+}
+
+async function onSkillSearch(text: string) {
+  if (!text || text.length < 2) { skillItems.value = []; return }
+  const items = await searchSkills(text)
+  skillItems.value = items.map((i) => i.text)
+}
+
 function addCustomSkill() {
   skills.value.push('')
   editingSkillIndex.value = skills.value.length - 1
@@ -161,50 +189,177 @@ function deleteCustomSkill(index: number) {
   }
 }
 
+function moveSkillUp(index: number) {
+  if (index <= 0 || index >= skills.value.length) return
+  const temp = skills.value[index] as string
+  skills.value[index] = skills.value[index - 1] as string
+  skills.value[index - 1] = temp
+}
+
+function moveSkillDown(index: number) {
+  if (index < 0 || index >= skills.value.length - 1) return
+  const temp = skills.value[index] as string
+  skills.value[index] = skills.value[index + 1] as string
+  skills.value[index + 1] = temp
+}
+
 // Reactive editable arrays from parsedResume
 const localPositions = ref<{ title?: string; company?: string; start?: string; end?: string }[]>([])
-const localEducation = ref<{ degree?: string; field?: string; institution?: string }[]>([])
+const localEducation = ref<
+  { degree?: string; field?: string; institution?: string; start?: string; end?: string }[]
+>([])
 const localLanguages = ref<{ name?: string; level?: string }[]>([])
+const localSkillLevels = ref<Record<string, string>>({})
+const localSummary = ref('')
+const isEditingSummary = ref(false)
 
-// Visibility privacy
+// Dirty-state tracking: flag set by user edits, cleared on profile load
+const userHasEdited = ref(false)
+let _resettingFromProfile = false
+
+// Countries list for searchable SelectMenu
+const countriesList = [
+  { label: 'Uzbekistan', value: 'UZ' },
+  { label: 'United States', value: 'US' },
+  { label: 'United Kingdom', value: 'GB' },
+  { label: 'Germany', value: 'DE' },
+  { label: 'Russia', value: 'RU' },
+  { label: 'Kazakhstan', value: 'KZ' },
+  { label: 'Canada', value: 'CA' },
+  { label: 'France', value: 'FR' },
+  { label: 'Turkey', value: 'TR' },
+  { label: 'United Arab Emirates', value: 'AE' },
+  { label: 'India', value: 'IN' },
+  { label: 'China', value: 'CN' },
+  { label: 'Japan', value: 'JP' },
+  { label: 'South Korea', value: 'KR' },
+  { label: 'Australia', value: 'AU' },
+  { label: 'Singapore', value: 'SG' },
+  { label: 'Netherlands', value: 'NL' },
+  { label: 'Spain', value: 'ES' },
+  { label: 'Italy', value: 'IT' },
+  { label: 'Sweden', value: 'SE' },
+  { label: 'Switzerland', value: 'CH' },
+]
+
+// Scroll and focus helper
+function scrollToAndFocus(id: string) {
+  const element = document.getElementById(id)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => {
+      const input = element.querySelector(
+        'input, select, textarea, button',
+      ) as HTMLInputElement | null
+      if (input) {
+        input.focus()
+      }
+    }, 300)
+  }
+}
+
+// Visibility privacy — must be declared before the field watcher below
 const hideFromCurrentCompany = ref(false)
+
+const isFormDirty = computed(() => userHasEdited.value)
+
+// Watch all editable fields and arrays — sets userHasEdited when the user (not the system) changes something
+watch(
+  [
+    fullName,
+    phone,
+    city,
+    country,
+    currentPosition,
+    currentCompany,
+    linkedinUrl,
+    githubUrl,
+    preferredWorkMode,
+    willingToRelocate,
+    yearsExperience,
+    noticePeriodDays,
+    telegramUsername,
+    localPositions,
+    localEducation,
+    localLanguages,
+    skills,
+    localSkillLevels,
+    localSummary,
+    hideFromCurrentCompany,
+  ],
+  () => {
+    if (!_resettingFromProfile) userHasEdited.value = true
+  },
+  { deep: true },
+)
+
+// Unsaved changes window unload guard
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isFormDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+// Navigation guard for route change
+onBeforeRouteLeave(() => {
+  if (isFormDirty.value) {
+    const confirmLeave = confirm(
+      'You have unsaved changes. Are you sure you want to leave this page?',
+    )
+    if (!confirmLeave) return false
+  }
+})
 
 watch(
   profile,
-  (p) => {
+  async (p) => {
     if (!p) return
-    setValues({
-      fullName: p.fullName ?? '',
-      phone: p.phone ?? '',
-      city: p.city ?? '',
-      country: p.country ?? '',
-      currentPosition: p.currentPosition ?? '',
-      currentCompany: p.currentCompany ?? '',
-      linkedinUrl: p.linkedinUrl ?? '',
-      githubUrl: p.githubUrl ?? '',
-      preferredWorkMode: p.preferredWorkMode ?? '',
-      willingToRelocate: p.willingToRelocate ?? false,
-      yearsExperience:
-        p.yearsExperience !== undefined && p.yearsExperience !== null && p.yearsExperience !== ''
-          ? Number(p.yearsExperience)
-          : undefined,
-      noticePeriodDays:
-        p.noticePeriodDays !== undefined && p.noticePeriodDays !== null && p.noticePeriodDays !== ''
-          ? Number(p.noticePeriodDays)
-          : undefined,
-      telegramUsername: p.telegramUsername ?? '',
+    resetForm({
+      values: {
+        fullName: p.fullName ?? '',
+        phone: p.phone ?? '',
+        city: p.city ?? '',
+        country: p.country ?? '',
+        currentPosition: p.currentPosition ?? '',
+        currentCompany: p.currentCompany ?? '',
+        linkedinUrl: p.linkedinUrl ?? '',
+        githubUrl: p.githubUrl ?? '',
+        preferredWorkMode: p.preferredWorkMode ?? '',
+        willingToRelocate: p.willingToRelocate ?? false,
+        yearsExperience:
+          p.yearsExperience !== undefined && p.yearsExperience !== null && p.yearsExperience !== ''
+            ? Number(p.yearsExperience)
+            : undefined,
+        noticePeriodDays:
+          p.noticePeriodDays !== undefined &&
+          p.noticePeriodDays !== null &&
+          p.noticePeriodDays !== ''
+            ? Number(p.noticePeriodDays)
+            : undefined,
+        telegramUsername: p.telegramUsername ?? '',
+      },
     })
-    skills.value = p.skills ?? []
+    skills.value = Array.isArray(p.skills) ? [...p.skills] : []
 
-    // Populate positions, education, languages
+    // Populate positions, education, languages, summary
     localPositions.value = JSON.parse(JSON.stringify(p.parsedResume?.positions || []))
     localEducation.value = JSON.parse(JSON.stringify(p.parsedResume?.education || []))
     localLanguages.value = JSON.parse(JSON.stringify(p.parsedResume?.languages || []))
+    localSummary.value = p.parsedResume?.summary ?? ''
+    localSkillLevels.value = JSON.parse(JSON.stringify(p.parsedResume?.skillLevels || {}))
 
     // Privacy logic
     const company = p.currentCompany ? p.currentCompany.toLowerCase().trim() : ''
     const blacklist = (p.blacklistedCompanies ?? []).map((c) => c.toLowerCase().trim())
     hideFromCurrentCompany.value = company !== '' && blacklist.includes(company)
+
+    // Block the field watcher during and immediately after the reset so it
+    // doesn't mis-interpret system-driven value changes as user edits
+    _resettingFromProfile = true
+    await nextTick()
+    userHasEdited.value = false
+    _resettingFromProfile = false
   },
   { immediate: true },
 )
@@ -221,22 +376,58 @@ const rolesList = [
 const roadmapSteps = computed(() => {
   if (targetRole.value === 'architect') {
     return [
-      { skill: 'TypeScript & Nuxt 3', desc: 'Core architecture and performance optimization.', status: 'matched' },
-      { skill: 'PostgreSQL & Index Optimization', desc: 'Relational data design and scaling.', status: 'matched' },
-      { skill: 'Docker & Kubernetes IaC', desc: 'Container orchestration and platform scaling.', status: 'missing' }
+      {
+        skill: 'TypeScript & Nuxt 3',
+        desc: 'Core architecture and performance optimization.',
+        status: 'matched',
+      },
+      {
+        skill: 'PostgreSQL & Index Optimization',
+        desc: 'Relational data design and scaling.',
+        status: 'matched',
+      },
+      {
+        skill: 'Docker & Kubernetes IaC',
+        desc: 'Container orchestration and platform scaling.',
+        status: 'missing',
+      },
     ]
   }
   if (targetRole.value === 'lead') {
     return [
-      { skill: 'System Design Patterns', desc: 'Cohesive modular architectural layouts.', status: 'matched' },
-      { skill: 'Mentorship & Code Reviews', desc: 'Guiding junior engineers and assuring PR quality.', status: 'missing' },
-      { skill: 'Agile Delivery Orchestration', desc: 'Scrum sprint sizing and scope estimations.', status: 'matched' }
+      {
+        skill: 'System Design Patterns',
+        desc: 'Cohesive modular architectural layouts.',
+        status: 'matched',
+      },
+      {
+        skill: 'Mentorship & Code Reviews',
+        desc: 'Guiding junior engineers and assuring PR quality.',
+        status: 'missing',
+      },
+      {
+        skill: 'Agile Delivery Orchestration',
+        desc: 'Scrum sprint sizing and scope estimations.',
+        status: 'matched',
+      },
     ]
   }
   return [
-    { skill: 'Product Roadmap Sizing', desc: 'Mapping tech deliverables to product KPIs.', status: 'missing' },
-    { skill: 'Resource Allocation & Budgets', desc: 'Hiring capacity plans and AWS cost optimization.', status: 'missing' },
-    { skill: 'Cross-functional Coordination', desc: 'Aligning design, QA, and developer pipelines.', status: 'matched' }
+    {
+      skill: 'Product Roadmap Sizing',
+      desc: 'Mapping tech deliverables to product KPIs.',
+      status: 'missing',
+    },
+    {
+      skill: 'Resource Allocation & Budgets',
+      desc: 'Hiring capacity plans and AWS cost optimization.',
+      status: 'missing',
+    },
+    {
+      skill: 'Cross-functional Coordination',
+      desc: 'Aligning design, QA, and developer pipelines.',
+      status: 'matched',
+    },
   ]
 })
 
@@ -261,6 +452,8 @@ const save = handleSubmit(async (values) => {
         positions: localPositions.value,
         education: localEducation.value,
         languages: localLanguages.value,
+        summary: localSummary.value,
+        skillLevels: localSkillLevels.value,
       },
     }
 
@@ -377,7 +570,7 @@ function deletePosition(index: number) {
 }
 
 function addEducation() {
-  localEducation.value.push({ degree: '', field: '', institution: '' })
+  localEducation.value.push({ degree: '', field: '', institution: '', start: '', end: '' })
   editingEducationIndex.value = localEducation.value.length - 1
 }
 function deleteEducation(index: number) {
@@ -395,12 +588,19 @@ function deleteLanguage(index: number) {
 }
 
 // Warnings & helpers
+const isCurrentPosition = (p: { end?: string }) =>
+  !p.end || p.end.toLowerCase().includes('present') || p.end.toLowerCase().includes('now')
+
 const overlappingPositionsWarning = computed(() => {
-  const currentPositions = localPositions.value.filter(
-    (p) => !p.end || p.end.toLowerCase().includes('present') || p.end.toLowerCase().includes('now'),
-  )
-  return currentPositions.length > 1
+  return localPositions.value.filter(isCurrentPosition).length > 1
 })
+
+const firstOverlappingIndex = computed(() => localPositions.value.findIndex(isCurrentPosition))
+
+function fixFirstOverlap() {
+  editingPositionIndex.value = firstOverlappingIndex.value
+  nextTick(() => scrollToAndFocus(`position-${firstOverlappingIndex.value}`))
+}
 
 function formatTelegramUsername(val?: string) {
   if (!val) return ''
@@ -429,40 +629,41 @@ async function regenerateSummary() {
   }
 }
 
-const { percent: completeness } = useProfileCompletion(profile)
+const { percent: completeness, missing: completenessMissing } = useProfileCompletion(profile)
 
 // Actionable Dropdown list for progress bar
 const missingProfileItems = computed(() => {
-  const p = profile.value
-  const items = []
-  if (!p) return []
-
-  if (!p.fullName) items.push({ label: 'Add Full Name (+12%)', icon: 'i-heroicons-user' })
-  if (!p.phone) items.push({ label: 'Add Phone Number (+12%)', icon: 'i-heroicons-phone' })
-  if (!p.city) items.push({ label: 'Add City (+12%)', icon: 'i-heroicons-map-pin' })
-  if (!p.currentPosition)
-    items.push({ label: 'Add Current Position (+12%)', icon: 'i-heroicons-briefcase' })
-  if (!p.currentCompany)
-    items.push({ label: 'Add Current Company (+12%)', icon: 'i-heroicons-building-office' })
-  if (!p.preferredWorkMode)
-    items.push({ label: 'Select Preferred Work Mode (+12%)', icon: 'i-heroicons-globe-alt' })
-  if (!p.resumeFileUrl)
-    items.push({ label: 'Upload your Resume CV (+12%)', icon: 'i-heroicons-arrow-up-tray' })
-  if (!p.telegramUsername)
-    items.push({ label: 'Add Telegram handle (+12%)', icon: 'i-heroicons-paper-airplane' })
-  if ((p.skills?.length ?? 0) === 0)
-    items.push({ label: 'Add Skills (+12%)', icon: 'i-heroicons-command-line' })
-
-  if (items.length === 0) {
+  const gaps = completenessMissing.value
+  if (gaps.length === 0) {
     return [[{ label: 'Profile complete! 🎉', disabled: true }]]
   }
 
+  const labelToFieldMap: Record<string, { id: string; icon: string }> = {
+    'Full name': { id: 'field-fullName', icon: 'i-heroicons-user' },
+    Phone: { id: 'field-phone', icon: 'i-heroicons-phone' },
+    City: { id: 'field-city', icon: 'i-heroicons-map-pin' },
+    'Current role': { id: 'field-currentPosition', icon: 'i-heroicons-briefcase' },
+    'Current company': { id: 'field-currentCompany', icon: 'i-heroicons-building-office' },
+    'Work mode': { id: 'field-preferredWorkMode', icon: 'i-heroicons-globe-alt' },
+    'CV / Resume': { id: 'field-resumeSection', icon: 'i-heroicons-arrow-up-tray' },
+    Telegram: { id: 'field-telegramUsername', icon: 'i-heroicons-paper-airplane' },
+    'Years experience': { id: 'field-yearsExperience', icon: 'i-heroicons-clock' },
+    Skills: { id: 'field-skillsCard', icon: 'i-heroicons-command-line' },
+  }
+
   return [
-    items.map((item) => ({
-      label: item.label,
-      icon: item.icon,
-      disabled: true,
-    })),
+    gaps.map((gap) => {
+      const field = labelToFieldMap[gap]
+      return {
+        label: `Add ${gap} (+10%)`,
+        icon: field?.icon || 'i-heroicons-question-mark-circle',
+        click: () => {
+          if (field) {
+            scrollToAndFocus(field.id)
+          }
+        },
+      }
+    }),
   ]
 })
 </script>
@@ -523,8 +724,12 @@ const missingProfileItems = computed(() => {
           </h1>
 
           <!-- Actionable progress bar dropdown -->
-          <UDropdown :items="missingProfileItems" :popper="{ placement: 'bottom-end' }">
-            <div class="text-left sm:text-right shrink-0 cursor-pointer hover:opacity-80">
+          <UDropdownMenu :items="missingProfileItems" :content="{ side: 'bottom', align: 'end' }">
+            <button
+              type="button"
+              tabindex="-1"
+              class="block text-left sm:text-right shrink-0 hover:opacity-80 appearance-none bg-transparent border-0 p-0 cursor-pointer"
+            >
               <span class="text-xs font-semibold" style="color: var(--ink-subtle)"
                 >{{ completeness }}% complete</span
               >
@@ -545,13 +750,172 @@ const missingProfileItems = computed(() => {
                   }"
                 />
               </div>
-            </div>
-          </UDropdown>
+              <p
+                v-if="completenessMissing.length > 0"
+                class="text-[10px] mt-1"
+                style="color: var(--ink-subtle)"
+              >
+                ↑ click to see what's missing
+              </p>
+            </button>
+          </UDropdownMenu>
         </div>
       </div>
 
-      <!-- CV Upload -->
+      <!-- Contact Information -->
       <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.contactInfo') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField
+            id="field-fullName"
+            :label="t('candidate.profile.fullName')"
+            :error="errors.fullName"
+          >
+            <UInput
+              v-model="fullName"
+              v-bind="fullNameProps"
+              name="fullName"
+              autocomplete="name"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField :label="t('candidate.profile.email')" hint="Cannot be changed">
+            <UInput
+              :value="profile?.email"
+              disabled
+              class="w-full"
+              style="opacity: 0.55; cursor: not-allowed"
+            >
+              <template #trailing>
+                <UIcon
+                  name="i-heroicons-lock-closed"
+                  class="w-3.5 h-3.5"
+                  style="color: var(--ink-subtle)"
+                />
+              </template>
+            </UInput>
+          </UFormField>
+          <UFormField id="field-phone" :label="t('candidate.profile.phone')" :error="errors.phone">
+            <UInput
+              v-model="phone"
+              v-bind="phoneProps"
+              name="phone"
+              autocomplete="tel"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            id="field-telegramUsername"
+            :label="t('candidate.profile.telegramUsername')"
+            :error="errors.telegramUsername"
+          >
+            <UInput
+              v-model="telegramUsername"
+              v-bind="telegramUsernameProps"
+              name="telegramUsername"
+              placeholder="e.g. username"
+              class="w-full"
+              @blur="telegramUsername = formatTelegramUsername(telegramUsername)"
+            />
+          </UFormField>
+          <UFormField id="field-city" :label="t('candidate.profile.city')" :error="errors.city">
+            <UInputMenu
+              v-model="city"
+              v-bind="cityProps"
+              name="city"
+              :items="cityItems"
+              :loading="citySearching"
+              create-option
+              class="w-full"
+              @update:query="onCitySearch"
+            />
+          </UFormField>
+          <UFormField
+            id="field-country"
+            :label="t('candidate.profile.country')"
+            :error="errors.country"
+          >
+            <USelect
+              v-model="country"
+              v-bind="countryProps"
+              name="country"
+              placeholder="Select country..."
+              :items="countriesList"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- Professional Summary -->
+      <UCard>
+        <h3 class="section-label mb-4">{{ t('candidate.profile.professionalSummary') }}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField
+            id="field-currentPosition"
+            :label="t('candidate.profile.currentPosition')"
+            :error="errors.currentPosition"
+          >
+            <UInput
+              v-model="currentPosition"
+              v-bind="currentPositionProps"
+              name="currentPosition"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            id="field-currentCompany"
+            :label="t('candidate.profile.currentCompany')"
+            :error="errors.currentCompany"
+          >
+            <UInput
+              v-model="currentCompany"
+              v-bind="currentCompanyProps"
+              name="currentCompany"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            id="field-yearsExperience"
+            :label="t('candidate.profile.yearsExperience')"
+            :error="errors.yearsExperience"
+          >
+            <UInput
+              v-model="yearsExperience"
+              v-bind="yearsExperienceProps"
+              name="yearsExperience"
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField
+            id="field-noticePeriodDays"
+            :label="t('candidate.profile.noticePeriodDays')"
+            :error="errors.noticePeriodDays"
+          >
+            <USelect
+              v-model="noticePeriodDays"
+              v-bind="noticePeriodDaysProps"
+              aria-label="Notice period"
+              placeholder="Select notice period"
+              :items="[
+                { label: 'Immediate / No notice', value: 0 },
+                { label: '14 Days (2 weeks)', value: 14 },
+                { label: '30 Days (1 month)', value: 30 },
+                { label: '60 Days (2 months)', value: 60 },
+                { label: '90 Days (3 months)', value: 90 },
+              ]"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
+      <!-- CV Upload -->
+      <UCard id="field-resumeSection">
         <div class="flex items-center justify-between mb-3">
           <h3 class="section-label">{{ t('candidate.profile.resumeSection') }}</h3>
           <div v-if="isParsing" class="flex items-center gap-2 px-2 py-1 rounded bg-primary-50">
@@ -650,27 +1014,80 @@ const missingProfileItems = computed(() => {
           </UButton>
         </div>
 
-        <!-- AI Professional Summary (Feedback) -->
+        <!-- AI Professional Summary -->
         <div
-          v-if="profile?.parsedResume?.summary"
+          v-if="localSummary || isEditingSummary"
           class="mb-6 p-4 rounded-xl bg-primary-50 border border-primary-100 dark:bg-primary-950/20 dark:border-primary-900/30"
         >
-          <div class="flex items-center gap-2 mb-2">
-            <UIcon
-              name="i-heroicons-chat-bubble-bottom-center-text"
-              class="w-4 h-4 text-primary-500"
-            />
-            <span
-              class="text-xs font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider"
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <UIcon
+                name="i-heroicons-chat-bubble-bottom-center-text"
+                class="w-4 h-4 text-primary-500"
+              />
+              <span
+                class="text-xs font-semibold text-primary-700 dark:text-primary-400 uppercase tracking-wider"
+              >
+                {{ t('candidate.profile.aiSummary') }}
+              </span>
+            </div>
+            <UButton
+              variant="ghost"
+              size="xs"
+              :icon="isEditingSummary ? 'i-heroicons-check' : 'i-heroicons-pencil'"
+              class="text-primary-600 dark:text-primary-400"
+              @click="isEditingSummary = !isEditingSummary"
             >
-              {{ t('candidate.profile.aiSummary') }}
-            </span>
+              {{ isEditingSummary ? 'Done' : 'Edit' }}
+            </UButton>
+          </div>
+          <div v-if="isEditingSummary" class="mt-2">
+            <UTextarea
+              v-model="localSummary"
+              placeholder="Write your professional summary..."
+              class="w-full bg-white dark:bg-slate-900"
+              :rows="4"
+            />
           </div>
           <p
+            v-else
             class="text-sm leading-relaxed text-primary-900 dark:text-primary-200 italic font-medium"
           >
-            "{{ profile.parsedResume.summary }}"
+            "{{ localSummary }}"
           </p>
+        </div>
+
+        <!-- Empty state: no summary yet -->
+        <div
+          v-else-if="!isParsing"
+          class="mb-6 p-5 rounded-xl border border-dashed border-line flex flex-col items-center gap-3 text-center"
+        >
+          <UIcon name="i-heroicons-sparkles" class="w-8 h-8 text-primary-300" />
+          <div>
+            <p class="text-sm font-medium" style="color: var(--ink)">No AI summary yet</p>
+            <p class="text-xs mt-1" style="color: var(--ink-muted)">
+              Upload your CV to auto-generate one, or write it manually.
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <UButton
+              v-if="profile?.resumeFileUrl"
+              size="xs"
+              icon="i-heroicons-sparkles"
+              :loading="isRegenerating"
+              @click="regenerateSummary"
+            >
+              Generate with AI
+            </UButton>
+            <UButton
+              size="xs"
+              variant="outline"
+              icon="i-heroicons-pencil"
+              @click="isEditingSummary = true"
+            >
+              Write manually
+            </UButton>
+          </div>
         </div>
 
         <!-- Overlapping dates warning alert -->
@@ -678,15 +1095,23 @@ const missingProfileItems = computed(() => {
           v-if="overlappingPositionsWarning"
           icon="i-heroicons-exclamation-triangle"
           title="Overlapping Positions"
-          description="You have multiple positions marked as current (Present). Please clarify dates to ensure recruiters see accurate experience timelines."
           color="warning"
           variant="subtle"
           class="mb-4"
-        />
+        >
+          <template #description>
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <span>Multiple positions marked as current. Set an end date on one of them.</span>
+              <UButton size="xs" color="warning" variant="solid" @click="fixFirstOverlap">
+                Fix first
+              </UButton>
+            </div>
+          </template>
+        </UAlert>
 
         <!-- Work History Timeline -->
         <div class="space-y-4">
-          <div class="flex justify-between items-center mb-3">
+          <div class="flex justify-between items-center mb-1">
             <h4 class="text-xs font-bold uppercase tracking-wider" style="color: var(--ink-muted)">
               {{ t('candidate.profile.workHistory') }}
             </h4>
@@ -695,10 +1120,37 @@ const missingProfileItems = computed(() => {
             </UButton>
           </div>
 
+          <!-- Timeline Legend -->
+          <div class="flex items-center gap-4 text-[10px] text-ink-subtle pb-2 ml-3">
+            <div class="flex items-center gap-1">
+              <span
+                class="w-2.5 h-2.5 rounded-full bg-primary-500 dark:bg-primary-400 inline-block"
+              />
+              <span>Current Position</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span
+                class="w-2.5 h-2.5 rounded-full bg-white border-2 border-primary-500 dark:bg-slate-900 inline-block"
+              />
+              <span>Past Position</span>
+            </div>
+          </div>
+
           <div class="relative border-l border-line ml-3 pl-5 space-y-6">
-            <div v-for="(pos, i) in localPositions" :key="i" class="relative group">
+            <div
+              v-for="(pos, i) in localPositions"
+              :id="`position-${i}`"
+              :key="i"
+              class="relative group"
+            >
+              <!-- Conditional Timeline Dot styling -->
               <div
-                class="absolute -left-6.5 top-1.5 w-3 h-3 rounded-full bg-white border-2 border-primary-500 dark:bg-slate-900"
+                class="absolute -left-6.5 top-1.5 w-3 h-3 rounded-full border-2 transition-all duration-200"
+                :class="
+                  isCurrentPosition(pos)
+                    ? 'bg-primary-500 border-primary-500 dark:bg-primary-400 dark:border-primary-400'
+                    : 'bg-white border-primary-500 dark:bg-slate-900 dark:border-primary-500'
+                "
               />
 
               <div class="flex items-start justify-between gap-4">
@@ -715,6 +1167,25 @@ const missingProfileItems = computed(() => {
                       {{ pos.start || t('candidate.profile.unknown') }} —
                       {{ pos.end || t('candidate.profile.present') }}
                     </p>
+
+                    <!-- Inline warning with Set End Date CTA -->
+                    <div
+                      v-if="overlappingPositionsWarning && isCurrentPosition(pos)"
+                      class="mt-2 text-[11px] text-warning-700 dark:text-warning-300 flex items-center gap-1.5 p-1.5 rounded-lg bg-warning-50 dark:bg-warning-950/20 border border-warning-200/50"
+                    >
+                      <UIcon
+                        name="i-heroicons-exclamation-triangle"
+                        class="w-3.5 h-3.5 text-warning-500 shrink-0"
+                      />
+                      <span>Overlapping current position.</span>
+                      <button
+                        type="button"
+                        class="underline font-bold text-warning-700 dark:text-warning-300 ml-auto hover:opacity-80"
+                        @click="editingPositionIndex = i"
+                      >
+                        Set end date
+                      </button>
+                    </div>
                   </div>
                   <div
                     v-else
@@ -733,9 +1204,7 @@ const missingProfileItems = computed(() => {
                 </div>
 
                 <!-- Item Actions -->
-                <div
-                  class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <div class="flex items-center gap-1 shrink-0">
                   <UButton
                     v-if="editingPositionIndex !== i"
                     variant="ghost"
@@ -773,6 +1242,138 @@ const missingProfileItems = computed(() => {
         </div>
       </UCard>
 
+      <!-- Skills Card -->
+      <UCard id="field-skillsCard">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-command-line" class="w-5 h-5 text-primary-500" />
+            <h3 class="section-label mb-0">{{ t('candidate.profile.skills') }}</h3>
+          </div>
+          <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addCustomSkill">
+            Add Skill
+          </UButton>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            v-for="(skill, i) in skills"
+            :key="i"
+            class="group flex items-center justify-between gap-4 p-3 rounded-xl border border-line"
+          >
+            <div class="flex-1 min-w-0">
+              <div v-if="editingSkillIndex !== i" class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold" style="color: var(--ink)">
+                  {{ skill || 'Untitled Skill' }}
+                </span>
+                <span
+                  v-if="localSkillLevels[skill]"
+                  class="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                  :style="{
+                    background:
+                      localSkillLevels[skill] === 'Expert'
+                        ? 'var(--positive-soft)'
+                        : localSkillLevels[skill] === 'Advanced'
+                          ? 'var(--accent-soft)'
+                          : 'var(--bg-elevated)',
+                    color:
+                      localSkillLevels[skill] === 'Expert'
+                        ? 'var(--positive)'
+                        : localSkillLevels[skill] === 'Advanced'
+                          ? 'var(--accent)'
+                          : 'var(--ink-muted)',
+                  }"
+                  >{{ localSkillLevels[skill] }}</span
+                >
+              </div>
+              <div v-else class="flex flex-col gap-1.5">
+                <UInputMenu
+                  v-model="skills[i]"
+                  :items="skillItems"
+                  placeholder="Skill Name (e.g. Node.js)"
+                  size="xs"
+                  create-option
+                  class="w-full"
+                  autofocus
+                  @update:query="onSkillSearch"
+                />
+                <USelect
+                  :model-value="localSkillLevels[skill] ?? ''"
+                  :items="['Beginner', 'Intermediate', 'Advanced', 'Expert']"
+                  placeholder="Proficiency (optional)"
+                  size="xs"
+                  class="w-full"
+                  @update:model-value="
+                    (v: string) => {
+                      if (v) localSkillLevels[skill] = v
+                      else Reflect.deleteProperty(localSkillLevels, skill)
+                    }
+                  "
+                />
+              </div>
+            </div>
+
+            <!-- Skills Actions - Reordering + Edit/Remove -->
+            <div class="flex items-center gap-1 shrink-0">
+              <UButton
+                v-if="editingSkillIndex !== i && i > 0"
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-arrow-up"
+                title="Move Up"
+                @click="moveSkillUp(i)"
+              />
+              <UButton
+                v-if="editingSkillIndex !== i && i < skills.length - 1"
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-arrow-down"
+                title="Move Down"
+                @click="moveSkillDown(i)"
+              />
+              <UButton
+                v-if="editingSkillIndex !== i"
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-pencil"
+                @click="editingSkillIndex = i"
+              />
+              <UButton
+                v-else
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-check"
+                color="success"
+                @click="editingSkillIndex = null"
+              />
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-trash"
+                color="error"
+                @click="deleteCustomSkill(i)"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="!skills.length"
+            class="text-sm py-6 text-center italic col-span-2 flex flex-col items-center gap-2"
+            style="color: var(--ink-subtle)"
+          >
+            <span>Add your professional skills here.</span>
+            <UButton
+              variant="outline"
+              size="xs"
+              icon="i-heroicons-plus"
+              class="mt-1"
+              @click="addCustomSkill"
+            >
+              Add Your First Skill
+            </UButton>
+          </div>
+        </div>
+      </UCard>
+
       <!-- Education Section -->
       <UCard>
         <div class="flex justify-between items-center mb-4">
@@ -786,7 +1387,12 @@ const missingProfileItems = computed(() => {
           <div
             v-for="(edu, i) in localEducation"
             :key="i"
-            class="group flex items-start justify-between gap-4 p-3 rounded-xl border border-line"
+            :class="[
+              'group flex items-start justify-between gap-4 p-3 rounded-xl border',
+              !edu.start && !edu.end && editingEducationIndex !== i
+                ? 'border-amber-400/60 bg-amber-50/20 dark:bg-amber-900/10'
+                : 'border-line',
+            ]"
           >
             <div class="flex-1 space-y-2">
               <div v-if="editingEducationIndex !== i">
@@ -796,8 +1402,22 @@ const missingProfileItems = computed(() => {
                 <p class="text-xs" style="color: var(--ink-muted)">
                   {{ edu.institution || t('candidate.profile.unknown') }}
                 </p>
+                <p class="text-[11px] mt-1 font-mono" style="color: var(--ink-subtle)">
+                  <template v-if="edu.start || edu.end">
+                    {{ edu.start || '?' }} — {{ edu.end || t('candidate.profile.present') }}
+                  </template>
+                  <button
+                    v-else
+                    type="button"
+                    class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+                    @click="editingEducationIndex = i"
+                  >
+                    <UIcon name="i-heroicons-calendar" class="w-3 h-3" />
+                    Add dates
+                  </button>
+                </p>
               </div>
-              <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <UInput
                   v-model="edu.degree"
                   placeholder="Degree (e.g. Bachelor's)"
@@ -805,12 +1425,29 @@ const missingProfileItems = computed(() => {
                   autofocus
                 />
                 <UInput v-model="edu.field" placeholder="Field of Study" size="xs" />
-                <UInput v-model="edu.institution" placeholder="Institution" size="xs" />
+                <UInput
+                  v-model="edu.institution"
+                  placeholder="Institution"
+                  size="xs"
+                  class="sm:col-span-2"
+                />
+                <UInput v-model="edu.start" type="month" placeholder="Start Date" size="xs" />
+                <UInput
+                  v-model="edu.end"
+                  type="month"
+                  placeholder="End Date (empty = Present)"
+                  size="xs"
+                />
               </div>
             </div>
 
             <div
-              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              class="flex items-center gap-1 transition-opacity"
+              :class="
+                !edu.start && !edu.end && editingEducationIndex !== i
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100'
+              "
             >
               <UButton
                 v-if="editingEducationIndex !== i"
@@ -873,7 +1510,7 @@ const missingProfileItems = computed(() => {
                   >
                 </h5>
               </div>
-              <div v-else class="grid grid-cols-2 gap-2">
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <UInput
                   v-model="lang.name"
                   placeholder="Language (e.g. English)"
@@ -882,7 +1519,7 @@ const missingProfileItems = computed(() => {
                 />
                 <USelect
                   v-model="lang.level"
-                  :options="[
+                  :items="[
                     'Native',
                     'Fluent',
                     'Intermediate',
@@ -900,9 +1537,7 @@ const missingProfileItems = computed(() => {
               </div>
             </div>
 
-            <div
-              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
+            <div class="flex items-center gap-1 shrink-0">
               <UButton
                 v-if="editingLanguageIndex !== i"
                 variant="ghost"
@@ -938,88 +1573,6 @@ const missingProfileItems = computed(() => {
         </div>
       </UCard>
 
-      <!-- Contact Information -->
-      <UCard>
-        <h3 class="section-label mb-4">{{ t('candidate.profile.contactInfo') }}</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <UFormField :label="t('candidate.profile.fullName')" :error="errors.fullName">
-            <UInput v-model="fullName" v-bind="fullNameProps" class="w-full" />
-          </UFormField>
-          <UFormField :label="t('candidate.profile.email')">
-            <UInput :value="profile?.email" disabled class="w-full opacity-60" />
-          </UFormField>
-          <UFormField :label="t('candidate.profile.phone')" :error="errors.phone">
-            <UInput v-model="phone" v-bind="phoneProps" class="w-full" />
-          </UFormField>
-          <UFormField
-            :label="t('candidate.profile.telegramUsername')"
-            :error="errors.telegramUsername"
-          >
-            <UInput
-              v-model="telegramUsername"
-              v-bind="telegramUsernameProps"
-              placeholder="e.g. username"
-              class="w-full"
-              @blur="telegramUsername = formatTelegramUsername(telegramUsername)"
-            />
-          </UFormField>
-          <UFormField :label="t('candidate.profile.city')" :error="errors.city">
-            <UInput v-model="city" v-bind="cityProps" class="w-full" />
-          </UFormField>
-          <UFormField :label="t('candidate.profile.country')" :error="errors.country">
-            <UInput v-model="country" v-bind="countryProps" placeholder="e.g. UZ" class="w-full" />
-          </UFormField>
-        </div>
-      </UCard>
-
-      <!-- Professional Summary -->
-      <UCard>
-        <h3 class="section-label mb-4">{{ t('candidate.profile.professionalSummary') }}</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <UFormField
-            :label="t('candidate.profile.currentPosition')"
-            :error="errors.currentPosition"
-          >
-            <UInput v-model="currentPosition" v-bind="currentPositionProps" class="w-full" />
-          </UFormField>
-          <UFormField :label="t('candidate.profile.currentCompany')" :error="errors.currentCompany">
-            <UInput v-model="currentCompany" v-bind="currentCompanyProps" class="w-full" />
-          </UFormField>
-          <UFormField
-            :label="t('candidate.profile.yearsExperience')"
-            :error="errors.yearsExperience"
-          >
-            <UInput
-              v-model="yearsExperience"
-              v-bind="yearsExperienceProps"
-              type="number"
-              min="0"
-              max="100"
-              step="0.5"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField
-            :label="t('candidate.profile.noticePeriodDays')"
-            :error="errors.noticePeriodDays"
-          >
-            <!-- notice period dropdown instead of raw number -->
-            <USelect
-              v-model="noticePeriodDays"
-              v-bind="noticePeriodDaysProps"
-              :options="[
-                { label: 'Immediate / No notice', value: 0 },
-                { label: '14 Days (2 weeks)', value: 14 },
-                { label: '30 Days (1 month)', value: 30 },
-                { label: '60 Days (2 months)', value: 60 },
-                { label: '90 Days (3 months)', value: 90 },
-              ]"
-              class="w-full"
-            />
-          </UFormField>
-        </div>
-      </UCard>
-
       <!-- Links & Socials -->
       <UCard>
         <h3 class="section-label mb-4">{{ t('candidate.profile.linksAndSocials') }}</h3>
@@ -1028,33 +1581,58 @@ const missingProfileItems = computed(() => {
             <UInput
               v-model="linkedinUrl"
               v-bind="linkedinUrlProps"
+              name="linkedinUrl"
               placeholder="https://linkedin.com/in/…"
               class="w-full"
-            />
+            >
+              <template v-if="linkedinUrl" #trailing>
+                <a :href="linkedinUrl" target="_blank" rel="noopener noreferrer" tabindex="-1">
+                  <UIcon
+                    name="i-heroicons-arrow-top-right-on-square"
+                    class="w-4 h-4"
+                    style="color: var(--ink-subtle)"
+                  />
+                </a>
+              </template>
+            </UInput>
           </UFormField>
           <UFormField :label="t('candidate.profile.githubUrl')" :error="errors.githubUrl">
             <UInput
               v-model="githubUrl"
               v-bind="githubUrlProps"
+              name="githubUrl"
               placeholder="https://github.com/…"
               class="w-full"
-            />
+            >
+              <template v-if="githubUrl" #trailing>
+                <a :href="githubUrl" target="_blank" rel="noopener noreferrer" tabindex="-1">
+                  <UIcon
+                    name="i-heroicons-arrow-top-right-on-square"
+                    class="w-4 h-4"
+                    style="color: var(--ink-subtle)"
+                  />
+                </a>
+              </template>
+            </UInput>
           </UFormField>
         </div>
       </UCard>
 
       <!-- Work Preferences & Privacy -->
       <UCard>
-        <h3 class="section-label mb-4">{{ t('candidate.profile.workPreferences') }}</h3>
+        <h3 class="section-label mb-4">Work Preferences & Privacy</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UFormField
+            id="field-preferredWorkMode"
             :label="t('candidate.profile.preferredWorkMode')"
             :error="errors.preferredWorkMode"
           >
             <USelect
               v-model="preferredWorkMode"
               v-bind="preferredWorkModeProps"
-              :options="[
+              aria-label="Preferred work mode"
+              placeholder="Select work mode"
+              :items="[
                 { label: t('candidate.jobs.remote') || 'Remote', value: 'remote' },
                 { label: t('candidate.jobs.office') || 'Office', value: 'office' },
                 { label: t('candidate.jobs.hybrid') || 'Hybrid', value: 'hybrid' },
@@ -1062,16 +1640,14 @@ const missingProfileItems = computed(() => {
               class="w-full"
             />
           </UFormField>
-          <UFormField class="flex items-center pt-6">
+          <UFormField class="flex items-center sm:col-span-2">
             <UCheckbox
               v-model="willingToRelocate"
               v-bind="willingToRelocateProps"
               :label="t('candidate.profile.willingToRelocate')"
             />
           </UFormField>
-
-          <!-- Profile Privacy Current Company Toggle -->
-          <UFormField class="flex items-center pt-4 col-span-2">
+          <UFormField class="flex items-center sm:col-span-2">
             <UCheckbox
               v-model="hideFromCurrentCompany"
               label="Hide my profile and auto-applies from my current company"
@@ -1080,93 +1656,9 @@ const missingProfileItems = computed(() => {
         </div>
       </UCard>
 
-      <!-- Skills Card -->
-      <UCard>
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-command-line" class="w-5 h-5 text-primary-500" />
-            <h3 class="section-label mb-0">{{ t('candidate.profile.skills') }}</h3>
-          </div>
-          <UButton variant="outline" size="xs" icon="i-heroicons-plus" @click="addCustomSkill">
-            Add Skill
-          </UButton>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div
-            v-for="(skill, i) in skills"
-            :key="i"
-            class="group flex items-center justify-between gap-4 p-3 rounded-xl border border-line"
-          >
-            <div class="flex-1">
-              <div
-                v-if="editingSkillIndex !== i"
-                class="text-sm font-semibold"
-                style="color: var(--ink)"
-              >
-                {{ skill || 'Untitled Skill' }}
-              </div>
-              <div v-else>
-                <UInput
-                  v-model="skills[i]"
-                  placeholder="Skill Name (e.g. Node.js)"
-                  size="xs"
-                  class="w-full"
-                  autofocus
-                />
-              </div>
-            </div>
-
-            <div
-              class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <UButton
-                v-if="editingSkillIndex !== i"
-                variant="ghost"
-                size="xs"
-                icon="i-heroicons-pencil"
-                @click="editingSkillIndex = i"
-              />
-              <UButton
-                v-else
-                variant="ghost"
-                size="xs"
-                icon="i-heroicons-check"
-                color="success"
-                @click="editingSkillIndex = null"
-              />
-              <UButton
-                variant="ghost"
-                size="xs"
-                icon="i-heroicons-trash"
-                color="error"
-                @click="deleteCustomSkill(i)"
-              />
-            </div>
-          </div>
-
-          <div
-            v-if="!skills.length"
-            class="text-sm py-6 text-center italic col-span-2 flex flex-col items-center gap-2"
-            style="color: var(--ink-subtle)"
-          >
-            <span>Add your professional skills here.</span>
-            <UButton
-              variant="outline"
-              size="xs"
-              icon="i-heroicons-plus"
-              class="mt-1"
-              @click="addCustomSkill"
-            >
-              Add Your First Skill
-            </UButton>
-          </div>
-        </div>
-      </UCard>
-
       <!-- AI Career Path Navigator & Skill Badges Card -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <!-- 3D Skill Badges Card -->
+        <!-- Skill Badges Card -->
         <UCard>
           <div class="flex items-center gap-2 mb-4">
             <UIcon name="i-heroicons-academic-cap" class="w-5 h-5 text-accent animate-bounce" />
@@ -1175,18 +1667,30 @@ const missingProfileItems = computed(() => {
           <p class="text-xs text-ink-muted mb-4 leading-relaxed">
             Earned by submitting certified repositories or answering AI screening questions.
           </p>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="relative overflow-hidden rounded-xl border border-positive/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow">
-              <div class="absolute inset-0 bg-positive/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              class="relative overflow-hidden rounded-xl border border-positive/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow"
+            >
+              <div
+                class="absolute inset-0 bg-positive/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"
+              />
               <UIcon name="i-heroicons-sparkles" class="w-7 h-7 text-positive mx-auto mb-2" />
               <p class="text-xs font-semibold text-ink leading-tight">Nuxt 3 Architecture</p>
-              <span class="text-[9px] font-mono text-positive font-bold uppercase mt-1.5 block">Level: Advanced</span>
+              <span class="text-[9px] font-mono text-positive font-bold uppercase mt-1.5 block"
+                >Level: Advanced</span
+              >
             </div>
-            <div class="relative overflow-hidden rounded-xl border border-accent/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow">
-              <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none" />
+            <div
+              class="relative overflow-hidden rounded-xl border border-accent/30 bg-bg-deep p-4 text-center group hover:shadow-md transition-shadow"
+            >
+              <div
+                class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"
+              />
               <UIcon name="i-heroicons-bolt" class="w-7 h-7 text-accent mx-auto mb-2" />
               <p class="text-xs font-semibold text-ink leading-tight">State Orchestration</p>
-              <span class="text-[9px] font-mono text-accent font-bold uppercase mt-1.5 block">Level: Intermediate</span>
+              <span class="text-[9px] font-mono text-accent font-bold uppercase mt-1.5 block"
+                >Level: Intermediate</span
+              >
             </div>
           </div>
         </UCard>
@@ -1200,24 +1704,38 @@ const missingProfileItems = computed(() => {
             </div>
             <USelect
               v-model="targetRole"
-              :options="rolesList"
+              :items="rolesList"
               size="xs"
               class="w-44 font-mono text-[10px]"
             />
           </div>
-          
+
           <!-- Roadmap timeline steps -->
           <div class="space-y-3.5">
             <div v-for="step in roadmapSteps" :key="step.skill" class="flex items-start gap-3">
-              <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border"
-                :style="step.status === 'matched' ? 'background: var(--positive-soft); border-color: var(--positive); color: var(--positive)' : 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'"
+              <div
+                class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border"
+                :style="
+                  step.status === 'matched'
+                    ? 'background: var(--positive-soft); border-color: var(--positive); color: var(--positive)'
+                    : 'background: var(--accent-soft); border-color: var(--accent); color: var(--accent)'
+                "
               >
-                <UIcon :name="step.status === 'matched' ? 'i-heroicons-check' : 'i-heroicons-plus-circle'" class="w-3 h-3" />
+                <UIcon
+                  :name="
+                    step.status === 'matched' ? 'i-heroicons-check' : 'i-heroicons-plus-circle'
+                  "
+                  class="w-3 h-3"
+                />
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-semibold text-ink leading-none">{{ step.skill }}</span>
-                  <span class="text-[9px] font-mono font-bold uppercase" :class="step.status === 'matched' ? 'text-positive' : 'text-accent'">{{ step.status }}</span>
+                  <span
+                    class="text-[9px] font-mono font-bold uppercase"
+                    :class="step.status === 'matched' ? 'text-positive' : 'text-accent'"
+                    >{{ step.status }}</span
+                  >
                 </div>
                 <p class="text-[10px] text-ink-muted leading-snug mt-1">{{ step.desc }}</p>
               </div>
@@ -1232,13 +1750,10 @@ const missingProfileItems = computed(() => {
       >
         <UButton
           :loading="saving"
+          :disabled="!isFormDirty"
           icon="i-heroicons-check"
           size="md"
-          @click="
-            async () => {
-              await save()
-            }
-          "
+          @click="save"
         >
           {{ t('candidate.profile.saveChanges') }}
         </UButton>

@@ -9,6 +9,8 @@ import { HhNegotiationsService } from './hh-negotiations.service';
 import { HhVacancyService } from './hh-vacancy.service';
 import { HhDictionaryService } from './hh-dictionary.service';
 import { HhProfileSyncService } from './hh-profile-sync.service';
+import { HhWebhookService } from './hh-webhook.service';
+import { HhSuggestsService } from './hh-suggests.service';
 
 const providers = [
   HhClientService,
@@ -20,6 +22,8 @@ const providers = [
   HhVacancyService,
   HhDictionaryService,
   HhProfileSyncService,
+  HhWebhookService,
+  HhSuggestsService,
 ];
 
 @Module({

@@ -43,6 +43,32 @@ describe('HhClientService', () => {
       const result = await service.getResume('ext-1');
       expect(result.first_name).toBe('Alice');
     });
+
+    it('throws HH_QUOTA_EXCEEDED on 403 api_access_payment', async () => {
+      const err = Object.assign(new Error('Forbidden'), {
+        response: {
+          status: 403,
+          data: { errors: [{ type: 'api_access_payment' }] },
+        },
+      });
+      httpGet.mockImplementation(() => { throw err; });
+
+      await expect(service.getResume('ext-1')).rejects.toMatchObject({
+        code: 'HH_QUOTA_EXCEEDED',
+      });
+    });
+
+    it('rethrows non-quota 403 errors unchanged', async () => {
+      const err = Object.assign(new Error('Forbidden'), {
+        response: { status: 403, data: { errors: [{ type: 'forbidden' }] } },
+      });
+      httpGet.mockImplementation(() => { throw err; });
+
+      await expect(service.getResume('ext-1')).rejects.toThrow('Forbidden');
+      await expect(service.getResume('ext-1')).rejects.not.toMatchObject({
+        code: 'HH_QUOTA_EXCEEDED',
+      });
+    });
   });
 
   describe('extractResumeText', () => {

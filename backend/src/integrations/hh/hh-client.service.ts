@@ -49,12 +49,26 @@ export class HhClientService {
   }
 
   async getResume(id: string): Promise<HhResumeDetail> {
-    const response = await firstValueFrom(
-      this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${id}`, {
-        headers: this.headers,
-      }),
-    );
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${id}`, {
+          headers: this.headers,
+        }),
+      );
+      return response.data;
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const errors: Array<{ type: string }> = err?.response?.data?.errors ?? [];
+      const isQuota = errors.some((e) => e.type === 'api_access_payment');
+      if (status === 403 && isQuota) {
+        const quotaErr = new Error(
+          `Resume ${id} requires paid contact reveal (HH quota). Use resume.actions to explicitly reveal.`,
+        );
+        (quotaErr as any).code = 'HH_QUOTA_EXCEEDED';
+        throw quotaErr;
+      }
+      throw err;
+    }
   }
 
   extractResumeText(resume: HhResumeDetail): string {
