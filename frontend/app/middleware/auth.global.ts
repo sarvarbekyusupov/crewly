@@ -1,4 +1,11 @@
+const WAITLIST_ALLOWED = ['/', '/terms']
+
 export default defineNuxtRouteMiddleware(async (to) => {
+  const { waitlistMode } = useRuntimeConfig().public
+  if (waitlistMode && !WAITLIST_ALLOWED.includes(to.path)) {
+    return navigateTo('/')
+  }
+
   // Guest routes: public pages that should redirect already-authenticated users to their dashboard
   if (to.meta.auth === 'guest') {
     if (to.path.startsWith('/staff')) {
