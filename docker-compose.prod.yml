@@ -69,6 +69,7 @@ services:
     restart: unless-stopped
     environment:
       NUXT_PUBLIC_API_BASE: ${PUBLIC_URL}
+      NUXT_PUBLIC_WAITLIST_MODE: ${NUXT_PUBLIC_WAITLIST_MODE:-false}
     depends_on:
       backend:
         condition: service_healthy
