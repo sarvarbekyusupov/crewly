@@ -53,7 +53,10 @@ export class JobsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.findOne(user.companyId, id);
   }
 
@@ -69,7 +72,10 @@ export class JobsController {
 
   @Post(':id/activate')
   @RequireRole('hiring_manager')
-  activate(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  activate(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.activate(user.companyId, id);
   }
 
@@ -87,13 +93,19 @@ export class JobsController {
 
   @Post(':id/send-outreach')
   @RequireRole('hiring_manager')
-  sendOutreach(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  sendOutreach(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.sendOutreach(user.companyId, id);
   }
 
   @Delete(':id')
   @RequireRole('admin')
-  remove(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.softDelete(user.companyId, id);
   }
 
@@ -113,31 +125,46 @@ export class JobsController {
   }
 
   @Get(':id/stats')
-  getStats(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  getStats(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.getStats(user.companyId, id);
   }
 
   @Get(':id/hh-viewers')
   @RequireRole('hiring_manager')
-  getHhViewers(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  getHhViewers(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.getHhViewers(user.companyId, id);
   }
 
   @Post(':id/publish-hh')
   @RequireRole('hiring_manager')
-  publishToHh(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  publishToHh(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.publishToHh(user.companyId, id);
   }
 
   @Post(':id/archive-hh')
   @RequireRole('hiring_manager')
-  archiveOnHh(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  archiveOnHh(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.archiveOnHh(user.companyId, id);
   }
 
   @Post(':id/prolong-hh')
   @RequireRole('hiring_manager')
-  prolongOnHh(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  prolongOnHh(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.jobsService.prolongOnHh(user.companyId, id);
   }
 }

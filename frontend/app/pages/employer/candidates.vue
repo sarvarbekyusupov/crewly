@@ -14,11 +14,7 @@ const page = ref(1)
 const sortBy = ref<'recent' | 'score'>('recent')
 const limit = 20
 
-const {
-  data: result,
-  pending,
-  refresh,
-} = await useAsyncData(
+const { data: result, pending } = await useAsyncData(
   'candidates-list',
   () =>
     api.get<PaginatedResponse<Candidate>>('/api/v1/candidates', {
@@ -70,75 +66,51 @@ const sortOptions = [
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-    <!-- Left panel (master list) -->
-    <div class="lg:col-span-5 flex flex-col space-y-5" :class="{ 'hidden lg:flex': isDetailRoute }">
-      <CommonPageHead
-        eyebrow="Talent Pool"
-        :title="t('candidates.title')"
-        subtitle="Search and manage candidate database."
-      >
-        <template #default>
-          <div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <UInput
-              v-model="search"
-              icon="i-heroicons-magnifying-glass"
-              :placeholder="t('common.search')"
-              class="w-full sm:max-w-xs"
-            />
-            <USelect v-model="sortBy" :options="sortOptions" size="sm" class="w-full sm:w-44" />
-          </div>
-        </template>
-      </CommonPageHead>
+  <EmployerMasterDetailLayout
+    :is-detail-route="isDetailRoute"
+    eyebrow="Talent Pool"
+    :title="t('candidates.title')"
+    subtitle="Search and manage candidate database."
+  >
+    <template #header-actions>
+      <div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <UInput
+          v-model="search"
+          icon="i-heroicons-magnifying-glass"
+          :placeholder="t('common.search')"
+          class="w-full sm:max-w-xs"
+        />
+        <USelect v-model="sortBy" :items="sortOptions" size="sm" class="w-full sm:w-44" />
+      </div>
+    </template>
 
+    <template #list>
       <UCard :ui="{ body: 'p-0' }">
         <UTable :data="candidates" :columns="columns" :loading="pending">
           <template #empty>
-            <div class="flex flex-col items-center py-14 gap-3">
-              <UIcon
-                name="i-heroicons-user-circle"
-                class="w-10 h-10"
-                style="color: var(--ink-subtle)"
-              />
-              <p
-                style="
-                  font-family: 'Fraunces', serif;
-                  font-size: 22px;
-                  color: var(--ink);
-                  font-weight: 400;
-                "
-              >
-                {{ t('candidates.empty') }}
-              </p>
-              <p style="font-size: 13px; color: var(--ink-muted)">
-                {{ t('candidates.emptyDesc') }}
-              </p>
-            </div>
+            <CommonEmptyState
+              icon="i-heroicons-user-circle"
+              :title="t('candidates.empty')"
+              :description="t('candidates.emptyDesc')"
+            />
           </template>
           <template #fullName-cell="{ row: { original: row } }">
             <div class="flex items-center gap-3">
               <div
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm"
-                style="
-                  background: var(--accent-soft);
-                  color: var(--accent);
-                  font-family: 'Fraunces', serif;
-                  font-style: italic;
-                  border: 1px solid var(--line-soft);
-                "
+                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm bg-accent-soft text-accent font-serif italic border border-line-soft"
               >
                 {{ row.fullName?.[0] ?? '?' }}
               </div>
               <div>
-                <p class="font-medium" style="color: var(--ink)">{{ row.fullName ?? '—' }}</p>
-                <p class="text-xs" style="color: var(--ink-subtle)">
+                <p class="font-medium text-ink">{{ row.fullName ?? '—' }}</p>
+                <p class="text-xs text-ink-subtle">
                   {{ [row.currentCompany, row.city].filter(Boolean).join(' · ') || '—' }}
                 </p>
               </div>
             </div>
           </template>
           <template #experience-cell="{ row: { original: row } }">
-            <span style="color: var(--ink-muted)">
+            <span class="text-ink-muted">
               {{ row.yearsExperience != null ? row.yearsExperience + ' yrs' : '—' }}
             </span>
           </template>
@@ -152,10 +124,7 @@ const sortOptions = [
                 size="xs"
                 >{{ s }}</UBadge
               >
-              <span
-                v-if="(row.skills ?? []).length > 3"
-                class="text-xs"
-                style="color: var(--ink-subtle)"
+              <span v-if="(row.skills ?? []).length > 3" class="text-xs text-ink-subtle"
                 >+{{ row.skills.length - 3 }}</span
               >
             </div>
@@ -170,11 +139,11 @@ const sortOptions = [
             >
               {{ Number(row.matchScore).toFixed(0) }}
             </UBadge>
-            <span v-else class="text-xs" style="color: var(--ink-subtle)">—</span>
+            <span v-else class="text-xs text-ink-subtle">—</span>
           </template>
           <template #status-cell="{ row: { original: row } }">
             <ApplicationStatusBadge v-if="row.status" :status="row.status" />
-            <span v-else style="color: var(--ink-subtle)">—</span>
+            <span v-else class="text-ink-subtle">—</span>
           </template>
           <template #actions-cell="{ row: { original: row } }">
             <UButton
@@ -188,17 +157,13 @@ const sortOptions = [
 
         <div
           v-if="total > limit"
-          class="flex justify-center px-4 pb-4 pt-2"
-          style="border-top: 1px solid var(--line-soft)"
+          class="flex justify-center px-4 pb-4 pt-2 border-t border-line-soft"
         >
           <UPagination v-model="page" :total="total" :page-size="limit" />
         </div>
       </UCard>
-    </div>
+    </template>
 
-    <!-- Right panel (detail view) -->
-    <div class="lg:col-span-7 h-full" :class="{ 'hidden lg:block': !isDetailRoute }">
-      <NuxtPage />
-    </div>
-  </div>
+    <NuxtPage />
+  </EmployerMasterDetailLayout>
 </template>

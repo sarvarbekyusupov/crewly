@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+}
+
 /* ============ Nuxt UI primary color mapping (terracotta) ============ */
 /* Required: Nuxt UI v3 looks for --ui-color-primary-* and --ui-primary */
 :root {
@@ -20,7 +31,7 @@
 
 /* ============ Design tokens ============ */
 :root {
-  --bg: #F5F1EA;
+  --bg: #FAF8F4;
   --bg-elevated: #FAF8F4;
   --bg-deep: #EFE9DD;
   --paper: #FDFCF8;
@@ -54,9 +65,14 @@
   --ink-subtle: #6B6760;
   --line: #2C2A22;
   --line-soft: #24221C;
+  --accent: #E07048;
   --accent-soft: #3A1F12;
+  --positive: #4DB870;
+  --warn: #D4952A;
+  --ink-subtle: #80807A;
   --grid-color: rgba(255,255,255,0.04);
-  --positive-soft: rgba(47,107,63,0.15);
+  --positive-soft: rgba(77, 184, 112, 0.12);
+  --ui-primary: #E07048;
   --status-outreach: #6B9EE0;
   --status-responded: #38BDF8;
   --status-interview: #A78BFA;
@@ -99,10 +115,20 @@
 }
 
 /* ============ Base ============ */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--ink);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 /* ============ UCard global override ============ */
@@ -174,6 +200,54 @@ tbody tr {
 .page-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+/* ============ Landing page audience tokens ============ */
+[data-audience="employer"] {
+  --l-bg: #faf7f2;
+  --l-surface: #ffffff;
+  --l-surface-2: #f0ece4;
+  --l-text: #1a1714;
+  --l-muted: #8a857e;
+  --l-line: rgba(26, 23, 20, 0.1);
+  --l-dot: rgba(26, 23, 20, 0.06);
+}
+.dark [data-audience="employer"] {
+  --l-bg: #1a1a18;
+  --l-surface: #232320;
+  --l-surface-2: #2c2c28;
+  --l-text: #f5f0eb;
+  --l-muted: #a8a39b;
+  --l-line: rgba(245, 240, 235, 0.12);
+  --l-dot: rgba(245, 240, 235, 0.07);
+}
+[data-audience="candidate"] {
+  --l-bg: #ece9e2;
+  --l-surface: #ffffff;
+  --l-surface-2: #f4f1ea;
+  --l-text: #1a1a18;
+  --l-muted: #6b675f;
+  --l-line: rgba(26, 26, 24, 0.12);
+  --l-dot: rgba(26, 26, 24, 0.06);
+}
+.dark [data-audience="candidate"] {
+  --l-bg: #15140f;
+  --l-surface: #1c1b16;
+  --l-surface-2: #232118;
+  --l-text: #f5f1ea;
+  --l-muted: #a8a39a;
+  --l-line: rgba(245, 241, 234, 0.12);
+  --l-dot: rgba(245, 241, 234, 0.06);
+}
+:root {
+  --l-green: #c84a1f;
+  --l-green-soft: rgba(200, 74, 31, 0.15);
+  --l-lilac: #c84a1f;
+  --l-lilac-deep: #ffffff;
+  --l-pill: 999px;
+  --l-display: "Source Serif 4", Georgia, serif;
+  --l-sans: "DM Sans", system-ui, sans-serif;
+  --l-maxw: 1180px;
 }
 
 /* ============ Print ============ */

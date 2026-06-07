@@ -103,68 +103,47 @@ async function closeJob(id: string) {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-    <!-- Left panel (master list) -->
-    <div class="lg:col-span-5 flex flex-col space-y-5" :class="{ 'hidden lg:flex': isDetailRoute }">
-      <CommonPageHead
-        :eyebrow="t('jobs.eyebrow')"
-        :title="t('jobs.title')"
-        subtitle="Manage open positions and track hiring progress."
-      >
-        <template #default>
-          <div
-            class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4"
-          >
-            <USelect v-model="statusFilter" :options="statusOptions" class="w-full sm:w-44" />
-            <NuxtLink
-              v-if="auth.can('hiring_manager')"
-              to="/employer/jobs/create"
-              class="w-full sm:w-auto"
-            >
-              <UButton icon="i-heroicons-plus" :label="t('jobs.create')" block />
-            </NuxtLink>
-          </div>
-        </template>
-      </CommonPageHead>
+  <EmployerMasterDetailLayout
+    :is-detail-route="isDetailRoute"
+    :eyebrow="t('jobs.eyebrow')"
+    :title="t('jobs.title')"
+    subtitle="Manage open positions and track hiring progress."
+  >
+    <template #header-actions>
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4">
+        <USelect v-model="statusFilter" :items="statusOptions" class="w-full sm:w-44" />
+        <NuxtLink
+          v-if="auth.can('hiring_manager')"
+          to="/employer/jobs/create"
+          class="w-full sm:w-auto"
+        >
+          <UButton icon="i-heroicons-plus" :label="t('jobs.create')" block />
+        </NuxtLink>
+      </div>
+    </template>
 
+    <template #list>
       <UCard :ui="{ body: 'p-0' }">
         <UTable :data="jobs" :columns="columns" :loading="pending">
           <template #empty>
-            <div class="flex flex-col items-center py-14 gap-3">
-              <UIcon
-                name="i-heroicons-briefcase"
-                class="w-10 h-10"
-                style="color: var(--ink-subtle)"
-              />
-              <p
-                style="
-                  font-family: 'Fraunces', serif;
-                  font-size: 22px;
-                  color: var(--ink);
-                  font-weight: 400;
-                "
-              >
-                {{ t('jobs.emptyTitle') }}
-              </p>
-              <p style="font-size: 13px; color: var(--ink-muted)">{{ t('jobs.emptyDesc') }}</p>
-              <NuxtLink v-if="auth.can('hiring_manager')" to="/employer/jobs/create">
-                <UButton size="sm" icon="i-heroicons-plus" class="mt-1">{{
-                  t('jobs.create')
-                }}</UButton>
-              </NuxtLink>
-            </div>
+            <CommonEmptyState
+              icon="i-heroicons-briefcase"
+              :title="t('jobs.emptyTitle')"
+              :description="t('jobs.emptyDesc')"
+              :action-label="auth.can('hiring_manager') ? t('jobs.create') : undefined"
+              action-to="/employer/jobs/create"
+            />
           </template>
 
           <template #title-cell="{ row: { original: row } }">
             <div>
               <NuxtLink
                 :to="`/employer/jobs/${row.id}`"
-                class="font-medium hover:underline"
-                style="color: var(--ink)"
+                class="font-medium hover:underline text-ink"
               >
                 {{ row.title }}
               </NuxtLink>
-              <p class="text-xs mt-0.5" style="color: var(--ink-subtle)">
+              <p class="text-xs mt-0.5 text-ink-subtle">
                 {{ row.workMode ?? '' }}{{ row.officeLocation ? ' · ' + row.officeLocation : '' }}
               </p>
             </div>
@@ -198,24 +177,18 @@ async function closeJob(id: string) {
               >
                 {{ s }}
               </UBadge>
-              <span
-                v-if="(row.requiredSkills ?? []).length > 4"
-                class="text-xs"
-                style="color: var(--ink-subtle)"
-              >
+              <span v-if="(row.requiredSkills ?? []).length > 4" class="text-xs text-ink-subtle">
                 +{{ row.requiredSkills.length - 4 }}
               </span>
             </div>
           </template>
 
           <template #createdAt-cell="{ row: { original: row } }">
-            <span class="text-sm" style="color: var(--ink-muted)">{{
-              formatDate(row.createdAt)
-            }}</span>
+            <span class="text-sm text-ink-muted">{{ formatDate(row.createdAt) }}</span>
           </template>
 
           <template #actions-cell="{ row: { original: row } }">
-            <UDropdown
+            <UDropdownMenu
               :items="[
                 ...(row.status === 'draft'
                   ? [
@@ -252,23 +225,19 @@ async function closeJob(id: string) {
               ]"
             >
               <UButton variant="ghost" icon="i-heroicons-ellipsis-horizontal" size="xs" />
-            </UDropdown>
+            </UDropdownMenu>
           </template>
         </UTable>
 
         <div
           v-if="total > limit"
-          class="flex justify-center px-4 pb-4 pt-2"
-          style="border-top: 1px solid var(--line-soft)"
+          class="flex justify-center px-4 pb-4 pt-2 border-t border-line-soft"
         >
           <UPagination v-model="page" :total="total" :page-size="limit" />
         </div>
       </UCard>
-    </div>
+    </template>
 
-    <!-- Right panel (detail view) -->
-    <div class="lg:col-span-7 h-full" :class="{ 'hidden lg:block': !isDetailRoute }">
-      <NuxtPage />
-    </div>
-  </div>
+    <NuxtPage />
+  </EmployerMasterDetailLayout>
 </template>

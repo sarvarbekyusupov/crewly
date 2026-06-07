@@ -19,11 +19,17 @@ export class SourcingController {
 
   @Post('linkedin/ingest')
   ingestLinkedIn(
-    @Body(new ZodValidationPipe(z.object({
-      linkedin_url: z.string().url().optional(),
-      full_name: z.string().optional(),
-      email: z.string().email().optional(),
-    }).passthrough()))
+    @Body(
+      new ZodValidationPipe(
+        z
+          .object({
+            linkedin_url: z.string().url().optional(),
+            full_name: z.string().optional(),
+            email: z.string().email().optional(),
+          })
+          .passthrough(),
+      ),
+    )
     profile: Record<string, unknown>,
   ) {
     return this.svc.ingestLinkedInProfile(profile);

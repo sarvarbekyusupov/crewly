@@ -8,6 +8,8 @@ import {
   Logger,
   OnModuleInit,
   Post,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -17,6 +19,10 @@ import { ConversationsService } from '../modules/conversations/conversations.ser
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { PaymeWebhookService } from '../integrations/payme/payme-webhook.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  HhWebhookService,
+  HhWebhookPayload,
+} from '../integrations/hh/hh-webhook.service';
 
 @Controller('api/v1/webhooks')
 export class WebhooksController implements OnModuleInit {
@@ -29,6 +35,7 @@ export class WebhooksController implements OnModuleInit {
     private readonly payme: PaymeWebhookService,
     private readonly idempotency: IdempotencyService,
     private readonly db: PrismaService,
+    private readonly hhWebhook: HhWebhookService,
   ) {}
 
   onModuleInit() {
@@ -66,6 +73,55 @@ export class WebhooksController implements OnModuleInit {
           this.logger.error(err, 'Failed to set Telegram webhook'),
         );
     }
+  }
+
+  @Get('tma/pipeline')
+  @Public()
+  async getTmaPipeline(@Query('telegramId') telegramId: string) {
+    if (!telegramId) {
+      throw new BadRequestException('telegramId is required');
+    }
+
+    const user = await this.db.user.findFirst({
+      where: { telegramChatId: telegramId, deletedAt: null },
+      include: { company: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('Manager not registered or bound in My-HR');
+    }
+
+    const jobs = await this.db.job.findMany({
+      where: { companyId: user.companyId, status: 'active', deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        applications: {
+          select: {
+            id: true,
+            status: true,
+            matchScore: true,
+            matchRecommendation: true,
+            candidate: {
+              select: {
+                id: true,
+                fullName: true,
+                yearsExperience: true,
+                city: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      manager: {
+        fullName: user.fullName,
+        companyName: user.company.name,
+      },
+      jobs,
+    };
   }
 
   @Post('telegram')
@@ -265,6 +321,37 @@ export class WebhooksController implements OnModuleInit {
         return { ok: true };
       },
     );
+
+    return { ok: true };
+  }
+
+  @Post('hh')
+  @Public()
+  @HttpCode(200)
+  async handleHh(
+    @Body() payload: HhWebhookPayload,
+    @Headers('authorization') auth: string,
+  ) {
+    const secret = this.config.get<string>('HH_WEBHOOK_SECRET');
+    if (secret) {
+      const expected = `Bearer ${secret}`;
+      const authBuf = Buffer.from(auth ?? '');
+      const expectedBuf = Buffer.from(expected);
+      const valid =
+        authBuf.length === expectedBuf.length &&
+        timingSafeEqual(authBuf, expectedBuf);
+      if (!valid) throw new ForbiddenException('Invalid HH webhook secret');
+    }
+
+    const eventId =
+      payload.object_id ??
+      payload.negotiation?.id ??
+      `${payload.type}:${payload.created_at}`;
+
+    await this.idempotency.execute(`hh:${eventId}`, 48, async () => {
+      await this.hhWebhook.handleEvent(payload);
+      return { ok: true as const };
+    });
 
     return { ok: true };
   }

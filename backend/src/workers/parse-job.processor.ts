@@ -34,9 +34,16 @@ export class ParseJobProcessor {
 
     let parsed: any;
     try {
-      parsed = await this.agent.parseJobDescription(dbJob.title, dbJob.description, jobId);
+      parsed = await this.agent.parseJobDescription(
+        dbJob.title,
+        dbJob.description,
+        jobId,
+      );
     } catch (err: any) {
-      this.logger.error({ jobId, error: err.message }, 'Failed to parse job description');
+      this.logger.error(
+        { jobId, error: err.message },
+        'Failed to parse job description',
+      );
       throw err;
     }
 

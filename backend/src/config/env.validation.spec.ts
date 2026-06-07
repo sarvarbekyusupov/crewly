@@ -6,6 +6,7 @@ const minimalEnv = {
   JWT_ACCESS_SECRET: 'b'.repeat(32),
   JWT_CANDIDATE_SECRET: 'd'.repeat(32),
   JWT_REFRESH_SECRET: 'c'.repeat(32),
+  BULL_BOARD_PASSWORD: 'e'.repeat(16),
 };
 
 describe('validateEnv', () => {

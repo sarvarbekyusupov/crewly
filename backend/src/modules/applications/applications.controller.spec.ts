@@ -24,7 +24,11 @@ describe('ApplicationsController', () => {
   };
   let schedulingSvc: { scheduleInterview: jest.Mock };
 
-  const user = { id: 'user-1', companyId: 'company-1', role: 'hiring_manager' as const };
+  const user = {
+    id: 'user-1',
+    companyId: 'company-1',
+    role: 'hiring_manager' as const,
+  };
 
   beforeEach(async () => {
     svc = {

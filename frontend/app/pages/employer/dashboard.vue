@@ -6,6 +6,30 @@ useHead({ title: computed(() => t('nav.dashboard')) })
 const api = useApi()
 const auth = useAuthStore()
 const { appStatusLabel } = useStatusLabels()
+const toast = useToast()
+
+onMounted(async () => {
+  const pending = localStorage.getItem('pending_first_job')
+  if (pending) {
+    try {
+      const payload = JSON.parse(pending)
+      await api.post('/api/v1/jobs', payload)
+      localStorage.removeItem('pending_first_job')
+
+      refreshNuxtData('dashboard-stats')
+      refreshNuxtData('dashboard-apps')
+      refreshNuxtData('dashboard-agents')
+
+      toast.add({
+        title: t('common.success'),
+        description: 'Your first sourcing campaign has been successfully launched!',
+        color: 'success',
+      })
+    } catch (e) {
+      console.error('Failed to create pending first job:', e)
+    }
+  }
+})
 
 interface DashboardStats {
   activeJobs: number
@@ -19,18 +43,17 @@ interface DashboardStats {
 }
 
 const { data: stats } = await useAsyncData('dashboard-stats', () =>
-  api.get<DashboardStats>('/api/v1/dashboard/stats').catch(() => null),
+  api.get<DashboardStats>('/api/v1/dashboard/stats'),
 )
 
 const { data: applications, pending: appsLoading } = await useAsyncData('dashboard-apps', () =>
   api
     .get<PaginatedResponse<Application>>('/api/v1/applications', { limit: 50 })
-    .then((r) => r.data)
-    .catch(() => [] as Application[]),
+    .then((r) => r.data),
 )
 
 const { data: agents, pending: agentsLoading } = await useAsyncData('dashboard-agents', () =>
-  api.get<AgentActivityResponse>('/api/v1/analytics/agents').catch(() => null),
+  api.get<AgentActivityResponse>('/api/v1/analytics/agents'),
 )
 
 const kpis = computed(() => {

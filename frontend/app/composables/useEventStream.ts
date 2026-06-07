@@ -106,6 +106,16 @@ export function useEventStream() {
               ? [{ label: t('events.open'), onClick: () => navigateForEvent(type, p) }]
               : [],
           })
+        } else if (type === 'agent.thought') {
+          store.pushAgentThought({
+            agent: String(p.agent ?? 'Agent'),
+            action: (p.action as 'started' | 'completed' | 'failed') ?? 'started',
+            purpose: String(p.purpose ?? ''),
+            latency: p.latency as number | undefined,
+            cost: p.cost as number | undefined,
+            provider: p.provider as string | undefined,
+            ts: Date.now(),
+          })
         }
       } catch {
         /* ignore parse errors */

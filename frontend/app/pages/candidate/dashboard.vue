@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveredJob, SeekerApplication, PaginatedResponse } from '~/types/api'
+import { seekerAppStatusColor, appStatusColor } from '~/utils/statusColors'
+import { capitalizeStatus } from '~/utils/candidate'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -18,9 +20,15 @@ interface HrApplication {
 
 interface Profile {
   fullName?: string
-  skills?: string[]
-  resumeFileUrl?: string
+  phone?: string
+  city?: string
   currentPosition?: string
+  currentCompany?: string
+  preferredWorkMode?: string
+  resumeFileUrl?: string
+  telegramUsername?: string
+  yearsExperience?: number | string
+  skills?: string[]
   minMatchScore?: number | null
 }
 
@@ -63,13 +71,12 @@ const stats = computed(() => {
   }
 })
 
-// Profile completeness
-const completeness = computed(() => {
-  const p = profile.value
-  if (!p) return 0
-  const fields = [p.fullName, p.currentPosition, p.resumeFileUrl]
-  const hasSkills = (p.skills?.length ?? 0) > 0 ? 1 : 0
-  return Math.round(((fields.filter(Boolean).length + hasSkills) / (fields.length + 1)) * 100)
+const { percent: completeness, missing: missingFields } = useProfileCompletion(profile)
+
+onMounted(() => {
+  if (completeness.value === 0) {
+    navigateTo('/candidate/onboarding')
+  }
 })
 
 function scoreColor(
@@ -81,24 +88,6 @@ function scoreColor(
   return 'error'
 }
 
-function seekerStatusColor(
-  status: string,
-): 'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' {
-  const map: Record<
-    string,
-    'neutral' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error'
-  > = {
-    queued: 'warning',
-    applied: 'primary',
-    viewed: 'info',
-    interview: 'success',
-    rejected: 'error',
-    offer: 'success',
-    failed: 'error',
-  }
-  return map[status] ?? 'neutral'
-}
-
 const { t } = useI18n()
 const scoringInProgress = ref(false)
 const toast = useToast()
@@ -108,8 +97,8 @@ async function triggerScoring() {
   try {
     await api.post('/api/v1/candidate-portal/discovered-jobs/score', {})
     toast.add({
-      title: 'AI scoring queued',
-      description: 'Scores ready in ~1 minute',
+      title: t('candidate.dashboard.scoringQueued'),
+      description: t('candidate.dashboard.scoringDesc'),
       color: 'success',
     })
   } catch (e) {
@@ -118,65 +107,151 @@ async function triggerScoring() {
     scoringInProgress.value = false
   }
 }
+
+const nextBestAction = computed(() => {
+  const missing = missingFields.value
+  if (missing.includes('resumeFileUrl') || missing.includes('cv')) {
+    return {
+      message:
+        'Upload your latest resume (PDF) so our AI Matchmaker can find high-scoring matches for you.',
+      ctaLabel: 'Upload CV',
+      ctaTo: '/candidate/profile',
+    }
+  }
+  if (missing.includes('skills')) {
+    return {
+      message:
+        'Add your core professional skills to optimize your matching alignment with employers.',
+      ctaLabel: 'Add Skills',
+      ctaTo: '/candidate/profile',
+    }
+  }
+  if (missing.includes('telegramUsername') || missing.includes('phone')) {
+    return {
+      message:
+        'Set up your contact information (Telegram / Phone) so recruiters can reach out directly.',
+      ctaLabel: 'Add Contacts',
+      ctaTo: '/candidate/profile',
+    }
+  }
+  if (missing.includes('preferredWorkMode') || missing.includes('city')) {
+    return {
+      message:
+        'Define your preferred location and work mode (Remote / Hybrid) to filter out unfitting jobs.',
+      ctaLabel: 'Update Preferences',
+      ctaTo: '/candidate/profile',
+    }
+  }
+  return {
+    message:
+      'Your profile looks fantastic! Go to Job Discovery to find and apply for top AI-matched roles.',
+    ctaLabel: 'Explore Jobs',
+    ctaTo: '/candidate/jobs',
+  }
+})
+
+const showCoachModal = ref(false)
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Welcome header -->
     <div class="pb-4" style="border-bottom: 1px solid var(--line)">
-      <p
-        style="
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--ink-subtle);
-          margin-bottom: 6px;
-        "
-      >
-        Overview
-      </p>
-      <h1
-        style="
-          font-family: 'Fraunces', serif;
-          font-size: 28px;
-          line-height: 1.05;
-          letter-spacing: -0.03em;
-          color: var(--ink);
-          font-weight: 400;
-        "
-      >
-        Welcome back<template v-if="store.candidate?.fullName"
-          >, {{ store.candidate.fullName.split(' ')[0] }}</template
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            style="
+              font-family: 'JetBrains Mono', monospace;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              color: var(--ink-subtle);
+              margin-bottom: 6px;
+            "
+          >
+            Overview
+          </p>
+          <h1
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 28px;
+              line-height: 1.05;
+              letter-spacing: -0.03em;
+              color: var(--ink);
+              font-weight: 400;
+            "
+          >
+            Welcome back<template v-if="store.candidate?.fullName"
+              >, {{ store.candidate.fullName.split(' ')[0] }}</template
+            >
+          </h1>
+        </div>
+        <UButton
+          variant="outline"
+          size="sm"
+          icon="i-heroicons-banknotes"
+          @click="showCoachModal = true"
         >
-      </h1>
+          AI Salary Coach
+        </UButton>
+      </div>
     </div>
 
-    <!-- Profile completeness banner -->
+    <!-- Profile completeness banner (Gamified) -->
     <div
-      v-if="completeness < 80"
-      class="rounded-lg px-4 py-3 flex items-center justify-between gap-4"
-      style="background: var(--accent-soft); border: 1px solid var(--accent)"
+      v-if="completeness < 100"
+      class="rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all duration-300 hover:shadow-md"
+      style="
+        background: var(--surface);
+        border: 1px solid var(--accent);
+        position: relative;
+        overflow: hidden;
+      "
     >
-      <div class="flex items-center gap-3 min-w-0">
-        <UIcon
-          name="i-heroicons-user-circle"
-          class="w-5 h-5 shrink-0"
-          style="color: var(--accent)"
-        />
-        <div class="min-w-0">
-          <p class="text-sm font-medium" style="color: var(--ink)">
-            Profile {{ completeness }}% complete — better profiles get better matches
+      <div
+        class="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-xl pointer-events-none"
+        style="background: var(--accent)"
+      />
+
+      <div class="flex items-start gap-4 min-w-0 flex-1">
+        <!-- Progress circle / ring simulation -->
+        <div
+          class="relative shrink-0 flex items-center justify-center w-14 h-14 rounded-full border border-line bg-bg-deep"
+        >
+          <span class="text-sm font-semibold font-mono" style="color: var(--accent)">
+            {{ completeness }}%
+          </span>
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span
+              class="text-xs font-mono font-semibold uppercase tracking-wide"
+              style="color: var(--accent)"
+              >Profile Strength</span
+            >
+            <span
+              v-if="completeness < 80"
+              class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold font-mono"
+              >Needs Completion</span
+            >
+          </div>
+          <p class="text-sm font-medium mt-1 leading-snug" style="color: var(--ink)">
+            {{ nextBestAction.message }}
           </p>
-          <div class="w-48 h-1 rounded-full mt-1 overflow-hidden" style="background: var(--line)">
+
+          <div class="w-full max-w-md h-1.5 rounded-full mt-2.5 bg-bg-deep overflow-hidden">
             <div
-              class="h-full rounded-full"
+              class="h-full rounded-full transition-all duration-500"
               :style="{ width: completeness + '%', background: 'var(--accent)' }"
             />
           </div>
         </div>
       </div>
-      <UButton to="/candidate/profile" size="xs" variant="outline">Complete profile</UButton>
+
+      <UButton :to="nextBestAction.ctaTo" size="sm" class="shrink-0 font-medium">
+        {{ nextBestAction.ctaLabel }}
+      </UButton>
     </div>
 
     <!-- Active Screening Banner -->
@@ -187,13 +262,20 @@ async function triggerScoring() {
     >
       <div class="flex items-center gap-4">
         <div
-          class="w-10 h-10 rounded-full bg-(--accent) flex items-center justify-center animate-pulse"
+          class="w-10 h-10 rounded-full flex items-center justify-center animate-pulse"
+          style="background: var(--accent)"
         >
-          <UIcon name="i-heroicons-chat-bubble-left-right" class="w-6 h-6 text-(--bg)" />
+          <UIcon
+            name="i-heroicons-chat-bubble-left-right"
+            class="w-6 h-6"
+            style="color: var(--bg)"
+          />
         </div>
         <div>
-          <p class="font-medium text-lg leading-tight">AI Screening in progress</p>
-          <p class="text-xs opacity-70">The recruiter agent is waiting for your reply.</p>
+          <p class="font-medium text-lg leading-tight">
+            {{ t('candidate.dashboard.aiScreening') }}
+          </p>
+          <p class="text-xs opacity-70">{{ t('candidate.dashboard.aiScreeningDesc') }}</p>
         </div>
       </div>
       <UButton
@@ -202,7 +284,7 @@ async function triggerScoring() {
         size="md"
         icon="i-heroicons-chat-bubble-left-ellipsis"
       >
-        Go to Chat
+        {{ t('candidate.dashboard.replyNow') }}
       </UButton>
     </div>
 
@@ -211,25 +293,25 @@ async function triggerScoring() {
       <div
         v-for="(item, key) in [
           {
-            label: 'Jobs discovered',
+            label: t('candidate.dashboard.statDiscovered'),
             value: stats.discovered,
             icon: 'i-heroicons-magnifying-glass',
             color: 'var(--accent)',
           },
           {
-            label: 'Applied',
+            label: t('candidate.dashboard.statApplied'),
             value: stats.applied,
             icon: 'i-heroicons-paper-airplane',
             color: 'var(--info)',
           },
           {
-            label: 'Interviews',
+            label: t('candidate.dashboard.statInterviews'),
             value: stats.interviews,
             icon: 'i-heroicons-chat-bubble-left-right',
             color: 'var(--warning)',
           },
           {
-            label: 'Offers',
+            label: t('candidate.dashboard.statOffers'),
             value: stats.offers,
             icon: 'i-heroicons-trophy',
             color: 'var(--positive)',
@@ -261,9 +343,10 @@ async function triggerScoring() {
       <!-- Top job matches (3/5 width) -->
       <div class="lg:col-span-3 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="section-label">Top job matches</h2>
+          <h2 class="section-label">{{ t('candidate.dashboard.topMatches') }}</h2>
           <div class="flex items-center gap-2">
             <UButton
+              v-if="topJobs.length"
               variant="ghost"
               size="xs"
               icon="i-heroicons-sparkles"
@@ -287,9 +370,13 @@ async function triggerScoring() {
             style="color: var(--ink-subtle)"
           />
           <p class="text-sm" style="color: var(--ink-muted)">No jobs discovered yet</p>
-          <p class="text-xs mt-1" style="color: var(--ink-subtle)">
-            Ask staff to run a job discovery scan
-          </p>
+          <NuxtLink
+            to="/candidate/jobs"
+            class="text-xs mt-2 inline-block"
+            style="color: var(--ink-muted); text-decoration: underline"
+          >
+            Go to Job Discovery →
+          </NuxtLink>
         </div>
 
         <div
@@ -337,7 +424,7 @@ async function triggerScoring() {
       <!-- Recent applications (2/5 width) -->
       <div class="lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="section-label">Recent applications</h2>
+          <h2 class="section-label">{{ t('candidate.dashboard.recentApps') }}</h2>
           <UButton variant="ghost" size="xs" to="/candidate/tracker">See all →</UButton>
         </div>
 
@@ -372,7 +459,7 @@ async function triggerScoring() {
             </p>
           </div>
           <UBadge
-            :color="seekerStatusColor(app.status)"
+            :color="seekerAppStatusColor(app.status)"
             variant="subtle"
             size="xs"
             class="shrink-0"
@@ -383,7 +470,12 @@ async function triggerScoring() {
 
         <!-- HR pipeline apps -->
         <div v-if="hrApps.length" class="mt-4">
-          <h3 class="section-label mb-2">In recruiter pipeline</h3>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="section-label">{{ t('candidate.dashboard.inPipeline') }}</h3>
+            <UButton v-if="hrApps.length > 3" variant="ghost" size="xs" to="/candidate/offers">
+              See all {{ hrApps.length }} →
+            </UButton>
+          </div>
           <div class="space-y-2">
             <div
               v-for="app in hrApps.slice(0, 3)"
@@ -399,12 +491,12 @@ async function triggerScoring() {
               </div>
               <div class="flex items-center gap-2">
                 <UBadge
-                  :color="app.status === 'screening' ? 'primary' : 'neutral'"
+                  :color="appStatusColor(app.status)"
                   variant="subtle"
                   size="xs"
                   class="shrink-0"
                 >
-                  {{ app.status.replace(/_/g, ' ') }}
+                  {{ capitalizeStatus(app.status) }}
                 </UBadge>
                 <NuxtLink
                   v-if="['screening', 'responded', 'outreach_sent'].includes(app.status)"
@@ -423,15 +515,23 @@ async function triggerScoring() {
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <NuxtLink
         v-for="action in [
-          { label: 'Browse Jobs', icon: 'i-heroicons-magnifying-glass', to: '/candidate/jobs' },
           {
-            label: 'My Applications',
+            label: t('candidate.dashboard.browseJobs'),
+            icon: 'i-heroicons-magnifying-glass',
+            to: '/candidate/jobs',
+          },
+          {
+            label: t('candidate.dashboard.myApplications'),
             icon: 'i-heroicons-paper-airplane',
             to: '/candidate/tracker',
           },
-          { label: 'Edit Profile', icon: 'i-heroicons-user', to: '/candidate/profile' },
           {
-            label: 'Preferences',
+            label: t('candidate.dashboard.editProfile'),
+            icon: 'i-heroicons-user',
+            to: '/candidate/profile',
+          },
+          {
+            label: t('candidate.dashboard.preferences'),
             icon: 'i-heroicons-adjustments-horizontal',
             to: '/candidate/preferences',
           },
@@ -450,5 +550,8 @@ async function triggerScoring() {
         <span class="text-xs font-medium" style="color: var(--ink)">{{ action.label }}</span>
       </NuxtLink>
     </div>
+
+    <!-- AI Salary Coach Modal -->
+    <SalaryCoachModal v-model:open="showCoachModal" />
   </div>
 </template>

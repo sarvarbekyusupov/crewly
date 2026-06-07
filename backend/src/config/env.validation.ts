@@ -27,6 +27,9 @@ export const EnvSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional().default(''),
   OPENAI_API_KEY: z.string().optional().default(''),
 
+  AWS_BEARER_TOKEN_BEDROCK: z.string().optional().or(z.literal('')),
+  AWS_BEDROCK_REGION: z.string().optional().default('us-east-1'),
+
   HH_EMPLOYER_TOKEN: z.string().optional().or(z.literal('')),
   HH_EMPLOYER_ID: z.string().optional().or(z.literal('')),
   HH_CLIENT_ID: z.string().optional().or(z.literal('')),
@@ -38,7 +41,7 @@ export const EnvSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
 
   RESEND_API_KEY: z.string().optional().or(z.literal('')),
-  FROM_EMAIL: z.string().email().default('noreply@myhr.uz'),
+  FROM_EMAIL: z.string().email().default('noreply@crewly.uz'),
   BULL_BOARD_PASSWORD: z.string().min(16),
 
   S3_ENDPOINT: z.string().optional().or(z.literal('')),
@@ -49,6 +52,10 @@ export const EnvSchema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:3001'),
 
   PAYMENT_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
+
+  ESKIZ_EMAIL: z.string().email().optional().or(z.literal('')),
+  ESKIZ_PASSWORD: z.string().optional().or(z.literal('')),
+  ESKIZ_FROM: z.string().default('4546'),
 
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])

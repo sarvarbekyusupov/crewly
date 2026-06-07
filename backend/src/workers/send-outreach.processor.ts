@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OutreachAgent } from '../modules/agents/outreach.agent';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { EmailService } from '../integrations/email/email.service';
+import { EskizService } from '../integrations/sms/eskiz.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { QUEUES } from './queue-names';
@@ -23,6 +24,7 @@ export class SendOutreachProcessor {
     private readonly agent: OutreachAgent,
     private readonly telegram: TelegramBotService,
     private readonly email: EmailService,
+    private readonly eskiz: EskizService,
     private readonly hhNegotiations: HhNegotiationsService,
     private readonly hhClient: HhClientService,
   ) {}
@@ -40,6 +42,7 @@ export class SendOutreachProcessor {
             fullName: true,
             telegramUserId: true,
             email: true,
+            phone: true,
             currentPosition: true,
             currentCompany: true,
             skills: true,
@@ -65,15 +68,19 @@ export class SendOutreachProcessor {
 
     const hasTelegram = !!app.candidate.telegramUserId;
     const hasEmail = !!app.candidate.email;
-    const hasHhInvite =
-      !!app.candidate.externalId && !!app.job.hhVacancyId;
+    const hasHhInvite = !!app.candidate.externalId && !!app.job.hhVacancyId;
+    const hasSms = !!app.candidate.phone;
     const channel = hasHhInvite
       ? 'hh'
       : hasTelegram
         ? 'telegram'
-        : 'email';
+        : hasEmail
+          ? 'email'
+          : hasSms
+            ? 'sms'
+            : null;
 
-    if (!hasHhInvite && !hasTelegram && !hasEmail) {
+    if (!channel) {
       this.logger.warn(
         { applicationId },
         'No contact channel available — marking as no_contact',
@@ -108,7 +115,10 @@ export class SendOutreachProcessor {
     } catch (err: any) {
       // P2002 = unique constraint violation → duplicate outreach already in flight
       if (err?.code === 'P2002') {
-        this.logger.warn({ applicationId, channel }, 'Duplicate outreach detected — skipping');
+        this.logger.warn(
+          { applicationId, channel },
+          'Duplicate outreach detected — skipping',
+        );
         return;
       }
       throw err;
@@ -119,7 +129,9 @@ export class SendOutreachProcessor {
         name: app.candidate.fullName ?? 'кандидат',
         currentPosition: app.candidate.currentPosition,
         skills: app.candidate.skills,
-        socialProof: (app.candidate.socialProof ?? undefined) as Record<string, unknown> | undefined,
+        socialProof: (app.candidate.socialProof ?? undefined) as
+          | Record<string, unknown>
+          | undefined,
       },
       {
         title: app.job.title,
@@ -181,6 +193,8 @@ export class SendOutreachProcessor {
         subject: `Интересная вакансия: ${app.job.title}`,
         html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
       });
+    } else if (channel === 'sms' && app.candidate.phone) {
+      await this.eskiz.sendSms(app.candidate.phone, message);
     }
 
     await this.db.outreachAttempt.create({

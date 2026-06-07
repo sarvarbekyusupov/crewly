@@ -127,7 +127,9 @@ describe('ParseJobProcessor', () => {
     db.job.findUnique.mockResolvedValue(dbJob);
     agent.parseJobDescription.mockRejectedValue(new Error('Parse error'));
 
-    await expect(processor.handle(makeJob({ jobId }))).rejects.toThrow('Parse error');
+    await expect(processor.handle(makeJob({ jobId }))).rejects.toThrow(
+      'Parse error',
+    );
     expect(db.$executeRaw).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
-import { coordinatorDecidePrompt } from '@my-hr/prompts';
+import { coordinatorDecidePrompt } from '@crewly/prompts';
+
+const CoordinatorDecisionSchema = z.object({
+  action: z.enum([
+    'trigger_sourcing',
+    'trigger_matching',
+    'trigger_screening',
+    'schedule_interview',
+    'notify_human',
+    'wait',
+  ]),
+  reason: z.string(),
+});
 
 @Injectable()
 export class CoordinatorAgent extends BaseAgent {
@@ -42,11 +54,17 @@ export class CoordinatorAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'orchestration_decision',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 512, temperature: 0.3 },
+      {
+        model: 'llama-3.1-8b-instant',
+        maxTokens: 256,
+        temperature: 0.3,
+        responseFormat: { type: 'json_object' },
+      },
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
+      const parsed = JSON.parse(output);
+      return CoordinatorDecisionSchema.parse(parsed);
     } catch {
       return { action: 'wait', reason: 'Coordinator failed to decide' };
     }

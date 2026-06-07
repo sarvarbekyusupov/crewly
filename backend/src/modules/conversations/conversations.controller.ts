@@ -36,7 +36,10 @@ export class ConversationsController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.findOne(user.companyId, id);
   }
 

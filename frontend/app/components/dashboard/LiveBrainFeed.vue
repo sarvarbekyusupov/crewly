@@ -51,18 +51,51 @@ watch(lastEvent, (val) => {
     }
   })
 })
+
+const filterType = ref<'all' | 'matchmaker' | 'outreach' | 'error'>('all')
+
+const filteredLogs = computed(() => {
+  if (filterType.value === 'all') return logs.value
+  if (filterType.value === 'error') return logs.value.filter((l) => l.type === 'error')
+  return logs.value.filter((l) => l.agent.toLowerCase().includes(filterType.value))
+})
 </script>
 
 <template>
-  <div class="terminal-container">
-    <div ref="terminalRef" class="terminal-body">
-      <div v-if="!logs.length" class="terminal-empty">
-        {{ t('dashboard.brainFeedEmpty') }}
+  <div class="space-y-2">
+    <!-- Filter control header -->
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-mono font-semibold" style="color: var(--ink-subtle)"
+        >LIVE AGENT ACTIONS</span
+      >
+      <div class="flex gap-1 bg-bg-deep border border-line-soft rounded-md p-0.5">
+        <button
+          v-for="opt in ['all', 'matchmaker', 'outreach', 'error']"
+          :key="opt"
+          type="button"
+          class="text-[10px] font-mono px-2 py-0.5 rounded capitalize cursor-pointer transition-colors"
+          :style="
+            filterType === opt
+              ? 'background: var(--bg-elevated); color: var(--ink)'
+              : 'background: transparent; color: var(--ink-muted)'
+          "
+          @click="filterType = opt as any"
+        >
+          {{ opt }}
+        </button>
       </div>
-      <div v-for="log in logs" :key="log.id" class="terminal-line">
-        <span class="line-time">[{{ log.timestamp }}]</span>
-        <span class="line-agent">{{ log.agent }}:</span>
-        <span class="line-msg" :class="`msg-${log.type}`">{{ log.message }}</span>
+    </div>
+
+    <div class="terminal-container">
+      <div ref="terminalRef" class="terminal-body">
+        <div v-if="!filteredLogs.length" class="terminal-empty">
+          {{ t('dashboard.brainFeedEmpty') }}
+        </div>
+        <div v-for="log in filteredLogs" :key="log.id" class="terminal-line">
+          <span class="line-time">[{{ log.timestamp }}]</span>
+          <span class="line-agent">{{ log.agent }}:</span>
+          <span class="line-msg" :class="`msg-${log.type}`">{{ log.message }}</span>
+        </div>
       </div>
     </div>
   </div>

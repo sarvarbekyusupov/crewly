@@ -4,7 +4,10 @@ import { Job } from 'bull';
 import { NonRetryableError } from './errors';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
-import { MatchmakerAgent, MatchmakerResult } from '../modules/agents/matchmaker.agent';
+import {
+  MatchmakerAgent,
+  MatchmakerResult,
+} from '../modules/agents/matchmaker.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { QUEUES } from './queue-names';
 import { stripLlmJson } from './utils';
@@ -44,7 +47,8 @@ export class MatchCandidatesProcessor {
     const hhVacancyId = (dbJob as any).hhVacancyId as string | null;
     if (hhVacancyId) {
       try {
-        const potentialResumes = await this.hhClient.getPotentialResumes(hhVacancyId);
+        const potentialResumes =
+          await this.hhClient.getPotentialResumes(hhVacancyId);
         if (potentialResumes.length) {
           const resumeIds = potentialResumes.map((r) => r.id);
           const matched = await this.db.candidate.findMany({
@@ -62,22 +66,23 @@ export class MatchCandidatesProcessor {
           );
         }
       } catch (err: any) {
-        this.logger.warn({ jobId, err: err.message }, 'potential_resumes fetch skipped');
+        this.logger.warn(
+          { jobId, err: err.message },
+          'potential_resumes fetch skipped',
+        );
       }
     }
 
-    // Vector similarity search — top 50 candidates
+    // Vector similarity search — top 50 candidates using HNSW-indexed query
     const vectorCandidates: Array<{ id: string; similarity: number }> =
       await this.db.$queryRaw`
-        SELECT c.id, 1 - (c.embedding <=> j.embedding) AS similarity
-        FROM candidates c
-        CROSS JOIN jobs j
-        WHERE j.id = ${jobId}
-          AND c.embedding IS NOT NULL
-          AND c.do_not_contact = false
-          AND c.consent_status != 'withdrawn'
-          AND c.deleted_at IS NULL
-        ORDER BY c.embedding <=> j.embedding
+        SELECT id, 1 - (embedding <=> (SELECT embedding FROM jobs WHERE id = ${jobId}::uuid)) AS similarity
+        FROM candidates
+        WHERE embedding IS NOT NULL
+          AND do_not_contact = false
+          AND consent_status != 'withdrawn'
+          AND deleted_at IS NULL
+        ORDER BY embedding <=> (SELECT embedding FROM jobs WHERE id = ${jobId}::uuid)
         LIMIT 50`;
 
     const vectorIds = new Set(vectorCandidates.map((c) => c.id));
@@ -150,7 +155,8 @@ export class MatchCandidatesProcessor {
           title: dbJob.title,
           requiredSkills: dbJob.requiredSkills,
           minExperienceYears: dbJob.minExperienceYears ?? undefined,
-          hiringManagerFeedbackContext: (dbJob as any).hiringManagerFeedbackContext,
+          hiringManagerFeedbackContext: (dbJob as any)
+            .hiringManagerFeedbackContext,
         },
         candidateDetails.map((c) => ({
           ...c,
@@ -161,7 +167,10 @@ export class MatchCandidatesProcessor {
         targetCount,
       );
     } catch (err) {
-      this.logger.error({ jobId, error: err.message }, 'MatchmakerAgent failed');
+      this.logger.error(
+        { jobId, error: err.message },
+        'MatchmakerAgent failed',
+      );
       // Fallback: use top N by vector similarity
       ranked = candidates.slice(0, targetCount).map((c) => ({
         id: c.id,
@@ -173,8 +182,8 @@ export class MatchCandidatesProcessor {
       }));
     }
 
-    // Create applications for top ranked candidates
-    for (const ranked_candidate of ranked) {
+    // Prepare database upsert queries for matching candidates
+    const upsertQueries = ranked.map((ranked_candidate) => {
       const sim =
         candidates.find((c) => c.id === ranked_candidate.id)?.similarity ?? 0;
       const matchReasons = {
@@ -182,7 +191,7 @@ export class MatchCandidatesProcessor {
         gaps: ranked_candidate.gaps ?? [],
         notes: ranked_candidate.notes ?? '',
       };
-      const app = await this.db.application.upsert({
+      return this.db.application.upsert({
         where: {
           jobId_candidateId: { jobId, candidateId: ranked_candidate.id },
         },
@@ -206,7 +215,13 @@ export class MatchCandidatesProcessor {
         },
         select: { id: true, status: true },
       });
+    });
 
+    // Execute database transaction to guarantee full persistence first (prevents race conditions)
+    const apps = await this.db.$transaction(upsertQueries);
+
+    // Emit outreach and created events only after transaction commits successfully
+    for (const app of apps) {
       this.emitter.emit('application.created', {
         applicationId: app.id,
         jobId,

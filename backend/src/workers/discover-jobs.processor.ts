@@ -44,7 +44,12 @@ export class DiscoverJobsProcessor {
     if (candidateId && !query) {
       const seeker = await this.db.candidate.findUnique({
         where: { id: candidateId },
-        select: { currentPosition: true, skills: true, yearsExperience: true, city: true },
+        select: {
+          currentPosition: true,
+          skills: true,
+          yearsExperience: true,
+          city: true,
+        },
       });
       if (seeker) {
         const agentQueries = await this.agent.generateJobSearchQueries({
@@ -53,7 +58,8 @@ export class DiscoverJobsProcessor {
           yearsExperience: Number(seeker.yearsExperience ?? 0),
         });
         query = agentQueries.query;
-        location = location ?? agentQueries.location_hints ?? seeker.city ?? undefined;
+        location =
+          location ?? agentQueries.location_hints ?? seeker.city ?? undefined;
       }
     }
 

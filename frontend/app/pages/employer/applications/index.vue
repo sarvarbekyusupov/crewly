@@ -40,22 +40,41 @@ const selectedIds = ref<Set<string>>(new Set())
 const bulkLoading = ref(false)
 const showRejectModal = ref(false)
 const rejectReason = ref('')
+const showBulkOutreachModal = ref(false)
+const showCompareModal = ref(false)
+const showSourcingModal = ref(false)
 
-const allSelected = computed(
-  () =>
-    applications.value.length > 0 && applications.value.every((a) => selectedIds.value.has(a.id)),
-)
+const copilotQuery = ref('')
 
-function toggleAll() {
-  if (allSelected.value) selectedIds.value = new Set()
-  else selectedIds.value = new Set(applications.value.map((a) => a.id))
-}
+watch(copilotQuery, (val) => {
+  const q = val.toLowerCase()
+  if (q.includes('all') || q.includes('clear') || q.includes('reset')) {
+    statusFilter.value = ''
+    copilotQuery.value = ''
+    return
+  }
 
-function toggleRow(id: string) {
-  const next = new Set(selectedIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  selectedIds.value = next
+  if (q.includes('applied')) {
+    statusFilter.value = 'applied'
+  } else if (q.includes('screening') || q.includes('chat') || q.includes('delivered')) {
+    statusFilter.value = 'delivered'
+  } else if (q.includes('interview')) {
+    statusFilter.value = 'interview'
+  } else if (q.includes('offer')) {
+    statusFilter.value = 'offered'
+  } else if (q.includes('hire') || q.includes('placed')) {
+    statusFilter.value = 'hired'
+  } else if (q.includes('reject') || q.includes('pass')) {
+    statusFilter.value = 'rejected'
+  }
+})
+
+const activeSlideoverId = ref<string | null>(null)
+const isSlideoverOpen = ref(false)
+
+function openSlideover(id: string) {
+  activeSlideoverId.value = id
+  isSlideoverOpen.value = true
 }
 
 watch(view, () => {
@@ -88,7 +107,9 @@ async function bulkApprove() {
     })
     await refresh()
   } catch {
-    if (result.value) result.value = { ...result.value, data: prev }
+    if (result.value) {
+      result.value = { ...result.value, data: prev }
+    }
   } finally {
     bulkLoading.value = false
   }
@@ -114,7 +135,9 @@ async function bulkReject() {
     showRejectModal.value = false
     await refresh()
   } catch {
-    if (result.value) result.value = { ...result.value, data: prev }
+    if (result.value) {
+      result.value = { ...result.value, data: prev }
+    }
     selectedIds.value = new Set()
     rejectReason.value = ''
     showRejectModal.value = false
@@ -133,16 +156,6 @@ const statusOptions = computed(() => [
   { label: appStatusLabel('rejected_by_client'), value: 'rejected_by_client' },
   { label: appStatusLabel('withdrew'), value: 'withdrew' },
 ])
-
-const tableColumns: any[] = [
-  { accessorKey: 'select', header: '' },
-  { accessorKey: 'candidate', header: t('candidates.title') },
-  { accessorKey: 'job', header: t('nav.jobs') },
-  { accessorKey: 'matchScore', header: t('applications.matchScore') },
-  { accessorKey: 'status', header: t('common.status') },
-  { accessorKey: 'updatedAt', header: t('common.updatedAt') },
-  { accessorKey: 'actions', header: '' },
-]
 </script>
 
 <template>
@@ -151,76 +164,89 @@ const tableColumns: any[] = [
       eyebrow="Pipeline"
       :title="t('applications.title')"
       subtitle="Track every candidate through the hiring pipeline."
+    />
+
+    <!-- AI Copilot Filter Command Bar -->
+    <div class="bg-accent-soft border border-line-soft rounded-xl p-3 flex items-center gap-3">
+      <div
+        class="w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shrink-0 shadow-sm"
+      >
+        <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-pulse" />
+      </div>
+      <UInput
+        v-model="copilotQuery"
+        placeholder="Ask Recruiter AI to filter candidates (e.g. 'Show screened candidates' or 'Clear filters')..."
+        class="flex-1 font-mono text-xs"
+        autocomplete="off"
+      />
+    </div>
+
+    <div
+      class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 flex-wrap gap-4"
     >
-      <template #default>
-        <div
-          class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 flex-wrap gap-4"
-        >
-          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div
-              class="flex rounded-lg overflow-hidden shrink-0"
-              style="border: 1px solid var(--line); background: var(--bg-deep)"
-            >
-              <button
-                type="button"
-                class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5"
-                :style="
-                  view === 'kanban'
-                    ? 'background: var(--paper); color: var(--ink);'
-                    : 'color: var(--ink-muted);'
-                "
-                :aria-pressed="view === 'kanban'"
-                @click="view = 'kanban'"
-              >
-                <UIcon name="i-heroicons-view-columns" class="w-3.5 h-3.5" />
-                {{ t('applications.viewKanban') }}
-              </button>
-              <button
-                type="button"
-                class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5"
-                :style="
-                  view === 'table'
-                    ? 'background: var(--paper); color: var(--ink);'
-                    : 'color: var(--ink-muted);'
-                "
-                :aria-pressed="view === 'table'"
-                @click="view = 'table'"
-              >
-                <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
-                {{ t('applications.viewTable') }}
-              </button>
-            </div>
-            <USelect
-              v-if="view === 'table'"
-              v-model="statusFilter"
-              :options="statusOptions"
-              class="w-full sm:w-48"
-            />
-            <UButton
-              v-if="jobIdFilter"
-              size="sm"
-              variant="ghost"
-              :to="'/applications'"
-              class="justify-center"
-            >
-              {{ t('applications.clearJobFilter') }}
-            </UButton>
-          </div>
-          <span class="font-mono text-xs hidden sm:inline" style="color: var(--ink-subtle)"
-            >{{ total }} total</span
+      <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div class="flex rounded-lg overflow-hidden shrink-0 border border-line bg-bg-deep">
+          <button
+            type="button"
+            class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="{
+              'bg-paper text-ink': view === 'kanban',
+              'text-ink-muted': view !== 'kanban',
+            }"
+            :aria-pressed="view === 'kanban'"
+            @click="view = 'kanban'"
           >
+            <UIcon name="i-heroicons-view-columns" class="w-3.5 h-3.5" />
+            {{ t('applications.viewKanban') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 sm:flex-none px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            :class="{
+              'bg-paper text-ink': view === 'table',
+              'text-ink-muted': view !== 'table',
+            }"
+            :aria-pressed="view === 'table'"
+            @click="view = 'table'"
+          >
+            <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
+            {{ t('applications.viewTable') }}
+          </button>
         </div>
-      </template>
-    </CommonPageHead>
+        <USelect
+          v-if="view === 'table'"
+          v-model="statusFilter"
+          :items="statusOptions"
+          class="w-full sm:w-48"
+        />
+        <UButton
+          v-if="jobIdFilter"
+          size="sm"
+          variant="ghost"
+          to="/employer/applications"
+          class="justify-center"
+        >
+          {{ t('applications.clearJobFilter') }}
+        </UButton>
+        <UButton
+          size="sm"
+          icon="i-heroicons-clipboard-document-check"
+          @click="showSourcingModal = true"
+        >
+          Quick Source
+        </UButton>
+      </div>
+      <span class="font-mono text-xs hidden sm:inline text-ink-subtle">{{ total }} total</span>
+    </div>
 
     <template v-if="view === 'kanban'">
-      <ApplicationKanban :applications="applications" :loading="pending" />
+      <ApplicationKanban :applications="applications" :loading="pending" @select="openSlideover" />
       <div
         v-if="!pending && total > applications.length"
         class="mt-3 text-center font-mono text-xs text-ink-subtle"
       >
         {{ t('applications.showingOf', { shown: applications.length, total }) }}
-        <button class="ml-1 text-accent hover:underline" @click="view = 'table'">
+        <button class="ml-1 text-accent hover:underline cursor-pointer" @click="view = 'table'">
           {{ t('applications.switchToTable') }}
         </button>
       </div>
@@ -240,90 +266,23 @@ const tableColumns: any[] = [
         :loading="bulkLoading"
         @approve="bulkApprove"
         @reject="showRejectModal = true"
+        @personalize="showBulkOutreachModal = true"
+        @compare="showCompareModal = true"
         @clear="selectedIds = new Set()"
       />
 
       <CommonListSkeleton v-if="pending" variant="table" />
       <CommonErrorState v-else-if="error" :retry="() => refresh()" />
-      <UCard v-else :ui="{ body: 'p-0' }">
-        <UTable v-if="applications.length" :data="applications" :columns="tableColumns">
-          <template #select-header>
-            <input
-              type="checkbox"
-              class="rounded"
-              :checked="allSelected"
-              :aria-label="t('applications.bulkSelected', { count: selectedIds.size })"
-              @change="toggleAll"
-            />
-          </template>
-          <template #select-cell="{ row: { original: row } }">
-            <input
-              type="checkbox"
-              class="rounded"
-              :checked="selectedIds.has(row.id)"
-              :aria-label="row.candidate?.fullName ?? row.id"
-              @change="toggleRow(row.id)"
-              @click.stop
-            />
-          </template>
-          <template #candidate-cell="{ row: { original: row } }">
-            <div>
-              <p class="font-medium" style="color: var(--ink)">
-                {{ row.candidate?.fullName ?? '—' }}
-              </p>
-              <p class="text-xs" style="color: var(--ink-subtle)">
-                {{ row.candidate?.currentPosition ?? '—' }}
-              </p>
-            </div>
-          </template>
-          <template #job-cell="{ row: { original: row } }">
-            <NuxtLink
-              :to="`/employer/jobs/${row.jobId}`"
-              class="text-sm hover:underline"
-              style="color: var(--ink-muted)"
-            >
-              {{ row.job?.title ?? '—' }}
-            </NuxtLink>
-          </template>
-          <template #matchScore-cell="{ row: { original: row } }">
-            <span class="font-mono text-xs" style="color: var(--ink-muted)">
-              {{ row.matchScore ? Number(row.matchScore).toFixed(0) : '—' }}
-            </span>
-          </template>
-          <template #status-cell="{ row: { original: row } }">
-            <ApplicationStatusBadge :status="row.status" />
-          </template>
-          <template #updatedAt-cell="{ row: { original: row } }">
-            <span class="text-sm" style="color: var(--ink-muted)">{{
-              formatDate(row.updatedAt)
-            }}</span>
-          </template>
-          <template #actions-cell="{ row: { original: row } }">
-            <UButton
-              variant="ghost"
-              size="xs"
-              icon="i-heroicons-eye"
-              :to="`/employer/applications/${row.id}`"
-              :aria-label="t('common.view')"
-            />
-          </template>
-        </UTable>
-        <CommonEmptyState
-          v-else
-          icon="i-heroicons-users"
-          :title="t('applications.empty')"
-          :description="t('applications.emptyDescription')"
-          :action-label="t('nav.jobs')"
-          action-to="/employer/jobs"
-        />
-        <div
-          v-if="total > limit"
-          class="flex justify-center px-4 pb-4 pt-2"
-          style="border-top: 1px solid var(--line-soft)"
-        >
-          <UPagination v-model="page" :total="total" :page-size="limit" />
-        </div>
-      </UCard>
+      <EmployerApplicationsTable
+        v-else
+        v-model:page="page"
+        v-model:selected-ids="selectedIds"
+        :applications="applications"
+        :total="total"
+        :limit="limit"
+        :pending="pending"
+        @select="openSlideover"
+      />
 
       <CommonConfirmModal
         v-model:open="showRejectModal"
@@ -338,5 +297,34 @@ const tableColumns: any[] = [
         </UFormField>
       </CommonConfirmModal>
     </template>
+
+    <!-- Application details slideover -->
+    <EmployerApplicationSlideover
+      v-if="activeSlideoverId"
+      :id="activeSlideoverId"
+      v-model:open="isSlideoverOpen"
+      @refresh="() => refresh()"
+    />
+
+    <!-- Bulk Outreach Editor Modal -->
+    <BulkOutreachEditorModal
+      v-model:open="showBulkOutreachModal"
+      :selected-ids="Array.from(selectedIds)"
+      @success="
+        () => {
+          refresh()
+          selectedIds = new Set()
+        }
+      "
+    />
+
+    <!-- Candidate Compare Modal -->
+    <CandidateCompareModal
+      v-model:open="showCompareModal"
+      :selected-ids="Array.from(selectedIds)"
+    />
+
+    <!-- Sourcing Clipboard Copilot Modal -->
+    <SourcingClipboardModal v-model:open="showSourcingModal" @success="() => refresh()" />
   </div>
 </template>

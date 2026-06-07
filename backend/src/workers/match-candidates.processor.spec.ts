@@ -18,6 +18,7 @@ describe('MatchCandidatesProcessor', () => {
   const jobId = 'job-1';
 
   beforeEach(async () => {
+    const rawMock = jest.fn().mockResolvedValue([]);
     db = {
       job: { findUnique: jest.fn() },
       candidate: { findMany: jest.fn() },
@@ -25,7 +26,9 @@ describe('MatchCandidatesProcessor', () => {
         upsert: jest.fn().mockResolvedValue({ id: 'app-1', status: 'matched' }),
         findMany: jest.fn().mockResolvedValue([]),
       },
-      $queryRawUnsafe: jest.fn(),
+      $queryRaw: rawMock,
+      $queryRawUnsafe: rawMock,
+      $transaction: jest.fn((queries) => Promise.all(queries)),
     };
     agent = { rankCandidates: jest.fn() };
     emitter = { emit: jest.fn() };

@@ -39,7 +39,7 @@ export class IngestCandidatesProcessor {
 
   @Process()
   async handle(job: Job<IngestPayload>) {
-    let { source, specialization, keywords, location, text, maxPages } =
+    const { source, specialization, keywords, location, text, maxPages } =
       job.data;
 
     const adapter = this.getAdapter(source);

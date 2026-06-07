@@ -527,7 +527,7 @@ function outreachStatusColor(status: string) {
             >
               <div class="min-w-0">
                 <NuxtLink
-                  :to="`/applications/${app.id}`"
+                  :to="`/employer/applications/${app.id}`"
                   class="text-sm font-medium hover:underline"
                   style="color: var(--ink)"
                 >
@@ -560,12 +560,21 @@ function outreachStatusColor(status: string) {
               </div>
               <div class="flex flex-col items-end gap-1 shrink-0">
                 <ApplicationStatusBadge :status="app.status" />
-                <UButton
-                  variant="ghost"
-                  size="xs"
-                  icon="i-heroicons-document-text"
-                  @click="getDossier(app.id)"
-                />
+                <div class="flex gap-1">
+                  <UButton
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-sparkles"
+                    :to="`/employer/applications/${app.id}`"
+                    :aria-label="`View AI assessment for ${app.job?.title}`"
+                  />
+                  <UButton
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-document-text"
+                    @click="getDossier(app.id)"
+                  />
+                </div>
               </div>
             </li>
           </ul>

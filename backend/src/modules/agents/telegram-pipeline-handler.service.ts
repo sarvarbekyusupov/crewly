@@ -22,21 +22,38 @@ export class TelegramPipelineHandler implements OnModuleInit {
 
       const pipeIdx = data.indexOf('|');
       if (pipeIdx === -1) {
-        this.logger.warn(`Malformed Telegram callback data (missing delimiter): "${data}"`);
+        this.logger.warn(
+          `Malformed Telegram callback data (missing delimiter): "${data}"`,
+        );
         return;
       }
       const action = data.slice(0, pipeIdx);
       const applicationId = data.slice(pipeIdx + 1);
 
       if (action === 'approve_screening') {
-        await this.outreachQueue.add('send', { applicationId }, LLM_JOB_OPTIONS);
-        await this.telegram.editMessage(chatId, messageId, '✅ Одобрено: Кандидат отправлен на AI-интервью.');
+        await this.outreachQueue.add(
+          'send',
+          { applicationId },
+          LLM_JOB_OPTIONS,
+        );
+        await this.telegram.editMessage(
+          chatId,
+          messageId,
+          '✅ Одобрено: Кандидат отправлен на AI-интервью.',
+        );
       } else if (action === 'reject_app') {
         await this.db.application.update({
           where: { id: applicationId },
-          data: { status: 'rejected_by_client', rejectionReason: 'Rejected via Telegram' },
+          data: {
+            status: 'rejected_by_client',
+            rejectionReason: 'Rejected via Telegram',
+          },
         });
-        await this.telegram.editMessage(chatId, messageId, '❌ Пропущено: Кандидат отклонен.');
+        await this.telegram.editMessage(
+          chatId,
+          messageId,
+          '❌ Пропущено: Кандидат отклонен.',
+        );
       }
     });
   }

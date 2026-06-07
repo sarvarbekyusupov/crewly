@@ -127,6 +127,7 @@ describe('CandidatePortalService', () => {
       );
       expect(result.uploaded).toBe(true);
       expect(result.url).toContain('s3.example.com');
+      expect(result.parsing).toBeDefined();
     });
   });
 

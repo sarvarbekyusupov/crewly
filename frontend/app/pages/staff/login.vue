@@ -31,14 +31,28 @@ const handleLogin = handleSubmit(async (values) => {
   } catch (e) {
     const status = getFetchStatus(e)
     if (status === 429) {
-      toast.add({ title: t('common.error'), description: t('auth.tooManyAttempts'), color: 'error' })
+      toast.add({
+        title: t('common.error'),
+        description: t('auth.tooManyAttempts'),
+        color: 'error',
+      })
     } else if (status === 401) {
       const raw = extractApiErrorMessage(e, '')
       if (raw.includes('No account found')) setFieldError('email', t('auth.emailNotFound'))
-      else if (raw.includes('Incorrect password')) setFieldError('password', t('auth.incorrectPassword'))
-      else toast.add({ title: t('common.error'), description: t('auth.invalidCredentials'), color: 'error' })
+      else if (raw.includes('Incorrect password'))
+        setFieldError('password', t('auth.incorrectPassword'))
+      else
+        toast.add({
+          title: t('common.error'),
+          description: t('auth.invalidCredentials'),
+          color: 'error',
+        })
     } else {
-      toast.add({ title: t('common.error'), description: extractApiErrorMessage(e, t('auth.invalidCredentials')), color: 'error' })
+      toast.add({
+        title: t('common.error'),
+        description: extractApiErrorMessage(e, t('auth.invalidCredentials')),
+        color: 'error',
+      })
     }
   } finally {
     loading.value = false
@@ -48,7 +62,6 @@ const handleLogin = handleSubmit(async (values) => {
 
 <template>
   <div class="min-h-screen lg:grid lg:grid-cols-2">
-
     <!-- Left brand panel (desktop only) -->
     <div
       class="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
@@ -56,23 +69,32 @@ const handleLogin = handleSubmit(async (values) => {
     >
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 32px 32px;"
+        style="
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+          background-size: 32px 32px;
+        "
       />
       <div
         class="absolute inset-0 pointer-events-none"
-        style="background: radial-gradient(ellipse at 20% 80%, transparent 20%, rgba(26,26,26,0.75) 80%)"
+        style="
+          background: radial-gradient(
+            ellipse at 20% 80%,
+            transparent 20%,
+            rgba(26, 26, 26, 0.75) 80%
+          );
+        "
       />
 
       <NuxtLink to="/" class="relative z-10">
-        <span class="font-serif text-3xl font-normal" style="letter-spacing: -0.04em; color: white">
-          my<em style="font-style: italic; color: var(--accent)">hr</em>
-        </span>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" style="height: 24px; width: auto; display: block" />
       </NuxtLink>
 
       <div class="relative z-10">
         <p
           class="text-xs uppercase tracking-widest mb-6"
-          style="color: rgba(255,255,255,0.35); font-family: 'JetBrains Mono', monospace"
+          style="color: rgba(255, 255, 255, 0.35); font-family: 'JetBrains Mono', monospace"
         >
           Staff Portal
         </p>
@@ -80,16 +102,20 @@ const handleLogin = handleSubmit(async (values) => {
           class="font-serif text-4xl font-normal leading-tight"
           style="color: white; letter-spacing: -0.03em"
         >
-          Internal<br>
+          Internal<br />
           <em style="font-style: italic; color: var(--accent)">operations</em>.
         </h2>
       </div>
 
       <p
         class="relative z-10 text-xs"
-        style="color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em"
+        style="
+          color: rgba(255, 255, 255, 0.2);
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.06em;
+        "
       >
-        my-hr / staff
+        Crewly / staff
       </p>
     </div>
 
@@ -99,21 +125,15 @@ const handleLogin = handleSubmit(async (values) => {
       style="background: var(--paper)"
     >
       <div class="w-full max-w-sm">
-
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
+          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 26px; width: auto; display: inline-block" />
           <p
-            class="text-xs uppercase tracking-widest mb-2"
+            class="text-xs uppercase tracking-widest mt-2"
             style="color: var(--ink-subtle); font-family: 'JetBrains Mono', monospace"
           >
             Staff Portal
           </p>
-          <h1
-            class="font-serif text-4xl font-normal"
-            style="letter-spacing: -0.04em; color: var(--ink)"
-          >
-            my<em style="font-style: italic; color: var(--accent)">hr</em>
-          </h1>
         </div>
 
         <h2
@@ -130,7 +150,7 @@ const handleLogin = handleSubmit(async (values) => {
               v-bind="emailProps"
               type="email"
               autocomplete="email"
-              placeholder="you@my-hr.com"
+              placeholder="you@crewly.com"
               autofocus
               class="w-full"
             />
@@ -146,22 +166,36 @@ const handleLogin = handleSubmit(async (values) => {
             >
               <template #trailing>
                 <button type="button" tabindex="-1" @click="showPassword = !showPassword">
-                  <UIcon :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" class="w-4 h-4" style="color: var(--ink-muted)" />
+                  <UIcon
+                    :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    class="w-4 h-4"
+                    style="color: var(--ink-muted)"
+                  />
                 </button>
               </template>
             </UInput>
           </UFormField>
-          <UButton type="submit" color="primary" block :loading="loading" :disabled="loading" class="mt-2">
+          <UButton
+            type="submit"
+            color="primary"
+            block
+            :loading="loading"
+            :disabled="loading"
+            class="mt-2"
+          >
             Login
           </UButton>
         </form>
 
         <p class="text-center text-sm mt-5">
-          <NuxtLink to="/employer/login" class="hover:underline text-sm" style="color: var(--ink-muted)">
+          <NuxtLink
+            to="/employer/login"
+            class="hover:underline text-sm"
+            style="color: var(--ink-muted)"
+          >
             ← Client portal
           </NuxtLink>
         </p>
-
       </div>
     </div>
   </div>

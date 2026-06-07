@@ -37,10 +37,10 @@ ${safeFeedback}
 
 GOAL:
 Update the "Ideal Profile" context to include new insights.
-For example:
 - If a candidate was rejected for lack of X, add X as a critical requirement.
 - If a candidate was liked for Y, add Y as a strong preference.
-- Keep the output concise and structured (bullet points).
+- CRITICAL INSTRUCTION: Keep the total output highly compacted and concise. Output ONLY a clean, high-signal list of the top 3-5 learning criteria (maximum 1000 characters total). 
+- Discard any stale, duplicate, or low-value historical notes to maintain extreme density. Do NOT output any conversational text or preambles.
 
 Updated Ideal Candidate Profile:`;
 }

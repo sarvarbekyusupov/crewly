@@ -125,17 +125,7 @@ function printInvoice() {
       <div class="px-8 py-6" style="border-bottom: 1px solid var(--line-soft)">
         <div class="flex items-start justify-between">
           <div>
-            <p
-              style="
-                font-family: 'Fraunces', serif;
-                font-size: 24px;
-                letter-spacing: -0.04em;
-                color: var(--ink);
-                font-weight: 400;
-              "
-            >
-              my<em style="font-style: italic; color: var(--accent)">hr</em>
-            </p>
+            <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 28px; width: auto; display: block" />
             <p
               style="
                 font-family: 'JetBrains Mono', monospace;

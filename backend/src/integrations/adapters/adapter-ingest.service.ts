@@ -25,8 +25,7 @@ export class AdapterIngestService {
     const source = await this.db.candidateSource.findUnique({
       where: { name: sourceName },
     });
-    if (!source)
-      throw new Error(`${sourceName} source not configured in DB`);
+    if (!source) throw new Error(`${sourceName} source not configured in DB`);
 
     // Dedup: sourceId+externalId → email → phone
     let existing = await this.db.candidate.findFirst({
@@ -57,10 +56,7 @@ export class AdapterIngestService {
           email: profile.email ?? existing.email,
           phone: profile.phone ?? existing.phone,
           fullName: profile.fullName || existing.fullName,
-          fullNameNormalized: (
-            profile.fullName ||
-            (existing.fullName ?? '')
-          )
+          fullNameNormalized: (profile.fullName || (existing.fullName ?? ''))
             .toLowerCase()
             .trim(),
           city: profile.city ?? existing.city,
@@ -73,10 +69,7 @@ export class AdapterIngestService {
           payload: profile.rawPayload as any,
         },
       });
-      await this.parseQueue.add(
-        { candidateId: existing.id },
-        LLM_JOB_OPTIONS,
-      );
+      await this.parseQueue.add({ candidateId: existing.id }, LLM_JOB_OPTIONS);
       return candidate;
     } else {
       const candidate = await this.db.candidate.create({
@@ -101,10 +94,7 @@ export class AdapterIngestService {
           payload: profile.rawPayload as any,
         },
       });
-      await this.parseQueue.add(
-        { candidateId: candidate.id },
-        LLM_JOB_OPTIONS,
-      );
+      await this.parseQueue.add({ candidateId: candidate.id }, LLM_JOB_OPTIONS);
       return candidate;
     }
   }
@@ -132,25 +122,30 @@ export class AdapterIngestService {
         break;
       }
 
-      for (const profile of result.profiles) {
-        fetched++;
-        try {
-          const res = await this.saveSingleProfile(profile, adapter.sourceName);
-          // We don't easily know if it was created or updated from the return
-          // but for logs it's fine. We can check if it was already existing in saveSingleProfile
-          // but let's keep it simple.
-          created++; // inaccurate but okay for ingestionRun stats
-        } catch (err: any) {
-          this.logger.error(
-            {
-              externalId: profile.externalId,
-              source: adapter.sourceName,
-              error: err.message,
-            },
-            'Failed to save candidate',
-          );
-          failed++;
-        }
+      // Process candidate profiles in parallel chunks of 10 to boost ingestion throughput
+      const chunkSize = 10;
+      for (let i = 0; i < result.profiles.length; i += chunkSize) {
+        const chunk = result.profiles.slice(i, i + chunkSize);
+
+        await Promise.all(
+          chunk.map(async (profile) => {
+            fetched++;
+            try {
+              await this.saveSingleProfile(profile, adapter.sourceName);
+              created++; // inaccurate but okay for ingestionRun stats
+            } catch (err: any) {
+              this.logger.error(
+                {
+                  externalId: profile.externalId,
+                  source: adapter.sourceName,
+                  error: err.message,
+                },
+                'Failed to save candidate',
+              );
+              failed++;
+            }
+          }),
+        );
 
         this.emitter.emit('staff.event', {
           type: 'ingestion.progress',

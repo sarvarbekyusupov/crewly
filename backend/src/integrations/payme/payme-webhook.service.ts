@@ -1,22 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoicesService } from '../../modules/invoices/invoices.service';
-
-export enum PaymeError {
-  InvalidAmount = -31001,
-  TransactionNotFound = -31003,
-  CanNotPerformTransaction = -31008,
-  CanNotCancelTransaction = -31007,
-  InternalError = -32400,
-  OrderNotFound = -31050,
-}
-
-export enum PaymeState {
-  Pending = 1,
-  Paid = 2,
-  Cancelled = -1,
-  CancelledAfterPaid = -2,
-}
+import { PaymeError, PaymeState } from './payme.constants';
 
 @Injectable()
 export class PaymeWebhookService {
@@ -49,7 +34,8 @@ export class PaymeWebhookService {
       this.logger.error(`Payme RPC error: ${err.message}`, err.stack);
       return {
         error: {
-          code: typeof err.code === 'number' ? err.code : PaymeError.InternalError,
+          code:
+            typeof err.code === 'number' ? err.code : PaymeError.InternalError,
           message: err.message,
         },
         id,
@@ -60,17 +46,25 @@ export class PaymeWebhookService {
   private async checkPerformTransaction(params: any) {
     const { amount, account } = params;
     if (!account?.invoice_id) {
-      throw { code: PaymeError.OrderNotFound, message: 'Missing account.invoice_id' };
+      throw {
+        code: PaymeError.OrderNotFound,
+        message: 'Missing account.invoice_id',
+      };
     }
     const invoiceId = account.invoice_id as string;
 
-    const invoice = await this.db.invoice.findUnique({ where: { id: invoiceId } });
+    const invoice = await this.db.invoice.findUnique({
+      where: { id: invoiceId },
+    });
     if (!invoice) {
       throw { code: PaymeError.OrderNotFound, message: 'Invoice not found' };
     }
 
     if (invoice.status === 'paid') {
-      throw { code: PaymeError.CanNotPerformTransaction, message: 'Already paid' };
+      throw {
+        code: PaymeError.CanNotPerformTransaction,
+        message: 'Already paid',
+      };
     }
 
     if (BigInt(amount) !== invoice.totalUzs * BigInt(100)) {
@@ -83,14 +77,22 @@ export class PaymeWebhookService {
   private async createTransaction(params: any) {
     const { id, time, amount, account } = params;
     if (!account?.invoice_id) {
-      throw { code: PaymeError.OrderNotFound, message: 'Missing account.invoice_id' };
+      throw {
+        code: PaymeError.OrderNotFound,
+        message: 'Missing account.invoice_id',
+      };
     }
     const invoiceId = account.invoice_id as string;
 
-    const existing = await this.db.paymeTransaction.findUnique({ where: { id } });
+    const existing = await this.db.paymeTransaction.findUnique({
+      where: { id },
+    });
     if (existing) {
       if (existing.state !== PaymeState.Pending) {
-        throw { code: PaymeError.CanNotPerformTransaction, message: 'Transaction state mismatch' };
+        throw {
+          code: PaymeError.CanNotPerformTransaction,
+          message: 'Transaction state mismatch',
+        };
       }
       return {
         create_time: Number(existing.createTime),
@@ -104,7 +106,10 @@ export class PaymeWebhookService {
       where: { invoiceId, state: PaymeState.Pending },
     });
     if (other) {
-      throw { code: PaymeError.CanNotPerformTransaction, message: 'Another transaction pending' };
+      throw {
+        code: PaymeError.CanNotPerformTransaction,
+        message: 'Another transaction pending',
+      };
     }
 
     await this.checkPerformTransaction(params);
@@ -137,7 +142,10 @@ export class PaymeWebhookService {
     });
 
     if (!tx) {
-      throw { code: PaymeError.TransactionNotFound, message: 'Transaction not found' };
+      throw {
+        code: PaymeError.TransactionNotFound,
+        message: 'Transaction not found',
+      };
     }
 
     if (tx.state === PaymeState.Paid) {
@@ -149,7 +157,10 @@ export class PaymeWebhookService {
     }
 
     if (tx.state !== PaymeState.Pending) {
-      throw { code: PaymeError.CanNotPerformTransaction, message: 'Transaction state mismatch' };
+      throw {
+        code: PaymeError.CanNotPerformTransaction,
+        message: 'Transaction state mismatch',
+      };
     }
 
     const performTime = Date.now();
@@ -186,10 +197,16 @@ export class PaymeWebhookService {
 
     const tx = await this.db.paymeTransaction.findUnique({ where: { id } });
     if (!tx) {
-      throw { code: PaymeError.TransactionNotFound, message: 'Transaction not found' };
+      throw {
+        code: PaymeError.TransactionNotFound,
+        message: 'Transaction not found',
+      };
     }
 
-    if (tx.state === PaymeState.Cancelled || tx.state === PaymeState.CancelledAfterPaid) {
+    if (
+      tx.state === PaymeState.Cancelled ||
+      tx.state === PaymeState.CancelledAfterPaid
+    ) {
       return {
         transaction: tx.id,
         cancel_time: Number(tx.cancelTime),
@@ -203,7 +220,10 @@ export class PaymeWebhookService {
     }
 
     const cancelTime = Date.now();
-    const newState = tx.state === PaymeState.Paid ? PaymeState.CancelledAfterPaid : PaymeState.Cancelled;
+    const newState =
+      tx.state === PaymeState.Paid
+        ? PaymeState.CancelledAfterPaid
+        : PaymeState.Cancelled;
 
     await this.db.$transaction([
       this.db.paymeTransaction.update({
@@ -216,7 +236,10 @@ export class PaymeWebhookService {
       }),
       this.db.invoice.update({
         where: { id: tx.invoiceId },
-        data: { status: newState === PaymeState.CancelledAfterPaid ? 'refunded' : 'issued' },
+        data: {
+          status:
+            newState === PaymeState.CancelledAfterPaid ? 'refunded' : 'issued',
+        },
       }),
     ]);
 
@@ -231,7 +254,10 @@ export class PaymeWebhookService {
     const { id } = params;
     const tx = await this.db.paymeTransaction.findUnique({ where: { id } });
     if (!tx) {
-      throw { code: PaymeError.TransactionNotFound, message: 'Transaction not found' };
+      throw {
+        code: PaymeError.TransactionNotFound,
+        message: 'Transaction not found',
+      };
     }
 
     return {

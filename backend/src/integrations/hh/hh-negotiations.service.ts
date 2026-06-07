@@ -36,8 +36,7 @@ export class HhNegotiationsService {
 
   private get headers() {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -46,13 +45,13 @@ export class HhNegotiationsService {
   }
 
   /**
-   * Fetch the pipeline stage collections for a vacancy.
-   * Must be called before any negotiation work to know valid collection IDs.
+   * Fetch employer pipeline states for a vacancy.
+   * GET /negotiations?vacancy_id= returns {collections, states} — extract states.
    */
   async getVacancyCollections(vacancyId: string): Promise<HhEmployerState[]> {
     const response = await firstValueFrom(
-      this.http.get<{ states: HhEmployerState[] }>(
-        `${this.baseUrl}/negotiations/employer_states`,
+      this.http.get<{ states?: HhEmployerState[]; collections?: unknown[] }>(
+        `${this.baseUrl}/negotiations`,
         { params: { vacancy_id: vacancyId }, headers: this.headers },
       ),
     );
@@ -60,33 +59,54 @@ export class HhNegotiationsService {
   }
 
   /**
-   * Fetch all responses/applications for a vacancy.
+   * Fetch all inbound negotiations for a vacancy by iterating every collection.
+   * GET /negotiations?vacancy_id= returns {collections:[{url}]} not items.
+   * Items live at each collection.url — must be fetched individually.
    */
   async getVacancyResponses(
     vacancyId: string,
-    opts: { status?: string; page?: number; perPage?: number } = {},
-  ): Promise<{ items: HhNegotiationItem[]; pages: number; page: number }> {
-    const response = await firstValueFrom(
+    opts: { perPage?: number } = {},
+  ): Promise<{ items: HhNegotiationItem[] }> {
+    // Step 1: get collection URLs for this vacancy
+    const collectionsResp = await firstValueFrom(
       this.http.get<{
-        items: HhNegotiationItem[];
-        pages: number;
-        page: number;
+        collections?: Array<{ id: string; url: string }>;
       }>(`${this.baseUrl}/negotiations`, {
-        params: {
-          vacancy_id: vacancyId,
-          order_by: 'updated_at',
-          per_page: opts.perPage ?? 100,
-          page: opts.page ?? 0,
-          ...(opts.status && { status: opts.status }),
-        },
+        params: { vacancy_id: vacancyId },
         headers: this.headers,
       }),
     );
-    return response.data;
+
+    const collections = collectionsResp.data.collections ?? [];
+    if (!collections.length) return { items: [] };
+
+    // Step 2: fetch items from every collection
+    const allItems: HhNegotiationItem[] = [];
+    await Promise.all(
+      collections.map(async (col) => {
+        try {
+          const res = await firstValueFrom(
+            this.http.get<{ items?: HhNegotiationItem[] }>(col.url, {
+              params: { per_page: opts.perPage ?? 100 },
+              headers: this.headers,
+            }),
+          );
+          allItems.push(...(res.data.items ?? []));
+        } catch (err: any) {
+          this.logger.warn(
+            { collectionId: col.id, err: err.message },
+            'Failed to fetch HH negotiation collection',
+          );
+        }
+      }),
+    );
+
+    return { items: allItems };
   }
 
   /**
    * Invite a candidate to apply (employer → candidate invitation).
+   * Fetches available action URLs from HH first, then executes the first enabled action.
    * Returns the negotiation ID for tracking.
    */
   async inviteCandidate(params: {
@@ -94,37 +114,70 @@ export class HhNegotiationsService {
     resumeId: string;
     message: string;
   }): Promise<string> {
-    const userAgent =
-      this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
+    const authHeaders = {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': userAgent,
+      'HH-User-Agent': userAgent,
+    };
 
-    const response = await firstValueFrom(
-      this.http.post(
-        `${this.baseUrl}/negotiations`,
-        {
-          vacancy_id: params.vacancyId,
-          resume_id: params.resumeId,
-          message: params.message,
-          send_sms: false,
-          notify_applicant: true,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-            'Content-Type': 'application/json',
-          },
-        },
-      ),
+    // Step 1: fetch available invitation actions for this vacancy+resume combo
+    const actionsResp = await firstValueFrom(
+      this.http.get<{
+        items: Array<{
+          negotiations_actions: Array<{
+            id: string;
+            enabled: boolean;
+            method: string;
+            url: string;
+            arguments: Array<{ id: string; required: boolean }>;
+          }>;
+        }>;
+      }>(`${this.baseUrl}/employers/${employerId}/vacancies/active`, {
+        params: { resume_id: params.resumeId },
+        headers: authHeaders,
+      }),
     );
 
-    // HH returns 201 with Location header: /negotiations/{id}
+    const vacancyItem = actionsResp.data.items?.find(
+      (v: any) => v.id === params.vacancyId,
+    );
+    const action = vacancyItem?.negotiations_actions?.find((a) => a.enabled);
+
+    if (!action) {
+      throw new Error(
+        `No enabled invitation action found for vacancy ${params.vacancyId} and resume ${params.resumeId}`,
+      );
+    }
+
+    // Step 2: execute the action using its dynamic URL and method
+    const queryParams: Record<string, string> = {
+      resume_id: params.resumeId,
+      vacancy_id: params.vacancyId,
+      message: params.message,
+    };
+
+    const response = await firstValueFrom(
+      this.http.request({
+        method: action.method,
+        url: action.url,
+        params: queryParams,
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      }),
+    );
+
     const location: string = response.headers['location'] ?? '';
     const negotiationId = location.split('/').pop() ?? 'unknown';
     this.logger.log(
-      { vacancyId: params.vacancyId, resumeId: params.resumeId, negotiationId },
-      'HH candidate invited',
+      {
+        vacancyId: params.vacancyId,
+        resumeId: params.resumeId,
+        action: action.id,
+        negotiationId,
+      },
+      'HH candidate invited via action URL',
     );
     return negotiationId;
   }
@@ -153,6 +206,8 @@ export class HhNegotiationsService {
 
   /**
    * Send a message in an existing negotiation thread.
+   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
+   * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
   async sendMessage(negotiationId: string, message: string): Promise<void> {
     await firstValueFrom(
@@ -187,6 +242,8 @@ export class HhNegotiationsService {
 
   /**
    * Fetch the full message thread for a negotiation.
+   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
+   * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
   async getMessages(negotiationId: string): Promise<HhNegotiationMessage[]> {
     const response = await firstValueFrom(

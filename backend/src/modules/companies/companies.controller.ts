@@ -58,7 +58,10 @@ export class CompaniesController {
 
   @Delete('me/users/:id')
   @RequireRole('admin')
-  removeUser(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  removeUser(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.removeUser(user.companyId, id);
   }
 }

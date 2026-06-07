@@ -10,19 +10,19 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY packages/types/package.json  ./packages/types/
 COPY frontend/package.json        ./frontend/
-RUN printf 'packages:\n  - "packages/*"\n  - "frontend"\noverrides:\n  vue-router: ^5.0.0\nallowBuilds:\n  "@parcel/watcher": true\n  esbuild: true\n  vue-demi: true\n  "@sentry/cli": true\n  unrs-resolver: true\n' > pnpm-workspace.yaml
+RUN printf 'packages:\n  - "packages/*"\n  - "frontend"\noverrides:\n  vue-router: ^5.0.0\nallowBuilds:\n  "@parcel/watcher": true\n  esbuild: true\n  vue-demi: true\n  "@sentry/cli": true\n  unrs-resolver: true\n  sharp: true\n' > pnpm-workspace.yaml
 RUN --mount=type=cache,id=pnpm-frontend,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
 # ── build ─────────────────────────────────────────────────────────────────────
 FROM deps AS builder
-ARG NUXT_PUBLIC_API_BASE=http://localhost:4000
+ARG NUXT_PUBLIC_API_BASE=http://localhost:3030
 ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE
 ENV NODE_ENV=production
 
 COPY packages/types ./packages/types
 COPY frontend        ./frontend
-RUN pnpm --filter my-hr-frontend run build
+RUN pnpm --filter crewly-frontend run build
 
 # ── runtime ───────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

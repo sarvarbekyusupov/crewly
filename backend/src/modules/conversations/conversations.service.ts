@@ -215,14 +215,18 @@ export class ConversationsService {
   }
 
   // Web interface inbound messages
-  async handleWebMessage(applicationId: string, candidateId: string, content: string) {
+  async handleWebMessage(
+    applicationId: string,
+    candidateId: string,
+    content: string,
+  ) {
     let conv: any = await this.db.conversation.findFirst({
       where: {
         applicationId,
         candidateId,
       },
       include: { screenings: { where: { status: 'in_progress' }, take: 1 } },
-      orderBy: { startedAt: 'desc' }
+      orderBy: { startedAt: 'desc' },
     });
 
     if (!conv) {
@@ -242,7 +246,7 @@ export class ConversationsService {
       // Re-open conversation
       await this.db.conversation.update({
         where: { id: conv.id },
-        data: { state: 'in_progress' }
+        data: { state: 'in_progress' },
       });
     }
 
@@ -312,8 +316,12 @@ export class ConversationsService {
     const app = await this.db.application.findUnique({
       where: { id: conv.applicationId },
     });
-    
-    if (app?.status === 'outreach_sent' || app?.status === 'outreach_opened' || app?.status === 'matched') {
+
+    if (
+      app?.status === 'outreach_sent' ||
+      app?.status === 'outreach_opened' ||
+      app?.status === 'matched'
+    ) {
       await this.db.application.update({
         where: { id: conv.applicationId },
         data: { status: 'responded', respondedAt: new Date() },

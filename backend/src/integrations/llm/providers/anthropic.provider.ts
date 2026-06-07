@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { NonRetryableError } from '../../../workers/errors';
-import { LlmProvider, LlmCompletionOpts, LlmCompletionResult } from './llm-provider.interface';
+import {
+  LlmProvider,
+  LlmCompletionOpts,
+  LlmCompletionResult,
+} from './llm-provider.interface';
 
 const GROQ_TO_ANTHROPIC: Record<string, string> = {
   'llama-3.3-70b-versatile': 'claude-haiku-4-5-20251001',
@@ -18,7 +22,8 @@ export class AnthropicProvider implements LlmProvider {
   constructor(config: ConfigService) {
     const key = config.get<string>('ANTHROPIC_API_KEY');
     this.client = key ? new Anthropic({ apiKey: key }) : null;
-    if (!this.client) this.logger.warn('ANTHROPIC_API_KEY not set — Anthropic unavailable');
+    if (!this.client)
+      this.logger.warn('ANTHROPIC_API_KEY not set — Anthropic unavailable');
   }
 
   isAvailable(): boolean {
@@ -38,15 +43,24 @@ export class AnthropicProvider implements LlmProvider {
       const response = await this.client.messages.create({
         model,
         max_tokens: opts.maxTokens ?? 4096,
-        ...(opts.system && { system: opts.system }),
+        ...(opts.system && {
+          system: [
+            {
+              type: 'text' as const,
+              text: opts.system,
+              cache_control: { type: 'ephemeral' as const },
+            },
+          ],
+        }),
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       });
 
       const output = response.content
         .filter((b) => b.type === 'text')
-        .map((b) => (b as Anthropic.TextBlock).text)
+        .map((b) => b.text)
         .join('');
 
+      const usage = response.usage as any;
       return {
         output,
         inputTokens: response.usage.input_tokens,
@@ -54,10 +68,14 @@ export class AnthropicProvider implements LlmProvider {
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,
         finishReason: response.stop_reason,
         rawResponse: response,
+        cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
       };
     } catch (e: any) {
       if (e.status === 400 || e.status === 401 || e.status === 403) {
-        throw new NonRetryableError(`Anthropic non-retriable: ${e.status} ${e.message}`);
+        throw new NonRetryableError(
+          `Anthropic non-retriable: ${e.status} ${e.message}`,
+        );
       }
       throw e;
     }

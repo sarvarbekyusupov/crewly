@@ -11,7 +11,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../integrations/email/email.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import * as argon2 from 'argon2';
-import { hashToken, generateRawToken, REFRESH_TOKEN_TTL_MS } from '../../common/utils/token.utils';
+import {
+  hashToken,
+  generateRawToken,
+  REFRESH_TOKEN_TTL_MS,
+} from '../../common/utils/token.utils';
 import { DUMMY_HASH } from '../../common/auth.constants';
 
 @Injectable()
@@ -101,7 +105,9 @@ export class AuthService {
         user.email,
         `${frontendUrl}/verify-email?token=${verifyToken}`,
       )
-      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
+      .catch((e) =>
+        this.logger.error({ err: e.message }, 'Background task error'),
+      );
 
     const { passwordHash: _, ...safeUser } = user;
     return { user: safeUser, company };
@@ -114,11 +120,12 @@ export class AuthService {
     });
 
     const hashToVerify = user?.passwordHash ?? DUMMY_HASH;
-    const valid = await argon2.verify(hashToVerify, dto.password).catch(() => false);
+    const valid = await argon2
+      .verify(hashToVerify, dto.password)
+      .catch(() => false);
     if (!user || !user.passwordHash)
       throw new UnauthorizedException('No account found with this email');
-    if (!valid)
-      throw new UnauthorizedException('Incorrect password');
+    if (!valid) throw new UnauthorizedException('Incorrect password');
 
     if (!user.emailVerified) {
       throw new UnauthorizedException(
@@ -147,7 +154,11 @@ export class AuthService {
 
     if (!session || session.revokedAt || session.expiresAt <= new Date()) {
       if (session) {
-        this.db.session.delete({ where: { id: session.id } }).catch((e) => this.logger.error({ err: e.message }, 'Session cleanup failed'));
+        this.db.session
+          .delete({ where: { id: session.id } })
+          .catch((e) =>
+            this.logger.error({ err: e.message }, 'Session cleanup failed'),
+          );
       }
       throw new UnauthorizedException('Refresh token invalid or expired');
     }
@@ -214,7 +225,9 @@ export class AuthService {
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
     this.email
       .sendPasswordReset(email, `${frontendUrl}/reset-password?token=${token}`)
-      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
+      .catch((e) =>
+        this.logger.error({ err: e.message }, 'Background task error'),
+      );
   }
 
   async resetPassword(token: string, newPassword: string) {
@@ -300,6 +313,8 @@ export class AuthService {
         email,
         `${frontendUrl}/verify-email?token=${token}`,
       )
-      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
+      .catch((e) =>
+        this.logger.error({ err: e.message }, 'Background task error'),
+      );
   }
 }

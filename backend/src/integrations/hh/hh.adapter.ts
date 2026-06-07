@@ -32,7 +32,10 @@ export class HhAdapter extends CandidateSourceAdapter {
       try {
         detail = await this.hh.getResume(item.id);
       } catch (err: any) {
-        this.logger.warn({ resumeId: item.id, error: err.message }, 'Failed to fetch resume detail from HH');
+        this.logger.warn(
+          { resumeId: item.id, error: err.message },
+          'Failed to fetch resume detail from HH',
+        );
       }
       // Respect hh.ru rate limit
       await new Promise((r) => setTimeout(r, 300));

@@ -181,12 +181,14 @@ export class JobsService {
       data: { status: 'cancelled', closedAt: new Date() },
     });
     if (job.hhVacancyId) {
-      this.hhVacancy.archiveVacancy(job.hhVacancyId).catch((err) =>
-        this.logger.warn(
-          { hhVacancyId: job.hhVacancyId, err: err.message },
-          'HH archive failed on close',
-        ),
-      );
+      this.hhVacancy
+        .archiveVacancy(job.hhVacancyId)
+        .catch((err) =>
+          this.logger.warn(
+            { hhVacancyId: job.hhVacancyId, err: err.message },
+            'HH archive failed on close',
+          ),
+        );
     }
     return updated;
   }
@@ -203,12 +205,14 @@ export class JobsService {
       data: { deletedAt: new Date() },
     });
     if (job.hhVacancyId) {
-      this.hhVacancy.deleteVacancy(job.hhVacancyId).catch((err) =>
-        this.logger.warn(
-          { hhVacancyId: job.hhVacancyId, err: err.message },
-          'HH delete failed on soft-delete',
-        ),
-      );
+      this.hhVacancy
+        .deleteVacancy(job.hhVacancyId)
+        .catch((err) =>
+          this.logger.warn(
+            { hhVacancyId: job.hhVacancyId, err: err.message },
+            'HH delete failed on soft-delete',
+          ),
+        );
     }
     return deleted;
   }
@@ -217,9 +221,7 @@ export class JobsService {
   async publishToHh(companyId: string, id: string) {
     const job = await this.findOne(companyId, id);
     if (job.status === 'draft') {
-      throw new BadRequestException(
-        'Activate the job before publishing to HH',
-      );
+      throw new BadRequestException('Activate the job before publishing to HH');
     }
 
     const hhVacancyId = await this.hhVacancy.createVacancy({
@@ -326,5 +328,34 @@ export class JobsService {
       });
 
     return { ...byStatus, ...(hhStats && { hh: hhStats }) };
+  }
+
+  async findOnePublic(id: string) {
+    const job = await this.db.job.findFirst({
+      where: { id, status: 'active', deletedAt: null },
+      include: {
+        company: {
+          select: {
+            name: true,
+            industry: true,
+            size: true,
+            website: true,
+          },
+        },
+      },
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    return job;
+  }
+
+  async findAllPublic() {
+    return this.db.job.findMany({
+      where: { status: 'active', deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+      },
+    });
   }
 }

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ParseCandidateProcessor } from './parse-candidate.processor';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
@@ -14,6 +15,7 @@ describe('ParseCandidateProcessor', () => {
   let db: any;
   let agent: { parseResume: jest.Mock };
   let sourcingAgent: { enrichCandidateProfile: jest.Mock };
+  let emitter: { emit: jest.Mock };
   let embedQueue: { add: jest.Mock };
 
   const candidateId = 'candidate-1';
@@ -27,6 +29,7 @@ describe('ParseCandidateProcessor', () => {
     };
     agent = { parseResume: jest.fn() };
     sourcingAgent = { enrichCandidateProfile: jest.fn() };
+    emitter = { emit: jest.fn() };
     embedQueue = { add: jest.fn().mockResolvedValue({}) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +38,7 @@ describe('ParseCandidateProcessor', () => {
         { provide: PrismaService, useValue: db },
         { provide: MatchmakerAgent, useValue: agent },
         { provide: SourcingAgent, useValue: sourcingAgent },
+        { provide: EventEmitter2, useValue: emitter },
         {
           provide: getQueueToken(QUEUES.EMBED_CANDIDATE),
           useValue: embedQueue,
@@ -112,6 +116,15 @@ describe('ParseCandidateProcessor', () => {
     agent.parseResume.mockRejectedValue(new Error('Parse error'));
     db.candidate.update.mockResolvedValue({});
 
-    await expect(processor.handle(makeJob({ candidateId }))).rejects.toThrow('Parse error');
+    await expect(processor.handle(makeJob({ candidateId }))).rejects.toThrow(
+      'Parse error',
+    );
+
+    expect(db.candidate.update).toHaveBeenCalledWith({
+      where: { id: candidateId },
+      data: {
+        parsedResume: { error: true, message: 'Parse error' },
+      },
+    });
   });
 });

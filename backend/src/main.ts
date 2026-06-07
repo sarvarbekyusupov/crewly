@@ -55,7 +55,11 @@ async function bootstrap() {
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
   );
   app.useGlobalInterceptors(
     new TenantInterceptor(prisma, reflector),
@@ -64,7 +68,9 @@ async function bootstrap() {
   );
 
   // Bull Board — queue inspector at /admin/queues (basic auth protected)
-  const bullBoardPassword = app.get(ConfigService).get<string>('BULL_BOARD_PASSWORD')!;
+  const bullBoardPassword = app
+    .get(ConfigService)
+    .get<string>('BULL_BOARD_PASSWORD')!;
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
 
@@ -99,7 +105,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('MyHR API')
+      .setTitle('Crewly API')
       .setDescription('AI-powered recruiting platform API')
       .setVersion('1.0')
       .addCookieAuth('hr_access_token', {

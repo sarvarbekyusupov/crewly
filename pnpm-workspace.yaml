@@ -22,6 +22,7 @@ allowBuilds:
   esbuild: true
   vue-demi: true
   '@sentry/cli': true
+  sharp: false
 
 supportedArchitectures:
   os:

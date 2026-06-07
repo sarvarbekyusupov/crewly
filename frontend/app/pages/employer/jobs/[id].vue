@@ -5,7 +5,6 @@ const { t } = useI18n()
 const api = useApi()
 const toast = useToast()
 const route = useRoute()
-const router = useRouter()
 const auth = useAuthStore()
 
 const jobId = route.params.id as string
@@ -204,7 +203,7 @@ const appColumns: any[] = [
             size="sm"
             variant="ghost"
             icon="i-heroicons-pencil-square"
-            :to="`/jobs/${jobId}/edit`"
+            :to="`/employer/jobs/${jobId}/edit`"
             class="flex-1 lg:flex-none justify-center"
             >{{ t('common.edit') }}</UButton
           >
@@ -212,7 +211,7 @@ const appColumns: any[] = [
             size="sm"
             variant="ghost"
             icon="i-heroicons-document-duplicate"
-            :to="`/jobs/create?from=${jobId}`"
+            :to="`/employer/jobs/create?from=${jobId}`"
             class="flex-1 lg:flex-none justify-center"
             >{{ t('jobs.duplicate') }}</UButton
           >
@@ -247,7 +246,16 @@ const appColumns: any[] = [
             variant="outline"
             class="flex-1 lg:flex-none justify-center"
             @click="close"
-            >{{ t('jobs.close') }}</UButton
+            >{{ t('common.close') }}</UButton
+          >
+          <UButton
+            v-if="auth.can('admin') && job.status === 'active'"
+            size="sm"
+            variant="outline"
+            icon="i-simple-icons-linkedin"
+            :to="`/employer/sourcing?q=${encodeURIComponent(job.title)}${job.officeLocation ? '&location=' + encodeURIComponent(job.officeLocation) : ''}`"
+            class="flex-1 lg:flex-none justify-center"
+            >Source from LinkedIn</UButton
           >
           <!-- HH controls -->
           <UButton
@@ -725,7 +733,7 @@ const appColumns: any[] = [
             variant="ghost"
             size="xs"
             icon="i-heroicons-eye"
-            :to="`/applications/${row.id}`"
+            :to="`/employer/applications/${row.id}`"
           />
         </template>
       </UTable>

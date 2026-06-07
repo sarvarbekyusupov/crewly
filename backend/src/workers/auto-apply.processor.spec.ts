@@ -147,7 +147,7 @@ describe('AutoApplyProcessor', () => {
 
     await processor.handle(makeJob());
 
-    // Agent decision happens BEFORE daily limit check in this implementation? 
+    // Agent decision happens BEFORE daily limit check in this implementation?
     // Actually limit check is usually before external calls.
     // In current implementation, agent decision is first.
     expect(hhApply.apply).not.toHaveBeenCalled();
@@ -156,7 +156,9 @@ describe('AutoApplyProcessor', () => {
   it('throws NonRetryableError when seekerApplication not found', async () => {
     db.seekerApplication.findUnique.mockResolvedValue(null);
 
-    await expect(processor.handle(makeJob())).rejects.toThrow(NonRetryableError);
+    await expect(processor.handle(makeJob())).rejects.toThrow(
+      NonRetryableError,
+    );
   });
 
   describe('HH path', () => {
@@ -166,7 +168,9 @@ describe('AutoApplyProcessor', () => {
         candidate: { ...baseCandidate, hhOauthToken: null },
       });
 
-      await expect(processor.handle(makeJob())).rejects.toThrow(NonRetryableError);
+      await expect(processor.handle(makeJob())).rejects.toThrow(
+        NonRetryableError,
+      );
     });
 
     it('saves cover letter before applying', async () => {
@@ -207,9 +211,16 @@ describe('AutoApplyProcessor', () => {
           { provide: HhApplyService, useValue: hhApply },
           {
             provide: HhClientService,
-            useValue: { getVacancyDetail: jest.fn().mockResolvedValue({ type: { id: 'direct' } }) },
+            useValue: {
+              getVacancyDetail: jest
+                .fn()
+                .mockResolvedValue({ type: { id: 'direct' } }),
+            },
           },
-          { provide: HhTokenService, useValue: { getValidToken: jest.fn().mockResolvedValue('tok') } },
+          {
+            provide: HhTokenService,
+            useValue: { getValidToken: jest.fn().mockResolvedValue('tok') },
+          },
           { provide: LinkedInApplyService, useValue: linkedinApply },
           { provide: ConfigService, useValue: config },
         ],
@@ -222,10 +233,15 @@ describe('AutoApplyProcessor', () => {
     it('throws NonRetryableError when vacancy ID not extractable from URL', async () => {
       db.seekerApplication.findUnique.mockResolvedValue({
         ...baseApp,
-        discoveredJob: { ...baseDiscoveredJob, sourceUrl: 'https://hh.ru/employer/acme' },
+        discoveredJob: {
+          ...baseDiscoveredJob,
+          sourceUrl: 'https://hh.ru/employer/acme',
+        },
       });
 
-      await expect(processor.handle(makeJob())).rejects.toThrow(NonRetryableError);
+      await expect(processor.handle(makeJob())).rejects.toThrow(
+        NonRetryableError,
+      );
     });
 
     it('resolves resume ID via HhApplyService when hhResumeId is null', async () => {
@@ -250,7 +266,9 @@ describe('AutoApplyProcessor', () => {
       });
       hhApply.getResumeId.mockResolvedValue(null);
 
-      await expect(processor.handle(makeJob())).rejects.toThrow(NonRetryableError);
+      await expect(processor.handle(makeJob())).rejects.toThrow(
+        NonRetryableError,
+      );
     });
   });
 
@@ -280,21 +298,34 @@ describe('AutoApplyProcessor', () => {
 
     it('marks status as failed and rethrows when LinkedIn apply returns failure', async () => {
       db.seekerApplication.findUnique.mockResolvedValue(linkedinApp);
-      linkedinApply.apply.mockResolvedValue({ success: false, message: 'Captcha required' });
+      linkedinApply.apply.mockResolvedValue({
+        success: false,
+        message: 'Captcha required',
+      });
 
-      await expect(processor.handle(makeJob())).rejects.toThrow('Captcha required');
+      await expect(processor.handle(makeJob())).rejects.toThrow(
+        'Captcha required',
+      );
       expect(db.seekerApplication.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'failed', error: 'Captcha required' }),
+          data: expect.objectContaining({
+            status: 'failed',
+            error: 'Captcha required',
+          }),
         }),
       );
     });
   });
 
   it('throws NonRetryableError for unknown source', async () => {
-    db.seekerApplication.findUnique.mockResolvedValue({ ...baseApp, source: 'monster' });
+    db.seekerApplication.findUnique.mockResolvedValue({
+      ...baseApp,
+      source: 'monster',
+    });
 
-    await expect(processor.handle(makeJob())).rejects.toThrow(NonRetryableError);
+    await expect(processor.handle(makeJob())).rejects.toThrow(
+      NonRetryableError,
+    );
   });
 
   it('marks status as failed and rethrows when HH apply throws', async () => {

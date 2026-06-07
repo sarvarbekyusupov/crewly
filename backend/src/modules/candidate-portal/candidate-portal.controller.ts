@@ -11,10 +11,16 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Observable, fromEvent, interval, merge } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { CandidatePortalService } from './candidate-portal.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
@@ -36,6 +42,10 @@ const UpdateProfileSchema = z.object({
   preferredWorkMode: z.string().optional(),
   willingToRelocate: z.boolean().optional(),
   skills: z.array(z.string()).optional(),
+  yearsExperience: z.number().min(0).max(100).nullable().optional(),
+  noticePeriodDays: z.number().int().min(0).max(365).nullable().optional(),
+  telegramUsername: z.string().max(100).nullable().optional(),
+  parsedResume: z.any().optional(),
 });
 
 const UpdatePreferencesSchema = z.object({
@@ -52,12 +62,34 @@ type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
 @Controller('api/v1/candidate-portal')
 @UseGuards(CandidateAuthGuard)
 @Public()
+@SkipThrottle({ auth: true })
 export class CandidatePortalController {
   constructor(
     private readonly portalService: CandidatePortalService,
+    private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
   ) {}
+
+  @Sse('events')
+  stream(
+    @CurrentCandidate() candidate: { id: string },
+  ): Observable<MessageEvent> {
+    const keepalive$ = interval(30_000).pipe(
+      map((): MessageEvent => ({ data: '' })),
+    );
+
+    const events$ = fromEvent(this.emitter, 'candidate.event').pipe(
+      filter((event: any) => event?.candidateId === candidate.id),
+      map(
+        (event: any): MessageEvent => ({
+          data: JSON.stringify({ type: event.type, payload: event.payload }),
+        }),
+      ),
+    );
+
+    return merge(events$, keepalive$);
+  }
 
   @Get('profile')
   async getProfile(@CurrentCandidate() candidate: { id: string }) {
@@ -98,6 +130,12 @@ export class CandidatePortalController {
     );
   }
 
+  @Post('cv/parse')
+  @HttpCode(HttpStatus.OK)
+  async parseCv(@CurrentCandidate() candidate: { id: string }) {
+    return this.portalService.triggerParseCv(candidate.id);
+  }
+
   @Get('preferences')
   async getPreferences(@CurrentCandidate() candidate: { id: string }) {
     return this.portalService.getProfile(candidate.id).then((p: any) => ({
@@ -134,6 +172,14 @@ export class CandidatePortalController {
     return this.portalService.getApplications(candidate.id);
   }
 
+  @Get('applications/:id')
+  async getApplication(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') id: string,
+  ) {
+    return this.portalService.getApplication(candidate.id, id);
+  }
+
   @Get('applications/:id/messages')
   async getMessages(
     @CurrentCandidate() candidate: { id: string },
@@ -147,7 +193,9 @@ export class CandidatePortalController {
   async postMessage(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(z.object({ content: z.string().min(1).max(4000) })))
+    @Body(
+      new ZodValidationPipe(z.object({ content: z.string().min(1).max(4000) })),
+    )
     body: { content: string },
   ) {
     return this.portalService.postMessage(candidate.id, id, body.content);
@@ -196,7 +244,9 @@ export class CandidatePortalController {
   @HttpCode(HttpStatus.CREATED)
   async applyToJob(
     @CurrentCandidate() candidate: { id: string },
-    @Body(new ZodValidationPipe(z.object({ discoveredJobId: z.string().uuid() })))
+    @Body(
+      new ZodValidationPipe(z.object({ discoveredJobId: z.string().uuid() })),
+    )
     body: { discoveredJobId: string },
   ) {
     const seekerApp = await this.portalService.queueApplication(
@@ -215,7 +265,9 @@ export class CandidatePortalController {
   async updateApplicationStatus(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(z.object({ status: z.string().min(1).max(50) })))
+    @Body(
+      new ZodValidationPipe(z.object({ status: z.string().min(1).max(50) })),
+    )
     body: { status: string },
   ) {
     return this.portalService.updateSeekerApplicationStatus(

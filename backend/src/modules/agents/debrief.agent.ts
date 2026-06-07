@@ -1,8 +1,29 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
-import { debriefSynthesizeFeedbackPrompt, debriefAnalyzeTranscriptPrompt } from '@my-hr/prompts';
+import {
+  debriefSynthesizeFeedbackPrompt,
+  debriefAnalyzeTranscriptPrompt,
+} from '@crewly/prompts';
+
+const TranscriptAnalysisSchema = z.object({
+  sentiment: z.enum(['positive', 'neutral', 'negative']),
+  summary: z.string(),
+  overall_score: z.number(),
+  dimensions: z.object({
+    technical_depth: z.number(),
+    communication: z.number(),
+    cultural_fit: z.number(),
+    experience_relevance: z.number(),
+    enthusiasm: z.number(),
+  }),
+  key_takeaways: z.array(z.string()),
+  confirmations: z.array(z.string()),
+  discrepancies: z.array(z.string()),
+  red_flags: z.array(z.string()),
+  recruiter_advice: z.string(),
+});
 
 @Injectable()
 export class DebriefAgent extends BaseAgent {
@@ -28,15 +49,19 @@ export class DebriefAgent extends BaseAgent {
       decision: 'hired' | 'rejected_by_client' | 'interviewed';
     },
   ): Promise<string> {
-    const prompt = debriefSynthesizeFeedbackPrompt(jobTitle, currentContext, newFeedback);
+    const prompt = debriefSynthesizeFeedbackPrompt(
+      jobTitle,
+      currentContext,
+      newFeedback,
+    );
 
     const { output } = await this.runLlm(
       'feedback_synthesis',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 1024, temperature: 0.3 },
+      { maxTokens: 700, temperature: 0.3 },
     );
 
-    return output.trim();
+    return output.trim().slice(0, 1000);
   }
 
   async analyzeTranscript(
@@ -62,12 +87,21 @@ export class DebriefAgent extends BaseAgent {
     red_flags: string[];
     recruiter_advice: string;
   }> {
-    const prompt = debriefAnalyzeTranscriptPrompt(candidate, job, aiScreeningAssessment, transcript);
+    const prompt = debriefAnalyzeTranscriptPrompt(
+      candidate,
+      job,
+      aiScreeningAssessment,
+      transcript,
+    );
 
     const { output } = await this.runLlm(
       'shadow_analysis',
       [{ role: 'user', content: prompt }],
-      { maxTokens: 2048, temperature: 0.2 },
+      {
+        maxTokens: 1200,
+        temperature: 0.2,
+        responseFormat: { type: 'json_object' },
+      },
       applicationId
         ? {
             related_entity_type: 'application',
@@ -77,9 +111,12 @@ export class DebriefAgent extends BaseAgent {
     );
 
     try {
-      return JSON.parse(stripLlmJson(output));
-    } catch (e) {
-      throw new Error(`DebriefAgent failed to parse shadow analysis: ${e.message}`);
+      const parsed = JSON.parse(output);
+      return TranscriptAnalysisSchema.parse(parsed);
+    } catch (e: any) {
+      throw new Error(
+        `DebriefAgent failed to parse shadow analysis: ${e.message}`,
+      );
     }
   }
 }

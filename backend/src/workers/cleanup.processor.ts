@@ -81,7 +81,12 @@ export class CleanupProcessor {
             placement.candidate.fullName ?? '',
             placement.job.title,
           )
-          .catch((e) => this.logger.error({ err: e.message }, 'sendGuaranteeExpired failed'));
+          .catch((e) =>
+            this.logger.error(
+              { err: e.message },
+              'sendGuaranteeExpired failed',
+            ),
+          );
       }
     }
     this.logger.log(
@@ -148,7 +153,12 @@ export class CleanupProcessor {
             invoice.amountUzs,
             invoice.dueDate,
           )
-          .catch((e) => this.logger.error({ err: e.message }, 'sendInvoice reminder failed'));
+          .catch((e) =>
+            this.logger.error(
+              { err: e.message },
+              'sendInvoice reminder failed',
+            ),
+          );
         sent++;
       }
     }

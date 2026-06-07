@@ -5,6 +5,8 @@ export interface LlmCompletionResult {
   totalTokens: number;
   finishReason: string | null;
   rawResponse: unknown;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
 }
 
 export interface LlmCompletionOpts {
@@ -12,6 +14,7 @@ export interface LlmCompletionOpts {
   system?: string;
   maxTokens?: number;
   temperature?: number;
+  responseFormat?: { type: 'json_object' };
 }
 
 export interface LlmProvider {

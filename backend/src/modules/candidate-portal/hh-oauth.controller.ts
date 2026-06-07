@@ -18,6 +18,7 @@ import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
 import { HhTokenService } from '../../integrations/hh/hh-token.service';
 import { HhClientService } from '../../integrations/hh/hh-client.service';
 import { HhProfileSyncService } from '../../integrations/hh/hh-profile-sync.service';
+import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -30,16 +31,14 @@ export class HhOAuthController {
     private readonly hhToken: HhTokenService,
     private readonly hhClient: HhClientService,
     private readonly profileSync: HhProfileSyncService,
+    private readonly suggests: HhSuggestsService,
     private readonly db: PrismaService,
     private readonly config: ConfigService,
   ) {}
 
   @Get('connect')
   @UseGuards(CandidateAuthGuard)
-  connect(
-    @CurrentCandidate() candidate: { id: string },
-    @Res() res: Response,
-  ) {
+  connect(@CurrentCandidate() candidate: { id: string }, @Res() res: Response) {
     const url = this.hhOAuth.buildAuthorizeUrl(candidate.id);
     res.redirect(url);
   }
@@ -80,9 +79,7 @@ export class HhOAuthController {
   /** Returns the seeker's active (non-rejected) HH applications. */
   @Get('negotiations')
   @UseGuards(CandidateAuthGuard)
-  async getActiveNegotiations(
-    @CurrentCandidate() candidate: { id: string },
-  ) {
+  async getActiveNegotiations(@CurrentCandidate() candidate: { id: string }) {
     const token = await this.hhToken.getValidToken(candidate.id);
     return this.hhClient.getActiveNegotiations(token);
   }
@@ -124,5 +121,20 @@ export class HhOAuthController {
       );
     await this.profileSync.publishResume(c.hhResumeId, token);
     return { ok: true };
+  }
+
+  @Get('suggests/areas')
+  suggestAreas(@Query('text') text: string) {
+    return this.suggests.areas(text ?? '');
+  }
+
+  @Get('suggests/skills')
+  suggestSkills(@Query('text') text: string) {
+    return this.suggests.skills(text ?? '');
+  }
+
+  @Get('suggests/universities')
+  suggestUniversities(@Query('text') text: string) {
+    return this.suggests.universities(text ?? '');
   }
 }

@@ -3,12 +3,25 @@ import type { LinkedInSearchResponse, LinkedInProfile } from '~/types/api'
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const route = useRoute()
 const router = useRouter()
 const api = useApi()
 
 onMounted(() => {
   if (!auth.can('admin')) {
     router.push('/employer/dashboard')
+    return
+  }
+
+  if (route.query.q) {
+    query.value = String(route.query.q)
+  }
+  if (route.query.location) {
+    location.value = String(route.query.location)
+  }
+
+  if (query.value) {
+    doSearch()
   }
 })
 

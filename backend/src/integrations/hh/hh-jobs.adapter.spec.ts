@@ -32,7 +32,7 @@ describe('HhJobsAdapter', () => {
         { provide: HttpService, useValue: { get: httpGet } },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('my-hr/1.0') },
+          useValue: { get: jest.fn().mockReturnValue('crewly/1.0') },
         },
       ],
     }).compile();
@@ -67,7 +67,9 @@ describe('HhJobsAdapter', () => {
 
   it('throws error on API error', async () => {
     httpGet.mockReturnValue(throwError(() => new Error('Network error')));
-    await expect(adapter.fetchPage({ page: 0 })).rejects.toThrow('Network error');
+    await expect(adapter.fetchPage({ page: 0 })).rejects.toThrow(
+      'Network error',
+    );
   });
 
   it('hasMore is true when more pages available', async () => {

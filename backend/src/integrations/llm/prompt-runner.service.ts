@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Langfuse } from 'langfuse';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CostCalculatorService } from './cost-calculator.service';
 import { GroqProvider } from './providers/groq.provider';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { BedrockProvider } from './providers/bedrock.provider';
 
 export interface PromptContext {
   related_entity_type?: string;
@@ -17,10 +19,11 @@ export interface PromptContext {
 
 export interface RunOptions {
   model?: string;
-  provider?: 'groq' | 'anthropic';
+  provider?: 'groq' | 'anthropic' | 'bedrock';
   system?: string;
   maxTokens?: number;
   temperature?: number;
+  responseFormat?: { type: 'json_object' };
 }
 
 @Injectable()
@@ -29,6 +32,8 @@ export class PromptRunnerService {
   private readonly openai: OpenAI | null;
   private readonly groq: GroqProvider;
   private readonly anthropic: AnthropicProvider;
+  private readonly bedrock: BedrockProvider;
+  private readonly langfuse: Langfuse | null = null;
 
   constructor(
     private readonly config: ConfigService,
@@ -38,14 +43,36 @@ export class PromptRunnerService {
   ) {
     this.groq = new GroqProvider(config);
     this.anthropic = new AnthropicProvider(config);
+    this.bedrock = new BedrockProvider(config);
 
-    if (!this.groq.isAvailable() && !this.anthropic.isAvailable()) {
-      this.logger.warn('No LLM provider configured — all agent calls will fail');
+    if (
+      !this.groq.isAvailable() &&
+      !this.anthropic.isAvailable() &&
+      !this.bedrock.isAvailable()
+    ) {
+      this.logger.warn(
+        'No LLM provider configured — all agent calls will fail',
+      );
     }
 
     const openaiKey = config.get<string>('OPENAI_API_KEY');
     this.openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
-    if (!this.openai) this.logger.warn('OPENAI_API_KEY not set — embeddings will fail');
+    if (!this.openai)
+      this.logger.warn('OPENAI_API_KEY not set — embeddings will fail');
+
+    const lfPubKey = config.get<string>('LANGFUSE_PUBLIC_KEY');
+    const lfSecKey = config.get<string>('LANGFUSE_SECRET_KEY');
+    const lfHost =
+      config.get<string>('LANGFUSE_HOST') || 'https://cloud.langfuse.com';
+
+    if (lfPubKey && lfSecKey) {
+      this.langfuse = new Langfuse({
+        publicKey: lfPubKey,
+        secretKey: lfSecKey,
+        baseUrl: lfHost,
+      });
+      this.logger.log('Langfuse tracing enabled');
+    }
   }
 
   async run(
@@ -65,7 +92,12 @@ export class PromptRunnerService {
       this.emitter.emit('company.event', {
         type: 'agent.thought',
         companyId: ctx.company_id,
-        payload: { agent: ctx.agent_name, action: 'started', purpose, promptName },
+        payload: {
+          agent: ctx.agent_name,
+          action: 'started',
+          purpose,
+          promptName,
+        },
       });
     }
 
@@ -78,24 +110,76 @@ export class PromptRunnerService {
     let totalTokens = 0;
     let finishReason: string | null = null;
 
+    // Create Langfuse trace & generation if configured
+    let lfTrace: any = null;
+    let lfGeneration: any = null;
+
+    if (this.langfuse) {
+      lfTrace = this.langfuse.trace({
+        name: promptName,
+        userId: ctx.company_id || undefined,
+        metadata: {
+          purpose,
+          promptVersion,
+          relatedEntityType: ctx.related_entity_type,
+          relatedEntityId: ctx.related_entity_id,
+          agentName: ctx.agent_name,
+          jobId: ctx.job_id,
+        },
+      });
+
+      lfGeneration = lfTrace.generation({
+        name: purpose,
+        model: modelName,
+        modelParameters: {
+          temperature,
+          maxTokens,
+        },
+        input: messages as any,
+      });
+    }
+
     try {
-      // Select provider: explicit opt-in, or Groq first, Anthropic as fallback
+      // Select provider: explicit opt-in, or Groq first, Anthropic/Bedrock as fallback
       const preferredProvider = opts.provider ?? 'groq';
-      const primary = preferredProvider === 'anthropic' ? this.anthropic : this.groq;
-      const fallback = preferredProvider === 'anthropic' ? this.groq : this.anthropic;
+      const providerMap = {
+        groq: this.groq,
+        anthropic: this.anthropic,
+        bedrock: this.bedrock,
+      };
+      const primary = providerMap[preferredProvider] ?? this.groq;
+      const fallback =
+        preferredProvider === 'anthropic'
+          ? this.groq
+          : preferredProvider === 'bedrock'
+            ? this.groq
+            : this.anthropic.isAvailable()
+              ? this.anthropic
+              : this.bedrock;
 
       if (!primary.isAvailable() && !fallback.isAvailable()) {
-        throw new Error('No LLM provider available — configure GROQ_API_KEY or ANTHROPIC_API_KEY');
+        throw new Error(
+          'No LLM provider available — configure GROQ_API_KEY, ANTHROPIC_API_KEY, or AWS_BEARER_TOKEN_BEDROCK',
+        );
       }
 
       let result;
       if (primary.isAvailable()) {
         try {
-          result = await primary.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+          result = await primary.complete(messages, {
+            model: modelName,
+            system: opts.system,
+            maxTokens,
+            temperature,
+            responseFormat: opts.responseFormat,
+          });
           providerUsed = primary.name;
         } catch (primaryErr: any) {
           // Only fall back on retriable errors (rate limit, 5xx); rethrow non-retriable
-          if (primaryErr.message?.includes('non-retriable') || primaryErr.name === 'NonRetryableError') {
+          if (
+            primaryErr.message?.includes('non-retriable') ||
+            primaryErr.name === 'NonRetryableError'
+          ) {
             throw primaryErr;
           }
           this.logger.warn(
@@ -103,11 +187,23 @@ export class PromptRunnerService {
             `${primary.name} failed, trying ${fallback.name}`,
           );
           if (!fallback.isAvailable()) throw primaryErr;
-          result = await fallback.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+          result = await fallback.complete(messages, {
+            model: modelName,
+            system: opts.system,
+            maxTokens,
+            temperature,
+            responseFormat: opts.responseFormat,
+          });
           providerUsed = fallback.name;
         }
       } else {
-        result = await fallback.complete(messages, { model: modelName, system: opts.system, maxTokens, temperature });
+        result = await fallback.complete(messages, {
+          model: modelName,
+          system: opts.system,
+          maxTokens,
+          temperature,
+          responseFormat: opts.responseFormat,
+        });
         providerUsed = fallback.name;
       }
 
@@ -117,9 +213,27 @@ export class PromptRunnerService {
       totalTokens = result.totalTokens;
       finishReason = result.finishReason;
       rawResponse = result.rawResponse;
+
+      if (lfGeneration) {
+        lfGeneration.update({
+          output: outputText,
+          usage: {
+            promptTokens: inputTokens,
+            completionTokens: outputTokens,
+            totalTokens: totalTokens,
+          },
+        });
+      }
     } catch (e: any) {
       error = e.message;
       this.logger.error({ promptName, error, providerUsed }, 'LLM call failed');
+
+      if (lfGeneration) {
+        lfGeneration.update({
+          statusMessage: error,
+        });
+      }
+
       throw e;
     } finally {
       const costUsd = this.costCalc.compute(modelName, {
@@ -173,8 +287,16 @@ export class PromptRunnerService {
         });
         callId = record.id;
       } catch (dbErr: any) {
-        this.logger.error({ promptName, dbErr: dbErr.message }, 'Failed to persist LLM call log');
+        this.logger.error(
+          { promptName, dbErr: dbErr.message },
+          'Failed to persist LLM call log',
+        );
       }
+
+      if (this.langfuse) {
+        this.langfuse.shutdownAsync().catch(() => {});
+      }
+
       if (!error) {
         return { output: outputText!, callId };
       }
@@ -183,7 +305,10 @@ export class PromptRunnerService {
   }
 
   async embed(text: string): Promise<number[]> {
-    if (!this.openai) throw new Error('OPENAI_API_KEY not configured — required for embeddings');
+    if (!this.openai)
+      throw new Error(
+        'OPENAI_API_KEY not configured — required for embeddings',
+      );
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: text.slice(0, 8000),

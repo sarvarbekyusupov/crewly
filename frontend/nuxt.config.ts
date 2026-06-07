@@ -3,6 +3,16 @@ export default defineNuxtConfig({
 
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/app-icon-180.png' },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#1A1815' },
+      ],
+    },
   },
 
   modules: [
@@ -12,7 +22,22 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     '@nuxt/eslint',
     '@sentry/nuxt/module',
+    '@nuxt/test-utils/module',
+    '@nuxtjs/seo',
   ],
+
+  site: {
+    url: 'https://crewly.com',
+    name: 'Crewly',
+    description: 'AI-Native Recruiting Platform',
+    defaultLocale: 'en',
+  },
+
+  sitemap: {
+    sources: [
+      '/api/sitemap-urls',
+    ],
+  },
 
   sentry: {
     sourceMapsUploadOptions: {
@@ -25,6 +50,8 @@ export default defineNuxtConfig({
       { name: 'Fraunces', provider: 'google' },
       { name: 'Inter', provider: 'google' },
       { name: 'JetBrains Mono', provider: 'google' },
+      { name: 'Source Serif 4', provider: 'google' },
+      { name: 'DM Sans', provider: 'google' },
     ],
   },
 
@@ -34,6 +61,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:3000',
       sentryDsn: process.env.NUXT_PUBLIC_SENTRY_DSN ?? '',
+      waitlistMode: process.env.NUXT_PUBLIC_WAITLIST_MODE === 'true',
     },
   },
 
@@ -45,11 +73,12 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'en',
     langDir: 'locales',
-    strategy: 'no_prefix',
+    strategy: 'prefix_except_default',
+    baseUrl: 'https://crewly.com',
   },
 
   imports: {
-    dirs: ['app/stores'],
+    dirs: ['app/stores', 'app/constants'],
   },
 
   typescript: {
@@ -57,20 +86,25 @@ export default defineNuxtConfig({
     tsConfig: {
       compilerOptions: {
         paths: {
-          '@my-hr/types': ['../packages/types/src/index.ts'],
+          '@crewly/types': ['../packages/types/src/index.ts'],
         },
       },
     },
   },
 
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   compatibilityDate: '2026-05-30',
 
   nitro: {
+    prerender: {
+      routes: ['/', '/candidate', '/terms'],
+    },
     routeRules: {
       '/api/**': {
         proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/**`,
       },
+      '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
+      '/candidate/job-discovery': { redirect: { to: '/candidate/jobs', statusCode: 301 } },
     },
   },
 })

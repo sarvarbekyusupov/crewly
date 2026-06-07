@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { LinkedInAdapter } from '../../integrations/linkedin/linkedin-client.service';
-import { LinkedInSearchResponse, LinkedInProfile } from '../../integrations/linkedin/linkedin.types';
+import {
+  LinkedInSearchResponse,
+  LinkedInProfile,
+} from '../../integrations/linkedin/linkedin.types';
 import { AdapterIngestService } from '../../integrations/adapters/adapter-ingest.service';
 import { NormalizedProfile } from '../../integrations/adapters/candidate-source.adapter';
 
@@ -14,11 +17,11 @@ export class SourcingService {
   async searchLinkedIn(query: string): Promise<LinkedInSearchResponse> {
     // The adapter expects page to be 1-based, though we only fetch one page synchronously here for the UI.
     const res = await this.linkedinAdapter.fetchPage({ query, page: 1 });
-    
+
     // Extract the original LinkedInProfile payloads from the NormalizedProfiles
     // to match the frontend expectations and types.
-    const profiles = res.profiles.map(p => p.rawPayload as LinkedInProfile);
-    
+    const profiles = res.profiles.map((p) => p.rawPayload as LinkedInProfile);
+
     return { success: true, data: profiles };
   }
 

@@ -59,7 +59,8 @@ export class StaffAuthController {
     private readonly invoicesService: InvoicesService,
     private readonly consentService: ConsentService,
     @InjectQueue(QUEUES.INGEST_CANDIDATES) private readonly ingestQueue: Queue,
-    @InjectQueue(QUEUES.DISCOVER_JOBS) private readonly discoverJobsQueue: Queue,
+    @InjectQueue(QUEUES.DISCOVER_JOBS)
+    private readonly discoverJobsQueue: Queue,
   ) {}
 
   @Post('login')
@@ -72,7 +73,10 @@ export class StaffAuthController {
     dto: { email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { token, staff } = await this.staffService.login(dto.email, dto.password);
+    const { token, staff } = await this.staffService.login(
+      dto.email,
+      dto.password,
+    );
 
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
@@ -226,7 +230,10 @@ export class StaffAuthController {
   @Post('refresh')
   @Public()
   @HttpCode(200)
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const rawToken = req.cookies?.[COOKIE_NAME];
     if (!rawToken) throw new UnauthorizedException();
 
@@ -255,7 +262,10 @@ export class StaffAuthController {
   @Post('logout-all')
   @UseGuards(StaffGuard)
   @HttpCode(200)
-  async logoutAll(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async logoutAll(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const staff = (req as any).staff;
     await this.staffService.logoutAll(staff.id);
     res.clearCookie(COOKIE_NAME);

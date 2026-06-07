@@ -12,6 +12,7 @@ import { AuthGuard } from './common/guards/auth.guard';
 import { PrismaModule } from './prisma/prisma.module';
 import { LlmModule } from './integrations/llm/llm.module';
 import { EmailModule } from './integrations/email/email.module';
+import { SmsModule } from './integrations/sms/sms.module';
 import { StorageModule } from './integrations/storage/storage.module';
 import { GoogleCalendarModule } from './integrations/google-calendar/google-calendar.module';
 import { TelegramModule } from './integrations/telegram/telegram.module';
@@ -37,6 +38,7 @@ import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { SourcingModule } from './modules/sourcing/sourcing.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { HealthController } from './common/health.controller';
@@ -54,6 +56,7 @@ import { HealthController } from './common/health.controller';
     PrismaModule,
     LlmModule,
     EmailModule,
+    SmsModule,
     StorageModule,
     GoogleCalendarModule,
     TelegramModule,
@@ -93,6 +96,7 @@ import { HealthController } from './common/health.controller';
     FeatureFlagsModule,
     AgentsModule,
     SourcingModule,
+    WaitlistModule,
     WorkersModule,
     WebhooksModule,
   ],

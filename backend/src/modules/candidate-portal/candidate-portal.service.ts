@@ -13,7 +13,7 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 // @ts-ignore
-import pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 
 @Injectable()
 export class CandidatePortalService {
@@ -31,22 +31,26 @@ export class CandidatePortalService {
       where: { id: applicationId, candidateId },
     });
     if (!app) throw new NotFoundException('Application not found');
-    
+
     const conv = await this.db.conversation.findFirst({
       where: { applicationId, candidateId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
-      orderBy: { startedAt: 'desc' }
+      orderBy: { startedAt: 'desc' },
     });
-    
+
     return conv?.messages || [];
   }
 
-  async postMessage(candidateId: string, applicationId: string, content: string) {
+  async postMessage(
+    candidateId: string,
+    applicationId: string,
+    content: string,
+  ) {
     const app = await this.db.application.findFirst({
       where: { id: applicationId, candidateId },
     });
     if (!app) throw new NotFoundException('Application not found');
-    
+
     await this.conv.handleWebMessage(applicationId, candidateId, content);
     return { success: true };
   }
@@ -56,7 +60,7 @@ export class CandidatePortalService {
       where: { id: candidateId },
     });
     if (!candidate || candidate.deletedAt) throw new NotFoundException();
-    
+
     // We return rawResumeText and parsedResume to track parsing status on frontend
     const { ...safe } = candidate as any;
     return safe;
@@ -76,14 +80,33 @@ export class CandidatePortalService {
       preferredWorkMode?: string;
       willingToRelocate?: boolean;
       skills?: string[];
+      yearsExperience?: number | null;
+      noticePeriodDays?: number | null;
+      telegramUsername?: string | null;
+      parsedResume?: any;
     },
   ) {
     const candidate = await this.db.candidate.update({
       where: { id: candidateId },
       data,
     });
-    const { rawResumeText: _, parsedResume: __, ...safe } = candidate as any;
+    const { rawResumeText: _, ...safe } = candidate as any;
     return safe;
+  }
+
+  async triggerParseCv(candidateId: string) {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+    });
+    if (!candidate || !candidate.rawResumeText) {
+      throw new NotFoundException('No raw resume text available to parse');
+    }
+    await this.db.candidate.update({
+      where: { id: candidateId },
+      data: { parsedResume: Prisma.DbNull },
+    });
+    await this.parseQueue.add({ candidateId }, LLM_JOB_OPTIONS);
+    return { success: true };
   }
 
   async updatePreferences(
@@ -142,18 +165,24 @@ export class CandidatePortalService {
     let rawText = '';
     if (mimetype === 'application/pdf') {
       try {
-        const parsed = await (pdfParse as any)(buffer);
+        const parser = new PDFParse({ data: buffer });
+        const parsed = await parser.getText();
         rawText = parsed.text;
       } catch (err: any) {
-        this.logger.warn({ candidateId, error: err.message }, 'Failed to parse PDF text');
+        this.logger.warn(
+          { candidateId, error: err.message },
+          'Failed to parse PDF text',
+        );
       }
     }
 
     await this.db.candidate.update({
       where: { id: candidateId },
-      data: { 
+      data: {
         resumeFileUrl: publicUrl || null,
-        ...(rawText ? { rawResumeText: rawText, parsedResume: Prisma.DbNull } : {}),
+        ...(rawText
+          ? { rawResumeText: rawText, parsedResume: Prisma.DbNull }
+          : {}),
       },
     });
 
@@ -162,7 +191,7 @@ export class CandidatePortalService {
     }
 
     this.logger.log({ candidateId, key }, 'CV uploaded');
-    return { url: signedUrl || publicUrl, uploaded: true };
+    return { url: signedUrl || publicUrl, uploaded: true, parsing: !!rawText };
   }
 
   async getDiscoveredJobs(
@@ -373,6 +402,24 @@ export class CandidatePortalService {
         },
       },
       orderBy: { matchedAt: 'desc' },
+    });
+  }
+
+  async getApplication(candidateId: string, applicationId: string) {
+    return this.db.application.findFirst({
+      where: { id: applicationId, candidateId },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            workMode: true,
+            employmentType: true,
+            officeLocation: true,
+            company: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
   }
 }

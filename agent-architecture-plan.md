@@ -1,7 +1,7 @@
 # Multi-Agent Architecture Implementation Plan (FINAL STATUS)
 
 ## 1. Background & Motivation
-The `my-hr` platform has been evolved from a sequential, hardcoded workflow managed by BullMQ into a true **Multi-Agent System (MAS)**. Specialized AI agents now collaborate, handle specific domains of the recruitment lifecycle autonomously, and pass context via internal platform events.
+The `crewly` platform has been evolved from a sequential, hardcoded workflow managed by BullMQ into a true **Multi-Agent System (MAS)**. Specialized AI agents now collaborate, handle specific domains of the recruitment lifecycle autonomously, and pass context via internal platform events.
 
 ## 2. Implemented Agent Topology
 

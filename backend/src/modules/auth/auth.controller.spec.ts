@@ -148,7 +148,11 @@ describe('AuthController', () => {
       const mockUser = { id: '1', email: 'test@example.com' };
       authService.getMe.mockResolvedValue(mockUser);
 
-      const result = await controller.me({ id: '1', companyId: 'c1', role: 'owner' as const });
+      const result = await controller.me({
+        id: '1',
+        companyId: 'c1',
+        role: 'owner' as const,
+      });
       expect(authService.getMe).toHaveBeenCalledWith('1');
       expect(result).toEqual(mockUser);
     });

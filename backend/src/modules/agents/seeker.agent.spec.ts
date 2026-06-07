@@ -24,10 +24,7 @@ describe('SeekerAgent', () => {
     llm = { run: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SeekerAgent,
-        { provide: PromptRunnerService, useValue: llm },
-      ],
+      providers: [SeekerAgent, { provide: PromptRunnerService, useValue: llm }],
     }).compile();
 
     agent = module.get(SeekerAgent);
@@ -52,7 +49,10 @@ describe('SeekerAgent', () => {
   it('returns should_apply true via score fallback when LLM output is invalid JSON and matchScore >= 85', async () => {
     llm.run.mockResolvedValue({ output: 'not json at all' });
 
-    const result = await agent.decideAndDraftApplication(candidate, { ...job, matchScore: 90 });
+    const result = await agent.decideAndDraftApplication(candidate, {
+      ...job,
+      matchScore: 90,
+    });
 
     expect(result.should_apply).toBe(true);
     expect(result.reason).toMatch(/fallback/i);
@@ -61,7 +61,10 @@ describe('SeekerAgent', () => {
   it('returns should_apply false via score fallback when matchScore < 85', async () => {
     llm.run.mockResolvedValue({ output: 'invalid' });
 
-    const result = await agent.decideAndDraftApplication(candidate, { ...job, matchScore: 60 });
+    const result = await agent.decideAndDraftApplication(candidate, {
+      ...job,
+      matchScore: 60,
+    });
 
     expect(result.should_apply).toBe(false);
   });

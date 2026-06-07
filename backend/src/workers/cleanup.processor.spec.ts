@@ -71,11 +71,15 @@ describe('CleanupProcessor', () => {
       const placement = {
         id: 'pl-1',
         candidateId: 'c1',
-        job: { title: 'Dev', companyId: 'co1' },
+        job: {
+          title: 'Dev',
+          company: {
+            users: [{ email: 'owner@co.com' }],
+          },
+        },
         candidate: { fullName: 'Alice' },
       };
       db.placement.findMany.mockResolvedValue([placement]);
-      db.user.findFirst.mockResolvedValue({ email: 'owner@co.com' });
       db.placement.updateMany.mockResolvedValue({ count: 1 });
 
       await processor.checkGuaranteeExpiry(makeJob());

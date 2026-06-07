@@ -40,6 +40,8 @@ const { data: counts } = await useAsyncData(
 )
 
 const sseState = useSseConnectionState()
+const eventsStore = useEventsStore()
+const agentThoughts = storeToRefs(eventsStore).agentThoughts
 
 const navGroups = computed(() => [
   {
@@ -163,8 +165,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
     <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
       <!-- Brand -->
       <NuxtLink to="/employer/dashboard" class="brand-row">
-        <div class="brand-mark">m</div>
-        <div class="brand-name">my<em>-hr</em></div>
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="brand-logo" />
       </NuxtLink>
 
       <!-- Portal indicator -->
@@ -197,12 +198,32 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
       <div class="agent-card">
         <div class="agent-head">
           <div class="agent-live">
-            <span class="live-dot" />
+            <span
+              class="live-dot"
+              :class="{ 'live-dot--active': agentThoughts[0]?.action === 'started' }"
+            />
             <span>{{ t('agent.live') }}</span>
           </div>
           <span class="agent-ver">v0.8</span>
         </div>
-        <div class="agent-label">
+        <div v-if="agentThoughts.length" class="agent-thoughts">
+          <div
+            v-for="thought in agentThoughts.slice(0, 4)"
+            :key="thought.ts"
+            class="agent-thought"
+            :class="`agent-thought--${thought.action}`"
+          >
+            <span class="thought-dot" />
+            <span class="thought-text">
+              <span class="thought-agent">{{ thought.agent }}</span>
+              {{ thought.purpose }}
+            </span>
+            <span v-if="thought.latency && thought.action === 'completed'" class="thought-ms">
+              {{ thought.latency }}ms
+            </span>
+          </div>
+        </div>
+        <div v-else class="agent-label">
           {{ t('agent.sourcing', { count: counts?.jobs ?? 0 }) }}
         </div>
       </div>
@@ -277,14 +298,14 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
           </span>
           <USelect
             :model-value="locale"
-            :options="availableLocales.map((l) => ({ label: l.name, value: l.code }))"
+            :items="availableLocales.map((l) => ({ label: l.name, value: l.code }))"
             size="xs"
             class="hidden md:block w-28"
             @update:model-value="setLocale($event as any)"
           />
           <button
             type="button"
-            class="icon-btn hidden sm:grid"
+            class="icon-btn grid"
             :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
             @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
           >
@@ -293,14 +314,72 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
               style="width: 15px; height: 15px"
             />
           </button>
-          <button
-            type="button"
-            class="icon-btn"
-            :aria-label="t('nav.notifications')"
-            @click="toast.add({ title: t('nav.notificationsSoon'), color: 'neutral' })"
-          >
-            <UIcon name="i-heroicons-bell" style="width: 15px; height: 15px" />
-          </button>
+          <!-- Notifications Popover -->
+          <UPopover :close-on-content-click="false">
+            <button type="button" class="icon-btn relative" :aria-label="t('nav.notifications')">
+              <UIcon name="i-heroicons-bell" style="width: 15px; height: 15px" />
+              <span
+                class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse pointer-events-none"
+              />
+            </button>
+
+            <template #content>
+              <div
+                class="w-80 p-4 space-y-3 bg-surface border border-line rounded-lg shadow-xl z-50"
+              >
+                <div class="flex items-center justify-between pb-2 border-b border-line-soft">
+                  <span class="text-xs font-mono font-bold text-ink uppercase tracking-wider"
+                    >Recruiter Alerts</span
+                  >
+                  <UBadge label="3 New" size="xs" color="primary" variant="subtle" />
+                </div>
+                <div class="space-y-3 max-h-60 overflow-y-auto scrollbar-thin">
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div
+                      class="w-6 h-6 rounded-full bg-accent-soft flex items-center justify-center shrink-0"
+                    >
+                      <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Matchmaker matched John Doe</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">
+                        Matched with Senior Frontend Engineer with 92% match score.
+                      </p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">5m ago</span>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div
+                      class="w-6 h-6 rounded-full bg-info-soft flex items-center justify-center shrink-0"
+                    >
+                      <UIcon name="i-heroicons-envelope-open" class="w-3.5 h-3.5 text-info" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Outreach replied by Alice</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">
+                        Alice Smith booked an interview through automated outreach.
+                      </p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">2h ago</span>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs">
+                    <div
+                      class="w-6 h-6 rounded-full bg-positive-soft flex items-center justify-center shrink-0"
+                    >
+                      <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5 text-positive" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="font-medium text-ink truncate">Interview scheduled</p>
+                      <p class="text-[10px] text-ink-muted leading-tight mt-0.5">
+                        Google Meet link created for candidate Bob Jones.
+                      </p>
+                      <span class="text-[9px] text-ink-subtle mt-1 block">Yesterday</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </UPopover>
           <!-- User avatar + settings + logout -->
           <div class="topbar-user">
             <div
@@ -358,7 +437,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   position: sticky;
   top: 0;
   border-right: 1px solid var(--line);
-  background: var(--bg);
+  background: var(--accent);
   padding: 22px 18px;
   display: flex;
   flex-direction: column;
@@ -388,39 +467,19 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   padding: 4px 6px;
   border-radius: 7px;
   text-decoration: none;
-  transition: background 0.12s;
+  transition: opacity 0.12s;
 }
 .brand-row:hover {
-  background: var(--bg-elevated);
+  opacity: 0.85;
 }
 
-.brand-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--bg);
-  display: grid;
-  place-items: center;
-  font-family: 'Fraunces', serif;
-  font-size: 16px;
-  font-style: italic;
-  letter-spacing: -0.04em;
-  flex-shrink: 0;
-}
-.brand-name {
-  font-family: 'Fraunces', serif;
-  font-size: 19px;
-  letter-spacing: -0.04em;
-  color: var(--ink);
-}
-.brand-name em {
-  font-style: italic;
-  color: var(--accent);
+.brand-logo {
+  height: 20px;
+  width: auto;
+  display: block;
 }
 
 .portal-indicator {
@@ -530,6 +589,70 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   font-size: 12px;
   color: var(--ink);
   line-height: 1.4;
+}
+.agent-thoughts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.agent-thought {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  min-width: 0;
+}
+.agent-thought--started {
+  color: var(--ink);
+}
+.agent-thought--completed {
+  color: var(--ink-subtle);
+}
+.agent-thought--failed {
+  color: var(--warn);
+}
+.thought-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.agent-thought--started .thought-dot {
+  background: var(--accent);
+  opacity: 1;
+  animation: scan-pulse 1.2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.thought-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thought-agent {
+  font-weight: 600;
+  margin-right: 3px;
+}
+.thought-ms {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+.live-dot--active {
+  animation: scan-pulse 1.2s ease-in-out infinite;
+  background: var(--accent) !important;
 }
 
 /* ── Topbar ── */

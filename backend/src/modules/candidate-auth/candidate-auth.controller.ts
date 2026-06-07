@@ -50,6 +50,7 @@ export class CandidateAuthController {
 
   @Get('google')
   @Public()
+  @SkipThrottle({ auth: true, default: true })
   @UseGuards(PassportAuthGuard('google'))
   googleAuth() {
     // Passport handles the redirect
@@ -57,6 +58,7 @@ export class CandidateAuthController {
 
   @Get('google/callback')
   @Public()
+  @SkipThrottle({ auth: true, default: true })
   @UseGuards(PassportAuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     const googleUser = req.user as {
@@ -75,7 +77,7 @@ export class CandidateAuthController {
     res.cookie('c_refresh_token', refreshToken, C_REFRESH_COOKIE_OPTS);
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
-    res.redirect(`${frontendUrl}/candidate/dashboard`);
+    res.redirect(`${frontendUrl}/candidate/dashboard?oauth=1`);
   }
 
   @Post('signup')

@@ -49,12 +49,26 @@ export class HhClientService {
   }
 
   async getResume(id: string): Promise<HhResumeDetail> {
-    const response = await firstValueFrom(
-      this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${id}`, {
-        headers: this.headers,
-      }),
-    );
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${id}`, {
+          headers: this.headers,
+        }),
+      );
+      return response.data;
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const errors: Array<{ type: string }> = err?.response?.data?.errors ?? [];
+      const isQuota = errors.some((e) => e.type === 'api_access_payment');
+      if (status === 403 && isQuota) {
+        const quotaErr = new Error(
+          `Resume ${id} requires paid contact reveal (HH quota). Use resume.actions to explicitly reveal.`,
+        );
+        (quotaErr as any).code = 'HH_QUOTA_EXCEEDED';
+        throw quotaErr;
+      }
+      throw err;
+    }
   }
 
   extractResumeText(resume: HhResumeDetail): string {
@@ -100,10 +114,9 @@ export class HhClientService {
 
   async getVacancyDetail(vacancyId: string): Promise<HhVacancyDetail> {
     const response = await firstValueFrom(
-      this.http.get<HhVacancyDetail>(
-        `${this.baseUrl}/vacancies/${vacancyId}`,
-        { headers: this.headers },
-      ),
+      this.http.get<HhVacancyDetail>(`${this.baseUrl}/vacancies/${vacancyId}`, {
+        headers: this.headers,
+      }),
     );
     return response.data;
   }
@@ -111,7 +124,7 @@ export class HhClientService {
   async refreshCandidateToken(refreshToken: string): Promise<HhTokenResponse> {
     const clientId = this.config.get('HH_CLIENT_ID');
     const clientSecret = this.config.get('HH_CLIENT_SECRET');
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
 
     const response = await firstValueFrom(
       this.http.post<HhTokenResponse>(
@@ -152,7 +165,10 @@ export class HhClientService {
         `${this.baseUrl}/employers/${employerId}/resumes/views`,
         {
           headers: this.headers,
-          params: { per_page: 100, ...(vacancyId && { vacancy_id: vacancyId }) },
+          params: {
+            per_page: 100,
+            ...(vacancyId && { vacancy_id: vacancyId }),
+          },
         },
       ),
     );
@@ -181,7 +197,7 @@ export class HhClientService {
 
   /** Returns info about the authenticated user (employer or applicant). */
   async getMe(token: string): Promise<HhMeResponse> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
       this.http.get<HhMeResponse>(`${this.baseUrl}/me`, {
         headers: {
@@ -198,7 +214,7 @@ export class HhClientService {
   async getActiveNegotiations(
     candidateToken: string,
   ): Promise<HhNegotiationItem[]> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
       this.http.get<{ items: HhNegotiationItem[] }>(
         `${this.baseUrl}/negotiations/active`,
@@ -220,18 +236,15 @@ export class HhClientService {
     negotiationId: string,
     candidateToken: string,
   ): Promise<void> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'my-hr/1.0';
+    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     await firstValueFrom(
-      this.http.delete(
-        `${this.baseUrl}/negotiations/active/${negotiationId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${candidateToken}`,
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-          },
+      this.http.delete(`${this.baseUrl}/negotiations/active/${negotiationId}`, {
+        headers: {
+          Authorization: `Bearer ${candidateToken}`,
+          'User-Agent': userAgent,
+          'HH-User-Agent': userAgent,
         },
-      ),
+      }),
     );
   }
 
@@ -246,7 +259,7 @@ export class HhClientService {
           {
             headers: {
               Authorization: `Bearer ${candidateToken}`,
-              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'myhr/1.0',
+              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'crewly/1.0',
             },
           },
         ),

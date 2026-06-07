@@ -36,7 +36,9 @@ describe('CompaniesService', () => {
       session: {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
-      $transaction: jest.fn().mockImplementation((ops: any[]) => Promise.all(ops)),
+      $transaction: jest
+        .fn()
+        .mockImplementation((ops: any[]) => Promise.all(ops)),
     };
     email = { sendInvite: jest.fn().mockResolvedValue(undefined) };
     config = { get: jest.fn().mockReturnValue('http://localhost:3001') };

@@ -3,12 +3,15 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { Prisma } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { stripLlmJson } from './utils';
 import { NonRetryableError } from './errors';
 
 interface ParsedResume {
   skills?: (string | { name: string })[];
   full_name?: string;
+  phone?: string;
+  email?: string;
   positions?: { title?: string; company?: string }[];
   total_years?: number;
   preferred_salary_uzs?: string | number;
@@ -34,6 +37,7 @@ export class ParseCandidateProcessor {
     private readonly db: PrismaService,
     private readonly agent: MatchmakerAgent,
     private readonly sourcingAgent: SourcingAgent,
+    private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.EMBED_CANDIDATE) private readonly embedQueue: Queue,
   ) {}
 
@@ -56,11 +60,41 @@ export class ParseCandidateProcessor {
       return;
     }
 
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'parsing' },
+    });
+
     let parsed: ParsedResume;
     try {
-      parsed = await this.agent.parseResume(candidate.rawResumeText, candidateId);
+      parsed = await this.agent.parseResume(
+        candidate.rawResumeText,
+        candidateId,
+      );
     } catch (err: any) {
-      this.logger.error({ candidateId, error: err.message }, 'Failed to parse resume');
+      this.logger.error(
+        { candidateId, error: err.message },
+        'Failed to parse resume',
+      );
+      await this.db.candidate
+        .update({
+          where: { id: candidateId },
+          data: {
+            parsedResume: { error: true, message: err.message } as any,
+          },
+        })
+        .catch((dbErr) => {
+          this.logger.error(
+            { candidateId, error: dbErr.message },
+            'Failed to write parse error status to database',
+          );
+        });
+      this.emitter.emit('candidate.event', {
+        candidateId,
+        type: 'resume_parse_progress',
+        payload: { status: 'error' },
+      });
       throw err;
     }
 
@@ -77,7 +111,10 @@ export class ParseCandidateProcessor {
         skills,
       );
     } catch (err: any) {
-      this.logger.warn({ candidateId, error: err.message }, 'Social proof enrichment failed');
+      this.logger.warn(
+        { candidateId, error: err.message },
+        'Social proof enrichment failed',
+      );
     }
 
     await this.db.candidate.update({
@@ -86,6 +123,8 @@ export class ParseCandidateProcessor {
         parsedResume: parsed as Prisma.InputJsonValue,
         socialProof: (socialProof as Prisma.InputJsonValue) || undefined,
         skills,
+        fullName: parsed.full_name || undefined,
+        phone: parsed.phone || undefined,
         yearsExperience: parsed.total_years ? parsed.total_years : undefined,
         currentPosition: parsed.positions?.[0]?.title,
         currentCompany: parsed.positions?.[0]?.company,
@@ -101,6 +140,12 @@ export class ParseCandidateProcessor {
       },
     });
 
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'done' },
+    });
+
     await this.embedQueue.add({ candidateId }, LLM_JOB_OPTIONS);
   }
 
@@ -110,6 +155,11 @@ export class ParseCandidateProcessor {
       { candidateId: job.data.candidateId, error: err.message },
       'parse-candidate failed',
     );
+    this.emitter.emit('candidate.event', {
+      candidateId: job.data.candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'error' },
+    });
     if (err instanceof NonRetryableError) job.discard().catch(() => {});
   }
 }

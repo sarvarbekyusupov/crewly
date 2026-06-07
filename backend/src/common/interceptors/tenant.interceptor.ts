@@ -28,10 +28,10 @@ export class TenantInterceptor implements NestInterceptor {
       // If the user is authenticated (has a JWT sub) but has no companyId,
       // this is a misconfigured token — reject to prevent cross-tenant access.
       if (request.user?.id) {
-        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-          context.getHandler(),
-          context.getClass(),
-        ]);
+        const isPublic = this.reflector.getAllAndOverride<boolean>(
+          IS_PUBLIC_KEY,
+          [context.getHandler(), context.getClass()],
+        );
         if (!isPublic) {
           this.logger.warn(
             { path: request.url, userId: request.user.id },

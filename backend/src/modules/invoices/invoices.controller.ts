@@ -42,12 +42,18 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.findOne(user.companyId, id);
   }
 
   @Post(':id/pay')
-  getPaymentLink(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+  getPaymentLink(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.svc.getPaymentLink(user.companyId, id);
   }
 

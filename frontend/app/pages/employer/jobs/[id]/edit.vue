@@ -138,7 +138,7 @@ async function handleSubmit() {
             <UFormField :label="t('jobs.fields.priority')">
               <USelect
                 v-model="form.priority"
-                :options="[
+                :items="[
                   { label: t('jobs.priority.low'), value: 'low' },
                   { label: t('jobs.priority.normal'), value: 'normal' },
                   { label: t('jobs.priority.high'), value: 'high' },
@@ -221,7 +221,7 @@ async function handleSubmit() {
           <UFormField :label="t('jobs.fields.employmentType')">
             <USelect
               v-model="form.employmentType"
-              :options="[
+              :items="[
                 { label: 'Full-time', value: 'full-time' },
                 { label: 'Part-time', value: 'part-time' },
                 { label: 'Contract', value: 'contract' },
@@ -232,7 +232,7 @@ async function handleSubmit() {
           <UFormField :label="t('jobs.fields.workMode')">
             <USelect
               v-model="form.workMode"
-              :options="[
+              :items="[
                 { label: 'Office', value: 'office' },
                 { label: 'Hybrid', value: 'hybrid' },
                 { label: 'Remote', value: 'remote' },
@@ -253,7 +253,7 @@ async function handleSubmit() {
           <UFormField :label="t('jobs.fields.feeBasis')">
             <USelect
               v-model="form.feeBasis"
-              :options="[
+              :items="[
                 { label: 'Annual', value: 'annual' },
                 { label: 'Monthly', value: 'monthly' },
               ]"

@@ -74,7 +74,9 @@ export class AdvanceScreeningProcessor {
       {
         fullName: screening.application.candidate.fullName ?? 'Unknown',
         skills: screening.application.candidate.skills,
-        yearsExperience: Number(screening.application.candidate.yearsExperience ?? 0),
+        yearsExperience: Number(
+          screening.application.candidate.yearsExperience ?? 0,
+        ),
       },
       messages,
       screeningId,
@@ -166,6 +168,15 @@ export class AdvanceScreeningProcessor {
           type: 'new_message',
           companyId: screening.application.job.companyId,
           payload: { conversationId: screening.conversationId },
+        });
+
+        this.emitter.emit('candidate.event', {
+          type: 'new_message',
+          candidateId: screening.application.candidate.id,
+          payload: {
+            applicationId: screening.application.id,
+            conversationId: screening.conversationId,
+          },
         });
 
         const conv = screening.conversation;

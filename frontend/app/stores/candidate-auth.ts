@@ -25,7 +25,10 @@ export const useCandidateAuthStore = defineStore('candidate-auth', () => {
     const {
       public: { apiBase },
     } = useRuntimeConfig()
-    window.location.href = `${apiBase}/api/v1/candidate-auth/google`
+    const url = `${apiBase}/api/v1/candidate-auth/google`
+    console.log('[GoogleLogin] apiBase:', apiBase)
+    console.log('[GoogleLogin] redirecting to:', url)
+    window.location.href = url
   }
 
   async function signup(email: string, password: string, fullName?: string): Promise<void> {
