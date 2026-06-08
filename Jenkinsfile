@@ -75,7 +75,7 @@ pipeline {
               pnpm --filter backend exec eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location /pnpm/store/.eslintcache-backend
               pnpm --filter crewly-frontend exec eslint . --cache --cache-location /pnpm/store/.eslintcache-frontend
               # typecheck skipped in CI (tsc OOMs on 3.7GB host) Ã¢ÂÂ covered by ESLint @typescript-eslint rules
-              pnpm --filter backend run test -- --maxWorkers=1 --forceExit
+              pnpm --filter backend exec jest --maxWorkers=1 --forceExit
               # frontend tests skipped in CI (vitest OOMs on 3.7GB host)
             '''
           }
@@ -155,6 +155,7 @@ pipeline {
                   --tag        "$REGISTRY/crewly/frontend:$SAFE_BRANCH" \
                   --build-arg  "NUXT_PUBLIC_API_BASE=$API_URL" \
                   --build-arg  "NUXT_PUBLIC_WAITLIST_MODE=$WAITLIST_MODE" \
+                  --build-arg  "BACKEND_URL=http://backend:3000" \
                   --file       frontend/Dockerfile \
                   --push \
                   .
@@ -281,7 +282,7 @@ pipeline {
         withCredentials([
           string(credentialsId: 'deploy-host', variable: 'DEPLOY_HOST')
         ]) {
-          retry(12) {
+          retry(20) {
             sleep time: 10, unit: 'SECONDS'
             // /health is served on plain HTTP without redirect ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ see nginx.conf
             sh 'curl -sf "http://$DEPLOY_HOST/health"'
