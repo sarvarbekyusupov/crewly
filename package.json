@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky || true",
     "dev:frontend": "pnpm --filter crewly-frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "build:frontend": "pnpm --filter crewly-frontend build",
