@@ -53,6 +53,8 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
   position: relative;
   overflow: hidden;
   background: linear-gradient(160deg, #fff7f4 0%, #ffffff 45%, #fdf4ec 100%);
+  --l-text: #1a1714;
+  --l-muted: #8a857e;
 }
 .glow {
   display: none;
@@ -94,6 +96,14 @@ h2 {
   line-height: 1.2;
   max-width: 680px;
   color: var(--l-text);
+}
+@media (max-width: 640px) {
+  .final {
+    padding: 64px 0;
+  }
+  h2 {
+    font-size: 26px;
+  }
 }
 .cta {
   background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));

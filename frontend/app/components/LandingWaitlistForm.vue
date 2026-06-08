@@ -1,24 +1,32 @@
 <script setup lang="ts">
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { z } from 'zod'
+
 const props = defineProps<{ audience: 'employer' | 'candidate' }>()
 
 const { t } = useI18n()
 
-const email = ref('')
-const state = ref<'idle' | 'loading' | 'success' | 'duplicate' | 'error'>('idle')
+const schema = toTypedSchema(z.object({ email: z.string().email('Enter a valid email address') }))
 
-async function submit() {
-  if (!email.value || state.value === 'loading') return
-  state.value = 'loading'
+const { defineField, handleSubmit, errors, isSubmitting, resetForm } = useForm({ validationSchema: schema })
+
+const [email, emailAttrs] = defineField('email')
+
+const state = ref<'idle' | 'success' | 'duplicate' | 'error'>('idle')
+
+const submit = handleSubmit(async (values) => {
   try {
     const res = await $fetch<{ alreadyJoined: boolean }>('/api/v1/waitlist', {
       method: 'POST',
-      body: { email: email.value, role: props.audience },
+      body: { email: values.email, role: props.audience },
     })
     state.value = res.alreadyJoined ? 'duplicate' : 'success'
+    resetForm()
   } catch {
     state.value = 'error'
   }
-}
+})
 
 const successMsg = computed(() =>
   props.audience === 'employer'
@@ -35,21 +43,28 @@ const successMsg = computed(() =>
         <p>{{ successMsg }}</p>
       </div>
       <div v-else key="form" class="wl-row">
-        <input
-          v-model="email"
-          type="email"
-          class="wl-input"
-          :placeholder="t('landing.waitlist.emailPlaceholder')"
-          :disabled="state === 'loading'"
-          @keydown.enter="submit"
-        />
+        <div class="wl-input-wrap">
+          <input
+            v-model="email"
+            v-bind="emailAttrs"
+            type="email"
+            class="wl-input"
+            :class="{ 'wl-input--error': errors.email }"
+            :placeholder="t('landing.waitlist.emailPlaceholder')"
+            :disabled="isSubmitting"
+            @keydown.enter="submit"
+          />
+          <Transition name="wl-fade">
+            <span v-if="errors.email" class="wl-field-error">{{ errors.email }}</span>
+          </Transition>
+        </div>
         <button
           class="wl-btn"
-          :class="{ 'wl-btn--loading': state === 'loading' }"
-          :disabled="state === 'loading' || !email"
+          :class="{ 'wl-btn--loading': isSubmitting }"
+          :disabled="isSubmitting"
           @click="submit"
         >
-          <span v-if="state === 'loading'" class="wl-spinner" />
+          <span v-if="isSubmitting" class="wl-spinner" />
           <span v-else>{{ t('landing.waitlist.cta') }}</span>
         </button>
       </div>
@@ -78,10 +93,19 @@ const successMsg = computed(() =>
   display: flex;
   gap: 8px;
   width: 100%;
+  align-items: flex-start;
+}
+
+.wl-input-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .wl-input {
-  flex: 1;
+  width: 100%;
   padding: 12px 16px;
   border: 1px solid #d9d3c7;
   border-radius: 999px;
@@ -102,6 +126,10 @@ const successMsg = computed(() =>
   border-color: #1a1a1a;
   box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.08);
 }
+.wl-input--error {
+  border-color: #c84a1f;
+  box-shadow: 0 0 0 3px rgba(200, 74, 31, 0.1);
+}
 .wl-input:disabled {
   opacity: 0.6;
 }
@@ -109,6 +137,12 @@ const successMsg = computed(() =>
 .wl-form--candidate .wl-input:focus {
   border-color: #c84a1f;
   box-shadow: 0 0 0 3px rgba(200, 74, 31, 0.1);
+}
+
+.wl-field-error {
+  font-size: 11px;
+  color: #c84a1f;
+  padding: 0 4px;
 }
 
 .wl-btn {
@@ -126,6 +160,7 @@ const successMsg = computed(() =>
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
   transition:
     background 0.15s,
     opacity 0.15s;
@@ -196,12 +231,37 @@ const successMsg = computed(() =>
   opacity: 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .wl-row {
     flex-direction: column;
+    gap: 10px;
   }
+
+  .wl-input-wrap {
+    width: 100%;
+  }
+
+  .wl-input {
+    padding: 16px 20px;
+    font-size: 16px;
+    border: 1.5px solid rgba(26, 26, 26, 0.25);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+
   .wl-btn {
     width: 100%;
+    padding: 16px 20px;
+    font-size: 16px;
+    height: auto;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #c84a1f, #f97316);
+    box-shadow: 0 4px 16px rgba(200, 74, 31, 0.35);
+  }
+
+  .wl-form--candidate .wl-btn {
+    background: linear-gradient(135deg, #c84a1f, #f97316);
   }
 }
 </style>

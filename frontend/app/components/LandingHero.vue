@@ -565,4 +565,18 @@ function submitSearch() {
     height: 300px;
   }
 }
+
+@media (max-width: 640px) {
+  .headline {
+    font-size: 38px;
+  }
+  .search {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+    border-radius: 0;
+  }
+}
 </style>

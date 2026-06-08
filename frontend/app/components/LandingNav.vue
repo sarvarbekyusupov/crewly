@@ -260,18 +260,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 @media (max-width: 768px) {
   .nav {
     grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    height: auto;
-    padding: 12px 24px;
+    grid-template-rows: auto;
+    height: 60px;
+    padding: 10px 20px;
     gap: 12px;
   }
 
   .tab-pill {
-    grid-row: 2;
-    grid-column: 1 / span 2;
-    justify-self: center;
-    width: 100%;
-    max-width: 320px;
+    display: none;
+  }
+
+  .nav-link {
+    display: none;
   }
 
   .brand {
@@ -282,20 +282,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   .nav-r {
     grid-row: 1;
     grid-column: 2;
-  }
-}
-
-@media (max-width: 480px) {
-  .nav {
-    padding: 12px 16px;
+    gap: 10px;
   }
 
-  .nav-link {
-    display: none;
-  }
-
-  .nav-r {
-    gap: 12px;
+  .cta {
+    height: 40px;
+    padding: 10px 18px;
+    font-size: 14px;
   }
 }
 </style>

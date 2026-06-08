@@ -69,4 +69,10 @@ const dismissed = useState('annc_dismissed', () => false)
 .x:hover {
   opacity: 1;
 }
+
+@media (max-width: 768px) {
+  .annc-wrap {
+    display: none;
+  }
+}
 </style>
