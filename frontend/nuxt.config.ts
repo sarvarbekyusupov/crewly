@@ -1,3 +1,5 @@
+import { defineNuxtConfig } from 'nuxt/config'
+
 export default defineNuxtConfig({
   ssr: false,
 
@@ -9,9 +11,7 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/app-icon-180.png' },
       ],
-      meta: [
-        { name: 'theme-color', content: '#1A1815' },
-      ],
+      meta: [{ name: 'theme-color', content: '#1A1815' }],
     },
   },
 
@@ -38,9 +38,7 @@ export default defineNuxtConfig({
   },
 
   sitemap: {
-    sources: [
-      '/api/sitemap-urls',
-    ],
+    sources: ['/api/sitemap-urls'],
   },
 
   sentry: {
