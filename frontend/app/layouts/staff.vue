@@ -52,7 +52,11 @@ router.afterEach(() => {
     >
       <!-- Brand -->
       <div class="flex items-center gap-3 px-5 py-5" style="border-bottom: 1px solid var(--line)">
-        <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 20px; width: auto; display: block" />
+        <img
+          src="/crewly-logo-horizontal.svg"
+          alt="Crewly"
+          style="height: 20px; width: auto; display: block"
+        />
         <UBadge :label="t('staff.portal')" color="warning" variant="subtle" class="ml-auto" />
       </div>
 
@@ -129,7 +133,11 @@ router.afterEach(() => {
           @click="sidebarOpen = !sidebarOpen"
         />
         <div class="flex items-center">
-          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 18px; width: auto; display: block" />
+          <img
+            src="/crewly-logo-horizontal.svg"
+            alt="Crewly"
+            style="height: 18px; width: auto; display: block"
+          />
         </div>
         <div class="w-8" />
         <!-- Spacer -->

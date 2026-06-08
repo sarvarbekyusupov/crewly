@@ -33,7 +33,7 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
         </template>
       </h2>
 
-      <div v-if="waitlistMode" id="waitlist" style="width:100%;max-width:440px;margin:0 auto">
+      <div v-if="waitlistMode" id="waitlist" style="width: 100%; max-width: 440px; margin: 0 auto">
         <LandingWaitlistForm :audience="audience" />
       </div>
       <template v-else>

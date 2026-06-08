@@ -13,7 +13,12 @@ const { audience } = useAudience()
     </main>
     <footer class="landing-footer">
       <div class="footer-wrap">
-        <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="footer-brand" style="height: 18px; width: auto; display: block" />
+        <img
+          src="/crewly-logo-horizontal.svg"
+          alt="Crewly"
+          class="footer-brand"
+          style="height: 18px; width: auto; display: block"
+        />
         <div class="footer-links">
           <NuxtLink to="/terms">Terms</NuxtLink>
           <NuxtLink to="/employer/signup">For companies</NuxtLink>

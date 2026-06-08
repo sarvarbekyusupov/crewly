@@ -20,7 +20,11 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       <!-- Logo -->
       <NuxtLink to="/" class="brand" @click="set('employer')">
         <img
-          :src="colorMode.value === 'dark' ? '/crewly-logo-horizontal-white.svg' : '/crewly-logo-horizontal.svg'"
+          :src="
+            colorMode.value === 'dark'
+              ? '/crewly-logo-horizontal-white.svg'
+              : '/crewly-logo-horizontal.svg'
+          "
           alt="Crewly"
           class="brand-logo"
           height="32"

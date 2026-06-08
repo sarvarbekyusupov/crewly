@@ -29,7 +29,11 @@ useHead({
   <div class="terms-page">
     <nav class="terms-nav">
       <NuxtLink to="/" class="brand">
-        <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 20px; width: auto; display: block" />
+        <img
+          src="/crewly-logo-horizontal.svg"
+          alt="Crewly"
+          style="height: 20px; width: auto; display: block"
+        />
       </NuxtLink>
       <NuxtLink to="/employer/login?mode=signup" class="cta-btn">{{
         t('landing.doorCompanyCta')

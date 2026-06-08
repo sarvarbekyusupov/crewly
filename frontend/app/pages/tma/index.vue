@@ -12,19 +12,17 @@
         <span class="error-icon">⚠️</span>
         <h2>Доступ ограничен</h2>
         <p>{{ errorMessage }}</p>
-        
+
         <!-- Browser testing fallback -->
         <div v-if="!isTma" class="test-fallback">
           <p class="test-title">Режим отладки (в браузере):</p>
-          <input 
-            v-model="testTelegramId" 
-            type="text" 
-            placeholder="Введите ваш Telegram Chat ID" 
+          <input
+            v-model="testTelegramId"
+            type="text"
+            placeholder="Введите ваш Telegram Chat ID"
             class="test-input"
           />
-          <button @click="loadPipeline(testTelegramId)" class="tma-btn">
-            Войти по ID
-          </button>
+          <button class="tma-btn" @click="loadPipeline(testTelegramId)">Войти по ID</button>
         </div>
       </div>
     </div>
@@ -55,24 +53,20 @@
       <!-- Active Jobs list -->
       <main class="tma-content">
         <h2>Активные вакансии</h2>
-        
+
         <div v-if="jobs.length === 0" class="no-jobs">
           <p>У вас пока нет активных вакансий в системе My-HR.</p>
         </div>
 
         <div v-else class="jobs-list">
-          <div 
-            v-for="job in jobs" 
-            :key="job.id" 
-            class="job-accordion"
-          >
-            <div @click="toggleJob(job.id)" class="job-header">
+          <div v-for="job in jobs" :key="job.id" class="job-accordion">
+            <div class="job-header" @click="toggleJob(job.id)">
               <h3>{{ job.title }}</h3>
               <div class="job-meta">
                 <span class="candidate-count">
                   {{ job.applications.length }} {{ getCandidatePlural(job.applications.length) }}
                 </span>
-                <span class="chevron" :class="{ 'expanded': activeJobId === job.id }">▼</span>
+                <span class="chevron" :class="{ expanded: activeJobId === job.id }">▼</span>
               </div>
             </div>
 
@@ -82,25 +76,29 @@
                 <div v-if="job.applications.length === 0" class="no-candidates">
                   Нет кандидатов на согласовании для этой вакансии.
                 </div>
-                
-                <div 
-                  v-else 
-                  v-for="app in job.applications" 
-                  :key="app.id" 
-                  @click="openCandidate(app)"
+
+                <div
+                  v-for="app in job.applications"
+                  v-else
+                  :key="app.id"
                   class="candidate-row"
+                  @click="openCandidate(app)"
                 >
                   <div class="cand-info">
                     <h4>{{ app.candidate.fullName || 'Без имени' }}</h4>
                     <p class="cand-details">
-                      {{ app.candidate.city || 'Узбекистан' }} • 
-                      {{ app.candidate.yearsExperience ? app.candidate.yearsExperience + ' лет опыта' : 'Без опыта' }}
+                      {{ app.candidate.city || 'Узбекистан' }} •
+                      {{
+                        app.candidate.yearsExperience
+                          ? app.candidate.yearsExperience + ' лет опыта'
+                          : 'Без опыта'
+                      }}
                     </p>
                   </div>
-                  
+
                   <!-- Match score badge -->
-                  <div 
-                    v-if="app.matchScore" 
+                  <div
+                    v-if="app.matchScore"
                     class="score-badge"
                     :class="getScoreClass(app.matchScore)"
                   >
@@ -120,14 +118,14 @@
         <div class="modal-card">
           <header class="modal-header">
             <h3>Карточка кандидата</h3>
-            <button @click="closeCandidate" class="close-btn">&times;</button>
+            <button class="close-btn" @click="closeCandidate">&times;</button>
           </header>
 
           <main class="modal-body">
             <div class="modal-user">
               <h2>{{ selectedApp.candidate.fullName || 'Без имени' }}</h2>
-              <span 
-                v-if="selectedApp.matchScore" 
+              <span
+                v-if="selectedApp.matchScore"
                 class="score-badge"
                 :class="getScoreClass(selectedApp.matchScore)"
               >
@@ -143,7 +141,11 @@
               <div class="meta-item">
                 <span class="label">Опыт работы</span>
                 <span class="value">
-                  {{ selectedApp.candidate.yearsExperience ? selectedApp.candidate.yearsExperience + ' лет' : 'Без опыта' }}
+                  {{
+                    selectedApp.candidate.yearsExperience
+                      ? selectedApp.candidate.yearsExperience + ' лет'
+                      : 'Без опыта'
+                  }}
                 </span>
               </div>
               <div class="meta-item">
@@ -159,7 +161,7 @@
           </main>
 
           <footer class="modal-footer">
-            <button @click="closeCandidate" class="tma-btn">Закрыть</button>
+            <button class="tma-btn" @click="closeCandidate">Закрыть</button>
           </footer>
         </div>
       </div>
@@ -172,9 +174,7 @@ import { ref, onMounted, computed } from 'vue'
 
 useHead({
   title: 'My-HR Telegram Dashboard',
-  script: [
-    { src: 'https://telegram.org/js/telegram-web-app.js', defer: true }
-  ]
+  script: [{ src: 'https://telegram.org/js/telegram-web-app.js', defer: true }],
 })
 
 const loading = ref(true)
@@ -236,7 +236,9 @@ const loadPipeline = async (telegramId: string) => {
     }
   } catch (err: any) {
     error.value = true
-    errorMessage.value = err.data?.message || 'Не удалось загрузить данные. Пожалуйста, убедитесь, что вы зарегистрированы в My-HR.'
+    errorMessage.value =
+      err.data?.message ||
+      'Не удалось загрузить данные. Пожалуйста, убедитесь, что вы зарегистрированы в My-HR.'
   } finally {
     loading.value = false
   }
@@ -247,7 +249,7 @@ onMounted(() => {
   setTimeout(() => {
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
       const tg = (window as any).Telegram.WebApp
-      
+
       if (tg.initDataUnsafe?.user?.id) {
         isTma.value = true
         tg.ready()
@@ -259,21 +261,32 @@ onMounted(() => {
         document.documentElement.style.setProperty('--tg-text', theme.text_color || '#222222')
         document.documentElement.style.setProperty('--tg-hint', theme.hint_color || '#999999')
         document.documentElement.style.setProperty('--tg-link', theme.link_color || '#248b1d')
-        document.documentElement.style.setProperty('--tg-button-bg', theme.button_color || '#40a7e3')
-        document.documentElement.style.setProperty('--tg-button-text', theme.button_text_color || '#ffffff')
-        document.documentElement.style.setProperty('--tg-secondary-bg', theme.secondary_bg_color || '#f4f4f5')
+        document.documentElement.style.setProperty(
+          '--tg-button-bg',
+          theme.button_color || '#40a7e3',
+        )
+        document.documentElement.style.setProperty(
+          '--tg-button-text',
+          theme.button_text_color || '#ffffff',
+        )
+        document.documentElement.style.setProperty(
+          '--tg-secondary-bg',
+          theme.secondary_bg_color || '#f4f4f5',
+        )
 
         loadPipeline(String(tg.initDataUnsafe.user.id))
       } else {
         // Fallback for regular browser debugging
         loading.value = false
         error.value = true
-        errorMessage.value = 'Пожалуйста, откройте это приложение из Telegram бота или введите ID для отладки:'
+        errorMessage.value =
+          'Пожалуйста, откройте это приложение из Telegram бота или введите ID для отладки:'
       }
     } else {
       loading.value = false
       error.value = true
-      errorMessage.value = 'Пожалуйста, откройте это приложение из Telegram бота или введите ID для отладки:'
+      errorMessage.value =
+        'Пожалуйста, откройте это приложение из Telegram бота или введите ID для отладки:'
     }
   }, 300)
 })
@@ -297,7 +310,7 @@ onMounted(() => {
   background-color: var(--tg-bg, #ffffff);
   color: var(--tg-text, #222222);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -309,7 +322,10 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 .spinner {
   width: 40px;
@@ -320,8 +336,12 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error card */
@@ -357,7 +377,7 @@ onMounted(() => {
 
 /* Debug mode input */
 .test-fallback {
-  border-top: 1px solid rgba(0,0,0,0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
   padding-top: 16px;
   margin-top: 16px;
 }
@@ -371,7 +391,7 @@ onMounted(() => {
 .test-input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(0,0,0,0.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   margin-bottom: 12px;
   box-sizing: border-box;
@@ -491,7 +511,7 @@ onMounted(() => {
 /* Candidates within Job */
 .job-candidates {
   background-color: var(--tg-bg, #ffffff);
-  border-top: 1px solid rgba(0,0,0,0.05);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 .no-candidates {
   padding: 16px;
@@ -504,7 +524,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   cursor: pointer;
 }
 .candidate-row:last-child {
@@ -547,8 +567,11 @@ onMounted(() => {
 /* Modals */
 .tma-modal {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.4);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -567,8 +590,12 @@ onMounted(() => {
   flex-direction: column;
 }
 @keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 .modal-header {
   display: flex;
@@ -648,11 +675,13 @@ onMounted(() => {
 }
 
 /* Animations */
-.slide-enter-active, .slide-leave-active {
+.slide-enter-active,
+.slide-leave-active {
   transition: max-height 0.25s ease-out;
   max-height: 500px;
 }
-.slide-enter-from, .slide-leave-to {
+.slide-enter-from,
+.slide-leave-to {
   max-height: 0;
   overflow: hidden;
 }

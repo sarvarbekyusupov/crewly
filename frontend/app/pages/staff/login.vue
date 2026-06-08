@@ -88,7 +88,11 @@ const handleLogin = handleSubmit(async (values) => {
       />
 
       <NuxtLink to="/" class="relative z-10">
-        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" style="height: 24px; width: auto; display: block" />
+        <img
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          style="height: 24px; width: auto; display: block"
+        />
       </NuxtLink>
 
       <div class="relative z-10">
@@ -127,7 +131,11 @@ const handleLogin = handleSubmit(async (values) => {
       <div class="w-full max-w-sm">
         <!-- Logo: mobile only -->
         <div class="lg:hidden text-center mb-8">
-          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 26px; width: auto; display: inline-block" />
+          <img
+            src="/crewly-logo-horizontal.svg"
+            alt="Crewly"
+            style="height: 26px; width: auto; display: inline-block"
+          />
           <p
             class="text-xs uppercase tracking-widest mt-2"
             style="color: var(--ink-subtle); font-family: 'JetBrains Mono', monospace"

@@ -66,9 +66,7 @@ function submitSearch() {
               Build your free profile
               <span class="round">→</span>
             </NuxtLink>
-            <span class="browse"
-              >or <NuxtLink to="/candidate/login">see open roles</NuxtLink></span
-            >
+            <span class="browse">or <NuxtLink to="/candidate/login">see open roles</NuxtLink></span>
           </div>
         </template>
       </div>

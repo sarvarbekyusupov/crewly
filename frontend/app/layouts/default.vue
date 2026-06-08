@@ -166,7 +166,11 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
       <!-- Brand -->
       <NuxtLink to="/employer/dashboard" class="brand-row">
         <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="brand-logo dark:hidden" />
-        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="brand-logo hidden dark:block" />
+        <img
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          class="brand-logo hidden dark:block"
+        />
       </NuxtLink>
 
       <!-- Portal indicator -->

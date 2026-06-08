@@ -35,8 +35,18 @@ onErrorCaptured((err) => {
 const nav = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home', mobileHidden: true },
   { label: 'Applications', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
-  { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right', mobileHidden: true },
-  { label: 'Job Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass', mobileHidden: true },
+  {
+    label: 'Messages',
+    to: '/candidate/chat',
+    icon: 'i-heroicons-chat-bubble-left-right',
+    mobileHidden: true,
+  },
+  {
+    label: 'Job Discovery',
+    to: '/candidate/jobs',
+    icon: 'i-heroicons-magnifying-glass',
+    mobileHidden: true,
+  },
   {
     label: 'Job Tracker',
     to: '/candidate/tracker',
@@ -130,13 +140,19 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
     >
       <!-- Brand -->
       <div class="flex items-center gap-3 px-5 py-5" style="border-bottom: 1px solid var(--line)">
-        <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 20px; width: auto; display: block" />
+        <img
+          src="/crewly-logo-horizontal.svg"
+          alt="Crewly"
+          style="height: 20px; width: auto; display: block"
+        />
         <UBadge label="Jobs" color="primary" variant="subtle" class="ml-auto" />
       </div>
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        <div class="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-ink-subtle lg:hidden">
+        <div
+          class="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-ink-subtle lg:hidden"
+        >
           More Pages
         </div>
         <NuxtLink
@@ -214,7 +230,11 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
           @click="sidebarOpen = !sidebarOpen"
         />
         <div class="flex items-center">
-          <img src="/crewly-logo-horizontal.svg" alt="Crewly" style="height: 18px; width: auto; display: block" />
+          <img
+            src="/crewly-logo-horizontal.svg"
+            alt="Crewly"
+            style="height: 18px; width: auto; display: block"
+          />
         </div>
         <div class="w-8" />
         <!-- Spacer -->

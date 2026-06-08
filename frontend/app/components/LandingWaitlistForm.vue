@@ -90,7 +90,9 @@ const successMsg = computed(() =>
   font-size: 14px;
   color: #1a1a1a;
   outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
   min-width: 0;
 }
 .wl-input::placeholder {
@@ -124,7 +126,9 @@ const successMsg = computed(() =>
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 }
 .wl-btn:hover:not(:disabled) {
   background: #333;
@@ -149,7 +153,9 @@ const successMsg = computed(() =>
   animation: spin 0.6s linear infinite;
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .wl-success {

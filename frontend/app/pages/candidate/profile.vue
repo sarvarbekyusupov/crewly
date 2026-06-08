@@ -164,7 +164,10 @@ const citySearching = ref(false)
 const skillItems = ref<string[]>([])
 
 async function onCitySearch(text: string) {
-  if (!text || text.length < 2) { cityItems.value = []; return }
+  if (!text || text.length < 2) {
+    cityItems.value = []
+    return
+  }
   citySearching.value = true
   const items = await searchAreas(text)
   cityItems.value = items.map((i) => i.text)
@@ -172,7 +175,10 @@ async function onCitySearch(text: string) {
 }
 
 async function onSkillSearch(text: string) {
-  if (!text || text.length < 2) { skillItems.value = []; return }
+  if (!text || text.length < 2) {
+    skillItems.value = []
+    return
+  }
   const items = await searchSkills(text)
   skillItems.value = items.map((i) => i.text)
 }

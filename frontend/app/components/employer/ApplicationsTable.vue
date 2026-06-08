@@ -66,11 +66,7 @@ function formatDate(s?: string) {
 <template>
   <UCard :ui="{ body: 'p-0' }">
     <div v-if="applications.length" class="overflow-x-auto">
-      <UTable
-        :data="applications"
-        :columns="tableColumns"
-        :loading="pending"
-      >
+      <UTable :data="applications" :columns="tableColumns" :loading="pending">
         <template #select-header>
           <input
             type="checkbox"
