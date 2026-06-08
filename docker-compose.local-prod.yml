@@ -74,6 +74,7 @@ services:
       - "4001:3000"
     environment:
       NUXT_HOST: 0.0.0.0
+      NODE_OPTIONS: --max-old-space-size=384
     depends_on:
       backend:
         condition: service_healthy
