@@ -24,7 +24,7 @@ const schemaEmploymentTypeMap: Record<string, string> = {
 }
 
 useSeoMeta({
-  title: () => `${job.value.title} at ${job.value.company.name} - Crewly`,
+  title: () => `${job.value.title} at ${job.value.company.name}`,
   ogTitle: () => `${job.value.title} at ${job.value.company.name} - Crewly`,
   description: () =>
     `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,

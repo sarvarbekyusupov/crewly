@@ -63,6 +63,47 @@ useHead({
         },
       }),
     },
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Is this free for candidates?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Always. Crewly is 100% free for candidates — employers pay when they make a hire.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'How does matching work?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "We score your profile against live roles from our network and the open web, then rank by fit. You only hear from us when there's a real match.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: "What if I'm not actively looking right now?",
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: "Keep your profile active and we'll reach out when a role fits. No daily checking, no cold applications.",
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What kind of roles do you have?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Tech, product, design, data, and ops — at startups and scale-ups, primarily in Central Asia and remote-friendly companies.',
+            },
+          },
+        ],
+      }),
+    },
   ],
 })
 </script>

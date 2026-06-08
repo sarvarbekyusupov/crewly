@@ -76,6 +76,47 @@ useHead({
         ],
       }),
     },
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What does it cost?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: '15% of first-year salary, billed only on a signed offer. No setup fees, no monthly charge, no commitment.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Where do you find candidates?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Our pre-screened talent pool, your ATS or referral network, and the open web — searched in parallel and ranked into one shortlist.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'How quickly will I see candidates?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Most companies receive their first shortlist within a few days of briefing us.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: "What if we don't hire anyone?",
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'You owe nothing. No hire, no invoice — ever.',
+            },
+          },
+        ],
+      }),
+    },
   ],
 })
 </script>

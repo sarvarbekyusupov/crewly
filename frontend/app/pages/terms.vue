@@ -3,7 +3,7 @@ definePageMeta({ layout: 'empty', auth: false })
 const { t } = useI18n()
 
 useHead({
-  title: computed(() => `${t('terms.title')} | Crewly`),
+  title: computed(() => t('terms.title')),
   link: [{ rel: 'canonical', href: 'https://crewly.uz/terms' }],
   meta: [
     {

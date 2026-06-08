@@ -1,3 +1,5 @@
+<script setup lang="ts"></script>
+
 <template>
   <div class="tma-app">
     <!-- Telegram Loading State -->
@@ -171,6 +173,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+definePageMeta({ robots: 'noindex, nofollow' })
 
 useHead({
   title: 'My-HR Telegram Dashboard',

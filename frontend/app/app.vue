@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const i18nHead = useLocaleHead({ addSeoAttributes: true })
 useHead(i18nHead)
+useHead({ titleTemplate: '%s | Crewly' })
 
 useSeoMeta({
-  title: 'Crewly - AI-Native Recruiting Platform',
+  title: 'Crewly',
   ogTitle: 'Crewly - AI-Native Recruiting Platform',
   description: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
   ogDescription: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
