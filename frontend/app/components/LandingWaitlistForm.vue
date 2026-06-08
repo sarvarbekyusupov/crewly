@@ -11,7 +11,7 @@ const schema = toTypedSchema(z.object({ email: z.string().email('Enter a valid e
 
 const { defineField, handleSubmit, errors, isSubmitting, resetForm } = useForm({ validationSchema: schema })
 
-const [email, emailAttrs] = defineField('email')
+const [email, emailAttrs] = defineField('email', { validateOnModelUpdate: false })
 
 const state = ref<'idle' | 'success' | 'duplicate' | 'error'>('idle')
 

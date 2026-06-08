@@ -1,4 +1,4 @@
-const WAITLIST_ALLOWED = ['/', '/terms']
+const WAITLIST_ALLOWED = ['/', '/candidate', '/terms']
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { waitlistMode } = useRuntimeConfig().public
