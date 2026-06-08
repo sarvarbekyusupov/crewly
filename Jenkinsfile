@@ -71,6 +71,7 @@ pipeline {
               corepack enable pnpm
               pnpm config set store-dir /pnpm/store
               pnpm install --frozen-lockfile --prefer-offline
+              export NODE_OPTIONS="--max-old-space-size=3072"
               pnpm --filter backend run lint
               pnpm --filter crewly-frontend run lint
               pnpm typecheck
