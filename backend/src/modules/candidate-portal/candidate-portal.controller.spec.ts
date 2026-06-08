@@ -4,6 +4,7 @@ import { CandidatePortalController } from './candidate-portal.controller';
 import { CandidatePortalService } from './candidate-portal.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { QUEUES } from '../../workers/queue-names';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('CandidatePortalController', () => {
   let controller: CandidatePortalController;
@@ -59,6 +60,7 @@ describe('CandidatePortalController', () => {
           useValue: scoreQueue,
         },
         { provide: getQueueToken(QUEUES.AUTO_APPLY), useValue: autoApplyQueue },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     })
       .overrideGuard(CandidateAuthGuard)

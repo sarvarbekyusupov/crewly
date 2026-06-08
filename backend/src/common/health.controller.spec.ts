@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
 import { HealthController } from './health.controller';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUES } from '../workers/queue-names';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -11,7 +13,10 @@ describe('HealthController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
-      providers: [{ provide: PrismaService, useValue: db }],
+      providers: [
+        { provide: PrismaService, useValue: db },
+        { provide: getQueueToken(QUEUES.CLEANUP), useValue: { client: { ping: jest.fn().mockResolvedValue('PONG') } } },
+      ],
     }).compile();
 
     controller = module.get(HealthController);

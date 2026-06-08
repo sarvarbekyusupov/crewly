@@ -7,6 +7,8 @@ const minimalEnv = {
   JWT_CANDIDATE_SECRET: 'd'.repeat(32),
   JWT_REFRESH_SECRET: 'c'.repeat(32),
   BULL_BOARD_PASSWORD: 'e'.repeat(16),
+  PUBLIC_URL: 'http://localhost:3000',
+  FRONTEND_URL: 'http://localhost:3001',
 };
 
 describe('validateEnv', () => {

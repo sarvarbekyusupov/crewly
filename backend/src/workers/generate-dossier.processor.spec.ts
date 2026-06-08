@@ -62,7 +62,7 @@ describe('GenerateDossierProcessor', () => {
     });
     llm.run.mockResolvedValue({ output: 'Dossier content here...' });
     s3.upload.mockResolvedValue(
-      'https://s3.example.com/dossiers/app-1/screening-1.txt',
+      'https://s3.example.com/dossiers/app-1/screening-1.pdf',
     );
 
     const result = await processor.handle(makeJob({ screeningId }));
@@ -70,8 +70,8 @@ describe('GenerateDossierProcessor', () => {
     expect(llm.run).toHaveBeenCalled();
     expect(s3.upload).toHaveBeenCalledWith(
       expect.stringContaining('dossiers/'),
-      'Dossier content here...',
-      'text/plain; charset=utf-8',
+      expect.any(Buffer),
+      'application/pdf',
     );
     expect(db.screening.update).toHaveBeenCalledWith(
       expect.objectContaining({
