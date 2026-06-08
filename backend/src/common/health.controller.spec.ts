@@ -15,7 +15,10 @@ describe('HealthController', () => {
       controllers: [HealthController],
       providers: [
         { provide: PrismaService, useValue: db },
-        { provide: getQueueToken(QUEUES.CLEANUP), useValue: { client: { ping: jest.fn().mockResolvedValue('PONG') } } },
+        {
+          provide: getQueueToken(QUEUES.CLEANUP),
+          useValue: { client: { ping: jest.fn().mockResolvedValue('PONG') } },
+        },
       ],
     }).compile();
 

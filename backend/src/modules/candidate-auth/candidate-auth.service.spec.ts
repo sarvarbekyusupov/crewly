@@ -44,7 +44,12 @@ describe('CandidateAuthService', () => {
         { provide: PrismaService, useValue: db },
         { provide: JwtService, useValue: jwt },
         { provide: ConfigService, useValue: config },
-        { provide: EmailService, useValue: { sendPasswordReset: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: EmailService,
+          useValue: {
+            sendPasswordReset: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 

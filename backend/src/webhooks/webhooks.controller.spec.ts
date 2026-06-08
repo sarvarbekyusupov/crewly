@@ -37,7 +37,10 @@ describe('WebhooksController', () => {
           },
         },
         { provide: PaymeWebhookService, useValue: { handleRpc: jest.fn() } },
-        { provide: HhWebhookService, useValue: { handleEvent: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: HhWebhookService,
+          useValue: { handleEvent: jest.fn().mockResolvedValue(undefined) },
+        },
         { provide: IdempotencyService, useValue: idempotency },
         {
           provide: PrismaService,
