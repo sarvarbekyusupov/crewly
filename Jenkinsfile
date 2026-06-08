@@ -285,7 +285,7 @@ pipeline {
           retry(20) {
             sleep time: 10, unit: 'SECONDS'
             // /health is served on plain HTTP without redirect ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ see nginx.conf
-            sh 'curl -sf "http://$DEPLOY_HOST/health"'
+            sh 'curl -sfm 5 "http://$DEPLOY_HOST/health"'
           }
         }
       }
