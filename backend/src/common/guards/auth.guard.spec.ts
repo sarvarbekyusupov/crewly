@@ -1,30 +1,5 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from './auth.guard';
-
-function makeContext(overrides: {
-  cookie?: string;
-  isPublic?: boolean;
-}): ExecutionContext {
-  const reflector = {
-    getAllAndOverride: jest.fn().mockReturnValue(overrides.isPublic ?? false),
-  } as any;
-
-  const request = { cookies: {} as Record<string, string> };
-  if (overrides.cookie !== undefined) {
-    request.cookies['hr_access_token'] = overrides.cookie;
-  }
-
-  return {
-    getHandler: jest.fn(),
-    getClass: jest.fn(),
-    switchToHttp: () => ({ getRequest: () => request }),
-    _reflector: reflector,
-    _request: request,
-  } as any;
-}
 
 describe('AuthGuard', () => {
   let guard: AuthGuard;

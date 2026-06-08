@@ -255,7 +255,6 @@ describe('SendOutreachProcessor', () => {
   describe('HH invite path', () => {
     it('invites candidate via HH when externalId and hhVacancyId are set', async () => {
       db.application.findUnique.mockResolvedValue(HH_APP);
-      let hhNegotiations: HhNegotiationsService;
 
       const module = await Test.createTestingModule({
         providers: [
@@ -284,7 +283,7 @@ describe('SendOutreachProcessor', () => {
       }).compile();
 
       const proc = module.get(SendOutreachProcessor);
-      hhNegotiations = module.get(HhNegotiationsService);
+      const hhNegotiations = module.get(HhNegotiationsService);
 
       await proc.handle(makeJob({ applicationId }));
 

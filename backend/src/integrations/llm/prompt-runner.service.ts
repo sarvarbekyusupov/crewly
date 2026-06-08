@@ -109,6 +109,7 @@ export class PromptRunnerService {
     let outputTokens = 0;
     let totalTokens = 0;
     let finishReason: string | null = null;
+    let callId = 'unlogged';
 
     // Create Langfuse trace & generation if configured
     let lfTrace: any = null;
@@ -257,7 +258,6 @@ export class PromptRunnerService {
         });
       }
 
-      let callId = 'unlogged';
       try {
         const record = await this.db.llmCall.create({
           data: {
@@ -296,12 +296,9 @@ export class PromptRunnerService {
       if (this.langfuse) {
         this.langfuse.shutdownAsync().catch(() => {});
       }
-
-      if (!error) {
-        return { output: outputText!, callId };
-      }
     }
-    throw new Error('unreachable');
+
+    return { output: outputText!, callId };
   }
 
   async embed(text: string): Promise<number[]> {

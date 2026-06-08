@@ -49,7 +49,7 @@ export class OutreachAgent extends BaseAgent {
       );
 
       return output.trim() || fallback;
-    } catch (err: any) {
+    } catch {
       return fallback;
     }
   }

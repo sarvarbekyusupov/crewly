@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { HhWebhookService, HhWebhookPayload } from './hh-webhook.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { HhClientService } from './hh-client.service';

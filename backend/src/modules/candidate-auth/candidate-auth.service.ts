@@ -236,7 +236,11 @@ export class CandidateAuthService {
     if (!candidate) return;
 
     await this.db.candidateToken.updateMany({
-      where: { candidateId: candidate.id, type: 'password_reset', usedAt: null },
+      where: {
+        candidateId: candidate.id,
+        type: 'password_reset',
+        usedAt: null,
+      },
       data: { usedAt: new Date() },
     });
 
@@ -253,15 +257,27 @@ export class CandidateAuthService {
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
     this.email
-      .sendPasswordReset(email, `${frontendUrl}/candidate/reset-password?token=${token}`)
-      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
+      .sendPasswordReset(
+        email,
+        `${frontendUrl}/candidate/reset-password?token=${token}`,
+      )
+      .catch((e) =>
+        this.logger.error({ err: e.message }, 'Background task error'),
+      );
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const tokenHash = hashToken(token);
-    const record = await this.db.candidateToken.findUnique({ where: { tokenHash } });
+    const record = await this.db.candidateToken.findUnique({
+      where: { tokenHash },
+    });
 
-    if (!record || record.type !== 'password_reset' || record.usedAt || record.expiresAt <= new Date()) {
+    if (
+      !record ||
+      record.type !== 'password_reset' ||
+      record.usedAt ||
+      record.expiresAt <= new Date()
+    ) {
       throw new BadRequestException('Invalid or expired reset token');
     }
 

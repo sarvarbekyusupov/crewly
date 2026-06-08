@@ -6,6 +6,8 @@ import { TelegramBotService } from './telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from '../storage/s3.service';
 import { QUEUES } from '../../workers/queue-names';
+import * as grammyMock from 'grammy';
+import * as openaiMock from 'openai';
 
 jest.mock('grammy', () => {
   const sendMessage = jest.fn().mockResolvedValue({});
@@ -59,8 +61,7 @@ describe('TelegramBotService', () => {
 
   beforeEach(async () => {
     // Reset bot singleton
-    const grammy = require('grammy');
-    grammy.__bot = null;
+    (grammyMock as any).__bot = null;
 
     configGet = jest.fn((key: string) => {
       if (key === 'TELEGRAM_BOT_TOKEN') return 'test-token';
@@ -88,8 +89,14 @@ describe('TelegramBotService', () => {
         { provide: ConfigService, useValue: { get: configGet } },
         { provide: PrismaService, useValue: db },
         { provide: S3Service, useValue: s3 },
-        { provide: getQueueToken(QUEUES.PARSE_CANDIDATE), useValue: parseQueue },
-        { provide: getQueueToken(QUEUES.ADVANCE_SCREENING), useValue: screeningQueue },
+        {
+          provide: getQueueToken(QUEUES.PARSE_CANDIDATE),
+          useValue: parseQueue,
+        },
+        {
+          provide: getQueueToken(QUEUES.ADVANCE_SCREENING),
+          useValue: screeningQueue,
+        },
       ],
     }).compile();
 
@@ -98,7 +105,7 @@ describe('TelegramBotService', () => {
 
   describe('onModuleInit', () => {
     it('registers command and message handlers in non-production', async () => {
-      const { Bot } = require('grammy');
+      const { Bot } = grammyMock as any;
       const botInstance = Bot.mock.results[Bot.mock.results.length - 1]?.value;
       await service.onModuleInit();
       if (botInstance) {
@@ -128,7 +135,7 @@ describe('TelegramBotService', () => {
         if (key === 'TELEGRAM_WEBHOOK_SECRET') return 'secret';
         return undefined;
       });
-      const { __mockSetWebhook } = require('grammy');
+      const { __mockSetWebhook } = grammyMock as any;
       await service.onModuleInit();
       expect(__mockSetWebhook).toHaveBeenCalled();
     });
@@ -136,8 +143,11 @@ describe('TelegramBotService', () => {
 
   describe('transcribeAudio', () => {
     it('calls OpenAI audio transcriptions create', async () => {
-      const { __mockCreateTranscription } = require('openai');
-      const text = await service.transcribeAudio(Buffer.from('hello'), 'voice.ogg');
+      const { __mockCreateTranscription } = openaiMock as any;
+      const text = await service.transcribeAudio(
+        Buffer.from('hello'),
+        'voice.ogg',
+      );
       expect(text).toBe('mock transcription');
       expect(__mockCreateTranscription).toHaveBeenCalled();
     });
@@ -150,13 +160,13 @@ describe('TelegramBotService', () => {
   });
 
   it('handleUpdate delegates to bot', async () => {
-    const { __mockHandleUpdate } = require('grammy');
+    const { __mockHandleUpdate } = grammyMock as any;
     await service.handleUpdate({ update_id: 1 });
     expect(__mockHandleUpdate).toHaveBeenCalledWith({ update_id: 1 });
   });
 
   it('sendMessage calls bot API', async () => {
-    const { __mockSendMessage } = require('grammy');
+    const { __mockSendMessage } = grammyMock as any;
     await service.sendMessage(42, 'Hello');
     expect(__mockSendMessage).toHaveBeenCalledWith(42, 'Hello', {
       parse_mode: undefined,
@@ -165,7 +175,7 @@ describe('TelegramBotService', () => {
   });
 
   it('setWebhook calls bot API', async () => {
-    const { __mockSetWebhook } = require('grammy');
+    const { __mockSetWebhook } = grammyMock as any;
     await service.setWebhook('https://example.com/webhook', 'secret');
     expect(__mockSetWebhook).toHaveBeenCalledWith(
       'https://example.com/webhook',
@@ -185,8 +195,14 @@ describe('TelegramBotService', () => {
           { provide: ConfigService, useValue: { get: configGet } },
           { provide: PrismaService, useValue: db },
           { provide: S3Service, useValue: s3 },
-          { provide: getQueueToken(QUEUES.PARSE_CANDIDATE), useValue: parseQueue },
-          { provide: getQueueToken(QUEUES.ADVANCE_SCREENING), useValue: screeningQueue },
+          {
+            provide: getQueueToken(QUEUES.PARSE_CANDIDATE),
+            useValue: parseQueue,
+          },
+          {
+            provide: getQueueToken(QUEUES.ADVANCE_SCREENING),
+            useValue: screeningQueue,
+          },
         ],
       }).compile();
 

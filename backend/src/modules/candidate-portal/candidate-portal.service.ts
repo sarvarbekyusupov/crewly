@@ -12,7 +12,7 @@ import { S3Service } from '../../integrations/storage/s3.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
-// @ts-ignore
+// @ts-expect-error -- pdf-parse has no type declarations
 import { PDFParse } from 'pdf-parse';
 
 @Injectable()
@@ -90,7 +90,7 @@ export class CandidatePortalService {
       where: { id: candidateId },
       data,
     });
-    const { rawResumeText: _, ...safe } = candidate as any;
+    const { rawResumeText: _rawResumeText, ...safe } = candidate as any;
     return safe;
   }
 

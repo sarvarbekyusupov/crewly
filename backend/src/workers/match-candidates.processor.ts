@@ -10,7 +10,6 @@ import {
 } from '../modules/agents/matchmaker.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
 import { QUEUES } from './queue-names';
-import { stripLlmJson } from './utils';
 
 interface MatchCandidatesPayload {
   jobId: string;
@@ -109,44 +108,6 @@ export class MatchCandidatesProcessor {
     });
 
     const targetCount = (dbJob as any).targetCandidatesCount ?? 10;
-
-    // Fetch recent hire/reject feedback for this company as few-shot context
-    const feedback = await this.db.application.findMany({
-      where: {
-        companyId: dbJob.companyId,
-        status: { in: ['hired', 'rejected_by_client'] },
-        hiringManagerDecision: { not: null },
-      },
-      include: {
-        candidate: {
-          select: {
-            fullName: true,
-            skills: true,
-            yearsExperience: true,
-            currentPosition: true,
-          },
-        },
-        job: { select: { title: true } },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 6,
-    });
-
-    const hiredExamples = feedback
-      .filter((f) => f.status === 'hired')
-      .map(
-        (f) =>
-          `  - ${f.candidate.fullName ?? 'Unknown'} (${f.candidate.currentPosition}, ${f.candidate.yearsExperience}yr, skills: ${f.candidate.skills.slice(0, 4).join(', ')}) hired for "${f.job?.title}"`,
-      )
-      .join('\n');
-
-    const rejectedExamples = feedback
-      .filter((f) => f.status === 'rejected_by_client')
-      .map(
-        (f) =>
-          `  - ${f.candidate.fullName ?? 'Unknown'} (${f.candidate.currentPosition}, ${f.candidate.yearsExperience}yr, skills: ${f.candidate.skills.slice(0, 4).join(', ')}) rejected${f.rejectionReason ? ': ' + f.rejectionReason : ''}`,
-      )
-      .join('\n');
 
     let ranked: MatchmakerResult[];
     try {

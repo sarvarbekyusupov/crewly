@@ -164,7 +164,7 @@ export class SourcingAgent extends BaseAgent {
     try {
       const parsed = JSON.parse(output);
       return CandidateEnrichmentSchema.parse(parsed);
-    } catch (e) {
+    } catch {
       return {
         tech_talks: [],
         social_proof_summary: 'Failed to parse enrichment data.',

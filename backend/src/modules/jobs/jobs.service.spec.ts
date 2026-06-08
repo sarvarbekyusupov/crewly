@@ -365,13 +365,22 @@ describe('JobsService', () => {
 
   describe('findOnePublic', () => {
     it('returns active job without companyId restriction', async () => {
-      const job = { id: jobId, status: 'active', deletedAt: null, company: { name: 'Acme' } };
+      const job = {
+        id: jobId,
+        status: 'active',
+        deletedAt: null,
+        company: { name: 'Acme' },
+      };
       db.job.findFirst.mockResolvedValue(job);
 
       const result = await service.findOnePublic(jobId);
       expect(db.job.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ id: jobId, status: 'active', deletedAt: null }),
+          where: expect.objectContaining({
+            id: jobId,
+            status: 'active',
+            deletedAt: null,
+          }),
         }),
       );
       expect(result).toEqual(job);
@@ -379,7 +388,9 @@ describe('JobsService', () => {
 
     it('throws NotFoundException if active job not found', async () => {
       db.job.findFirst.mockResolvedValue(null);
-      await expect(service.findOnePublic(jobId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOnePublic(jobId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

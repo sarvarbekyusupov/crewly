@@ -106,9 +106,9 @@ export class AdapterIngestService {
     maxPages = 5,
   ) {
     let fetched = 0,
-      created = 0,
-      updated = 0,
-      failed = 0;
+      created = 0;
+    const updated = 0;
+    let failed = 0;
 
     for (let page = 0; page < maxPages; page++) {
       let result: Awaited<ReturnType<CandidateSourceAdapter['fetchPage']>>;

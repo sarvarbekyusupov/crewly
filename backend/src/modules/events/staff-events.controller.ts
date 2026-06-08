@@ -1,7 +1,7 @@
 import { Controller, MessageEvent, Sse, UseGuards } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable, fromEvent, interval, merge } from 'rxjs';
-import { map, filter } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { StaffGuard } from '../../common/guards/staff.guard';
 
 @Controller('api/v1/staff-events')

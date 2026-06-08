@@ -112,7 +112,10 @@ describe('EmailService', () => {
     });
 
     it('sendEmailVerification calls send', async () => {
-      await service.sendEmailVerification('u@x.com', 'https://crewly.uz/verify');
+      await service.sendEmailVerification(
+        'u@x.com',
+        'https://crewly.uz/verify',
+      );
       expect(service.send).toHaveBeenCalledWith(
         expect.objectContaining({ to: 'u@x.com' }),
       );

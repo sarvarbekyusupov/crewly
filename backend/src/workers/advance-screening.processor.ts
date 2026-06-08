@@ -3,7 +3,6 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { stripLlmJson } from './utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScreeningAgent } from '../modules/agents/screening.agent';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';

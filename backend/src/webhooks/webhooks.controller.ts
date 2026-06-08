@@ -108,11 +108,11 @@ export class WebhooksController implements OnModuleInit {
                 fullName: true,
                 yearsExperience: true,
                 city: true,
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
 
     return {

@@ -66,7 +66,7 @@ export class SeekerAgent extends BaseAgent {
     try {
       const parsed = JSON.parse(output);
       return SeekerApplicationDecisionSchema.parse(parsed);
-    } catch (e) {
+    } catch {
       return {
         should_apply: job.matchScore >= 85, // Default to true for elite matches
         reason: 'Failed to parse agent decision, using match score fallback.',

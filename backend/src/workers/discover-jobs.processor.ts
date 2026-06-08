@@ -38,7 +38,8 @@ export class DiscoverJobsProcessor {
 
   @Process()
   async handle(job: Job<DiscoverJobsPayload>) {
-    let { candidateId, source, query, location, maxPages } = job.data;
+    const { candidateId, source, maxPages } = job.data;
+    let { query, location } = job.data;
     const adapter = this.getAdapter(source);
 
     if (candidateId && !query) {

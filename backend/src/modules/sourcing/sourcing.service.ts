@@ -5,7 +5,6 @@ import {
   LinkedInProfile,
 } from '../../integrations/linkedin/linkedin.types';
 import { AdapterIngestService } from '../../integrations/adapters/adapter-ingest.service';
-import { NormalizedProfile } from '../../integrations/adapters/candidate-source.adapter';
 
 @Injectable()
 export class SourcingService {

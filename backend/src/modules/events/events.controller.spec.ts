@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventsController } from './events.controller';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { of } from 'rxjs';
 
 describe('EventsController', () => {
   let controller: EventsController;

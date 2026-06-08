@@ -8,7 +8,6 @@ import { PromptRunnerService } from '../integrations/llm/prompt-runner.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
 import { QUEUES } from './queue-names';
 import { LLM_JOB_OPTIONS } from './queue-options';
-import { stripLlmJson } from './utils';
 
 interface ParseJobPayload {
   jobId: string;

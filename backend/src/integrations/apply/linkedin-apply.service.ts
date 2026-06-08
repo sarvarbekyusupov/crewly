@@ -38,9 +38,8 @@ export class LinkedInApplyService {
     // Dynamically require playwright to avoid startup crash if not installed
     let chromium: any;
     try {
-      // Dynamic require so missing playwright doesn't crash at startup (installed separately)
-
-      const pw = require('playwright');
+      // Dynamic import so missing playwright doesn't crash at startup (installed separately)
+      const pw = await import('playwright');
       chromium = pw.chromium;
     } catch {
       throw new Error(

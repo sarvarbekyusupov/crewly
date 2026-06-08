@@ -4,7 +4,6 @@ import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { stripLlmJson } from './utils';
 import { NonRetryableError } from './errors';
 
 interface ParsedResume {

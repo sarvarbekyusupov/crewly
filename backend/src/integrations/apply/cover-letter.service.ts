@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PromptRunnerService } from '../llm/prompt-runner.service';
-import { stripLlmJson } from '../../workers/utils';
 
 interface CoverLetterInput {
   candidateName: string;

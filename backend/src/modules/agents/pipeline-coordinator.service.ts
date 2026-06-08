@@ -8,10 +8,7 @@ import { SchedulingService } from '../scheduling/scheduling.service';
 import { TelegramBotService } from '../../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUES } from '../../workers/queue-names';
-import {
-  LLM_JOB_OPTIONS,
-  INGEST_JOB_OPTIONS,
-} from '../../workers/queue-options';
+import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 
 const DEFAULT_INTERVIEW_START_HOUR = 10;
 const DEFAULT_INTERVIEW_DURATION_MINUTES = 60;

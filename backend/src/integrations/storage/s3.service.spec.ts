@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from './s3.service';
+import * as awsS3 from '@aws-sdk/client-s3';
 
 jest.mock('@aws-sdk/client-s3', () => {
   const send = jest.fn().mockResolvedValue({});
@@ -95,7 +96,7 @@ describe('S3Service', () => {
     });
 
     it('upload throws when S3 send fails', async () => {
-      const { __mockSend } = require('@aws-sdk/client-s3');
+      const { __mockSend } = awsS3 as any;
       __mockSend.mockRejectedValueOnce(new Error('AccessDenied'));
 
       await expect(
@@ -121,7 +122,7 @@ describe('S3Service', () => {
 
     it('delete sends DeleteObjectCommand', async () => {
       await service.delete('key.pdf');
-      const { __mockSend } = require('@aws-sdk/client-s3');
+      const { __mockSend } = awsS3 as any;
       expect(__mockSend).toHaveBeenCalled();
     });
   });

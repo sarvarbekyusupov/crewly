@@ -6,7 +6,6 @@ import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
 import { QUEUES } from './queue-names';
-import { stripLlmJson } from './utils';
 
 interface ScoreSeekerJobsPayload {
   candidateId: string;

@@ -11,7 +11,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import axios from 'axios';
-// @ts-ignore
+// @ts-expect-error -- pdf-parse has no type declarations
 import { PDFParse } from 'pdf-parse';
 import OpenAI, { toFile } from 'openai';
 import { S3Service } from '../storage/s3.service';
@@ -32,7 +32,7 @@ export class TelegramBotService implements OnModuleInit {
   private readonly logger = new Logger(TelegramBotService.name);
   private bot: Bot;
   private readonly openai: OpenAI | null = null;
-  
+
   // Track deep-linked or user-selected job interests per chat
   private readonly pendingJobApp = new Map<string, string>();
 
@@ -54,7 +54,8 @@ export class TelegramBotService implements OnModuleInit {
     private readonly db: PrismaService,
     private readonly s3: S3Service,
     @InjectQueue(QUEUES.PARSE_CANDIDATE) private readonly parseQueue: Queue,
-    @InjectQueue(QUEUES.ADVANCE_SCREENING) private readonly screeningQueue: Queue,
+    @InjectQueue(QUEUES.ADVANCE_SCREENING)
+    private readonly screeningQueue: Queue,
   ) {
     const token = config.get<string>('TELEGRAM_BOT_TOKEN');
     if (!token) {
@@ -67,14 +68,18 @@ export class TelegramBotService implements OnModuleInit {
     const openaiKey = config.get<string>('OPENAI_API_KEY');
     this.openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
     if (!this.openai) {
-      this.logger.warn('OPENAI_API_KEY not set — voice/video transcriptions will fail');
+      this.logger.warn(
+        'OPENAI_API_KEY not set — voice/video transcriptions will fail',
+      );
     }
   }
 
   async transcribeAudio(buffer: Buffer, filename: string): Promise<string> {
     if (!this.openai) {
       this.logger.warn('OPENAI_API_KEY not set — transcription skipped');
-      throw new ServiceUnavailableException('Transcription service not configured');
+      throw new ServiceUnavailableException(
+        'Transcription service not configured',
+      );
     }
 
     try {
@@ -85,7 +90,10 @@ export class TelegramBotService implements OnModuleInit {
       });
       return response.text;
     } catch (err: any) {
-      this.logger.error({ filename, error: err.message }, 'Whisper transcription failed');
+      this.logger.error(
+        { filename, error: err.message },
+        'Whisper transcription failed',
+      );
       throw err;
     }
   }
@@ -96,18 +104,28 @@ export class TelegramBotService implements OnModuleInit {
     });
 
     const pendingCount = await this.db.application.count({
-      where: { companyId: user.companyId, status: { in: ['matched', 'queued_outreach'] } },
+      where: {
+        companyId: user.companyId,
+        status: { in: ['matched', 'queued_outreach'] },
+      },
     });
 
     const screeningCount = await this.db.application.count({
-      where: { companyId: user.companyId, status: { in: ['screening', 'responded'] } },
+      where: {
+        companyId: user.companyId,
+        status: { in: ['screening', 'responded'] },
+      },
     });
 
     const readyCount = await this.db.application.count({
-      where: { companyId: user.companyId, status: { in: ['screened', 'interview_scheduled'] } },
+      where: {
+        companyId: user.companyId,
+        status: { in: ['screened', 'interview_scheduled'] },
+      },
     });
 
-    const text = `📊 *Панель управления My-HR*\nКомпания: *${user.company.name}*\n\n` +
+    const text =
+      `📊 *Панель управления My-HR*\nКомпания: *${user.company.name}*\n\n` +
       `💼 Активные вакансии: *${activeJobs}*\n` +
       `🎯 Кандидаты на согласовании (New): *${pendingCount}*\n` +
       `💬 В процессе AI-интервью: *${screeningCount}*\n` +
@@ -118,7 +136,10 @@ export class TelegramBotService implements OnModuleInit {
       .text('📋 Новые кандидаты', 'view_new|0')
       .text('💬 На интервью', 'view_screening|0')
       .row()
-      .webApp('🖥️ Веб-панель (TMA)', `${this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru'}/tma`)
+      .webApp(
+        '🖥️ Веб-панель (TMA)',
+        `${this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru'}/tma`,
+      )
       .row()
       .text('🔄 Обновить', 'back_to_dash');
 
@@ -166,7 +187,10 @@ export class TelegramBotService implements OnModuleInit {
             return;
           }
         } catch (err) {
-          this.logger.error({ jobId, err }, 'Failed to look up deep-linked job');
+          this.logger.error(
+            { jobId, err },
+            'Failed to look up deep-linked job',
+          );
         }
       }
 
@@ -181,7 +205,12 @@ export class TelegramBotService implements OnModuleInit {
         if (activeJobs.length > 0) {
           const keyboard = new InlineKeyboard();
           activeJobs.forEach((job) => {
-            keyboard.text(`${job.title} (${job.company.name})`, `select_job|${job.id}`).row();
+            keyboard
+              .text(
+                `${job.title} (${job.company.name})`,
+                `select_job|${job.id}`,
+              )
+              .row();
           });
 
           await ctx.reply(
@@ -208,7 +237,9 @@ export class TelegramBotService implements OnModuleInit {
       });
 
       if (!user) {
-        await ctx.reply('Доступ запрещен. Эта команда доступна только для нанимающих менеджеров. Пожалуйста, убедитесь, что ваш Telegram Username привязан к вашей учетной записи My-HR.');
+        await ctx.reply(
+          'Доступ запрещен. Эта команда доступна только для нанимающих менеджеров. Пожалуйста, убедитесь, что ваш Telegram Username привязан к вашей учетной записи My-HR.',
+        );
         return;
       }
 
@@ -242,7 +273,8 @@ export class TelegramBotService implements OnModuleInit {
         }
 
         const cand = app.candidate;
-        let details = `👤 *Карточка кандидата*\n` +
+        let details =
+          `👤 *Карточка кандидата*\n` +
           `ФИО: *${cand.fullName || 'Не указано'}*\n` +
           `Вакансия: *${app.job.title}*\n` +
           `Статус: *${app.status}*\n` +
@@ -260,15 +292,23 @@ export class TelegramBotService implements OnModuleInit {
         const keyboard = new InlineKeyboard();
 
         if (['matched', 'queued_outreach'].includes(app.status)) {
-          keyboard.text('✅ Одобрить на AI-интервью', `approve_screening|${app.id}`).row();
+          keyboard
+            .text('✅ Одобрить на AI-интервью', `approve_screening|${app.id}`)
+            .row();
           keyboard.text('❌ Отклонить кандидата', `reject_app|${app.id}`).row();
         }
 
         keyboard.text('🏠 В меню', 'back_to_dash');
 
-        await ctx.reply(details, { reply_markup: keyboard, parse_mode: 'Markdown' });
+        await ctx.reply(details, {
+          reply_markup: keyboard,
+          parse_mode: 'Markdown',
+        });
       } catch (err: any) {
-        this.logger.error({ appId, error: err.message }, 'Failed to fetch candidate details');
+        this.logger.error(
+          { appId, error: err.message },
+          'Failed to fetch candidate details',
+        );
         await ctx.reply('Произошла ошибка при загрузке данных кандидата.');
       }
     });
@@ -294,7 +334,10 @@ export class TelegramBotService implements OnModuleInit {
             );
           }
         } catch (err) {
-          this.logger.error({ jobId, err }, 'Failed to select job from callback');
+          this.logger.error(
+            { jobId, err },
+            'Failed to select job from callback',
+          );
         }
         await ctx.answerCallbackQuery();
         return;
@@ -311,7 +354,10 @@ export class TelegramBotService implements OnModuleInit {
           return;
         }
         const { text, keyboard } = await this.getDashboardData(user);
-        await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
+        await ctx.editMessageText(text, {
+          reply_markup: keyboard,
+          parse_mode: 'Markdown',
+        });
         await ctx.answerCallbackQuery();
         return;
       }
@@ -330,7 +376,10 @@ export class TelegramBotService implements OnModuleInit {
           return;
         }
 
-        const statusFilter = action === 'view_new' ? ['matched', 'queued_outreach'] : ['screening', 'responded'];
+        const statusFilter =
+          action === 'view_new'
+            ? ['matched', 'queued_outreach']
+            : ['screening', 'responded'];
         const total = await this.db.application.count({
           where: { companyId: user.companyId, status: { in: statusFilter } },
         });
@@ -343,16 +392,19 @@ export class TelegramBotService implements OnModuleInit {
           take: 5,
         });
 
-        let msgText = action === 'view_new' 
-          ? `📋 *Кандидаты на согласовании* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`
-          : `💬 *Кандидаты на интервью* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`;
+        let msgText =
+          action === 'view_new'
+            ? `📋 *Кандидаты на согласовании* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`
+            : `💬 *Кандидаты на интервью* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`;
 
         if (apps.length === 0) {
           msgText += 'Нет кандидатов в этом разделе.';
         } else {
           apps.forEach((app, idx) => {
             const num = page * 5 + idx + 1;
-            const score = app.matchScore ? `(Совпадение: ${app.matchScore}%)` : '';
+            const score = app.matchScore
+              ? `(Совпадение: ${app.matchScore}%)`
+              : '';
             msgText += `${num}. *${app.candidate.fullName || 'Без имени'}*\n   Вакансия: ${app.job.title} ${score}\n   Подробнее: /app_${app.id}\n\n`;
           });
         }
@@ -366,7 +418,10 @@ export class TelegramBotService implements OnModuleInit {
         }
         keyboard.row().text('🏠 В меню', 'back_to_dash');
 
-        await ctx.editMessageText(msgText, { reply_markup: keyboard, parse_mode: 'Markdown' });
+        await ctx.editMessageText(msgText, {
+          reply_markup: keyboard,
+          parse_mode: 'Markdown',
+        });
         await ctx.answerCallbackQuery();
         return;
       }
@@ -386,18 +441,27 @@ export class TelegramBotService implements OnModuleInit {
       const fileName = doc.file_name ?? '';
       const mimeType = doc.mime_type ?? '';
 
-      if (mimeType !== 'application/pdf' && !fileName.toLowerCase().endsWith('.pdf')) {
-        await ctx.reply('К сожалению, мы принимаем резюме только в формате PDF. Пожалуйста, отправьте файл резюме еще раз.');
+      if (
+        mimeType !== 'application/pdf' &&
+        !fileName.toLowerCase().endsWith('.pdf')
+      ) {
+        await ctx.reply(
+          'К сожалению, мы принимаем резюме только в формате PDF. Пожалуйста, отправьте файл резюме еще раз.',
+        );
         return;
       }
 
-      const statusMsg = await ctx.reply('Получил ваше резюме. Начинаю обработку и извлечение данных... ⏳');
+      const statusMsg = await ctx.reply(
+        'Получил ваше резюме. Начинаю обработку и извлечение данных... ⏳',
+      );
 
       try {
         const file = await ctx.api.getFile(doc.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.config.get('TELEGRAM_BOT_TOKEN')}/${file.file_path}`;
-        
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+
+        const response = await axios.get(fileUrl, {
+          responseType: 'arraybuffer',
+        });
         const buffer = Buffer.from(response.data);
 
         // Extract text using pdf-parse
@@ -420,7 +484,10 @@ export class TelegramBotService implements OnModuleInit {
           const key = `candidate-cvs/telegram-${chatId}/${Date.now()}.pdf`;
           s3Url = await this.s3.upload(key, buffer, 'application/pdf');
         } catch (s3Err: any) {
-          this.logger.warn({ chatId, error: s3Err.message }, 'Failed to upload telegram CV to S3');
+          this.logger.warn(
+            { chatId, error: s3Err.message },
+            'Failed to upload telegram CV to S3',
+          );
         }
 
         // Look up or create candidate
@@ -428,7 +495,9 @@ export class TelegramBotService implements OnModuleInit {
           where: {
             OR: [
               { telegramUserId: BigInt(chatId) },
-              ...(ctx.from?.username ? [{ telegramUsername: ctx.from.username }] : []),
+              ...(ctx.from?.username
+                ? [{ telegramUsername: ctx.from.username }]
+                : []),
             ],
           },
         });
@@ -474,7 +543,10 @@ export class TelegramBotService implements OnModuleInit {
             statusMsg.message_id,
             'Резюме получено! В данный момент у нас нет открытых активных вакансий. Мы сохранили вашу анкету и свяжемся, когда появится подходящая позиция.',
           );
-          await this.parseQueue.add({ candidateId: candidate.id }, LLM_JOB_OPTIONS);
+          await this.parseQueue.add(
+            { candidateId: candidate.id },
+            LLM_JOB_OPTIONS,
+          );
           return;
         }
 
@@ -518,7 +590,10 @@ export class TelegramBotService implements OnModuleInit {
         });
 
         // Trigger parse & matching
-        await this.parseQueue.add({ candidateId: candidate.id }, LLM_JOB_OPTIONS);
+        await this.parseQueue.add(
+          { candidateId: candidate.id },
+          LLM_JOB_OPTIONS,
+        );
 
         // Create conversation
         const conversation = await this.db.conversation.create({
@@ -556,9 +631,11 @@ export class TelegramBotService implements OnModuleInit {
         );
 
         this.pendingJobApp.delete(chatId);
-
       } catch (err: any) {
-        this.logger.error({ chatId, error: err.message }, 'Failed to process resume upload');
+        this.logger.error(
+          { chatId, error: err.message },
+          'Failed to process resume upload',
+        );
         await ctx.api.editMessageText(
           chatId,
           statusMsg.message_id,
@@ -583,7 +660,9 @@ export class TelegramBotService implements OnModuleInit {
       });
 
       if (!activeConv) {
-        await ctx.reply('Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.');
+        await ctx.reply(
+          'Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.',
+        );
         return;
       }
 
@@ -593,17 +672,25 @@ export class TelegramBotService implements OnModuleInit {
         const file = await ctx.api.getFile(voice.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.config.get('TELEGRAM_BOT_TOKEN')}/${file.file_path}`;
 
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const response = await axios.get(fileUrl, {
+          responseType: 'arraybuffer',
+        });
         const buffer = Buffer.from(response.data);
 
         const transcription = await this.transcribeAudio(buffer, 'voice.ogg');
 
         if (!transcription || transcription.trim().length === 0) {
-          await ctx.api.editMessageText(chatId, statusMsg.message_id, 'Не удалось разобрать слова. Пожалуйста, попробуйте записать аудио еще раз или отправьте текст.');
+          await ctx.api.editMessageText(
+            chatId,
+            statusMsg.message_id,
+            'Не удалось разобрать слова. Пожалуйста, попробуйте записать аудио еще раз или отправьте текст.',
+          );
           return;
         }
 
-        await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
+        await ctx.api
+          .deleteMessage(chatId, statusMsg.message_id)
+          .catch(() => {});
 
         const prefixedText = `🎤 [Голосовое сообщение]: ${transcription}`;
 
@@ -613,8 +700,15 @@ export class TelegramBotService implements OnModuleInit {
           });
         }
       } catch (err: any) {
-        this.logger.error({ chatId, error: err.message }, 'Failed to process voice note');
-        await ctx.api.editMessageText(chatId, statusMsg.message_id, 'Произошла ошибка при распознавании голоса. Пожалуйста, попробуйте записать еще раз.');
+        this.logger.error(
+          { chatId, error: err.message },
+          'Failed to process voice note',
+        );
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          'Произошла ошибка при распознавании голоса. Пожалуйста, попробуйте записать еще раз.',
+        );
       }
     });
 
@@ -634,38 +728,60 @@ export class TelegramBotService implements OnModuleInit {
       });
 
       if (!activeConv) {
-        await ctx.reply('Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.');
+        await ctx.reply(
+          'Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.',
+        );
         return;
       }
 
-      const statusMsg = await ctx.reply('Извлекаю аудио и распознаю видео-кружок... 📹');
+      const statusMsg = await ctx.reply(
+        'Извлекаю аудио и распознаю видео-кружок... 📹',
+      );
 
       try {
         const file = await ctx.api.getFile(videoNote.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.config.get('TELEGRAM_BOT_TOKEN')}/${file.file_path}`;
 
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const response = await axios.get(fileUrl, {
+          responseType: 'arraybuffer',
+        });
         const buffer = Buffer.from(response.data);
 
         const transcription = await this.transcribeAudio(buffer, 'video.mp4');
 
         if (!transcription || transcription.trim().length === 0) {
-          await ctx.api.editMessageText(chatId, statusMsg.message_id, 'Не удалось разобрать слова в видео. Пожалуйста, попробуйте записать кружок еще раз или отправьте текст.');
+          await ctx.api.editMessageText(
+            chatId,
+            statusMsg.message_id,
+            'Не удалось разобрать слова в видео. Пожалуйста, попробуйте записать кружок еще раз или отправьте текст.',
+          );
           return;
         }
 
-        await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
+        await ctx.api
+          .deleteMessage(chatId, statusMsg.message_id)
+          .catch(() => {});
 
         const prefixedText = `📹 [Видео-кружок]: ${transcription}`;
 
         if (this.onMessage) {
           await this.onMessage(chatId, prefixedText, messageId).catch((err) => {
-            this.logger.error(err, 'Failed to handle Telegram video note message');
+            this.logger.error(
+              err,
+              'Failed to handle Telegram video note message',
+            );
           });
         }
       } catch (err: any) {
-        this.logger.error({ chatId, error: err.message }, 'Failed to process video note');
-        await ctx.api.editMessageText(chatId, statusMsg.message_id, 'Произошла ошибка при обработке видео-кружка. Пожалуйста, попробуйте записать еще раз.');
+        this.logger.error(
+          { chatId, error: err.message },
+          'Failed to process video note',
+        );
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          'Произошла ошибка при обработке видео-кружка. Пожалуйста, попробуйте записать еще раз.',
+        );
       }
     });
 

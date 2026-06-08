@@ -17,8 +17,6 @@ const STAGES = [
   'hired',
 ] as const;
 
-type Stage = (typeof STAGES)[number];
-
 @Controller('api/v1/analytics')
 @UseGuards(AuthGuard)
 export class AnalyticsController {
