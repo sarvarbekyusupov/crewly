@@ -33,10 +33,10 @@ onErrorCaptured((err) => {
 })
 
 const nav = [
-  { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home', mobileHidden: true },
   { label: 'Applications', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
-  { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
-  { label: 'Job Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
+  { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right', mobileHidden: true },
+  { label: 'Job Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass', mobileHidden: true },
   {
     label: 'Job Tracker',
     to: '/candidate/tracker',
@@ -46,13 +46,14 @@ const nav = [
     label: 'Interview Prep',
     to: '/candidate/prep',
     icon: 'i-heroicons-microphone',
+    mobileHidden: true,
   },
   {
     label: 'Preferences',
     to: '/candidate/preferences',
     icon: 'i-heroicons-adjustments-horizontal',
   },
-  { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
+  { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user', mobileHidden: true },
 ]
 
 const mobileNav = [
@@ -135,11 +136,15 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        <div class="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-ink-subtle lg:hidden">
+          More Pages
+        </div>
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
           :to="item.to"
           class="nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors"
+          :class="{ 'hidden lg:flex': item.mobileHidden }"
           style="color: var(--ink-muted)"
           active-class="nav-active"
         >
