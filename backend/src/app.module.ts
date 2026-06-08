@@ -42,6 +42,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { HealthController } from './common/health.controller';
+import { QUEUES } from './workers/queue-names';
 
 @Module({
   imports: [
@@ -69,11 +70,12 @@ import { HealthController } from './common/health.controller';
         defaultJobOptions: {
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
-          removeOnComplete: 100,
-          removeOnFail: 500,
+          removeOnComplete: { age: 3600 },
+          removeOnFail: { age: 86400 * 7 },
         },
       }),
     }),
+    BullModule.registerQueue({ name: QUEUES.CLEANUP }),
 
     AuthModule,
     StaffAuthModule,

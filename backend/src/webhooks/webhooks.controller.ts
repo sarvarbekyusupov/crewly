@@ -132,8 +132,15 @@ export class WebhooksController implements OnModuleInit {
     @Headers('x-telegram-bot-api-secret-token') secret: string,
   ) {
     const expected = this.config.get('TELEGRAM_WEBHOOK_SECRET');
-    if (expected && secret !== expected) {
-      throw new ForbiddenException();
+    if (expected) {
+      const expectedBuf = Buffer.from(expected);
+      const secretBuf = Buffer.from(secret ?? '');
+      if (
+        expectedBuf.length !== secretBuf.length ||
+        !timingSafeEqual(expectedBuf, secretBuf)
+      ) {
+        throw new ForbiddenException();
+      }
     }
 
     const updateId = update?.update_id;

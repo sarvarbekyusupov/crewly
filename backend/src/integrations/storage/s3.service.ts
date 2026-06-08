@@ -36,11 +36,19 @@ export class S3Service {
     });
   }
 
+  private validateKey(key: string): void {
+    if (key.includes('..') || key.startsWith('/') || /[<>{}|\\^`]/.test(key)) {
+      throw new Error(`Invalid S3 key: "${key}"`);
+    }
+  }
+
   async upload(
     key: string,
     body: Buffer | string,
     contentType: string,
   ): Promise<string> {
+    this.validateKey(key);
+
     if (!this.client) {
       this.logger.warn({ key }, 'S3 upload skipped — not configured');
       return '';
@@ -65,6 +73,7 @@ export class S3Service {
   }
 
   async getSignedUrl(key: string, expiresInSecs = 3600): Promise<string> {
+    this.validateKey(key);
     if (!this.client) return '';
 
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
@@ -72,6 +81,7 @@ export class S3Service {
   }
 
   async delete(key: string): Promise<void> {
+    this.validateKey(key);
     if (!this.client) return;
 
     await this.client.send(

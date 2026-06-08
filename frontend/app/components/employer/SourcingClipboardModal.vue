@@ -121,7 +121,7 @@ async function saveCandidate() {
           </p>
         </div>
 
-        <div class="flex flex-col md:flex-row gap-6 h-[400px] overflow-hidden min-h-0">
+        <div class="flex flex-col md:flex-row gap-6 h-auto md:h-[400px] overflow-y-auto md:overflow-hidden min-h-0">
           <!-- Left: Paste clipboard -->
           <div class="w-full md:w-1/2 flex flex-col justify-between">
             <div class="flex-1 flex flex-col">

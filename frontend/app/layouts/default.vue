@@ -165,7 +165,8 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
     <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
       <!-- Brand -->
       <NuxtLink to="/employer/dashboard" class="brand-row">
-        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="brand-logo" />
+        <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="brand-logo dark:hidden" />
+        <img src="/crewly-logo-horizontal-white.svg" alt="Crewly" class="brand-logo hidden dark:block" />
       </NuxtLink>
 
       <!-- Portal indicator -->
@@ -437,7 +438,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
   position: sticky;
   top: 0;
   border-right: 1px solid var(--line);
-  background: var(--accent);
+  background: var(--bg-deep);
   padding: 22px 18px;
   display: flex;
   flex-direction: column;

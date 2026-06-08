@@ -291,11 +291,11 @@ function formatTime(dateStr: string) {
       <!-- Live Video Screening Simulator Cockpit -->
       <div
         v-if="isVideoMode"
-        class="flex gap-4 shrink-0 animate-fade-in pb-3 border-b border-line-soft"
+        class="flex flex-col sm:flex-row gap-4 shrink-0 animate-fade-in pb-3 border-b border-line-soft"
       >
         <!-- Left Pane: Candidate Webcam stream -->
         <div
-          class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-black shadow-inner flex items-center justify-center"
+          class="relative w-full sm:w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-black shadow-inner flex items-center justify-center"
         >
           <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover" />
           <span
@@ -305,7 +305,7 @@ function formatTime(dateStr: string) {
         </div>
         <!-- Right Pane: Recruiter AI Avatar -->
         <div
-          class="relative w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-bg-deep flex flex-col items-center justify-center shadow-inner"
+          class="relative w-full sm:w-1/2 aspect-video rounded-xl border border-line overflow-hidden bg-bg-deep flex flex-col items-center justify-center shadow-inner"
         >
           <div class="relative w-12 h-12 flex items-center justify-center">
             <div

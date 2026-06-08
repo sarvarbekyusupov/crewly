@@ -5,7 +5,7 @@ export const EnvSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.coerce.number().default(3000),
-  PUBLIC_URL: z.string().url().default('http://localhost:3000'),
+  PUBLIC_URL: z.string().url(),
 
   DATABASE_URL: z.string().min(1),
   DIRECT_URL: z.string().min(1).optional(),
@@ -49,7 +49,7 @@ export const EnvSchema = z.object({
   S3_SECRET_KEY: z.string().optional().or(z.literal('')),
   S3_BUCKET: z.string().optional().or(z.literal('')),
 
-  FRONTEND_URL: z.string().url().default('http://localhost:3001'),
+  FRONTEND_URL: z.string().url(),
 
   PAYMENT_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
 

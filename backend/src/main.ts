@@ -45,6 +45,10 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+    throw new Error('FATAL: FRONTEND_URL must be set in production');
+  }
+
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3001',
     credentials: true,
@@ -132,4 +136,11 @@ async function bootstrap() {
   console.log(`Bull Board: http://localhost:${port}/admin/queues`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Failed to start application:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});

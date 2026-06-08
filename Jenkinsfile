@@ -19,6 +19,7 @@ pipeline {
   environment {
     DOCKER_BUILDKIT          = '1'
     COMPOSE_DOCKER_CLI_BUILD = '1'
+    TRIVY_VERSION            = '0.58.4'
     // Loaded once so REGISTRY is available in all stages and in post{}
     REGISTRY = credentials('docker-registry-url')
   }
@@ -154,14 +155,14 @@ pipeline {
     // ─────────────────────────────────────────────────────────────────────────
     // Parallel so both images always scan even if one has CRITICAL findings
     stage('Security Scan') {
-      when { anyOf { branch 'main'; branch 'staging' } }
+      when { anyOf { branch 'main'; branch 'staging'; branch 'develop' } }
       parallel {
 
         stage('Scan Backend') {
           steps {
             sh '''
               docker run --rm \
-                aquasec/trivy:latest image \
+                aquasec/trivy:$TRIVY_VERSION image \
                 --exit-code 1 \
                 --severity CRITICAL \
                 --format table \
@@ -174,7 +175,7 @@ pipeline {
           steps {
             sh '''
               docker run --rm \
-                aquasec/trivy:latest image \
+                aquasec/trivy:$TRIVY_VERSION image \
                 --exit-code 1 \
                 --severity CRITICAL \
                 --format table \
@@ -192,6 +193,7 @@ pipeline {
         anyOf { branch 'main'; branch 'staging' }
       }
       steps {
+        script { env.DEPLOY_STARTED = 'true' }
         withCredentials([
           string(credentialsId: 'deploy-host',        variable: 'DEPLOY_HOST'),
           string(credentialsId: 'deploy-user',        variable: 'DEPLOY_USER'),
@@ -218,6 +220,20 @@ pipeline {
                test -f .env.production \
                  || { echo 'ERROR: .env.production missing on deploy server'; exit 1; }
 
+               # Capture currently-running images for rollback before swapping
+               PREV_BACKEND=\$(docker inspect \
+                 \$(docker compose -f docker-compose.prod.yml ps -q backend 2>/dev/null | head -1) \
+                 --format '{{.Config.Image}}' 2>/dev/null || echo '')
+               PREV_FRONTEND=\$(docker inspect \
+                 \$(docker compose -f docker-compose.prod.yml ps -q frontend 2>/dev/null | head -1) \
+                 --format '{{.Config.Image}}' 2>/dev/null || echo '')
+               if [ -n \"\$PREV_BACKEND\" ] && [ -n \"\$PREV_FRONTEND\" ]; then
+                 printf 'IMAGE_BACKEND=%s\\nIMAGE_FRONTEND=%s\\n' \
+                   \"\$PREV_BACKEND\" \"\$PREV_FRONTEND\" > .env.prev
+               else
+                 rm -f .env.prev
+               fi
+
                # Write image tags for this build
                printf 'IMAGE_BACKEND=%s/crewly/backend:%s\\nIMAGE_FRONTEND=%s/crewly/frontend:%s\\n' \
                  $REGISTRY $GIT_SHORT_SHA $REGISTRY $GIT_SHORT_SHA > .env.image
@@ -235,7 +251,7 @@ pipeline {
                docker compose -f docker-compose.prod.yml --env-file .env.deploy \
                  up -d --no-build --remove-orphans
 
-               rm -f .env.deploy
+               rm -f .env.deploy .env.image
                docker image prune -f"
           '''
         }
@@ -275,7 +291,44 @@ pipeline {
       }
     }
     failure {
-      echo "Pipeline FAILED — ${env.BUILD_URL}"
+      script {
+        if (env.DEPLOY_STARTED == 'true') {
+          echo "Deploy or smoke test failed — attempting automatic rollback"
+          withCredentials([
+            string(credentialsId: 'deploy-host',        variable: 'DEPLOY_HOST'),
+            string(credentialsId: 'deploy-user',        variable: 'DEPLOY_USER'),
+            string(credentialsId: 'deploy-known-hosts', variable: 'KNOWN_HOSTS_ENTRY'),
+            sshUserPrivateKey(
+              credentialsId: 'deploy-ssh-key',
+              keyFileVariable: 'SSH_KEY_FILE'
+            )
+          ]) {
+            sh '''
+              mkdir -p ~/.ssh
+              chmod 700 ~/.ssh
+              echo "$KNOWN_HOSTS_ENTRY" > ~/.ssh/known_hosts
+              chmod 600 ~/.ssh/known_hosts
+
+              ssh -i "$SSH_KEY_FILE" \
+                  -o StrictHostKeyChecking=yes \
+                  -o BatchMode=yes \
+                  "$DEPLOY_USER@$DEPLOY_HOST" \
+                "cd /srv/crewly
+                 if [ -f .env.prev ]; then
+                   echo 'Rolling back to previous deployment...'
+                   cat .env.production .env.prev > .env.deploy
+                   docker compose -f docker-compose.prod.yml --env-file .env.deploy \
+                     up -d --no-build --remove-orphans
+                   rm -f .env.deploy .env.image
+                   echo 'Rollback complete'
+                 else
+                   echo 'WARNING: No .env.prev found — cannot auto-rollback (first deploy?)'
+                 fi"
+            '''
+          }
+        }
+        echo "Pipeline FAILED — ${env.BUILD_URL}"
+      }
     }
     always {
       sh 'docker logout "$REGISTRY" || true'
