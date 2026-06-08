@@ -13,7 +13,7 @@ COPY packages/prompts/package.json ./packages/prompts/
 COPY backend/package.json         ./backend/
 RUN printf 'packages:\n  - "packages/*"\n  - "backend"\noverrides:\n  vue-router: ^5.0.0\nallowBuilds:\n  "@nestjs/core": true\n  "@prisma/client": true\n  "@prisma/engines": true\n  "@scarf/scarf": true\n  argon2: true\n  msgpackr-extract: true\n  prisma: true\n  unrs-resolver: true\n' > pnpm-workspace.yaml
 RUN --mount=type=cache,id=pnpm-backend,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    PRISMA_SKIP_POSTINSTALL_GENERATE=true pnpm install --frozen-lockfile
 
 # ── compile ───────────────────────────────────────────────────────────────────
 FROM deps AS builder
@@ -33,7 +33,7 @@ COPY packages/prompts/package.json ./packages/prompts/
 COPY backend/package.json         ./backend/
 RUN printf 'packages:\n  - "packages/*"\n  - "backend"\noverrides:\n  vue-router: ^5.0.0\nallowBuilds:\n  "@nestjs/core": true\n  "@prisma/client": true\n  "@prisma/engines": true\n  "@scarf/scarf": true\n  argon2: true\n  msgpackr-extract: true\n  prisma: true\n  unrs-resolver: true\n' > pnpm-workspace.yaml
 RUN --mount=type=cache,id=pnpm-backend,target=/pnpm/store \
-    pnpm install --prod --frozen-lockfile
+    PRISMA_SKIP_POSTINSTALL_GENERATE=true pnpm install --prod --frozen-lockfile
 COPY packages/types   ./packages/types
 COPY packages/prompts ./packages/prompts
 COPY backend/prisma ./backend/prisma
