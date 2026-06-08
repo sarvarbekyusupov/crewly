@@ -5,8 +5,8 @@ const { set } = useAudience()
 set('candidate')
 
 useHead({
-  title: 'Crewly | Find work and get hired',
-  link: [{ rel: 'canonical', href: 'https://crewly.com/candidate' }],
+  title: 'Find work and get hired',
+  link: [{ rel: 'canonical', href: 'https://crewly.uz/candidate' }],
   meta: [
     {
       name: 'description',
@@ -15,25 +15,25 @@ useHead({
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://crewly.com/candidate' },
-    { property: 'og:title', content: 'Crewly | Find work and get hired' },
+    { property: 'og:url', content: 'https://crewly.uz/candidate' },
+    { property: 'og:title', content: 'Find work and get hired | Crewly' },
     {
       property: 'og:description',
       content:
         'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
     },
-    { property: 'og:image', content: 'https://crewly.com/landing-light.png' },
+    { property: 'og:image', content: 'https://crewly.uz/landing-light.png' },
 
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:url', content: 'https://crewly.com/candidate' },
-    { name: 'twitter:title', content: 'Crewly | Find work and get hired' },
+    { name: 'twitter:url', content: 'https://crewly.uz/candidate' },
+    { name: 'twitter:title', content: 'Find work and get hired | Crewly' },
     {
       name: 'twitter:description',
       content:
         'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
     },
-    { name: 'twitter:image', content: 'https://crewly.com/landing-light.png' },
+    { name: 'twitter:image', content: 'https://crewly.uz/landing-light.png' },
   ],
   script: [
     {
@@ -41,7 +41,7 @@ useHead({
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
-        '@id': 'https://crewly.com/candidate/#software',
+        '@id': 'https://crewly.uz/candidate/#software',
         name: 'Crewly Candidate Career Pilot',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'All',
@@ -59,7 +59,7 @@ useHead({
         publisher: {
           '@type': 'Organization',
           name: 'Crewly',
-          url: 'https://crewly.com/',
+          url: 'https://crewly.uz/',
         },
       }),
     },

@@ -30,7 +30,7 @@ export default defineNuxtConfig({
   ],
 
   site: {
-    url: 'https://crewly.com',
+    url: 'https://crewly.uz',
     name: 'Crewly',
     description: 'AI-Native Recruiting Platform',
     defaultLocale: 'en',
@@ -84,7 +84,7 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
     langDir: 'locales',
     strategy: 'prefix_except_default',
-    baseUrl: 'https://crewly.com',
+    baseUrl: 'https://crewly.uz',
   },
 
   imports: {

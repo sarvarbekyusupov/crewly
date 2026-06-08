@@ -35,7 +35,7 @@ useSeoMeta({
 })
 
 useHead(() => ({
-  link: [{ rel: 'canonical', href: `https://crewly.com/jobs/${job.value.id}` }],
+  link: [{ rel: 'canonical', href: `https://crewly.uz/jobs/${job.value.id}` }],
   script: [
     {
       type: 'application/ld+json',
@@ -47,7 +47,7 @@ useHead(() => ({
         datePosted: job.value.createdAt,
         employmentType: schemaEmploymentTypeMap[job.value.employmentType] ?? undefined,
         directApply: true,
-        url: `https://crewly.com/jobs/${job.value.id}`,
+        url: `https://crewly.uz/jobs/${job.value.id}`,
         hiringOrganization: {
           '@type': 'Organization',
           name: job.value.company.name,

@@ -5,8 +5,8 @@ const { set } = useAudience()
 set('employer')
 
 useHead({
-  title: 'Crewly | Hire the right people, faster',
-  link: [{ rel: 'canonical', href: 'https://crewly.com/' }],
+  title: 'Hire the right people, faster',
+  link: [{ rel: 'canonical', href: 'https://crewly.uz/' }],
   meta: [
     {
       name: 'description',
@@ -14,23 +14,23 @@ useHead({
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://crewly.com/' },
-    { property: 'og:title', content: 'Crewly | Hire the right people, faster' },
+    { property: 'og:url', content: 'https://crewly.uz/' },
+    { property: 'og:title', content: 'Hire the right people, faster | Crewly' },
     {
       property: 'og:description',
       content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
     },
-    { property: 'og:image', content: 'https://crewly.com/landing-dark.png' },
+    { property: 'og:image', content: 'https://crewly.uz/landing-dark.png' },
 
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:url', content: 'https://crewly.com/' },
-    { name: 'twitter:title', content: 'Crewly | Hire the right people, faster' },
+    { name: 'twitter:url', content: 'https://crewly.uz/' },
+    { name: 'twitter:title', content: 'Hire the right people, faster | Crewly' },
     {
       name: 'twitter:description',
       content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
     },
-    { name: 'twitter:image', content: 'https://crewly.com/landing-dark.png' },
+    { name: 'twitter:image', content: 'https://crewly.uz/landing-dark.png' },
   ],
   script: [
     {
@@ -40,10 +40,10 @@ useHead({
         '@graph': [
           {
             '@type': 'Organization',
-            '@id': 'https://crewly.com/#organization',
+            '@id': 'https://crewly.uz/#organization',
             name: 'Crewly',
-            url: 'https://crewly.com/',
-            logo: 'https://crewly.com/app-icon-512.png',
+            url: 'https://crewly.uz/',
+            logo: 'https://crewly.uz/app-icon-512.png',
             sameAs: [
               'https://twitter.com/crewly_recruiter',
               'https://www.linkedin.com/company/crewly-recruiting',
@@ -51,7 +51,7 @@ useHead({
           },
           {
             '@type': 'SoftwareApplication',
-            '@id': 'https://crewly.com/#software',
+            '@id': 'https://crewly.uz/#software',
             name: 'Crewly Recruiting Automation',
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'All',
@@ -67,7 +67,7 @@ useHead({
               reviewCount: '124',
             },
             publisher: {
-              '@id': 'https://crewly.com/#organization',
+              '@id': 'https://crewly.uz/#organization',
             },
           },
         ],
