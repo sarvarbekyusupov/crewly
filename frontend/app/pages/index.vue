@@ -10,7 +10,8 @@ useHead({
   meta: [
     {
       name: 'description',
-      content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
+      content:
+        'Crewly is an AI-native recruiting platform that sources, screens, and shortlists top candidates for you. Hire faster, pay only on success — no retainers, no wasted time.',
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
@@ -18,7 +19,8 @@ useHead({
     { property: 'og:title', content: 'Hire the right people, faster | Crewly' },
     {
       property: 'og:description',
-      content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
+      content:
+        'Crewly is an AI-native recruiting platform that sources, screens, and shortlists top candidates for you. Hire faster, pay only on success — no retainers, no wasted time.',
     },
     { property: 'og:image', content: 'https://crewly.uz/landing-dark.png' },
 
@@ -28,7 +30,8 @@ useHead({
     { name: 'twitter:title', content: 'Hire the right people, faster | Crewly' },
     {
       name: 'twitter:description',
-      content: 'Your AI hiring team. Source, screen, and shortlist top talent effortlessly.',
+      content:
+        'Crewly is an AI-native recruiting platform that sources, screens, and shortlists top candidates for you. Hire faster, pay only on success — no retainers, no wasted time.',
     },
     { name: 'twitter:image', content: 'https://crewly.uz/landing-dark.png' },
   ],

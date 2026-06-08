@@ -11,7 +11,7 @@ useHead({
     {
       name: 'description',
       content:
-        'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
+        'Crewly matches you with jobs that fit your skills and experience. Build your profile once, get discovered by top employers, and receive offers when you are a strong match — no endless applying.',
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
@@ -20,7 +20,7 @@ useHead({
     {
       property: 'og:description',
       content:
-        'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
+        'Crewly matches you with jobs that fit your skills and experience. Build your profile once, get discovered by top employers, and receive offers when you are a strong match — no endless applying.',
     },
     { property: 'og:image', content: 'https://crewly.uz/landing-light.png' },
 
@@ -31,7 +31,7 @@ useHead({
     {
       name: 'twitter:description',
       content:
-        'Your AI career partner. Build your profile, see roles that actually fit, and get reached out to when you are a match.',
+        'Crewly matches you with jobs that fit your skills and experience. Build your profile once, get discovered by top employers, and receive offers when you are a strong match — no endless applying.',
     },
     { name: 'twitter:image', content: 'https://crewly.uz/landing-light.png' },
   ],
