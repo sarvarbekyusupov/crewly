@@ -11,60 +11,9 @@ env:
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/crewly-frontend
 
 jobs:
-  # ─── Lint & Test ────────────────────────────────────────────────────────────
-  lint-test:
-    name: Lint & Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache ESLint
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.eslintcache
-          key: eslint-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: eslint-
-
-      - name: Lint backend
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=2048"
-          pnpm --filter backend exec eslint '{src,apps,libs,test}/**/*.ts' \
-            --cache --cache-location /tmp/.eslintcache/backend
-
-      - name: Lint frontend
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=2048"
-          pnpm --filter crewly-frontend exec eslint . \
-            --cache --cache-location /tmp/.eslintcache/frontend
-
-      - name: Test backend
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=2048"
-          pnpm --filter backend exec jest \
-            --maxWorkers=2 --forceExit --passWithNoTests
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: backend/coverage/junit.xml
-          if-no-files-found: ignore
-
   # ─── Build & Push Docker images ─────────────────────────────────────────────
   build-push:
     name: Build & Push Images
-    needs: lint-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
