@@ -1759,7 +1759,11 @@ const missingProfileItems = computed(() => {
           :disabled="!isFormDirty"
           icon="i-heroicons-check"
           size="md"
-          @click="() => { save() }"
+          @click="
+            () => {
+              save()
+            }
+          "
         >
           {{ t('candidate.profile.saveChanges') }}
         </UButton>

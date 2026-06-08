@@ -356,7 +356,9 @@ const sendShortcut = computed(() => (isMac.value ? '⌘↵' : 'Ctrl+Enter'))
               :placeholder="t('conversations.sendPlaceholder')"
               :rows="2"
               class="flex-1"
-              @keydown="(e: KeyboardEvent) => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && sendReply()"
+              @keydown="
+                (e: KeyboardEvent) => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && sendReply()
+              "
             />
             <UButton
               icon="i-heroicons-paper-airplane"
