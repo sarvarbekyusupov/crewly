@@ -27,7 +27,7 @@
       "pnpm --filter backend exec jest --bail --findRelatedTests --passWithNoTests"
     ],
     "frontend/**/*.{js,ts,vue}": [
-      "frontend/node_modules/.bin/eslint --fix"
+      "pnpm --filter crewly-frontend exec eslint --fix"
     ]
   }
 }

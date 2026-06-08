@@ -1,8 +1,6 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
-  ssr: false,
-
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
@@ -44,6 +42,11 @@ export default defineNuxtConfig({
 
   sitemap: {
     sources: ['/api/sitemap-urls'],
+    urls: [
+      { loc: '/', priority: 1.0, changefreq: 'weekly' },
+      { loc: '/candidate', priority: 0.9, changefreq: 'weekly' },
+      { loc: '/terms', priority: 0.3, changefreq: 'monthly' },
+    ],
   },
 
   sentry: {
@@ -112,6 +115,19 @@ export default defineNuxtConfig({
       },
       '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
       '/candidate/job-discovery': { redirect: { to: '/candidate/jobs', statusCode: 301 } },
+      // Private app routes — no SSR needed
+      '/employer/**': { ssr: false },
+      '/staff/**': { ssr: false },
+      '/tma/**': { ssr: false },
+      '/candidate/dashboard': { ssr: false },
+      '/candidate/jobs': { ssr: false },
+      '/candidate/profile': { ssr: false },
+      '/candidate/offers': { ssr: false },
+      '/candidate/preferences': { ssr: false },
+      '/candidate/prep': { ssr: false },
+      '/candidate/tracker': { ssr: false },
+      '/candidate/chat/**': { ssr: false },
+      '/candidate/onboarding': { ssr: false },
     },
   },
 })

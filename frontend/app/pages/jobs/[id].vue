@@ -15,10 +15,17 @@ if (error.value || !job.value) {
   })
 }
 
-// Dynamic SEO meta tags
+const schemaEmploymentTypeMap: Record<string, string> = {
+  FULL_TIME: 'FULL_TIME',
+  PART_TIME: 'PART_TIME',
+  CONTRACT: 'CONTRACTOR',
+  TEMPORARY: 'TEMPORARY',
+  INTERN: 'INTERN',
+}
+
 useSeoMeta({
-  title: () => `${job.value.title} at ${job.value.company.name} - crewly`,
-  ogTitle: () => `${job.value.title} at ${job.value.company.name} - crewly`,
+  title: () => `${job.value.title} at ${job.value.company.name} - Crewly`,
+  ogTitle: () => `${job.value.title} at ${job.value.company.name} - Crewly`,
   description: () =>
     `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,
   ogDescription: () =>
@@ -26,6 +33,55 @@ useSeoMeta({
   ogImage: '/landing-light.png',
   twitterCard: 'summary_large_image',
 })
+
+useHead(() => ({
+  link: [{ rel: 'canonical', href: `https://crewly.com/jobs/${job.value.id}` }],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'JobPosting',
+        title: job.value.title,
+        description: job.value.description,
+        datePosted: job.value.createdAt,
+        employmentType: schemaEmploymentTypeMap[job.value.employmentType] ?? undefined,
+        directApply: true,
+        url: `https://crewly.com/jobs/${job.value.id}`,
+        hiringOrganization: {
+          '@type': 'Organization',
+          name: job.value.company.name,
+          ...(job.value.company.website ? { url: job.value.company.website } : {}),
+        },
+        ...(job.value.officeLocation
+          ? {
+              jobLocation: {
+                '@type': 'Place',
+                address: {
+                  '@type': 'PostalAddress',
+                  addressLocality: job.value.officeLocation,
+                },
+              },
+            }
+          : {}),
+        ...(job.value.salaryMinUzs || job.value.salaryMaxUzs
+          ? {
+              baseSalary: {
+                '@type': 'MonetaryAmount',
+                currency: job.value.salaryCurrency ?? 'UZS',
+                value: {
+                  '@type': 'QuantitativeValue',
+                  ...(job.value.salaryMinUzs ? { minValue: job.value.salaryMinUzs } : {}),
+                  ...(job.value.salaryMaxUzs ? { maxValue: job.value.salaryMaxUzs } : {}),
+                  unitText: 'MONTH',
+                },
+              },
+            }
+          : {}),
+      }),
+    },
+  ],
+}))
 </script>
 
 <template>
