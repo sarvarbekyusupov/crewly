@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CandidateAuthService } from './candidate-auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailService } from '../../integrations/email/email.service';
 import * as argon2 from 'argon2';
 
 describe('CandidateAuthService', () => {
@@ -43,6 +44,7 @@ describe('CandidateAuthService', () => {
         { provide: PrismaService, useValue: db },
         { provide: JwtService, useValue: jwt },
         { provide: ConfigService, useValue: config },
+        { provide: EmailService, useValue: { sendPasswordReset: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

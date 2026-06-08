@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MatchmakerAgent } from '../modules/agents/matchmaker.agent';
 import { NonRetryableError } from './errors';
 import { QUEUES } from './queue-names';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('ScoreSeekerJobsProcessor', () => {
   let processor: ScoreSeekerJobsProcessor;
@@ -62,6 +63,7 @@ describe('ScoreSeekerJobsProcessor', () => {
           provide: getQueueToken(QUEUES.SCORE_SEEKER_JOBS),
           useValue: { add: jest.fn() },
         },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

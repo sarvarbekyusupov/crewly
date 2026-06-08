@@ -8,6 +8,7 @@ import { ConversationsService } from '../modules/conversations/conversations.ser
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymeWebhookService } from '../integrations/payme/payme-webhook.service';
+import { HhWebhookService } from '../integrations/hh/hh-webhook.service';
 
 describe('WebhooksController', () => {
   let controller: WebhooksController;
@@ -36,6 +37,7 @@ describe('WebhooksController', () => {
           },
         },
         { provide: PaymeWebhookService, useValue: { handleRpc: jest.fn() } },
+        { provide: HhWebhookService, useValue: { handleEvent: jest.fn().mockResolvedValue(undefined) } },
         { provide: IdempotencyService, useValue: idempotency },
         {
           provide: PrismaService,
