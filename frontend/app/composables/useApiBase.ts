@@ -46,7 +46,7 @@ export function buildApiClient(baseURL: string, handlers: ApiClientHandlers) {
     options: Parameters<typeof $fetch>[1] & { _retry?: boolean } = {},
   ): Promise<T> {
     try {
-      return await $fetch<T>(path, { baseURL, credentials: 'include', ...options })
+      return await $fetch<T>(path, { baseURL, credentials: 'include', ...options }) as T
     } catch (err: unknown) {
       const status = getFetchStatus(err)
       if (status === 401) {

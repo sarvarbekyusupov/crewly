@@ -1311,7 +1311,7 @@ const missingProfileItems = computed(() => {
                   @update:model-value="
                     (v: string) => {
                       if (v) localSkillLevels[skill] = v
-                      else Reflect.deleteProperty(localSkillLevels, skill)
+                      else delete localSkillLevels[skill]
                     }
                   "
                 />
@@ -1759,7 +1759,7 @@ const missingProfileItems = computed(() => {
           :disabled="!isFormDirty"
           icon="i-heroicons-check"
           size="md"
-          @click="save"
+          @click="() => { save() }"
         >
           {{ t('candidate.profile.saveChanges') }}
         </UButton>

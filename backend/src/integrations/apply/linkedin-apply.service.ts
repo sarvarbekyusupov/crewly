@@ -39,6 +39,7 @@ export class LinkedInApplyService {
     let chromium: any;
     try {
       // Dynamic import so missing playwright doesn't crash at startup (installed separately)
+      // @ts-expect-error -- playwright is an optional runtime dep, not in package.json
       const pw = await import('playwright');
       chromium = pw.chromium;
     } catch {

@@ -11,7 +11,6 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import axios from 'axios';
-// @ts-expect-error -- pdf-parse has no type declarations
 import { PDFParse } from 'pdf-parse';
 import OpenAI, { toFile } from 'openai';
 import { S3Service } from '../storage/s3.service';
