@@ -6,7 +6,7 @@ export default defineEventHandler(async () => {
     const jobs = await $fetch<any[]>('/api/v1/public/jobs', {
       baseURL: config.public.apiBase,
     })
-    
+
     return jobs.map((job) => ({
       loc: `/jobs/${job.id}`,
       lastmod: job.updatedAt,

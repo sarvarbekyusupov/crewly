@@ -9,7 +9,9 @@ const { t } = useI18n()
 
 const schema = toTypedSchema(z.object({ email: z.string().email('Enter a valid email address') }))
 
-const { defineField, handleSubmit, errors, isSubmitting, resetForm } = useForm({ validationSchema: schema })
+const { defineField, handleSubmit, errors, isSubmitting, resetForm } = useForm({
+  validationSchema: schema,
+})
 
 const [email, emailAttrs] = defineField('email', { validateOnModelUpdate: false })
 

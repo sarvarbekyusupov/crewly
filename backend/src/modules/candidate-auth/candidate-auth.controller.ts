@@ -159,4 +159,18 @@ export class CandidateAuthController {
   async me(@CurrentCandidate() candidate: { id: string }) {
     return this.candidateAuthService.getMe(candidate.id);
   }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() body: { email: string }) {
+    return this.candidateAuthService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() body: { token: string; password: string }) {
+    return this.candidateAuthService.resetPassword(body.token, body.password);
+  }
 }

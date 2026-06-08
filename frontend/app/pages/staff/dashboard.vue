@@ -155,6 +155,7 @@ const llmCostToday = computed(() => {
         <div class="space-y-3 text-sm">
           <div class="flex items-center justify-between">
             <span style="color: var(--ink-muted)">Queue inspector</span>
+            <!-- eslint-disable link-checker/valid-route -->
             <a
               href="/admin/queues"
               target="_blank"
@@ -163,6 +164,7 @@ const llmCostToday = computed(() => {
             >
               Bull Board <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
             </a>
+            <!-- eslint-enable link-checker/valid-route -->
           </div>
           <div class="flex items-center justify-between">
             <span style="color: var(--ink-muted)">API health</span>

@@ -4,9 +4,10 @@ import { CandidateAuthController } from './candidate-auth.controller';
 import { CandidateAuthService } from './candidate-auth.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { CandidateAuthGuard } from './guards/candidate-auth.guard';
+import { EmailModule } from '../../integrations/email/email.module';
 
 @Module({
-  imports: [PassportModule],
+  imports: [PassportModule, EmailModule],
   controllers: [CandidateAuthController],
   providers: [CandidateAuthService, GoogleStrategy, CandidateAuthGuard],
   exports: [CandidateAuthService, CandidateAuthGuard],

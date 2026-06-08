@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import {
 } from '../../common/utils/token.utils';
 import { DUMMY_HASH } from '../../common/auth.constants';
 import * as argon2 from 'argon2';
+import { EmailService } from '../../integrations/email/email.service';
 import type {
   CandidateSignupDto,
   CandidateLoginDto,
@@ -28,10 +31,13 @@ interface GoogleUser {
 
 @Injectable()
 export class CandidateAuthService {
+  private readonly logger = new Logger(CandidateAuthService.name);
+
   constructor(
     private readonly db: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly email: EmailService,
   ) {}
 
   private issueAccessToken(candidateId: string): string {
@@ -221,5 +227,54 @@ export class CandidateAuthService {
     if (!candidate || candidate.deletedAt) throw new NotFoundException();
     const { rawResumeText: _, parsedResume: __, ...safe } = candidate as any;
     return safe;
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const candidate = await this.db.candidate.findFirst({
+      where: { email, deletedAt: null },
+    });
+    if (!candidate) return;
+
+    await this.db.candidateToken.updateMany({
+      where: { candidateId: candidate.id, type: 'password_reset', usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const token = generateRawToken();
+    const tokenHash = hashToken(token);
+    await this.db.candidateToken.create({
+      data: {
+        candidateId: candidate.id,
+        tokenHash,
+        type: 'password_reset',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    const frontendUrl = this.config.get<string>('FRONTEND_URL');
+    this.email
+      .sendPasswordReset(email, `${frontendUrl}/candidate/reset-password?token=${token}`)
+      .catch((e) => this.logger.error({ err: e.message }, 'Background task error'));
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const record = await this.db.candidateToken.findUnique({ where: { tokenHash } });
+
+    if (!record || record.type !== 'password_reset' || record.usedAt || record.expiresAt <= new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const passwordHash = await argon2.hash(newPassword);
+    await this.db.$transaction([
+      this.db.candidate.update({
+        where: { id: record.candidateId },
+        data: { passwordHash },
+      }),
+      this.db.candidateToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
   }
 }
