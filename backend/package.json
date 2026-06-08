@@ -24,7 +24,8 @@
     "db:deploy": "npm run db:check && prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
-    "dev": "nest start --watch"
+    "dev": "nest start --watch",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -127,6 +128,9 @@
     "testEnvironment": "node",
     "setupFiles": [
       "<rootDir>/../test/jest-setup.ts"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@crewly/(.*)$": "<rootDir>/../../packages/$1/src/index.ts"
+    }
   }
 }
