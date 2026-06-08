@@ -7,7 +7,7 @@
     "dev:backend": "pnpm --filter backend dev",
     "build:frontend": "pnpm --filter crewly-frontend build",
     "build:backend": "pnpm --filter backend build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "test:frontend": "pnpm --filter crewly-frontend test",
     "test:backend": "pnpm --filter backend test"
   },
