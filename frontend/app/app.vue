@@ -8,7 +8,8 @@ useSeoMeta({
   ogTitle: 'Crewly - AI-Native Recruiting Platform',
   description: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
   ogDescription: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
-  ogImage: '/landing-light.png', // Using the existing landing page screenshot as OG fallback image
+  ogSiteName: 'Crewly',
+  ogLocale: 'en_US',
   twitterCard: 'summary_large_image',
 })
 </script>

@@ -5,6 +5,8 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/app-icon-180.png' },
@@ -45,6 +47,7 @@ export default defineNuxtConfig({
     urls: [
       { loc: '/', priority: 1.0, changefreq: 'weekly' },
       { loc: '/candidate', priority: 0.9, changefreq: 'weekly' },
+      { loc: '/jobs', priority: 0.8, changefreq: 'daily' },
       { loc: '/terms', priority: 0.3, changefreq: 'monthly' },
     ],
     exclude: [
@@ -69,6 +72,7 @@ export default defineNuxtConfig({
       '/candidate/forgot-password',
       '/candidate/reset-password',
       '/candidate/verify-email',
+      '/verify-email',
       '/error',
     ],
   },
@@ -81,12 +85,16 @@ export default defineNuxtConfig({
 
   fonts: {
     families: [
-      { name: 'Fraunces', provider: 'google' },
-      { name: 'Inter', provider: 'google' },
-      { name: 'JetBrains Mono', provider: 'google' },
-      { name: 'Source Serif 4', provider: 'google' },
-      { name: 'DM Sans', provider: 'google' },
+      { name: 'Fraunces', provider: 'google', display: 'swap' },
+      { name: 'Inter', provider: 'google', display: 'swap' },
+      { name: 'JetBrains Mono', provider: 'google', display: 'swap' },
+      { name: 'Source Serif 4', provider: 'google', display: 'swap' },
+      { name: 'DM Sans', provider: 'google', display: 'swap' },
     ],
+  },
+
+  ogImage: {
+    fonts: ['Inter:400', 'Inter:700'],
   },
 
   css: ['~/assets/css/main.css'],
@@ -131,7 +139,7 @@ export default defineNuxtConfig({
 
   nitro: {
     prerender: {
-      routes: ['/', '/candidate', '/terms'],
+      routes: ['/', '/candidate', '/terms', '/jobs'],
     },
     routeRules: {
       '/api/**': {
@@ -152,6 +160,10 @@ export default defineNuxtConfig({
       '/candidate/tracker': { ssr: false },
       '/candidate/chat/**': { ssr: false },
       '/candidate/onboarding': { ssr: false },
+      '/candidate/login': { ssr: false },
+      '/candidate/forgot-password': { ssr: false },
+      '/candidate/reset-password': { ssr: false },
+      '/verify-email': { ssr: false },
     },
   },
 })

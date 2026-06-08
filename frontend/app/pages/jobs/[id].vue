@@ -30,13 +30,34 @@ useSeoMeta({
     `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,
   ogDescription: () =>
     `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,
-  ogImage: '/landing-light.png',
   twitterCard: 'summary_large_image',
+})
+
+defineOgImageComponent('Default', {
+  title: `${job.value.title} at ${job.value.company.name}`,
+  description: `Apply now on Crewly — ${job.value.officeLocation ?? 'Remote / Uzbekistan'}`,
 })
 
 useHead(() => ({
   link: [{ rel: 'canonical', href: `https://crewly.uz/jobs/${job.value.id}` }],
   script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://crewly.uz' },
+          { '@type': 'ListItem', position: 2, name: 'Jobs', item: 'https://crewly.uz/jobs' },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: job.value.title,
+            item: `https://crewly.uz/jobs/${job.value.id}`,
+          },
+        ],
+      }),
+    },
     {
       type: 'application/ld+json',
       innerHTML: JSON.stringify({

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
+defineOgImageComponent('Default', {
+  title: 'Hire the right people, faster',
+  description:
+    'AI-native recruiting: source, screen, and shortlist — you only meet people worth hiring.',
+})
+
 const { set } = useAudience()
 set('employer')
 
@@ -22,8 +28,6 @@ useHead({
       content:
         'Crewly is an AI-native recruiting platform that sources, screens, and shortlists top candidates for you. Hire faster, pay only on success — no retainers, no wasted time.',
     },
-    { property: 'og:image', content: 'https://crewly.uz/landing-dark.png' },
-
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:url', content: 'https://crewly.uz/' },
@@ -33,7 +37,6 @@ useHead({
       content:
         'Crewly is an AI-native recruiting platform that sources, screens, and shortlists top candidates for you. Hire faster, pay only on success — no retainers, no wasted time.',
     },
-    { name: 'twitter:image', content: 'https://crewly.uz/landing-dark.png' },
   ],
   script: [
     {

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
+defineOgImageComponent('Default', {
+  title: 'Find work and get hired',
+  description:
+    "Build your profile once. Crewly matches you to roles and reaches out when there's a real fit.",
+})
+
 const { set } = useAudience()
 set('candidate')
 
@@ -22,8 +28,6 @@ useHead({
       content:
         'Crewly matches you with jobs that fit your skills and experience. Build your profile once, get discovered by top employers, and receive offers when you are a strong match — no endless applying.',
     },
-    { property: 'og:image', content: 'https://crewly.uz/landing-light.png' },
-
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:url', content: 'https://crewly.uz/candidate' },
@@ -33,7 +37,6 @@ useHead({
       content:
         'Crewly matches you with jobs that fit your skills and experience. Build your profile once, get discovered by top employers, and receive offers when you are a strong match — no endless applying.',
     },
-    { name: 'twitter:image', content: 'https://crewly.uz/landing-light.png' },
   ],
   script: [
     {
