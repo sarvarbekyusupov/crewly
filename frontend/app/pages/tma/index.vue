@@ -1,5 +1,3 @@
-<script setup lang="ts"></script>
-
 <template>
   <div class="tma-app">
     <!-- Telegram Loading State -->
