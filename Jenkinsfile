@@ -71,7 +71,7 @@ pipeline {
               corepack enable pnpm
               pnpm config set store-dir /pnpm/store
               pnpm install --frozen-lockfile --prefer-offline
-              export NODE_OPTIONS="--max-old-space-size=2048"
+              export NODE_OPTIONS="--max-old-space-size=4096"
               pnpm --filter backend exec eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location /pnpm/store/.eslintcache-backend
               pnpm --filter crewly-frontend exec eslint . --cache --cache-location /pnpm/store/.eslintcache-frontend
               # typecheck skipped in CI (tsc OOMs on 3.7GB host) Ã¢ÂÂ covered by ESLint @typescript-eslint rules
