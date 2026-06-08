@@ -1,15 +1,15 @@
-// Jenkinsfile — crewly monorepo CI/CD
+// Jenkinsfile â crewly monorepo CI/CD
 //
 // Required Jenkins credentials:
-//   docker-registry-url    — String: e.g. "registry.example.com"
-//   docker-registry-creds  — Username+Password for that registry
-//   deploy-api-url         — String: public API URL, e.g. "https://api.yourdomain.com"
+//   docker-registry-url    â String: e.g. "registry.example.com"
+//   docker-registry-creds  â Username+Password for that registry
+//   deploy-api-url         â String: public API URL, e.g. "https://api.yourdomain.com"
 //                            (baked into frontend image as NUXT_PUBLIC_API_BASE)
-//   deploy-ssh-key         — SSH Private Key for deployment server
-//   deploy-known-hosts     — Secret Text: known_hosts entry for the deploy server
+//   deploy-ssh-key         â SSH Private Key for deployment server
+//   deploy-known-hosts     â Secret Text: known_hosts entry for the deploy server
 //                            (obtain via: ssh-keyscan <deploy-host>)
-//   deploy-host            — String: deployment server hostname/IP
-//   deploy-user            — String: SSH user on deployment server
+//   deploy-host            â String: deployment server hostname/IP
+//   deploy-user            â String: SSH user on deployment server
 //
 // Required plugins: Pipeline, Docker Pipeline, SSH Agent, Credentials Binding
 
@@ -33,7 +33,7 @@ pipeline {
 
   stages {
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     stage('Checkout') {
       steps {
         checkout scm
@@ -46,9 +46,9 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     // Waitlist mode is baked into the SPA bundle at build time (ssr: false).
-    // main → waitlist ON (landing only); all other branches → waitlist OFF.
+    // main â waitlist ON (landing only); all other branches â waitlist OFF.
     stage('Set Build Vars') {
       steps {
         script {
@@ -58,14 +58,14 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Single pnpm install shared across lint → typecheck → test to avoid
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // Single pnpm install shared across lint â typecheck â test to avoid
     // reinstalling three times (saves ~30-60s even with cache volume)
     stage('Lint, Typecheck & Test') {
       steps {
         script {
           docker.image('node:22-alpine').inside(
-            '--mount type=volume,src=pnpm-store,dst=/pnpm/store'
+            '--user root --mount type=volume,src=pnpm-store,dst=/pnpm/store'
           ) {
             sh '''
               corepack enable pnpm
@@ -87,7 +87,7 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     // Ensure buildx builder with cache support exists before parallel image builds
     stage('Setup Buildx') {
       when {
@@ -102,7 +102,7 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     stage('Build & Push Images') {
       when {
         anyOf { branch 'main'; branch 'staging'; branch 'develop' }
@@ -165,7 +165,7 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     // Parallel so both images always scan even if one has CRITICAL findings
     stage('Security Scan') {
       when { anyOf { branch 'main'; branch 'staging'; branch 'develop' } }
@@ -200,7 +200,7 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     stage('Deploy') {
       when {
         anyOf { branch 'main'; branch 'staging' }
@@ -229,7 +229,7 @@ pipeline {
               "set -euo pipefail
                cd /srv/crewly
 
-               # Preflight: production secrets must exist — copy .env.example and fill values
+               # Preflight: production secrets must exist â copy .env.example and fill values
                test -f .env.production \
                  || { echo 'ERROR: .env.production missing on deploy server'; exit 1; }
 
@@ -271,7 +271,7 @@ pipeline {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     stage('Smoke Test') {
       when {
         anyOf { branch 'main'; branch 'staging' }
@@ -282,7 +282,7 @@ pipeline {
         ]) {
           retry(12) {
             sleep time: 10, unit: 'SECONDS'
-            // /health is served on plain HTTP without redirect — see nginx.conf
+            // /health is served on plain HTTP without redirect â see nginx.conf
             sh 'curl -sf "http://$DEPLOY_HOST/health"'
           }
         }
@@ -291,7 +291,7 @@ pipeline {
 
   } // end stages
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   post {
     success {
       script {
@@ -299,14 +299,14 @@ pipeline {
         if (env.IS_MAINLINE == 'true') {
           echo "Deployed ${sha} (${env.BRANCH_NAME})"
         } else {
-          echo "Build ${sha} passed — no deploy for branch '${env.BRANCH_NAME}'"
+          echo "Build ${sha} passed â no deploy for branch '${env.BRANCH_NAME}'"
         }
       }
     }
     failure {
       script {
         if (env.DEPLOY_STARTED == 'true') {
-          echo "Deploy or smoke test failed — attempting automatic rollback"
+          echo "Deploy or smoke test failed â attempting automatic rollback"
           withCredentials([
             string(credentialsId: 'deploy-host',        variable: 'DEPLOY_HOST'),
             string(credentialsId: 'deploy-user',        variable: 'DEPLOY_USER'),
@@ -335,12 +335,12 @@ pipeline {
                    rm -f .env.deploy .env.image
                    echo 'Rollback complete'
                  else
-                   echo 'WARNING: No .env.prev found — cannot auto-rollback (first deploy?)'
+                   echo 'WARNING: No .env.prev found â cannot auto-rollback (first deploy?)'
                  fi"
             '''
           }
         }
-        echo "Pipeline FAILED — ${env.BUILD_URL}"
+        echo "Pipeline FAILED â ${env.BUILD_URL}"
       }
     }
     always {
