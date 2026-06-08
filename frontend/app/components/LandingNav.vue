@@ -260,14 +260,10 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 @media (max-width: 768px) {
   .nav {
     grid-template-columns: 1fr auto;
-    grid-template-rows: auto;
-    height: 60px;
-    padding: 10px 20px;
-    gap: 12px;
-  }
-
-  .tab-pill {
-    display: none;
+    grid-template-rows: auto auto;
+    height: auto;
+    padding: 10px 20px 12px;
+    gap: 10px 12px;
   }
 
   .nav-link {
@@ -283,6 +279,14 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     grid-row: 1;
     grid-column: 2;
     gap: 10px;
+  }
+
+  .tab-pill {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 280px;
+    justify-self: center;
   }
 
   .cta {
