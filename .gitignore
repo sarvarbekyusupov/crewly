@@ -17,6 +17,8 @@ dist/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+.eslintcache
+*.eslintcache
 
 # OS
 .DS_Store
