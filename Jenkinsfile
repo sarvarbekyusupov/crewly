@@ -47,6 +47,18 @@ pipeline {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Waitlist mode is baked into the SPA bundle at build time (ssr: false).
+    // main → waitlist ON (landing only); all other branches → waitlist OFF.
+    stage('Set Build Vars') {
+      steps {
+        script {
+          env.WAITLIST_MODE = (env.BRANCH_NAME == 'main') ? 'true' : 'false'
+          echo "WAITLIST_MODE=${env.WAITLIST_MODE}"
+        }
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Single pnpm install shared across lint → typecheck → test to avoid
     // reinstalling three times (saves ~30-60s even with cache volume)
     stage('Lint, Typecheck & Test') {
@@ -141,6 +153,7 @@ pipeline {
                   --tag        "$REGISTRY/crewly/frontend:$GIT_SHORT_SHA" \
                   --tag        "$REGISTRY/crewly/frontend:$SAFE_BRANCH" \
                   --build-arg  "NUXT_PUBLIC_API_BASE=$API_URL" \
+                  --build-arg  "NUXT_PUBLIC_WAITLIST_MODE=$WAITLIST_MODE" \
                   --file       frontend/Dockerfile \
                   --push \
                   .
