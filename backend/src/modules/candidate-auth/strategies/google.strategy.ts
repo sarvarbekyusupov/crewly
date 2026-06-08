@@ -12,15 +12,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       config.get<string>('GOOGLE_CALLBACK_URL') ||
       'http://localhost:3000/api/v1/candidate-auth/google/callback';
 
-    if (!clientID || !clientSecret) {
-      throw new Error(
-        'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured to use Google OAuth',
-      );
-    }
-
     super({
-      clientID,
-      clientSecret,
+      clientID: clientID || 'google-oauth-not-configured',
+      clientSecret: clientSecret || 'google-oauth-not-configured',
       callbackURL,
       scope: ['email', 'profile'],
     });

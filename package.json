@@ -23,11 +23,11 @@
   },
   "lint-staged": {
     "backend/src/**/*.ts": [
-      "eslint --fix",
+      "backend/node_modules/.bin/eslint --config backend/eslint.config.mjs --fix",
       "pnpm --filter backend exec jest --bail --findRelatedTests --passWithNoTests"
     ],
     "frontend/**/*.{js,ts,vue}": [
-      "eslint --fix"
+      "frontend/node_modules/.bin/eslint --fix"
     ]
   }
 }
