@@ -33,6 +33,10 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
   },
 
+  schemaOrg: {
+    enabled: false,
+  },
+
   sitemap: {
     sources: [
       '/api/sitemap-urls',
