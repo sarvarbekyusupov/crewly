@@ -25,7 +25,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
     "dev": "nest start --watch",
-    "postinstall": "prisma generate"
+    "postinstall": "node -e \"const{existsSync}=require('fs');existsSync('prisma/schema.prisma')&&require('child_process').execSync('prisma generate',{stdio:'inherit'});\""
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
