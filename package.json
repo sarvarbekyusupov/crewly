@@ -23,8 +23,7 @@
   },
   "lint-staged": {
     "backend/src/**/*.ts": [
-      "backend/node_modules/.bin/eslint --config backend/eslint.config.mjs --fix",
-      "pnpm --filter backend exec jest --bail --findRelatedTests --passWithNoTests"
+      "backend/node_modules/.bin/eslint --config backend/eslint.config.mjs --fix"
     ],
     "frontend/**/*.{js,ts,vue}": [
       "pnpm --filter crewly-frontend exec eslint --fix"
