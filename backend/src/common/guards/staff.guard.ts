@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -9,6 +10,8 @@ import { hashToken } from '../utils/token.utils';
 
 @Injectable()
 export class StaffGuard implements CanActivate {
+  private readonly logger = new Logger(StaffGuard.name);
+
   constructor(private readonly db: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,7 +29,12 @@ export class StaffGuard implements CanActivate {
       if (session)
         this.db.staffSession
           .delete({ where: { id: session.id } })
-          .catch(() => {});
+          .catch((e) =>
+            this.logger.error(
+              { err: e.message, sessionId: session.id },
+              'staffSession cleanup failed',
+            ),
+          );
       throw new UnauthorizedException();
     }
 

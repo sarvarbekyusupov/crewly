@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced, useEventBus } from '@vueuse/core'
+import { safeUrl } from '~/utils/safeUrl'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import { capitalizeStatus } from '~/utils/candidate'
 import { scoringActive, scoringLog, scoringProgress } from '~/composables/useCandidateEventStream'
@@ -659,7 +660,7 @@ const cardStyle = computed(() => {
               <!-- Title + score badge -->
               <div class="flex items-center gap-2 mb-1">
                 <a
-                  :href="job.sourceUrl"
+                  :href="safeUrl(job.sourceUrl)"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="font-medium hover:underline"

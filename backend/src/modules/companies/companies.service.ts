@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -30,6 +31,8 @@ export type InviteUserDto = z.infer<typeof InviteUserSchema>;
 
 @Injectable()
 export class CompaniesService {
+  private readonly logger = new Logger(CompaniesService.name);
+
   constructor(
     private readonly db: PrismaService,
     private readonly email: EmailService,
@@ -110,7 +113,12 @@ export class CompaniesService {
         `${frontendUrl}/reset-password?token=${token}`,
         company?.name ?? 'Crewly',
       )
-      .catch(() => {});
+      .catch((e) =>
+        this.logger.error(
+          { err: e.message, userId: user.id, email: user.email },
+          'sendInvite failed — user created but invite email not delivered',
+        ),
+      );
 
     return user;
   }

@@ -35,7 +35,7 @@ interface HhVacancyItem {
 @Injectable()
 export class HhJobsAdapter extends JobSourceAdapter {
   private readonly logger = new Logger(HhJobsAdapter.name);
-  readonly sourceName = 'hh.ru';
+  readonly sourceName = 'hh.uz';
 
   constructor(
     private readonly http: HttpService,
@@ -58,7 +58,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
     let response: { data: HhVacancyListResponse };
     try {
       response = await firstValueFrom(
-        this.http.get<HhVacancyListResponse>('https://api.hh.ru/vacancies', {
+        this.http.get<HhVacancyListResponse>('https://api.hh.uz/vacancies', {
           params: {
             area: '97', // Uzbekistan
             per_page: 50,
@@ -129,7 +129,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
     try {
       const response = await firstValueFrom(
         this.http.get<HhVacancyListResponse>(
-          `https://api.hh.ru/vacancies/${vacancyId}/similar_vacancies`,
+          `https://api.hh.uz/vacancies/${vacancyId}/similar_vacancies`,
           { headers: this.headers, params: { per_page: 20 } },
         ),
       );

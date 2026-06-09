@@ -18,16 +18,18 @@ export const useAuthStore = defineStore('auth', () => {
     return (hierarchy[role.value ?? ''] ?? 0) >= (hierarchy[minRole] ?? 0)
   }
 
-  async function fetchMe(): Promise<void> {
+  async function fetchMe(): Promise<boolean> {
     const api = useApi()
     try {
       loading.value = true
       const me = await api.get<User>('/api/v1/auth/me')
       user.value = me
       if (import.meta.client) localStorage.setItem('emp_hint', '1')
+      return true
     } catch {
       user.value = null
       if (import.meta.client) localStorage.removeItem('emp_hint')
+      return false
     } finally {
       loading.value = false
     }

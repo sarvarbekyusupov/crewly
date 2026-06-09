@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
@@ -14,6 +15,8 @@ import { INGEST_JOB_OPTIONS } from '../../workers/queue-options';
 
 @Injectable()
 export class ApplicationsService {
+  private readonly logger = new Logger(ApplicationsService.name);
+
   constructor(
     private readonly db: PrismaService,
     private readonly s3: S3Service,
@@ -120,7 +123,12 @@ export class ApplicationsService {
             companyId,
           },
         })
-        .catch(() => {});
+        .catch((e) =>
+          this.logger.warn(
+            { err: e.message, applicationId: id, userId },
+            'auditLog.create failed for application.approve',
+          ),
+        );
     }
     return updated;
   }
@@ -157,7 +165,12 @@ export class ApplicationsService {
             metadata: reason ? { reason } : undefined,
           },
         })
-        .catch(() => {});
+        .catch((e) =>
+          this.logger.warn(
+            { err: e.message, applicationId: id, userId },
+            'auditLog.create failed for application.reject',
+          ),
+        );
     }
     return updated;
   }

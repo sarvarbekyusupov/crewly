@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { safeUrl } from '~/utils/safeUrl'
+
 const route = useRoute()
 const config = useRuntimeConfig()
 const jobId = route.params.id as string
@@ -258,7 +260,7 @@ useHead(() => ({
               <div v-if="job.company.website">
                 <span class="text-gray-500 dark:text-gray-400 block">Website</span>
                 <a
-                  :href="job.company.website"
+                  :href="safeUrl(job.company.website)"
                   target="_blank"
                   class="text-primary-600 hover:underline inline-flex items-center gap-1"
                 >

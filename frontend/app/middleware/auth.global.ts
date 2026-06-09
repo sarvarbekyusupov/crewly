@@ -50,7 +50,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const store = useCandidateAuthStore()
     if (!store.isAuthenticated) {
       const hasHint = import.meta.client && !!localStorage.getItem('cand_hint')
-      const isOAuthRedirect = to.query.oauth === '1'
+      const isOAuthRedirect =
+        import.meta.client &&
+        to.query.oauth === '1' &&
+        (to.path === '/candidate/onboarding' || to.path === '/candidate/dashboard')
       if (hasHint || isOAuthRedirect) await store.fetchMe()
       if (!store.isAuthenticated) return navigateTo('/candidate/login')
     }

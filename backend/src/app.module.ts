@@ -42,6 +42,8 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { HealthController } from './common/health.controller';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { QUEUES } from './workers/queue-names';
 
 @Module({
@@ -102,8 +104,9 @@ import { QUEUES } from './workers/queue-names';
     WorkersModule,
     WebhooksModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, AppController],
   providers: [
+    AppService,
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],

@@ -75,6 +75,10 @@ export class IngestCandidatesProcessor {
         where: { id: run.id },
         data: { status: 'failed', error: err.message, completedAt: new Date() },
       });
+      this.logger.error(
+        { runId: run.id, source, err: err.message },
+        'ingest run failed',
+      );
       throw err;
     }
   }

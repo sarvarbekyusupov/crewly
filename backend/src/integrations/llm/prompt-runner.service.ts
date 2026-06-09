@@ -26,6 +26,24 @@ export interface RunOptions {
   responseFormat?: { type: 'json_object' };
 }
 
+const LLM_TIMEOUT_MS = 90_000;
+
+function withLlmTimeout<T>(promise: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(
+        () =>
+          reject(
+            new Error(`LLM call timed out after ${LLM_TIMEOUT_MS / 1000}s`),
+          ),
+        LLM_TIMEOUT_MS,
+      );
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 @Injectable()
 export class PromptRunnerService {
   private readonly logger = new Logger(PromptRunnerService.name);
@@ -164,16 +182,18 @@ export class PromptRunnerService {
         );
       }
 
+      const callOpts = {
+        model: modelName,
+        system: opts.system,
+        maxTokens,
+        temperature,
+        responseFormat: opts.responseFormat,
+      };
+
       let result;
       if (primary.isAvailable()) {
         try {
-          result = await primary.complete(messages, {
-            model: modelName,
-            system: opts.system,
-            maxTokens,
-            temperature,
-            responseFormat: opts.responseFormat,
-          });
+          result = await withLlmTimeout(primary.complete(messages, callOpts));
           providerUsed = primary.name;
         } catch (primaryErr: any) {
           // Only fall back on retriable errors (rate limit, 5xx); rethrow non-retriable
@@ -188,23 +208,11 @@ export class PromptRunnerService {
             `${primary.name} failed, trying ${fallback.name}`,
           );
           if (!fallback.isAvailable()) throw primaryErr;
-          result = await fallback.complete(messages, {
-            model: modelName,
-            system: opts.system,
-            maxTokens,
-            temperature,
-            responseFormat: opts.responseFormat,
-          });
+          result = await withLlmTimeout(fallback.complete(messages, callOpts));
           providerUsed = fallback.name;
         }
       } else {
-        result = await fallback.complete(messages, {
-          model: modelName,
-          system: opts.system,
-          maxTokens,
-          temperature,
-          responseFormat: opts.responseFormat,
-        });
+        result = await withLlmTimeout(fallback.complete(messages, callOpts));
         providerUsed = fallback.name;
       }
 

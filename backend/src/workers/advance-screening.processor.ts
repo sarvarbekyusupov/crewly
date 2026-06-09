@@ -122,16 +122,16 @@ export class AdvanceScreeningProcessor {
       // Email fallback: notify job creator (most relevant person), fallback to company owner
       if (!isReject) {
         const job = screening.application.job as any;
-        this.db.user
-          .findFirst({
-            where: {
-              id: job.createdByUserId ?? undefined,
-              companyId: job.companyId,
-              deletedAt: null,
-            },
-            select: { email: true },
-          })
-          .then(async (u) => {
+        void (async () => {
+          try {
+            let u = await this.db.user.findFirst({
+              where: {
+                id: job.createdByUserId ?? undefined,
+                companyId: job.companyId,
+                deletedAt: null,
+              },
+              select: { email: true },
+            });
             if (!u?.email) {
               u = await this.db.user.findFirst({
                 where: {
@@ -143,14 +143,19 @@ export class AdvanceScreeningProcessor {
               });
             }
             if (u?.email) {
-              return this.email.sendCandidateDelivered(
+              await this.email.sendCandidateDelivered(
                 u.email,
                 screening.application.job.title,
                 screening.application.candidate.fullName ?? '',
               );
             }
-          })
-          .catch(() => {});
+          } catch (e: any) {
+            this.logger.error(
+              { err: e.message, screeningId, companyId: job.companyId },
+              'sendCandidateDelivered failed',
+            );
+          }
+        })();
       }
     } else if (parsed.message) {
       if (screening.conversationId) {

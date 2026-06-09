@@ -3,95 +3,90 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 </script>
 
 <template>
-  <section id="how-it-works" class="how-section">
+  <section id="how-it-works" class="sec">
     <div class="wrap">
-      <h2 class="htitle serif">
+      <div class="sec-lbl fade">
         {{ audience === 'employer' ? 'How Crewly works' : 'How it works' }}
-      </h2>
+      </div>
+      <div class="sec-h fade">
+        <template v-if="audience === 'employer'">
+          From brief to shortlist,<br />we handle everything.
+        </template>
+        <template v-else> Your profile does the work.<br />You show up to interviews. </template>
+      </div>
 
       <!-- Employer cards -->
-      <div v-if="audience === 'employer'" class="cards">
-        <div class="card">
-          <span class="kicker">Brief</span>
-          <h3 class="serif">We run the whole search for you</h3>
+      <div v-if="audience === 'employer'" class="feat-grid">
+        <div class="feat fade">
+          <div class="feat-n">01</div>
+          <div class="feat-tag">Brief</div>
+          <h3>We run the whole search for you</h3>
           <p>
             No software to configure. Tell us the role once — we source, screen, and deliver a
             shortlist ready to interview.
           </p>
         </div>
-        <div class="card">
-          <span class="kicker">Pricing</span>
-          <h3 class="serif">15% of salary. Only when you hire.</h3>
+        <div class="feat fade">
+          <div class="feat-n">02</div>
+          <div class="feat-tag">Pricing</div>
+          <h3>15% of salary. Only when you hire.</h3>
           <p>
-            No setup fees. No monthly charge. You pay on a signed offer — and not a penny before
-            that.
+            No setup fees. No monthly charge. You pay on a signed offer — not a penny before that.
           </p>
         </div>
-        <div class="card">
-          <span class="kicker">Reach</span>
-          <h3 class="serif">Our pool. Your network. The open web.</h3>
+        <div class="feat fade">
+          <div class="feat-n">03</div>
+          <div class="feat-tag">Reach</div>
+          <h3>Our pool. Your network. The open web.</h3>
           <p>
-            We search every channel in parallel — our pre-screened pool, your ATS, and the web —
-            ranked into one shortlist.
+            We search every channel in parallel — pre-screened pool, your ATS, and the web — into
+            one shortlist.
           </p>
         </div>
       </div>
 
-      <!-- Candidate product mock cards -->
-      <div v-else class="cards">
-        <div class="card">
-          <span class="kicker">Chat</span>
-          <h3 class="serif">Tell us what you want</h3>
-          <div class="bubble">What kind of role are you after?</div>
-          <div class="bubble bubble--me">Product design at a startup</div>
-          <div class="bubble">Great — experience level?</div>
-          <div class="bubble bubble--me">4 years, currently at Figma</div>
+      <!-- Candidate cards -->
+      <div v-else class="feat-grid">
+        <div class="feat fade">
+          <div class="feat-n">01</div>
+          <div class="feat-tag">Profile</div>
+          <h3>Tell us what you're looking for</h3>
+          <p>
+            Share your experience and what you want next. One conversation, no forms. Takes under 10
+            minutes.
+          </p>
         </div>
-        <div class="card">
-          <span class="kicker">Learn</span>
-          <h3 class="serif">Upskill with AI coaching</h3>
-          <div class="chips">
-            <span class="chip chip--l">Courses</span>
-            <span class="chip chip--l">Flashcards</span>
-            <span class="chip chip--l">AI Tutor</span>
-          </div>
-          <div class="match flex-col">
-            <div class="match-row">
-              <span>System Design</span>
-              <span class="pct-text">70%</span>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar" style="width: 70%"></div>
-            </div>
-          </div>
-          <div class="match flex-col">
-            <div class="match-row">
-              <span>SQL Fundamentals</span>
-              <span class="pct-text">45%</span>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar" style="width: 45%; background: var(--l-lilac)"></div>
-            </div>
-          </div>
+        <div class="feat fade">
+          <div class="feat-n">02</div>
+          <div class="feat-tag">Matching</div>
+          <h3>We surface you to the right roles</h3>
+          <p>
+            Our AI matches your profile to active openings at top companies. Only relevant, real
+            opportunities — no noise.
+          </p>
         </div>
-        <div class="card">
-          <span class="kicker">Find roles</span>
-          <h3 class="serif">We find roles that fit</h3>
-          <div class="match border-highlight">
-            <div class="match-info">
-              <span class="role-title">Product Designer</span>
-              <span class="role-company">Stripe</span>
-            </div>
-            <span class="pct">96% fit</span>
-          </div>
-          <div class="match">
-            <div class="match-info">
-              <span class="role-title">Senior UX</span>
-              <span class="role-company">Linear</span>
-            </div>
-            <span class="pct pct-secondary">91% fit</span>
-          </div>
-          <p class="new-roles">✨ 12 new roles matching today</p>
+        <div class="feat fade">
+          <div class="feat-n">03</div>
+          <div class="feat-tag">Interviews</div>
+          <h3>Meet companies that already want you</h3>
+          <p>
+            You only hear from us when there's a genuine match. No cold outreach, no generic job
+            alerts.
+          </p>
+        </div>
+      </div>
+
+      <!-- Trust strip (candidate only) -->
+      <div v-if="audience === 'candidate'" class="trust fade">
+        <span class="trust-label">Companies on Crewly</span>
+        <span class="trust-divider" />
+        <div class="trust-items">
+          <span class="trust-item"><span class="trust-dot" />Stripe</span>
+          <span class="trust-item"><span class="trust-dot" />Figma</span>
+          <span class="trust-item"><span class="trust-dot" />Notion</span>
+          <span class="trust-item"><span class="trust-dot" />Linear</span>
+          <span class="trust-item"><span class="trust-dot" />Vercel</span>
+          <span class="trust-item"><span class="trust-dot" />+38 more</span>
         </div>
       </div>
     </div>
@@ -99,226 +94,161 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 </template>
 
 <style scoped>
-.how-section {
-  padding: 90px 0;
+.sec {
+  padding: 88px 0;
 }
 .wrap {
-  max-width: var(--l-maxw);
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 32px;
 }
-.htitle {
-  text-align: center;
-  font-weight: 400;
-  font-size: 46px;
-  margin-bottom: 48px;
-  color: var(--l-text);
+.sec-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ld-acc-t);
+  margin-bottom: 10px;
 }
-.serif {
-  font-family: var(--l-display);
+.sec-h {
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ld-t1);
+  margin-bottom: 0;
 }
 
-/* 3D tilt card grid */
-.cards {
+.feat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  perspective: 1400px;
-}
-.card {
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: 20px;
-  padding: 30px;
-  min-height: 280px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-  transition:
-    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.4s ease,
-    border-color 0.3s ease,
-    opacity 0.3s ease;
-  transform-style: preserve-3d;
-}
-
-@media (min-width: 881px) {
-  .card:nth-child(1) {
-    transform: rotateY(4deg);
-  }
-  .card:nth-child(3) {
-    transform: rotateY(-4deg);
-  }
-
-  .card:hover {
-    transform: translateY(-8px) scale(1.02) rotateY(0) !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-    border-color: var(--l-green);
-    z-index: 10;
-  }
-
-  /* Soft fade on other cards to draw focus */
-  .cards:hover .card:not(:hover) {
-    opacity: 0.75;
-    transform: scale(0.98);
-  }
-}
-
-.kicker {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  font-weight: 700;
-  text-transform: uppercase;
-  font-family: var(--l-sans);
-  background: linear-gradient(90deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.card h3 {
-  font-weight: 400;
-  font-size: 26px;
-  margin: 14px 0 12px;
-  color: var(--l-text);
-}
-.card p {
-  color: var(--l-muted);
-  font-size: 16px;
-  line-height: 1.55;
-}
-
-/* Chat bubbles */
-.bubble {
-  background: var(--l-surface-2);
-  border-radius: 14px;
-  padding: 9px 13px;
-  font-size: 14px;
-  margin-top: 8px;
-  max-width: 80%;
-  color: var(--l-text);
-}
-.bubble--me {
-  background: var(--l-green);
-  color: #1a1a18;
-  margin-left: auto;
-}
-
-/* Chips */
-.chips {
-  margin-top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.chip {
-  display: inline-block;
-  font-size: 13px;
-  padding: 5px 11px;
-  border-radius: var(--l-pill);
-}
-.chip--g {
-  background: color-mix(in srgb, var(--l-green) 30%, transparent);
-  color: var(--l-text);
-}
-.chip--l {
-  background: color-mix(in srgb, var(--l-lilac) 45%, transparent);
-  color: var(--l-text);
-}
-
-/* Match rows & Progress bars */
-.match {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--l-surface-2);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-top: 10px;
-  font-size: 14px;
-  color: var(--l-text);
-}
-.flex-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch !important;
-}
-.match-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.pct-text {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--l-muted);
-}
-.progress-bar-wrap {
-  width: 100%;
-  height: 6px;
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: 3px;
+  gap: 1px;
+  border: 1px solid var(--ld-bd2);
+  border-radius: 10px;
   overflow: hidden;
-}
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  border-radius: 3px;
-}
-.border-highlight {
-  border: 1px solid color-mix(in srgb, var(--l-green) 60%, transparent) !important;
-}
-.match-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.role-title {
-  font-weight: 500;
-}
-.role-company {
-  font-size: 12px;
-  color: var(--l-muted);
+  background: var(--ld-bd2);
+  margin-top: 48px;
 }
 
-.pct {
-  background: var(--l-green);
-  color: #1a1a18;
+.feat {
+  background: var(--ld-bg);
+  padding: 32px 28px;
+  transition: background 0.2s;
+}
+.feat:hover {
+  background: var(--ld-surf);
+}
+
+.feat-n {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--ld-t3);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feat-n::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ld-bd2);
+}
+
+.feat-tag {
+  display: inline-block;
+  font-size: 10.5px;
   font-weight: 700;
-  border-radius: var(--l-pill);
-  padding: 3px 9px;
+  color: var(--ld-acc-t);
+  background: var(--ld-acc-s);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.feat h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ld-t1);
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.feat p {
+  font-size: 13.5px;
+  color: var(--ld-t2);
+  line-height: 1.7;
+}
+
+/* Trust strip */
+.trust {
+  border: 1px solid var(--ld-bd2);
+  border-radius: 10px;
+  padding: 28px 32px;
+  background: var(--ld-surf);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 48px;
+}
+.trust-label {
   font-size: 12px;
+  color: var(--ld-t3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.trust-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--ld-bd2);
   flex-shrink: 0;
 }
-.pct-secondary {
-  background: var(--l-lilac) !important;
-  color: #341b48 !important;
+.trust-items {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
 }
-
-.new-roles {
-  margin-top: 12px;
+.trust-item {
   font-size: 13px;
-  color: var(--l-muted);
+  font-weight: 700;
+  color: var(--ld-t2);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.trust-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ld-acc);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
-@media (max-width: 880px) {
-  .cards {
-    grid-template-columns: 1fr;
-    perspective: none;
-  }
-  .card,
-  .cards:hover .card {
-    transform: none !important;
-    opacity: 1 !important;
-    box-shadow: none !important;
-  }
+/* Fade animation */
+.fade {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s,
+    transform 0.5s;
 }
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
+.fade.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 820px) {
+  .feat-grid {
+    grid-template-columns: 1fr;
   }
-  .card:nth-child(1),
-  .card:nth-child(3) {
-    transform: none;
+  .trust {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

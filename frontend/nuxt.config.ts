@@ -91,6 +91,7 @@ export default defineNuxtConfig({
       { name: 'JetBrains Mono', provider: 'google', display: 'swap' },
       { name: 'Source Serif 4', provider: 'google', display: 'swap' },
       { name: 'DM Sans', provider: 'google', display: 'swap' },
+      { name: 'Manrope', provider: 'google', display: 'swap' },
     ],
   },
 
@@ -110,9 +111,9 @@ export default defineNuxtConfig({
 
   i18n: {
     locales: [
-      { code: 'en', file: 'en.json', name: 'English' },
-      { code: 'ru', file: 'ru.json', name: 'Русский' },
-      { code: 'uz', file: 'uz.json', name: "O'zbek" },
+      { code: 'en', iso: 'en', language: 'en', file: 'en.json', name: 'English' },
+      { code: 'ru', iso: 'ru', language: 'ru', file: 'ru.json', name: 'Русский' },
+      { code: 'uz', iso: 'uz', language: 'uz', file: 'uz.json', name: "O'zbek" },
     ],
     defaultLocale: 'en',
     langDir: 'locales',

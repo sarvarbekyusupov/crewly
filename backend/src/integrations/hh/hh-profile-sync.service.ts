@@ -8,7 +8,7 @@ import { HhResumeSummary } from './hh.types';
 @Injectable()
 export class HhProfileSyncService {
   private readonly logger = new Logger(HhProfileSyncService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,

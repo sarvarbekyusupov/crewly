@@ -40,8 +40,8 @@ describe('HhJobsAdapter', () => {
     adapter = module.get(HhJobsAdapter);
   });
 
-  it('sourceName is hh.ru', () => {
-    expect(adapter.sourceName).toBe('hh.ru');
+  it('sourceName is hh.uz', () => {
+    expect(adapter.sourceName).toBe('hh.uz');
   });
 
   it('returns jobs from API response', async () => {

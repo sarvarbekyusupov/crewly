@@ -40,7 +40,7 @@ export interface HhJobSnapshot {
 @Injectable()
 export class HhVacancyService {
   private readonly logger = new Logger(HhVacancyService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Candidate, Application, OutreachAttempt, PaginatedResponse } from '~/types/api'
+import { safeUrl } from '~/utils/safeUrl'
 
 const { t } = useI18n()
 const api = useApi()
@@ -383,7 +384,7 @@ function outreachStatusColor(status: string) {
               <div class="flex flex-col gap-2">
                 <a
                   v-if="candidate.socialProof.github_url"
-                  :href="candidate.socialProof.github_url"
+                  :href="safeUrl(candidate.socialProof.github_url)"
                   target="_blank"
                   class="flex items-center gap-2 text-xs hover:underline"
                   style="color: var(--accent)"
@@ -393,7 +394,7 @@ function outreachStatusColor(status: string) {
                 </a>
                 <a
                   v-if="candidate.socialProof.linkedin_url"
-                  :href="candidate.socialProof.linkedin_url"
+                  :href="safeUrl(candidate.socialProof.linkedin_url)"
                   target="_blank"
                   class="flex items-center gap-2 text-xs hover:underline"
                   style="color: var(--accent)"
@@ -403,7 +404,7 @@ function outreachStatusColor(status: string) {
                 </a>
                 <a
                   v-if="candidate.socialProof.portfolio_url"
-                  :href="candidate.socialProof.portfolio_url"
+                  :href="safeUrl(candidate.socialProof.portfolio_url)"
                   target="_blank"
                   class="flex items-center gap-2 text-xs hover:underline"
                   style="color: var(--accent)"
@@ -429,7 +430,7 @@ function outreachStatusColor(status: string) {
               <ul class="space-y-2">
                 <li v-for="talk in candidate.socialProof.tech_talks" :key="talk.url">
                   <a
-                    :href="talk.url"
+                    :href="safeUrl(talk.url)"
                     target="_blank"
                     class="flex items-start gap-2 text-xs hover:underline leading-tight"
                     style="color: var(--ink-muted)"

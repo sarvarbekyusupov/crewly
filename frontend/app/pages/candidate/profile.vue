@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { safeUrl } from '~/utils/safeUrl'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { candidateProfileSchema } from '~/schemas/candidate'
@@ -987,7 +988,7 @@ const missingProfileItems = computed(() => {
 
           <a
             v-if="profile?.resumeFileUrl"
-            :href="profile.resumeFileUrl"
+            :href="safeUrl(profile.resumeFileUrl)"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -1592,7 +1593,12 @@ const missingProfileItems = computed(() => {
               class="w-full"
             >
               <template v-if="linkedinUrl" #trailing>
-                <a :href="linkedinUrl" target="_blank" rel="noopener noreferrer" tabindex="-1">
+                <a
+                  :href="safeUrl(linkedinUrl)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  tabindex="-1"
+                >
                   <UIcon
                     name="i-heroicons-arrow-top-right-on-square"
                     class="w-4 h-4"
@@ -1611,7 +1617,12 @@ const missingProfileItems = computed(() => {
               class="w-full"
             >
               <template v-if="githubUrl" #trailing>
-                <a :href="githubUrl" target="_blank" rel="noopener noreferrer" tabindex="-1">
+                <a
+                  :href="safeUrl(githubUrl)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  tabindex="-1"
+                >
                   <UIcon
                     name="i-heroicons-arrow-top-right-on-square"
                     class="w-4 h-4"

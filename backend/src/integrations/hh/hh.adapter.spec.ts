@@ -53,8 +53,8 @@ describe('HhAdapter', () => {
     adapter = module.get(HhAdapter);
   });
 
-  it('sourceName is hh.ru', () => {
-    expect(adapter.sourceName).toBe('hh.ru');
+  it('sourceName is hh.uz', () => {
+    expect(adapter.sourceName).toBe('hh.uz');
   });
 
   it('fetchPage returns normalized profiles', async () => {

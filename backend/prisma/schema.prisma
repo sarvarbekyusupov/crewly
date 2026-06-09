@@ -80,7 +80,6 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([tokenHash], map: "idx_sessions_token_hash")
   @@index([expiresAt], map: "idx_sessions_expires")
   @@index([userId], map: "idx_sessions_user")
   @@map("sessions")
@@ -97,7 +96,6 @@ model AuthToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([tokenHash], map: "idx_auth_tokens_hash")
   @@index([userId, type], map: "idx_auth_tokens_user_type")
   @@map("auth_tokens")
 }
@@ -126,7 +124,6 @@ model StaffSession {
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
-  @@index([tokenHash], map: "idx_staff_sessions_token_hash")
   @@index([staffId], map: "idx_staff_sessions_staff")
   @@map("staff_sessions")
 }

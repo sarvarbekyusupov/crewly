@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SeekerApplication } from '~/types/api'
+import { safeUrl } from '~/utils/safeUrl'
 import { capitalizeStatus } from '~/utils/candidate'
 import { formatRelativeTime } from '~/utils/formatters'
 
@@ -318,7 +319,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                 </div>
                 <a
                   v-if="app.discoveredJob?.sourceUrl"
-                  :href="app.discoveredJob.sourceUrl"
+                  :href="safeUrl(app.discoveredJob.sourceUrl)"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="mt-2 flex items-center gap-1 text-xs hover:underline"
@@ -361,7 +362,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
           <div class="min-w-0 flex-1">
             <a
               v-if="app.discoveredJob?.sourceUrl"
-              :href="app.discoveredJob.sourceUrl"
+              :href="safeUrl(app.discoveredJob.sourceUrl)"
               target="_blank"
               rel="noopener noreferrer"
               class="font-medium hover:underline"

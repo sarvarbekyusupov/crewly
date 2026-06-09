@@ -10,7 +10,7 @@ import { HhProfileSyncService } from './hh-profile-sync.service';
 @Injectable()
 export class HhOAuthService {
   private readonly logger = new Logger(HhOAuthService.name);
-  private readonly hhBaseUrl = 'https://hh.ru';
+  private readonly hhBaseUrl = 'https://hh.uz';
 
   constructor(
     private readonly http: HttpService,

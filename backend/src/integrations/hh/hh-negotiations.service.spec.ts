@@ -55,7 +55,7 @@ describe('HhNegotiationsService', () => {
       expect(result).toEqual(states);
       // Must hit /negotiations not the non-existent /negotiations/employer_states
       expect(httpGet).toHaveBeenCalledWith(
-        'https://api.hh.ru/negotiations',
+        'https://api.hh.uz/negotiations',
         expect.objectContaining({
           params: expect.objectContaining({ vacancy_id: 'vac-1' }),
         }),
@@ -71,7 +71,7 @@ describe('HhNegotiationsService', () => {
 
   describe('getVacancyResponses', () => {
     const collectionUrl =
-      'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
+      'https://api.hh.uz/negotiations/response?vacancy_id=vac-1';
     const negotiationItems = [{ id: 'neg-1', state: { id: 'response' } }];
 
     it('fetches collections then items from each collection URL', async () => {
@@ -92,7 +92,7 @@ describe('HhNegotiationsService', () => {
       // First call: get collections
       expect(httpGet).toHaveBeenNthCalledWith(
         1,
-        'https://api.hh.ru/negotiations',
+        'https://api.hh.uz/negotiations',
         expect.objectContaining({ params: { vacancy_id: 'vac-1' } }),
       );
       // Second call: get items from collection URL
@@ -111,8 +111,8 @@ describe('HhNegotiationsService', () => {
     });
 
     it('combines items from multiple collections', async () => {
-      const url1 = 'https://api.hh.ru/negotiations/response?vacancy_id=vac-1';
-      const url2 = 'https://api.hh.ru/negotiations/interview?vacancy_id=vac-1';
+      const url1 = 'https://api.hh.uz/negotiations/response?vacancy_id=vac-1';
+      const url2 = 'https://api.hh.uz/negotiations/interview?vacancy_id=vac-1';
       httpGet
         .mockReturnValueOnce(
           of({
@@ -148,7 +148,7 @@ describe('HhNegotiationsService', () => {
   });
 
   describe('inviteCandidate', () => {
-    const actionUrl = 'https://api.hh.ru/negotiations/phone_interview';
+    const actionUrl = 'https://api.hh.uz/negotiations/phone_interview';
 
     const makeVacancyItem = (enabled: boolean) => ({
       id: 'vac-1',
@@ -205,14 +205,14 @@ describe('HhNegotiationsService', () => {
                     id: 'a',
                     enabled: false,
                     method: 'POST',
-                    url: 'https://api.hh.ru/negotiations/a',
+                    url: 'https://api.hh.uz/negotiations/a',
                     arguments: [],
                   },
                   {
                     id: 'b',
                     enabled: true,
                     method: 'POST',
-                    url: 'https://api.hh.ru/negotiations/b',
+                    url: 'https://api.hh.uz/negotiations/b',
                     arguments: [],
                   },
                 ],
@@ -233,7 +233,7 @@ describe('HhNegotiationsService', () => {
 
       expect(result).toBe('neg-b');
       expect(httpRequest).toHaveBeenCalledWith(
-        expect.objectContaining({ url: 'https://api.hh.ru/negotiations/b' }),
+        expect.objectContaining({ url: 'https://api.hh.uz/negotiations/b' }),
       );
     });
 
@@ -271,7 +271,7 @@ describe('HhNegotiationsService', () => {
       await service.moveNegotiation('interview', 'neg-1', 'Congratulations');
 
       expect(httpPut).toHaveBeenCalledWith(
-        'https://api.hh.ru/negotiations/interview/neg-1',
+        'https://api.hh.uz/negotiations/interview/neg-1',
         { message: 'Congratulations' },
         expect.any(Object),
       );
@@ -283,7 +283,7 @@ describe('HhNegotiationsService', () => {
       await service.moveNegotiation('discard', 'neg-1');
 
       expect(httpPut).toHaveBeenCalledWith(
-        'https://api.hh.ru/negotiations/discard/neg-1',
+        'https://api.hh.uz/negotiations/discard/neg-1',
         {},
         expect.any(Object),
       );
@@ -291,44 +291,18 @@ describe('HhNegotiationsService', () => {
   });
 
   describe('sendMessage', () => {
-    it('posts message to negotiation thread', async () => {
-      httpPost.mockReturnValue(of({ data: {} }));
-
-      await service.sendMessage('neg-1', 'Hello candidate!');
-
-      expect(httpPost).toHaveBeenCalledWith(
-        'https://api.hh.ru/negotiations/neg-1/messages',
-        { message: 'Hello candidate!' },
-        expect.any(Object),
+    it('throws deprecated error', async () => {
+      await expect(service.sendMessage('neg-1', 'Hello')).rejects.toThrow(
+        'HH Negotiations messages API is deprecated',
       );
     });
   });
 
   describe('getMessages', () => {
-    it('returns message items from thread', async () => {
-      const msgs = [
-        {
-          id: 'msg-1',
-          text: 'Hi',
-          created_at: '2024-01-01',
-          author: { participant_type: 'employer' },
-        },
-      ];
-      httpGet.mockReturnValue(of({ data: { items: msgs } }));
-
-      const result = await service.getMessages('neg-1');
-
-      expect(result).toEqual(msgs);
-      expect(httpGet).toHaveBeenCalledWith(
-        'https://api.hh.ru/negotiations/neg-1/messages',
-        expect.any(Object),
+    it('throws deprecated error', async () => {
+      await expect(service.getMessages('neg-1')).rejects.toThrow(
+        'HH Negotiations messages API is deprecated',
       );
-    });
-
-    it('returns [] when items missing', async () => {
-      httpGet.mockReturnValue(of({ data: {} }));
-      const result = await service.getMessages('neg-1');
-      expect(result).toEqual([]);
     });
   });
 

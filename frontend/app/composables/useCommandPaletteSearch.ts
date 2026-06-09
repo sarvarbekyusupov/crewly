@@ -28,8 +28,16 @@ export function useCommandPaletteSearch(navGroups: Ref<NavGroup[]>) {
         return
       }
       const [jobsRes, candidatesRes] = await Promise.all([
-        api.get<any>('/api/v1/jobs', { search: q, limit: 5 }).catch(() => ({ data: [] })),
-        api.get<any>('/api/v1/candidates', { search: q, limit: 5 }).catch(() => ({ data: [] })),
+        api.get<any>('/api/v1/jobs', { search: q, limit: 5 }).catch((e: any) => {
+          if (e?.statusCode !== 401 && e?.statusCode !== 403)
+            console.warn('job search failed', e?.message)
+          return { data: [] }
+        }),
+        api.get<any>('/api/v1/candidates', { search: q, limit: 5 }).catch((e: any) => {
+          if (e?.statusCode !== 401 && e?.statusCode !== 403)
+            console.warn('candidate search failed', e?.message)
+          return { data: [] }
+        }),
       ])
       searchResults.value = {
         jobs: jobsRes.data ?? [],

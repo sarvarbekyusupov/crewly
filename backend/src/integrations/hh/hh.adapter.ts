@@ -9,7 +9,7 @@ import {
 
 @Injectable()
 export class HhAdapter extends CandidateSourceAdapter {
-  readonly sourceName = 'hh.ru';
+  readonly sourceName = 'hh.uz';
   private readonly logger = new Logger(HhAdapter.name);
 
   constructor(private readonly hh: HhClientService) {

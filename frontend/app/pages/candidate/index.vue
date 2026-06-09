@@ -9,6 +9,7 @@ defineOgImageComponent('Default', {
 
 const { set } = useAudience()
 set('candidate')
+useFadeIn()
 
 useHead({
   title: 'Find work and get hired',
@@ -110,7 +111,7 @@ useHead({
   <div>
     <LandingHero audience="candidate" />
     <LandingHowItWorks audience="candidate" />
-    <LandingFaq audience="candidate" />
     <LandingFinalCta audience="candidate" />
+    <LandingFaq audience="candidate" />
   </div>
 </template>

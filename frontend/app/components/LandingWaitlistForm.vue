@@ -108,42 +108,37 @@ const successMsg = computed(() =>
 
 .wl-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #d9d3c7;
-  border-radius: 999px;
-  background: #fdfcf8;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  color: #1a1a1a;
+  padding: 10px 14px;
+  border: 1px solid var(--ld-bd, #e2e0da);
+  border-radius: 8px;
+  background: var(--ld-surf, #ffffff);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 13.5px;
+  color: var(--ld-t1, #0f0f12);
   outline: none;
-  transition:
-    border-color 0.12s,
-    box-shadow 0.12s;
+  transition: border-color 0.15s;
   min-width: 0;
 }
 .wl-input::placeholder {
-  color: #a8a39a;
+  color: var(--ld-t3, #9898a8);
 }
 .wl-input:focus {
-  border-color: #1a1a1a;
-  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.08);
+  border-color: var(--ld-acc, #4252e8);
 }
 .wl-input--error {
-  border-color: #c84a1f;
-  box-shadow: 0 0 0 3px rgba(200, 74, 31, 0.1);
+  border-color: #e53935;
 }
 .wl-input:disabled {
   opacity: 0.6;
 }
 
 .wl-form--candidate .wl-input:focus {
-  border-color: #c84a1f;
-  box-shadow: 0 0 0 3px rgba(200, 74, 31, 0.1);
+  border-color: var(--ld-acc, #4252e8);
 }
 
 .wl-field-error {
   font-size: 11px;
-  color: #c84a1f;
+  color: #e53935;
   padding: 0 4px;
 }
 
@@ -152,33 +147,34 @@ const successMsg = computed(() =>
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 22px;
+  padding: 10px 18px;
   border: none;
-  border-radius: 999px;
-  background: #1a1a1a;
-  color: #f5f1ea;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 8px;
+  background: var(--ld-acc, #4252e8);
+  color: #fff;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
   transition:
     background 0.15s,
-    opacity 0.15s;
+    transform 0.15s;
 }
 .wl-btn:hover:not(:disabled) {
-  background: #333;
+  background: var(--ld-acc-h, #3545d8);
+  transform: translateY(-1px);
 }
 .wl-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .wl-form--candidate .wl-btn {
-  background: #c84a1f;
+  background: var(--ld-acc, #4252e8);
 }
 .wl-form--candidate .wl-btn:hover:not(:disabled) {
-  background: #a33b17;
+  background: var(--ld-acc-h, #3545d8);
 }
 
 .wl-spinner {
@@ -244,26 +240,15 @@ const successMsg = computed(() =>
   }
 
   .wl-input {
-    padding: 16px 20px;
+    padding: 14px 16px;
     font-size: 16px;
-    border: 1.5px solid rgba(26, 26, 26, 0.25);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   }
 
   .wl-btn {
     width: 100%;
-    padding: 16px 20px;
-    font-size: 16px;
+    padding: 14px 20px;
+    font-size: 15px;
     height: auto;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #c84a1f, #f97316);
-    box-shadow: 0 4px 16px rgba(200, 74, 31, 0.35);
-  }
-
-  .wl-form--candidate .wl-btn {
-    background: linear-gradient(135deg, #c84a1f, #f97316);
   }
 }
 </style>

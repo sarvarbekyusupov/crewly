@@ -37,7 +37,7 @@ const SUBSCRIBED_TYPES = ['NEW_NEGOTIATION', 'NEGOTIATION_STATE_CHANGE'];
 @Injectable()
 export class HhWebhookService implements OnModuleInit {
   private readonly logger = new Logger(HhWebhookService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,

@@ -17,7 +17,7 @@ import { HhNegotiationItem } from './hh-negotiations.service';
 @Injectable()
 export class HhClientService {
   private readonly logger = new Logger(HhClientService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,
@@ -128,7 +128,7 @@ export class HhClientService {
 
     const response = await firstValueFrom(
       this.http.post<HhTokenResponse>(
-        'https://hh.ru/oauth/token',
+        'https://hh.uz/oauth/token',
         new URLSearchParams({
           grant_type: 'refresh_token',
           refresh_token: refreshToken,

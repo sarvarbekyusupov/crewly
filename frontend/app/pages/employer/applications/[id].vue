@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Application } from '~/types/api'
+import { safeUrl } from '~/utils/safeUrl'
 
 const { t } = useI18n()
 const api = useApi()
@@ -428,7 +429,7 @@ const shadowScoreFields = computed(() => {
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium" style="color: var(--ink)">Interview scheduled</p>
         <a
-          :href="app.googleMeetLink"
+          :href="safeUrl(app.googleMeetLink)"
           target="_blank"
           rel="noopener noreferrer"
           class="text-xs hover:underline"
@@ -437,7 +438,9 @@ const shadowScoreFields = computed(() => {
           {{ app.googleMeetLink }}
         </a>
       </div>
-      <UButton :href="app.googleMeetLink" target="_blank" size="xs" variant="outline">Join</UButton>
+      <UButton :href="safeUrl(app.googleMeetLink)" target="_blank" size="xs" variant="outline"
+        >Join</UButton
+      >
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -997,7 +1000,7 @@ const shadowScoreFields = computed(() => {
             style="border-top: 1px solid var(--line-soft)"
           >
             <a
-              :href="assessment.dossierUrl"
+              :href="safeUrl(assessment.dossierUrl)"
               target="_blank"
               rel="noopener noreferrer"
               class="flex items-center gap-1.5 text-xs hover:underline"
@@ -1077,7 +1080,7 @@ const shadowScoreFields = computed(() => {
             >
               <p style="color: var(--ink-subtle)">Last scheduled:</p>
               <a
-                :href="lastMeetLink"
+                :href="safeUrl(lastMeetLink)"
                 target="_blank"
                 rel="noopener noreferrer"
                 style="color: var(--accent)"

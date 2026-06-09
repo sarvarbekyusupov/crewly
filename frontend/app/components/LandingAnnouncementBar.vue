@@ -4,74 +4,67 @@ const dismissed = useState('annc_dismissed', () => false)
 </script>
 
 <template>
-  <div v-if="!dismissed" class="annc-wrap">
-    <div v-if="audience === 'employer'" class="annc">
-      Looking for a new job? Crewly matches you with the right roles.
+  <div v-if="!dismissed" class="banner">
+    <template v-if="audience === 'employer'">
+      <span>Looking for a new job? Crewly matches you with the right roles.</span>
       <NuxtLink to="/candidate" @click="set('candidate')">See Crewly for candidates →</NuxtLink>
-      <button class="x" aria-label="Dismiss" @click="dismissed = true">✕</button>
-    </div>
-    <div v-else class="annc">
-      Hiring? Let Crewly source and screen for you.
+    </template>
+    <template v-else>
+      <span>Are you hiring? Crewly sources and screens candidates for you.</span>
       <NuxtLink to="/" @click="set('employer')">See Crewly for employers →</NuxtLink>
-      <button class="x" aria-label="Dismiss" @click="dismissed = true">✕</button>
-    </div>
+    </template>
+    <button class="banner-x" aria-label="Dismiss" @click="dismissed = true">✕</button>
   </div>
 </template>
 
 <style scoped>
-.annc-wrap {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 110;
-  height: 39px;
-  box-sizing: border-box;
-}
-
-.annc {
-  height: 39px;
-  box-sizing: border-box;
-  background: #fde8df;
-  color: #7a2d10;
-  font-family: var(--l-sans);
-  font-size: 14px;
-  font-weight: 400;
-  padding: 6px 48px 8px 16px;
+.banner {
+  background: var(--ld-acc-s);
+  border-bottom: 1px solid var(--ld-bd2);
+  padding: 9px 48px 9px 32px;
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ld-t2);
+  position: relative;
+  font-family: 'Manrope', system-ui, sans-serif;
 }
 
-.annc a {
-  text-decoration: underline;
+.banner a {
+  color: var(--ld-acc-t);
   font-weight: 600;
-  color: #c84a1f;
-  cursor: pointer;
+  text-decoration: none;
+  transition: text-decoration 0.1s;
 }
 
-.x {
+.banner a:hover {
+  text-decoration: underline;
+}
+
+.banner-x {
   position: absolute;
-  right: 18px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  cursor: pointer;
-  opacity: 0.6;
+  color: var(--ld-t3);
   font-size: 14px;
-  padding: 4px;
-  color: #7a2d10;
+  padding: 4px 6px;
+  border-radius: 4px;
   line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s;
 }
 
-.x:hover {
-  opacity: 1;
+.banner-x:hover {
+  color: var(--ld-t2);
 }
 
 @media (max-width: 768px) {
-  .annc-wrap {
+  .banner {
     display: none;
   }
 }

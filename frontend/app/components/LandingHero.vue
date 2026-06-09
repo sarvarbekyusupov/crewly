@@ -1,139 +1,166 @@
 <script setup lang="ts">
-defineProps<{ audience: 'employer' | 'candidate' }>()
-
-const roleQuery = ref('')
-const router = useRouter()
+const props = defineProps<{ audience: 'employer' | 'candidate' }>()
 const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 
-function submitSearch() {
-  router.push(`/employer/signup?role=${encodeURIComponent(roleQuery.value.trim())}`)
-}
+onMounted(() => {
+  if (props.audience === 'employer') {
+    const fills = document.querySelectorAll<HTMLElement>('.cand-fill')
+    fills.forEach((fill, i) => {
+      const target = fill.style.width
+      fill.style.width = '0'
+      fill.style.transition = `width 0.55s cubic-bezier(0.4,0,0.2,1) ${0.55 + i * 0.18}s`
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          fill.style.width = target
+        }),
+      )
+    })
+  }
+})
 </script>
 
 <template>
   <div class="hero">
-    <div class="orb orb-1" aria-hidden="true" />
-    <div class="orb orb-2" aria-hidden="true" />
-    <div class="orb orb-3" aria-hidden="true" />
-    <div class="hero-inner">
-      <!-- Copy -->
-      <div class="hero-copy">
-        <template v-if="audience === 'employer'">
-          <h1 class="headline serif">
-            Hire the right people,<br />
-            <span class="accent-italic">without the search.</span>
-          </h1>
-          <p class="sub">
-            Tell us the role. Our AI sources candidates, runs outreach, and screens them — you spend
-            time only with people worth meeting.
-          </p>
-          <div v-if="waitlistMode" class="search">
-            <LandingWaitlistForm audience="employer" />
-          </div>
-          <div v-else class="search">
-            <input
-              v-model="roleQuery"
-              placeholder="What role are you hiring for?"
-              aria-label="Role to hire for"
-              @keydown.enter="submitSearch"
-            />
-            <NuxtLink
-              :to="
-                roleQuery.trim()
-                  ? `/employer/signup?role=${encodeURIComponent(roleQuery.trim())}`
-                  : '/employer/signup'
-              "
-              class="search-btn"
-              >Post a role →</NuxtLink
-            >
-          </div>
-        </template>
+    <!-- Left copy -->
+    <div class="hero-copy">
+      <template v-if="audience === 'employer'">
+        <div class="hero-badge">
+          <span class="badge-dot" />
+          AI-native recruiting · waitlist open
+        </div>
+        <h1>Hire the right people,<br />without the search.</h1>
+        <p class="hero-sub">
+          Tell us the role. Our AI sources candidates, runs outreach, and screens them — you spend
+          time only with people worth meeting.
+        </p>
+        <form id="waitlist" class="hero-form" @submit.prevent>
+          <LandingWaitlistForm audience="employer" />
+        </form>
+        <p class="hero-micro">
+          <b>43 companies</b> joined this month &nbsp;·&nbsp; No card required
+        </p>
+      </template>
 
-        <template v-else>
-          <h1 class="headline serif">
-            Your next role is already<br />
-            <span class="accent-italic">looking for you.</span>
-          </h1>
-          <p class="sub">
-            Build your profile once. We match you to roles across our network and the open web —
-            then reach out when there's a real fit. No cover letters, no job boards.
-          </p>
-          <div v-if="waitlistMode" class="pill-cta-wrap">
-            <LandingWaitlistForm audience="candidate" />
+      <template v-else>
+        <div class="hero-badge">
+          <span class="badge-dot" />
+          For candidates · waitlist open
+        </div>
+        <h1>The right companies are already looking for you.</h1>
+        <p class="hero-sub">
+          Tell us what you're looking for. We surface you to top companies hiring your exact profile
+          — no spam, no cold applications, no job boards.
+        </p>
+        <form id="waitlist" class="hero-form" @submit.prevent>
+          <LandingWaitlistForm audience="candidate" />
+        </form>
+        <p class="hero-micro"><b>1,200+ candidates</b> placed · Free, always</p>
+      </template>
+    </div>
+
+    <!-- Right demo card -->
+    <div class="hero-art">
+      <!-- Employer: shortlist card -->
+      <div v-if="audience === 'employer'" class="hcard">
+        <div class="hcard-bar">
+          <span class="hbar-dot" style="background: #ff5f57" />
+          <span class="hbar-dot" style="background: #febc2e" />
+          <span class="hbar-dot" style="background: #28c840" />
+          <span class="hcard-title">Crewly · Shortlist</span>
+        </div>
+        <div class="hcard-role-row">
+          <div class="hcard-role-lbl">Active role</div>
+          <div class="hcard-role-name">Product Manager</div>
+          <div class="hcard-role-meta">San Francisco · 3 candidates ready</div>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(52% 0.22 258)">SC</div>
+          <div class="cand-info">
+            <div class="cand-name">Sarah Chen</div>
+            <div class="cand-sub">Senior PM · ex-Stripe</div>
           </div>
-          <div v-else class="pill-cta-wrap">
-            <NuxtLink to="/candidate/login?mode=signup" class="pill-cta">
-              Build your free profile
-              <span class="round">→</span>
-            </NuxtLink>
-            <span class="browse">or <NuxtLink to="/candidate/login">see open roles</NuxtLink></span>
+          <div class="cand-right">
+            <span class="cand-pct">96%</span>
+            <div class="cand-bar"><div class="cand-fill" style="width: 96%" /></div>
           </div>
-        </template>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(52% 0.22 148)">AR</div>
+          <div class="cand-info">
+            <div class="cand-name">Alex Rivera</div>
+            <div class="cand-sub">Product Lead · Figma</div>
+          </div>
+          <div class="cand-right">
+            <span class="cand-pct">91%</span>
+            <div class="cand-bar"><div class="cand-fill" style="width: 91%" /></div>
+          </div>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(52% 0.22 40)">JP</div>
+          <div class="cand-info">
+            <div class="cand-name">Jamie Park</div>
+            <div class="cand-sub">PM III · Notion</div>
+          </div>
+          <div class="cand-right">
+            <span class="cand-pct">87%</span>
+            <div class="cand-bar"><div class="cand-fill" style="width: 87%" /></div>
+          </div>
+        </div>
+        <div class="hcard-foot">
+          <span class="hfoot-dot" />
+          All 3 screened &amp; available to interview
+        </div>
       </div>
 
-      <!-- Art -->
-      <div class="art" aria-hidden="true">
-        <!-- Employer: candidate shortlist -->
-        <div v-if="audience === 'employer'" class="shortlist-card">
-          <div class="sl-header">
-            <span class="sl-title">Shortlist · Product Manager</span>
-            <span class="sl-badge">3 ready</span>
-          </div>
-          <div class="sl-row sl-row--top">
-            <div class="sl-avatar">SC</div>
-            <div class="sl-info">
-              <span class="sl-name">Sarah Chen</span>
-              <span class="sl-meta">Senior PM · ex-Stripe</span>
-            </div>
-            <span class="sl-score sl-score--1">96%</span>
-          </div>
-          <div class="sl-row">
-            <div class="sl-avatar sl-avatar--2">AR</div>
-            <div class="sl-info">
-              <span class="sl-name">Alex Rivera</span>
-              <span class="sl-meta">Product Lead · Figma</span>
-            </div>
-            <span class="sl-score sl-score--2">91%</span>
-          </div>
-          <div class="sl-row">
-            <div class="sl-avatar sl-avatar--3">JP</div>
-            <div class="sl-info">
-              <span class="sl-name">Jamie Park</span>
-              <span class="sl-meta">PM III · Notion</span>
-            </div>
-            <span class="sl-score sl-score--3">87%</span>
-          </div>
-          <div class="sl-footer">✓ Screened &amp; available to interview</div>
+      <!-- Candidate: matches card -->
+      <div v-else class="hcard">
+        <div class="hcard-bar">
+          <span class="hbar-dot" style="background: #ff5f57" />
+          <span class="hbar-dot" style="background: #febc2e" />
+          <span class="hbar-dot" style="background: #28c840" />
+          <span class="hcard-title">Crewly · Your matches</span>
         </div>
-
-        <!-- Candidate: role matches -->
-        <div v-else class="match-card">
-          <div class="mc-header">
-            <span class="mc-title">Your matches today</span>
-            <span class="mc-new">12 new</span>
+        <div class="hcard-role-row">
+          <div class="hcard-role-lbl">Matched to your profile</div>
+          <div class="hcard-role-name">Senior Product Manager</div>
+          <div class="hcard-role-meta">3 new matches this week</div>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(48% 0.22 258)">St</div>
+          <div class="cand-info">
+            <div class="cand-name">Stripe</div>
+            <div class="cand-sub">Growth PM · Full-time</div>
           </div>
-          <div class="mc-role mc-role--top">
-            <div class="mc-role-info">
-              <span class="mc-role-name">Product Designer</span>
-              <span class="mc-company">Stripe · Remote</span>
-            </div>
-            <span class="mc-fit">96% fit</span>
+          <div class="cand-right">
+            <span class="cand-pct">96% fit</span>
+            <div class="cand-loc">San Francisco</div>
           </div>
-          <div class="mc-role">
-            <div class="mc-role-info">
-              <span class="mc-role-name">Senior UX Designer</span>
-              <span class="mc-company">Linear · San Francisco</span>
-            </div>
-            <span class="mc-fit mc-fit--2">91% fit</span>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(48% 0.22 310)">Fi</div>
+          <div class="cand-info">
+            <div class="cand-name">Figma</div>
+            <div class="cand-sub">Product Lead · Full-time</div>
           </div>
-          <div class="mc-role">
-            <div class="mc-role-info">
-              <span class="mc-role-name">Design Engineer</span>
-              <span class="mc-company">Vercel · Remote</span>
-            </div>
-            <span class="mc-fit mc-fit--3">88% fit</span>
+          <div class="cand-right">
+            <span class="cand-pct">91% fit</span>
+            <div class="cand-loc">New York</div>
           </div>
-          <div class="mc-footer">↑ Profile 82% complete · 3 skills to unlock more</div>
+        </div>
+        <div class="cand-row">
+          <div class="av" style="background: oklch(48% 0.22 148)">No</div>
+          <div class="cand-info">
+            <div class="cand-name">Notion</div>
+            <div class="cand-sub">PM III · Full-time</div>
+          </div>
+          <div class="cand-right">
+            <span class="cand-pct">87% fit</span>
+            <div class="cand-loc">Remote</div>
+          </div>
+        </div>
+        <div class="hcard-foot">
+          <span class="hfoot-dot" />
+          All roles pre-screened &amp; actively hiring
         </div>
       </div>
     </div>
@@ -141,442 +168,302 @@ function submitSearch() {
 </template>
 
 <style scoped>
-/* ── Hero shell ── */
+/* ── Hero layout ── */
 .hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 100dvh;
-  background: var(--l-bg);
-}
-
-/* Gradient orbs */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-.orb-1 {
-  width: 560px;
-  height: 560px;
-  top: -140px;
-  left: -80px;
-  background: radial-gradient(circle, var(--l-hero-glow) 0%, transparent 70%);
-  filter: blur(80px);
-}
-.orb-2 {
-  width: 400px;
-  height: 400px;
-  top: 10%;
-  right: 5%;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, transparent 70%);
-  filter: blur(80px);
-}
-.orb-3 {
-  width: 320px;
-  height: 320px;
-  bottom: -60px;
-  left: 30%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
-  filter: blur(60px);
-}
-
-.hero-inner {
-  position: relative;
-  z-index: 1;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-}
-.hero-copy {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 50%;
-  padding: 80px 40px 80px clamp(28px, calc((100vw - 1180px) / 2 + 28px), 160px);
-}
-.serif {
-  font-family: var(--l-display);
-}
-.headline {
-  font-weight: 400;
-  font-size: 68px;
-  line-height: 1.02;
-  letter-spacing: -0.5px;
-  color: var(--l-text);
-}
-.accent-italic {
-  font-style: italic;
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.sub {
-  color: var(--l-muted);
-  font-size: 19px;
-  max-width: 480px;
-  margin: 26px 0 32px;
-  line-height: 1.55;
-}
-
-/* Employer search */
-.search {
-  display: flex;
-  align-items: center;
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: var(--l-pill);
-  padding: 7px 7px 7px 24px;
-  max-width: 480px;
-  gap: 8px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-}
-.search input {
-  flex: 1;
-  background: none;
-  border: none;
-  color: var(--l-text);
-  font-family: var(--l-sans);
-  font-size: 17px;
-  outline: none;
-  min-width: 0;
-}
-.search input::placeholder {
-  color: var(--l-muted);
-}
-.search-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 46px;
-  padding: 0 22px;
-  border-radius: var(--l-pill);
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  color: #fff;
-  font-family: var(--l-sans);
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition:
-    opacity 0.15s,
-    box-shadow 0.15s;
-  box-shadow: 0 2px 12px rgba(200, 74, 31, 0.3);
-}
-.search-btn:hover {
-  opacity: 0.9;
-  box-shadow: 0 4px 20px rgba(200, 74, 31, 0.4);
-}
-
-/* Candidate pill CTA */
-.pill-cta-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.pill-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: var(--l-pill);
-  padding: 8px 8px 8px 28px;
-  font-size: 18px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  color: var(--l-text);
-  transition: border-color 0.15s;
-  width: fit-content;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-.pill-cta:hover {
-  border-color: var(--l-green);
-}
-.browse {
-  display: block;
-  margin-top: 14px;
-  color: var(--l-muted);
-  font-size: 15px;
-}
-.browse a {
-  text-decoration: underline;
-  color: var(--l-text);
-}
-
-/* Shared round arrow */
-.round {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 88px 32px 80px;
   display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  text-decoration: none;
-  transition: opacity 0.15s;
-}
-.round:hover {
-  opacity: 0.88;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
 }
 
-/* Art panel */
-.art {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  left: 48%;
+/* ── Left copy ── */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px 4px 8px;
+  border-radius: 100px;
+  background: var(--ld-acc-s);
+  border: 1px solid rgba(91, 106, 245, 0.18);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ld-acc-t);
+  margin-bottom: 22px;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ld-acc);
+  flex-shrink: 0;
+  animation: blink 2.4s ease infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+h1 {
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.07;
+  color: var(--ld-t1);
+  margin: 0 0 18px;
+}
+
+.hero-sub {
+  font-size: 16px;
+  color: var(--ld-t2);
+  line-height: 1.72;
+  margin-bottom: 32px;
+  max-width: 420px;
+}
+
+.hero-form {
+  margin-bottom: 14px;
+}
+
+.hero-micro {
+  font-size: 12.5px;
+  color: var(--ld-t3);
+}
+
+.hero-micro b {
+  color: var(--ld-t2);
+  font-weight: 600;
+}
+
+/* ── Demo card ── */
+.hero-art {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ── Employer shortlist card ── */
-.shortlist-card {
-  width: clamp(300px, 32vw, 420px);
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06);
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.hcard {
+  background: var(--ld-surf);
+  border: 1px solid var(--ld-bd);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--ld-sh);
+  width: 100%;
+  max-width: 380px;
 }
-.sl-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.sl-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--l-muted);
-}
-.sl-badge {
-  font-size: 11px;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--l-green) 15%, transparent);
-  color: var(--l-green);
-  padding: 3px 10px;
-  border-radius: 999px;
-}
-.sl-row {
+
+.hcard-bar {
+  background: var(--ld-surf2);
+  border-bottom: 1px solid var(--ld-bd2);
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: var(--l-surface-2);
-  border-radius: 14px;
-  padding: 12px 14px;
-  border: 1px solid transparent;
+  gap: 6px;
 }
-.sl-row--top {
-  border-color: color-mix(in srgb, var(--l-green) 30%, transparent);
-}
-.sl-avatar {
-  width: 36px;
-  height: 36px;
+
+.hbar-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--l-green) 20%, var(--l-surface-2));
-  color: var(--l-text);
-  font-size: 12px;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
   flex-shrink: 0;
+}
+
+.hcard-title {
+  flex: 1;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ld-t3);
+}
+
+.hcard-role-row {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--ld-bd2);
+  animation: hcardFade 0.4s ease 0.1s both;
+}
+
+.hcard-role-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ld-t3);
+  margin-bottom: 3px;
+}
+
+.hcard-role-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ld-t1);
+}
+
+.hcard-role-meta {
+  font-size: 11.5px;
+  color: var(--ld-t3);
+  margin-top: 2px;
+}
+
+.cand-row {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--ld-bd2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s;
+}
+.cand-row:last-of-type {
+  border-bottom: none;
+}
+.cand-row:hover {
+  background: var(--ld-surf2);
+}
+
+.cand-row:nth-of-type(1) {
+  animation: hcardSlide 0.35s ease 0.25s both;
+}
+.cand-row:nth-of-type(2) {
+  animation: hcardSlide 0.35s ease 0.42s both;
+}
+.cand-row:nth-of-type(3) {
+  animation: hcardSlide 0.35s ease 0.59s both;
+}
+
+@keyframes hcardFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes hcardSlide {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hcard-role-row,
+  .cand-row,
+  .hcard-foot {
+    animation: none;
+  }
+}
+
+.av {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
   letter-spacing: 0.02em;
 }
-.sl-avatar--2 {
-  background: color-mix(in srgb, var(--l-lilac) 25%, var(--l-surface-2));
-}
-.sl-avatar--3 {
-  background: color-mix(in srgb, #7dd3fc 25%, var(--l-surface-2));
-}
-.sl-info {
+
+.cand-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   min-width: 0;
 }
-.sl-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--l-text);
-  white-space: nowrap;
+
+.cand-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ld-t1);
+}
+
+.cand-sub {
+  font-size: 11.5px;
+  color: var(--ld-t3);
+  margin-top: 1px;
+}
+
+.cand-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.cand-pct {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ld-acc-t);
+  display: block;
+}
+
+.cand-bar {
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ld-bd2);
+  margin-top: 4px;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sl-meta {
-  font-size: 12px;
-  color: var(--l-muted);
-}
-.sl-score {
-  font-size: 13px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-.sl-score--1 {
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  color: #fff;
-}
-.sl-score--2 {
-  background: color-mix(in srgb, var(--l-green) 20%, var(--l-surface-2));
-  color: var(--l-text);
-}
-.sl-score--3 {
-  background: color-mix(in srgb, var(--l-green) 12%, var(--l-surface-2));
-  color: var(--l-muted);
-}
-.sl-footer {
-  font-size: 12px;
-  color: var(--l-muted);
-  text-align: center;
-  padding-top: 4px;
 }
 
-/* ── Candidate match card ── */
-.match-card {
-  width: clamp(300px, 32vw, 420px);
-  background: var(--l-surface);
-  border: 1px solid var(--l-line);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06);
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.cand-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ld-acc);
+  opacity: 0.6;
 }
-.mc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.mc-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--l-muted);
-}
-.mc-new {
+
+.cand-loc {
   font-size: 11px;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--l-lilac) 20%, transparent);
-  color: var(--l-lilac);
-  padding: 3px 10px;
-  border-radius: 999px;
+  color: var(--ld-t3);
+  margin-top: 2px;
+  white-space: nowrap;
 }
-.mc-role {
+
+.hcard-foot {
+  padding: 9px 16px;
+  background: var(--ld-bg2);
+  border-top: 1px solid var(--ld-bd2);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--l-surface-2);
-  border-radius: 14px;
-  padding: 12px 14px;
-  border: 1px solid transparent;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--ld-t3);
+  font-weight: 500;
+  animation: hcardFade 0.35s ease 0.75s both;
 }
-.mc-role--top {
-  border-color: color-mix(in srgb, var(--l-green) 30%, transparent);
-}
-.mc-role-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.mc-role-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--l-text);
-}
-.mc-company {
-  font-size: 12px;
-  color: var(--l-muted);
-}
-.mc-fit {
-  font-size: 13px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
+
+.hfoot-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ld-green);
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
-  color: #fff;
-}
-.mc-fit--2 {
-  background: color-mix(in srgb, var(--l-lilac) 20%, var(--l-surface-2));
-  color: var(--l-lilac);
-}
-.mc-fit--3 {
-  background: color-mix(in srgb, var(--l-green) 12%, var(--l-surface-2));
-  color: var(--l-muted);
-}
-.mc-footer {
-  font-size: 12px;
-  color: var(--l-muted);
-  text-align: center;
-  padding-top: 4px;
 }
 
-@media (max-width: 880px) {
-  .hero-inner {
+/* ── Responsive ── */
+@media (max-width: 820px) {
+  .hero {
     grid-template-columns: 1fr;
-    min-height: auto;
+    gap: 48px;
+    padding: 60px 24px 56px;
   }
-  .hero-copy {
-    padding: 48px 28px;
-    width: 100%;
-  }
-  .art {
-    display: none;
-  }
-  .headline {
-    font-size: 48px;
-  }
-  .orb-2,
-  .orb-3 {
-    display: none;
-  }
-  .orb-1 {
-    width: 300px;
-    height: 300px;
-  }
-}
 
-@media (max-width: 640px) {
-  .headline {
-    font-size: 38px;
+  .hero-art {
+    order: -1;
   }
-  .search {
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 0;
+
+  .hcard {
     max-width: 100%;
-    border-radius: 0;
   }
 }
 </style>

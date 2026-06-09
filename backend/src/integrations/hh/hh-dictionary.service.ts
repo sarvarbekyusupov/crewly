@@ -14,7 +14,7 @@ interface CacheEntry<T> {
 @Injectable()
 export class HhDictionaryService {
   private readonly logger = new Logger(HhDictionaryService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
   private readonly cache = new Map<string, CacheEntry<any>>();
 
   constructor(

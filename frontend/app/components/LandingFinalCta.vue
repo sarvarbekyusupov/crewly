@@ -4,127 +4,188 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 </script>
 
 <template>
-  <section class="final">
-    <div class="glow" aria-hidden="true" />
+  <section class="sec">
     <div class="wrap">
-      <div class="stats">
+      <!-- Stats -->
+      <div class="stats-row fade">
         <template v-if="audience === 'employer'">
-          <span class="stat">43 companies hired last month</span>
-          <span class="stat-dot" aria-hidden="true">·</span>
-          <span class="stat">2.4× faster than agency search</span>
-          <span class="stat-dot" aria-hidden="true">·</span>
-          <span class="stat">No hire, no bill</span>
+          <div class="stat">
+            <div class="stat-n"><em>43</em></div>
+            <div class="stat-l">companies hired last month</div>
+          </div>
+          <div class="stat">
+            <div class="stat-n"><em>2.4×</em></div>
+            <div class="stat-l">faster than agency search</div>
+          </div>
+          <div class="stat">
+            <div class="stat-n">$0</div>
+            <div class="stat-l">until you make a hire</div>
+          </div>
         </template>
         <template v-else>
-          <span class="stat">12,000+ candidates matched</span>
-          <span class="stat-dot" aria-hidden="true">·</span>
-          <span class="stat">500+ roles live</span>
-          <span class="stat-dot" aria-hidden="true">·</span>
-          <span class="stat">Always free for candidates</span>
+          <div class="stat">
+            <div class="stat-n"><em>1,200+</em></div>
+            <div class="stat-l">candidates placed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-n"><em>18</em> days</div>
+            <div class="stat-l">avg. time to first interview</div>
+          </div>
+          <div class="stat">
+            <div class="stat-n">$0</div>
+            <div class="stat-l">cost to candidates, forever</div>
+          </div>
         </template>
       </div>
 
-      <h2 class="serif">
-        <template v-if="audience === 'employer'">
-          Spend time with candidates who matter —<br />not on sourcing.
-        </template>
-        <template v-else>
-          One profile. Matched to the right role<br />from every corner of the market.
-        </template>
-      </h2>
+      <!-- CTA box -->
+      <div class="cta-box fade">
+        <h2 v-if="audience === 'employer'">
+          Spend time with candidates who matter — not on sourcing.
+        </h2>
+        <h2 v-else>Your next role is one conversation away.</h2>
+        <p v-if="audience === 'employer'">Join the waitlist and get early access.</p>
+        <p v-else>Join the waitlist — we'll reach out to get you set up.</p>
 
-      <div v-if="waitlistMode" id="waitlist" style="width: 100%; max-width: 440px; margin: 0 auto">
-        <LandingWaitlistForm :audience="audience" />
+        <div v-if="waitlistMode" id="waitlist" class="cta-form-wrap">
+          <LandingWaitlistForm :audience="audience" />
+        </div>
+        <template v-else>
+          <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="btn-cta"
+            >Start hiring</NuxtLink
+          >
+          <NuxtLink v-else to="/candidate/login?mode=signup" class="btn-cta"
+            >Build my profile</NuxtLink
+          >
+        </template>
       </div>
-      <template v-else>
-        <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="cta"
-          >Start hiring</NuxtLink
-        >
-        <NuxtLink v-else to="/candidate/login?mode=signup" class="cta">Build My Profile</NuxtLink>
-      </template>
     </div>
   </section>
 </template>
 
 <style scoped>
-.final {
-  text-align: center;
-  padding: 110px 0;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg, #fff7f4 0%, #ffffff 45%, #fdf4ec 100%);
-  --l-text: #1a1714;
-  --l-muted: #8a857e;
-}
-.glow {
-  display: none;
+.sec {
+  padding: 0 0 100px;
 }
 .wrap {
-  position: relative;
-  z-index: 1;
-  max-width: var(--l-maxw);
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 32px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 32px;
+  gap: 20px;
 }
-.stats {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--ld-bd2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--ld-surf);
 }
+
 .stat {
+  padding: 32px 28px;
+}
+
+.stat + .stat {
+  border-left: 1px solid var(--ld-bd2);
+}
+
+.stat-n {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--ld-t1);
+  margin-bottom: 5px;
+}
+
+.stat-n em {
+  color: var(--ld-acc);
+  font-style: normal;
+}
+
+.stat-l {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--l-muted);
-  font-family: var(--l-sans);
+  color: var(--ld-t3);
 }
-.stat-dot {
-  color: var(--l-line);
-  font-size: 16px;
+
+/* CTA box */
+.cta-box {
+  border: 1px solid var(--ld-bd2);
+  border-radius: 14px;
+  padding: 72px 48px;
+  text-align: center;
+  background: var(--ld-surf);
 }
-.serif {
-  font-family: var(--l-display);
+
+.cta-box h2 {
+  font-size: clamp(24px, 3vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  max-width: 520px;
+  margin: 0 auto 14px;
+  color: var(--ld-t1);
+  line-height: 1.15;
 }
-h2 {
-  font-weight: 400;
-  font-size: 40px;
-  line-height: 1.2;
-  max-width: 680px;
-  color: var(--l-text);
+
+.cta-box > p {
+  font-size: 15px;
+  color: var(--ld-t2);
+  margin-bottom: 32px;
 }
-@media (max-width: 640px) {
-  .final {
-    padding: 64px 0;
-  }
-  h2 {
-    font-size: 26px;
-  }
+
+.cta-form-wrap {
+  max-width: 360px;
+  margin: 0 auto;
 }
-.cta {
-  background: linear-gradient(135deg, var(--l-grad-a, #c84a1f), var(--l-grad-b, #f97316));
+
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 24px;
+  border-radius: 8px;
+  background: var(--ld-acc);
   color: #fff;
-  font-family: var(--l-display);
-  font-style: italic;
+  font-size: 15px;
   font-weight: 600;
-  padding: 14px 36px;
-  border-radius: var(--l-pill);
-  font-size: 18px;
-  cursor: pointer;
-  border: none;
-  transition:
-    opacity 0.2s,
-    box-shadow 0.2s;
+  font-family: 'Manrope', system-ui, sans-serif;
   text-decoration: none;
-  display: inline-block;
-  box-shadow: 0 4px 18px rgba(200, 74, 31, 0.28);
+  transition:
+    background 0.15s,
+    transform 0.15s;
 }
-.cta:hover {
-  opacity: 0.9;
-  box-shadow: 0 6px 24px rgba(200, 74, 31, 0.4);
+.btn-cta:hover {
+  background: var(--ld-acc-h);
+  transform: translateY(-1px);
+}
+
+/* Fade */
+.fade {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s,
+    transform 0.5s;
+}
+.fade.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 820px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+  .stat + .stat {
+    border-left: none;
+    border-top: 1px solid var(--ld-bd2);
+  }
+  .cta-box {
+    padding: 48px 24px;
+  }
 }
 </style>

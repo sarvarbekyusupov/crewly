@@ -188,7 +188,12 @@ export class CandidateAuthService {
       if (session) {
         this.db.candidateSession
           .delete({ where: { id: session.id } })
-          .catch(() => {});
+          .catch((e) =>
+            this.logger.error(
+              { err: e.message, sessionId: session.id },
+              'candidateSession cleanup failed',
+            ),
+          );
       }
       throw new UnauthorizedException('Refresh token invalid or expired');
     }

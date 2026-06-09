@@ -11,7 +11,7 @@ export interface HhSuggestItem {
 
 @Injectable()
 export class HhSuggestsService {
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,

@@ -27,7 +27,7 @@ export interface HhEmployerState {
 @Injectable()
 export class HhNegotiationsService {
   private readonly logger = new Logger(HhNegotiationsService.name);
-  private readonly baseUrl = 'https://api.hh.ru';
+  private readonly baseUrl = 'https://api.hh.uz';
 
   constructor(
     private readonly http: HttpService,
@@ -209,13 +209,9 @@ export class HhNegotiationsService {
    * NOTE: HH deprecated this endpoint — new chat features won't appear here.
    * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
-  async sendMessage(negotiationId: string, message: string): Promise<void> {
-    await firstValueFrom(
-      this.http.post(
-        `${this.baseUrl}/negotiations/${negotiationId}/messages`,
-        { message },
-        { headers: this.headers },
-      ),
+  async sendMessage(_negotiationId: string, _message: string): Promise<void> {
+    throw new Error(
+      'HH Negotiations messages API is deprecated. Use HH Chats API when available.',
     );
   }
 
@@ -245,13 +241,9 @@ export class HhNegotiationsService {
    * NOTE: HH deprecated this endpoint — new chat features won't appear here.
    * Migrate to HH Chats API when HH publishes the replacement REST spec.
    */
-  async getMessages(negotiationId: string): Promise<HhNegotiationMessage[]> {
-    const response = await firstValueFrom(
-      this.http.get<{ items: HhNegotiationMessage[] }>(
-        `${this.baseUrl}/negotiations/${negotiationId}/messages`,
-        { headers: this.headers },
-      ),
+  async getMessages(_negotiationId: string): Promise<HhNegotiationMessage[]> {
+    throw new Error(
+      'HH Negotiations messages API is deprecated. Use HH Chats API when available.',
     );
-    return response.data.items ?? [];
   }
 }
