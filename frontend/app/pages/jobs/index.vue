@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'landing' })
+
 const config = useRuntimeConfig()
 
 const { data: jobs } = await useFetch<any[]>('/api/v1/public/jobs', {

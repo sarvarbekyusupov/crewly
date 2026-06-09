@@ -4,6 +4,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 
 export default withNuxt(eslintPluginPrettierRecommended, {
   rules: {
+    'link-checker/valid-route': 'warn',
+    'link-checker/valid-sitemap-link': 'warn',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': [
       'warn',

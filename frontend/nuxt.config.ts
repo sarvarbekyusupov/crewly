@@ -49,6 +49,7 @@ export default defineNuxtConfig({
       { loc: '/candidate', priority: 0.9, changefreq: 'weekly' },
       { loc: '/jobs', priority: 0.8, changefreq: 'daily' },
       { loc: '/terms', priority: 0.3, changefreq: 'monthly' },
+      { loc: '/privacy', priority: 0.2, changefreq: 'monthly' },
     ],
     exclude: [
       '/employer',

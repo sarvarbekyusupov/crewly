@@ -17,16 +17,15 @@
           <nav>
             <a href="#how-it-works" class="link">How It Works</a>
             <a href="#faq" class="link">FAQ</a>
-            <a href="#candidates" class="link">For candidates</a>
+            <NuxtLink to="/jobs" class="link">Open Jobs</NuxtLink>
+            <NuxtLink to="/candidate" class="link">For Candidates</NuxtLink>
           </nav>
         </div>
 
         <!-- Right: Contact -->
         <div class="col col-contact">
           <h4 class="col-heading">Contact</h4>
-          <a href="mailto:founders@tryprism.com" class="link link--underline"
-            >founders@tryprism.com</a
-          >
+          <a href="mailto:hello@crewly.uz" class="link link--underline">hello@crewly.uz</a>
           <span class="link">San Francisco, CA</span>
         </div>
       </div>

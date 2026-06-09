@@ -63,14 +63,8 @@ useHead({
             operatingSystem: 'All',
             offers: {
               '@type': 'Offer',
-              price: '15.00',
-              priceCurrency: 'Percent',
-              description: '15% success-only recruitment fee, billed only on hire.',
-            },
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: '4.9',
-              reviewCount: '124',
+              description:
+                '15% of first-year salary, billed only on a successful hire. No setup fees.',
             },
             publisher: {
               '@id': 'https://crewly.uz/#organization',

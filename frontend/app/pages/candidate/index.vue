@@ -54,11 +54,6 @@ useHead({
           priceCurrency: 'USD',
           description: 'Free career companion and job search pilot.',
         },
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: '4.9',
-          reviewCount: '124',
-        },
         publisher: {
           '@type': 'Organization',
           name: 'Crewly',

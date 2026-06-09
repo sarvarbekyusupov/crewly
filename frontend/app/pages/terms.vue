@@ -23,7 +23,7 @@ useHead({
     { property: 'og:description', content: computed(() => t('terms.subtitle')) },
 
     // Twitter
-    { name: 'twitter:card', content: 'summary' },
+    { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:url', content: 'https://crewly.uz/terms' },
     { name: 'twitter:title', content: computed(() => `${t('terms.title')} | Crewly`) },
     { name: 'twitter:description', content: computed(() => t('terms.subtitle')) },
