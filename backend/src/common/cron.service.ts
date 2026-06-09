@@ -13,6 +13,8 @@ export class CronService implements OnModuleInit {
     @InjectQueue(QUEUES.INGEST_CANDIDATES) private readonly ingestQueue: Queue,
     @InjectQueue(QUEUES.CLEANUP) private readonly cleanupQueue: Queue,
     @InjectQueue(QUEUES.SYNC_HH_STATUS) private readonly syncHhQueue: Queue,
+    @InjectQueue(QUEUES.DISCOVER_JOBS)
+    private readonly discoverJobsQueue: Queue,
     private readonly config: ConfigService,
   ) {}
 
@@ -86,6 +88,15 @@ export class CronService implements OnModuleInit {
         {
           repeat: { cron: '0 * * * *' },
           jobId: 'sync-hh-status-hourly',
+        },
+      );
+
+      await this.discoverJobsQueue.add(
+        { source: 'hh.ru', maxPages: 5 },
+        {
+          ...INGEST_JOB_OPTIONS,
+          repeat: { cron: '30 */4 * * *' },
+          jobId: 'discover-jobs-hh-scheduled',
         },
       );
 

@@ -15,6 +15,7 @@ import { QUEUES } from '../../workers/queue-names';
     BullModule.registerQueue({ name: QUEUES.SCORE_SEEKER_JOBS }),
     BullModule.registerQueue({ name: QUEUES.AUTO_APPLY }),
     BullModule.registerQueue({ name: QUEUES.PARSE_CANDIDATE }),
+    BullModule.registerQueue({ name: QUEUES.DISCOVER_JOBS }),
   ],
   controllers: [CandidatePortalController],
   providers: [CandidatePortalService],

@@ -130,6 +130,7 @@ const sortOptions = computed(() => [
 ])
 
 const scoringInProgress = ref(false)
+const discoveringInProgress = ref(false)
 
 async function triggerScoring() {
   scoringInProgress.value = true
@@ -144,6 +145,22 @@ async function triggerScoring() {
     toast.add({ title: t('common.error'), color: 'error' })
   } finally {
     scoringInProgress.value = false
+  }
+}
+
+async function triggerDiscover() {
+  discoveringInProgress.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/discovered-jobs/discover', {})
+    toast.add({
+      title: 'Job discovery started',
+      description: 'Finding new roles tailored to your profile. Check back in a minute.',
+      color: 'success',
+    })
+  } catch {
+    toast.add({ title: t('common.error'), color: 'error' })
+  } finally {
+    discoveringInProgress.value = false
   }
 }
 
@@ -360,6 +377,16 @@ const cardStyle = computed(() => {
               List
             </button>
           </div>
+          <UButton
+            variant="outline"
+            size="sm"
+            icon="i-heroicons-magnifying-glass"
+            :loading="discoveringInProgress"
+            class="whitespace-nowrap"
+            @click="triggerDiscover"
+          >
+            Find Jobs
+          </UButton>
           <UButton
             variant="outline"
             size="sm"

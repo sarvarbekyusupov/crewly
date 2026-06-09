@@ -9,12 +9,14 @@ describe('CronService', () => {
   let ingestQueue: { add: jest.Mock };
   let cleanupQueue: { add: jest.Mock };
   let syncHhQueue: { add: jest.Mock };
+  let discoverJobsQueue: { add: jest.Mock };
   let configGet: jest.Mock;
 
   beforeEach(async () => {
     ingestQueue = { add: jest.fn().mockResolvedValue({}) };
     cleanupQueue = { add: jest.fn().mockResolvedValue({}) };
     syncHhQueue = { add: jest.fn().mockResolvedValue({}) };
+    discoverJobsQueue = { add: jest.fn().mockResolvedValue({}) };
     configGet = jest.fn().mockReturnValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -28,6 +30,10 @@ describe('CronService', () => {
         {
           provide: getQueueToken(QUEUES.SYNC_HH_STATUS),
           useValue: syncHhQueue,
+        },
+        {
+          provide: getQueueToken(QUEUES.DISCOVER_JOBS),
+          useValue: discoverJobsQueue,
         },
         {
           provide: ConfigService,
@@ -45,6 +51,7 @@ describe('CronService', () => {
     expect(ingestQueue.add).toHaveBeenCalled();
     expect(cleanupQueue.add).toHaveBeenCalledTimes(5);
     expect(syncHhQueue.add).toHaveBeenCalled();
+    expect(discoverJobsQueue.add).toHaveBeenCalled();
   });
 
   it('handles queue errors gracefully', async () => {
