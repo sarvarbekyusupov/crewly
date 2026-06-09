@@ -53,14 +53,23 @@ export class DiscoverJobsProcessor {
         },
       });
       if (seeker) {
-        const agentQueries = await this.agent.generateJobSearchQueries({
-          currentPosition: seeker.currentPosition ?? '',
-          skills: seeker.skills,
-          yearsExperience: Number(seeker.yearsExperience ?? 0),
-        });
-        query = agentQueries.query;
-        location =
-          location ?? agentQueries.location_hints ?? seeker.city ?? undefined;
+        try {
+          const agentQueries = await this.agent.generateJobSearchQueries({
+            currentPosition: seeker.currentPosition ?? '',
+            skills: seeker.skills,
+            yearsExperience: Number(seeker.yearsExperience ?? 0),
+          });
+          query = agentQueries.query;
+          location =
+            location ?? agentQueries.location_hints ?? seeker.city ?? undefined;
+        } catch (err: any) {
+          this.logger.warn(
+            { candidateId, error: err.message },
+            'LLM query generation failed, falling back to profile data',
+          );
+          query = seeker.currentPosition ?? undefined;
+          location = location ?? seeker.city ?? undefined;
+        }
       }
     }
 
