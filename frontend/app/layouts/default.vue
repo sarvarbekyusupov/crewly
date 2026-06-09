@@ -165,7 +165,7 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
     <aside class="sidebar" :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'">
       <!-- Brand -->
       <NuxtLink to="/employer/dashboard" class="brand-row">
-        <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="brand-logo dark:hidden" />
+        <img src="/crewly-logo-horizontal.svg" alt="Crewly" class="brand-logo block dark:hidden" />
         <img
           src="/crewly-logo-horizontal-white.svg"
           alt="Crewly"
@@ -484,7 +484,6 @@ const { searchTerm, commandGroups, onCommandSelect, openPalette } =
 .brand-logo {
   height: 20px;
   width: auto;
-  display: block;
 }
 
 .portal-indicator {

@@ -12,88 +12,125 @@ html {
   overflow-x: hidden;
 }
 
-/* ============ Nuxt UI primary color mapping (terracotta) ============ */
-/* Required: Nuxt UI v3 looks for --ui-color-primary-* and --ui-primary */
+/* ============ Nuxt UI primary color mapping (indigo/blue) ============ */
 :root {
-  --ui-primary: #c84a1f;
-  --ui-color-primary-50: #fdf4f0;
-  --ui-color-primary-100: #f9e4d8;
-  --ui-color-primary-200: #f4ddd2;
-  --ui-color-primary-300: #edbfa8;
-  --ui-color-primary-400: #df9070;
-  --ui-color-primary-500: #c84a1f;
-  --ui-color-primary-600: #a83d18;
-  --ui-color-primary-700: #8a3214;
-  --ui-color-primary-800: #6b2610;
-  --ui-color-primary-900: #4d1b0c;
-  --ui-color-primary-950: #3a1f12;
+  --ui-primary: #5B6AF5;
+  --ui-color-primary-50: #f0f1fe;
+  --ui-color-primary-100: #e2e4fd;
+  --ui-color-primary-200: #c5c9fb;
+  --ui-color-primary-300: #a8aff9;
+  --ui-color-primary-400: #8b94f7;
+  --ui-color-primary-500: #5B6AF5;
+  --ui-color-primary-600: #4252e8;
+  --ui-color-primary-700: #3545d8;
+  --ui-color-primary-800: #2838c8;
+  --ui-color-primary-900: #1b2bb8;
+  --ui-color-primary-950: #0e1ea8;
 }
 
 /* ============ Design tokens ============ */
 :root {
-  --bg: #FAF8F4;
-  --bg-elevated: #FAF8F4;
-  --bg-deep: #EFE9DD;
-  --paper: #FDFCF8;
-  --ink: #1A1A1A;
-  --ink-strong: #0A0A0A;
-  --ink-muted: #6B6760;
-  --ink-subtle: #A8A39A;
-  --line: #D9D3C7;
-  --line-soft: #E8E2D5;
-  --accent: #C84A1F;
-  --accent-soft: #F4DDD2;
-  --positive: #2F6B3F;
-  --positive-soft: rgba(47,107,63,0.10);
+  --bg: #F7F6F3;
+  --bg-elevated: #EEECEA;
+  --bg-deep: #F4F2EE;
+  --paper: #FFFFFF;
+  --ink: #0F0F12;
+  --ink-strong: #0A0A0F;
+  --ink-muted: #585866;
+  --ink-subtle: #9898A8;
+  --line: #E2E0DA;
+  --line-soft: #ECEAE5;
+  --accent: #4252E8;
+  --accent-soft: #EEF0FD;
+  --positive: #16A34A;
+  --positive-soft: rgba(22, 163, 74, 0.10);
   --warn: #B57A1F;
-  --grid-color: rgba(0,0,0,0.06);
+  --grid-color: rgba(0, 0, 0, 0.06);
   --status-outreach: #4A7CC8;
   --status-responded: #0EA5E9;
   --status-interview: #8B5CF6;
   --status-interviewed: #6366F1;
   --status-offered: #A855F7;
+  /* aliases for forward compat */
+  --surf: var(--paper);
+  --bd: var(--line);
+  --acc: var(--accent);
+  --t1: var(--ink);
+  --t2: var(--ink-muted);
+  --t3: var(--ink-subtle);
+  /* ── Nuxt UI v4 semantic bridge (light) ── */
+  --ui-bg: var(--bg);
+  --ui-bg-muted: var(--bg-elevated);
+  --ui-bg-elevated: var(--bg-elevated);
+  --ui-bg-accented: var(--bg-deep);
+  --ui-bg-inverted: var(--ink-strong);
+  --ui-text: var(--ink);
+  --ui-text-highlighted: var(--ink-strong);
+  --ui-text-muted: var(--ink-muted);
+  --ui-text-toned: var(--ink-muted);
+  --ui-text-dimmed: var(--ink-subtle);
+  --ui-text-inverted: #ffffff;
+  --ui-border: var(--line);
+  --ui-border-muted: var(--line-soft);
+  --ui-border-accented: var(--line);
+  --ui-border-inverted: var(--ink);
 }
 
 .dark {
-  --bg: #15140F;
-  --bg-elevated: #1C1B16;
-  --bg-deep: #232118;
-  --paper: #1A1813;
-  --ink: #F5F1EA;
+  --bg: #0C0D0F;
+  --bg-elevated: #111318;
+  --bg-deep: #1B1D24;
+  --paper: #141519;
+  --ink: #EEEEF2;
   --ink-strong: #FFFFFF;
-  --ink-muted: #A8A39A;
-  --ink-subtle: #6B6760;
-  --line: #2C2A22;
-  --line-soft: #24221C;
-  --accent: #E07048;
-  --accent-soft: #3A1F12;
-  --positive: #4DB870;
+  --ink-muted: #888899;
+  --ink-subtle: #4E505E;
+  --line: #32354A;
+  --line-soft: #242630;
+  --accent: #5B6AF5;
+  --accent-soft: #151828;
+  --positive: #22C55E;
+  --positive-soft: rgba(34, 197, 94, 0.12);
   --warn: #D4952A;
-  --ink-subtle: #80807A;
-  --grid-color: rgba(255,255,255,0.04);
-  --positive-soft: rgba(77, 184, 112, 0.12);
-  --ui-primary: #E07048;
+  --grid-color: rgba(255, 255, 255, 0.04);
   --status-outreach: #6B9EE0;
   --status-responded: #38BDF8;
   --status-interview: #A78BFA;
   --status-interviewed: #818CF8;
   --status-offered: #C084FC;
+  /* ── Nuxt UI v4 semantic bridge (dark) ── */
+  --ui-primary: #5B6AF5;
+  --ui-text-inverted: #ffffff;
+  --ui-bg: var(--bg);
+  --ui-bg-muted: var(--bg-elevated);
+  --ui-bg-elevated: var(--bg-elevated);
+  --ui-bg-accented: var(--bg-deep);
+  --ui-bg-inverted: #ffffff;
+  --ui-text: var(--ink);
+  --ui-text-highlighted: var(--ink-strong);
+  --ui-text-muted: var(--ink-muted);
+  --ui-text-toned: var(--ink-muted);
+  --ui-text-dimmed: var(--ink-subtle);
+  --ui-border: var(--line);
+  --ui-border-muted: var(--line-soft);
+  --ui-border-accented: var(--line);
+  --ui-border-inverted: #ffffff;
 }
 
 /* ============ Tailwind custom colors ============ */
 @theme {
-  --color-terracotta-50: #fdf4f0;
-  --color-terracotta-100: #f9e4d8;
-  --color-terracotta-200: #f4ddd2;
-  --color-terracotta-300: #edbfa8;
-  --color-terracotta-400: #df9070;
-  --color-terracotta-500: #c84a1f;
-  --color-terracotta-600: #a83d18;
-  --color-terracotta-700: #8a3214;
-  --color-terracotta-800: #6b2610;
-  --color-terracotta-900: #4d1b0c;
-  --color-terracotta-950: #3a1f12;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-indigo-50: #f0f1fe;
+  --color-indigo-100: #e2e4fd;
+  --color-indigo-200: #c5c9fb;
+  --color-indigo-300: #a8aff9;
+  --color-indigo-400: #8b94f7;
+  --color-indigo-500: #5B6AF5;
+  --color-indigo-600: #4252e8;
+  --color-indigo-700: #3545d8;
+  --color-indigo-800: #2838c8;
+  --color-indigo-900: #1b2bb8;
+  --color-indigo-950: #0e1ea8;
+  --font-sans: 'Manrope', system-ui, sans-serif;
   --font-serif: 'Fraunces', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -120,7 +157,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   background: var(--bg);
   color: var(--ink);
 }
@@ -132,7 +169,6 @@ body {
 }
 
 /* ============ UCard global override ============ */
-/* Nuxt UI v3 card tokens */
 :root {
   --ui-card-background: var(--paper);
   --ui-card-border: var(--line);
@@ -146,11 +182,9 @@ body {
 }
 
 /* ============ UTable global override ============ */
-/* Row hover */
 tbody tr:hover td {
   background: var(--bg-elevated) !important;
 }
-/* Header row */
 thead th {
   background: var(--bg-elevated) !important;
   color: var(--ink-subtle) !important;
@@ -159,7 +193,6 @@ thead th {
   text-transform: uppercase !important;
   letter-spacing: 0.1em !important;
 }
-/* Divide lines */
 tbody tr {
   border-color: var(--line-soft) !important;
 }
@@ -213,13 +246,13 @@ tbody tr {
   --l-dot: rgba(26, 23, 20, 0.06);
 }
 .dark [data-audience="employer"] {
-  --l-bg: #1a1a18;
-  --l-surface: #232320;
-  --l-surface-2: #2c2c28;
-  --l-text: #f5f0eb;
-  --l-muted: #a8a39b;
-  --l-line: rgba(245, 240, 235, 0.12);
-  --l-dot: rgba(245, 240, 235, 0.07);
+  --l-bg: #0C0D0F;
+  --l-surface: #141519;
+  --l-surface-2: #1B1D24;
+  --l-text: #EEEEF2;
+  --l-muted: #888899;
+  --l-line: rgba(238, 238, 242, 0.12);
+  --l-dot: rgba(238, 238, 242, 0.07);
 }
 [data-audience="candidate"] {
   --l-bg: #ece9e2;
@@ -231,23 +264,23 @@ tbody tr {
   --l-dot: rgba(26, 26, 24, 0.06);
 }
 .dark [data-audience="candidate"] {
-  --l-bg: #15140f;
-  --l-surface: #1c1b16;
-  --l-surface-2: #232118;
-  --l-text: #f5f1ea;
-  --l-muted: #a8a39a;
-  --l-line: rgba(245, 241, 234, 0.12);
-  --l-dot: rgba(245, 241, 234, 0.06);
+  --l-bg: #0C0D0F;
+  --l-surface: #141519;
+  --l-surface-2: #1B1D24;
+  --l-text: #EEEEF2;
+  --l-muted: #888899;
+  --l-line: rgba(238, 238, 242, 0.12);
+  --l-dot: rgba(238, 238, 242, 0.06);
 }
 :root {
-  --l-green: #c84a1f;
-  --l-green-soft: rgba(200, 74, 31, 0.15);
-  --l-lilac: #c84a1f;
+  --l-green: #5B6AF5;
+  --l-green-soft: rgba(91, 106, 245, 0.15);
+  --l-lilac: #5B6AF5;
   --l-lilac-deep: #ffffff;
   --l-pill: 999px;
-  --l-display: "Source Serif 4", Georgia, serif;
-  --l-sans: "DM Sans", system-ui, sans-serif;
-  --l-maxw: 1180px;
+  --l-display: "Manrope", system-ui, sans-serif;
+  --l-sans: "Manrope", system-ui, sans-serif;
+  --l-maxw: 1440px;
 }
 
 /* ============ Print ============ */

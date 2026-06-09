@@ -49,10 +49,10 @@ function radarChartData(job: any) {
           Math.max(4, Math.min(10, norm - 2)),
           9,
         ],
-        backgroundColor: 'rgba(224, 92, 46, 0.15)',
-        borderColor: '#e05c2e',
+        backgroundColor: 'rgba(91, 106, 245, 0.15)',
+        borderColor: '#5B6AF5',
         borderWidth: 1.5,
-        pointBackgroundColor: '#e05c2e',
+        pointBackgroundColor: '#5B6AF5',
       },
       {
         label: 'Job Benchmark',

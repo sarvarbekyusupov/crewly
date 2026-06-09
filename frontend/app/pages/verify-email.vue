@@ -30,9 +30,16 @@ onMounted(async () => {
       <div class="text-center mb-8">
         <NuxtLink to="/employer/login">
           <img
+            class="block dark:hidden"
             src="/crewly-logo-horizontal.svg"
             alt="Crewly"
-            style="height: 26px; width: auto; display: inline-block"
+            style="height: 26px; width: auto"
+          />
+          <img
+            class="hidden dark:block"
+            src="/crewly-logo-horizontal-white.svg"
+            alt="Crewly"
+            style="height: 26px; width: auto"
           />
         </NuxtLink>
       </div>

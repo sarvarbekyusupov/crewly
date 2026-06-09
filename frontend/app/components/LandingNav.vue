@@ -9,13 +9,15 @@ const colorMode = useColorMode()
       <!-- Logo -->
       <NuxtLink to="/" class="logo" @click="set('employer')">
         <img
-          :src="
-            colorMode.value === 'dark'
-              ? '/crewly-logo-horizontal-white.svg'
-              : '/crewly-logo-horizontal.svg'
-          "
+          src="/crewly-logo-horizontal.svg"
           alt="Crewly"
-          class="logo-img"
+          class="logo-img block dark:hidden"
+          height="28"
+        />
+        <img
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          class="logo-img hidden dark:block"
           height="28"
         />
       </NuxtLink>
@@ -109,7 +111,6 @@ const colorMode = useColorMode()
 .logo-img {
   height: 28px;
   width: auto;
-  display: block;
 }
 
 /* Nav links */

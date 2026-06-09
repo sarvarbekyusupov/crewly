@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const { audience } = useAudience()
-const colorMode = useColorMode()
 </script>
 
 <template>
@@ -15,13 +14,14 @@ const colorMode = useColorMode()
     <footer class="landing-footer">
       <div class="footer-wrap">
         <img
-          :src="
-            colorMode.value === 'dark'
-              ? '/crewly-logo-horizontal-white.svg'
-              : '/crewly-logo-horizontal.svg'
-          "
+          src="/crewly-logo-horizontal.svg"
           alt="Crewly"
-          class="footer-brand"
+          class="footer-brand block dark:hidden"
+        />
+        <img
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          class="footer-brand hidden dark:block"
         />
         <div class="footer-links">
           <NuxtLink to="/terms">Terms</NuxtLink>
@@ -43,13 +43,48 @@ const colorMode = useColorMode()
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--ld-bg);
+  background: radial-gradient(var(--grid-color) 1px, transparent 1px), var(--ld-bg);
+  background-size:
+    28px 28px,
+    auto;
   color: var(--ld-t1);
   font-family: 'Manrope', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition:
     background-color 0.22s,
     color 0.22s;
+}
+.landing-shell::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  width: 900px;
+  height: 600px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(91, 106, 245, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: glow-drift 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes glow-drift {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.8;
+  }
+  30% {
+    transform: translateX(-42%) scale(1.08);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(-58%) scale(0.96);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.8;
+  }
 }
 .site-header {
   position: sticky;
@@ -60,6 +95,8 @@ const colorMode = useColorMode()
 main {
   flex: 1;
   overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 .landing-footer {
   border-top: 1px solid var(--ld-bd2);
@@ -77,7 +114,6 @@ main {
 .footer-brand {
   height: 20px;
   width: auto;
-  display: block;
 }
 .footer-links {
   display: flex;
@@ -148,39 +184,39 @@ main {
 
 /* ── Bold White + Gradient — employer landing ── */
 .landing-shell[data-audience='employer'] {
-  --l-bg: #ffffff;
+  --l-bg: #f7f6f3;
   --l-surface: #ffffff;
-  --l-surface-2: #f5f4f2;
-  --l-text: #0f0d0b;
-  --l-muted: #7a746d;
-  --l-line: rgba(15, 13, 11, 0.1);
-  --l-dot: rgba(15, 13, 11, 0.04);
-  --l-green: #c84a1f;
-  --l-green-soft: rgba(200, 74, 31, 0.12);
-  --l-lilac: #7c6af5;
-  --l-lilac-deep: #5b4fe8;
+  --l-surface-2: #eeecea;
+  --l-text: #0f0f12;
+  --l-muted: #585866;
+  --l-line: rgba(15, 15, 18, 0.1);
+  --l-dot: rgba(15, 15, 18, 0.04);
+  --l-green: #4252e8;
+  --l-green-soft: rgba(66, 82, 232, 0.12);
+  --l-lilac: #4252e8;
+  --l-lilac-deep: #3545d8;
   --l-cta-text: #ffffff;
-  --l-grad-a: #c84a1f;
-  --l-grad-b: #f97316;
-  --l-grad-c: #fbbf24;
-  --l-hero-glow: rgba(200, 74, 31, 0.18);
+  --l-grad-a: #4252e8;
+  --l-grad-b: #7c6af5;
+  --l-grad-c: #a78bfa;
+  --l-hero-glow: rgba(66, 82, 232, 0.18);
 }
 .dark .landing-shell[data-audience='employer'] {
-  --l-bg: #0d0c0b;
-  --l-surface: #1a1918;
-  --l-surface-2: #242320;
-  --l-text: #f5f0eb;
-  --l-muted: #a8a39b;
-  --l-line: rgba(245, 240, 235, 0.1);
-  --l-dot: rgba(245, 240, 235, 0.06);
-  --l-green: #e05c2e;
-  --l-green-soft: rgba(224, 92, 46, 0.15);
-  --l-lilac: #9d8ff8;
-  --l-lilac-deep: #7c6af5;
+  --l-bg: #0c0d0f;
+  --l-surface: #141519;
+  --l-surface-2: #1b1d24;
+  --l-text: #eeeef2;
+  --l-muted: #888899;
+  --l-line: rgba(238, 238, 242, 0.1);
+  --l-dot: rgba(238, 238, 242, 0.06);
+  --l-green: #5b6af5;
+  --l-green-soft: rgba(91, 106, 245, 0.15);
+  --l-lilac: #5b6af5;
+  --l-lilac-deep: #6b7af7;
   --l-cta-text: #ffffff;
-  --l-grad-a: #e05c2e;
-  --l-grad-b: #fb923c;
-  --l-grad-c: #fcd34d;
-  --l-hero-glow: rgba(224, 92, 46, 0.15);
+  --l-grad-a: #5b6af5;
+  --l-grad-b: #818cf8;
+  --l-grad-c: #a5b4fc;
+  --l-hero-glow: rgba(91, 106, 245, 0.15);
 }
 </style>

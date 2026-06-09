@@ -217,7 +217,7 @@ const successMsg = computed(() =>
   color: #6b6760;
 }
 .wl-msg--error {
-  color: #c84a1f;
+  color: #ef4444;
 }
 
 .wl-fade-enter-active,

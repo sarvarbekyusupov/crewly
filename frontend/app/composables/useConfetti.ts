@@ -2,7 +2,7 @@ export function useConfetti() {
   function triggerConfetti() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return
 
-    const colors = ['#e05c2e', '#fb923c', '#fcd34d', '#4ade80', '#60a5fa']
+    const colors = ['#5B6AF5', '#818CF8', '#A5B4FC', '#4ade80', '#60a5fa']
     const container = document.createElement('div')
 
     container.style.position = 'fixed'
@@ -20,7 +20,7 @@ export function useConfetti() {
     for (let i = 0; i < 60; i++) {
       const particle = document.createElement('div')
       const size = Math.random() * 8 + 6 // size 6px to 14px
-      const color = colors[Math.floor(Math.random() * colors.length)] ?? '#e05c2e'
+      const color = colors[Math.floor(Math.random() * colors.length)] ?? '#5B6AF5'
 
       particle.style.position = 'absolute'
       particle.style.width = `${size}px`

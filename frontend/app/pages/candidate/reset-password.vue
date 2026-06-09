@@ -136,9 +136,16 @@ const onSubmit = handleSubmit(async (values) => {
         <div class="lg:hidden text-center mb-8">
           <NuxtLink to="/candidate/login">
             <img
+              class="block dark:hidden"
               src="/crewly-logo-horizontal.svg"
               alt="Crewly"
-              style="height: 26px; width: auto; display: inline-block"
+              style="height: 26px; width: auto"
+            />
+            <img
+              class="hidden dark:block"
+              src="/crewly-logo-horizontal-white.svg"
+              alt="Crewly"
+              style="height: 26px; width: auto"
             />
           </NuxtLink>
           <p

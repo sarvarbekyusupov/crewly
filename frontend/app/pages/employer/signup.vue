@@ -325,7 +325,7 @@ async function resendVerification() {
     <!-- ── Left brand panel (desktop only) ── -->
     <div
       class="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
-      style="background: #15140f; border-right: 1px solid #24221c"
+      style="background: #0c0d0f; border-right: 1px solid #242630"
     >
       <!-- Subtle grid texture -->
       <div
@@ -457,9 +457,16 @@ async function resendVerification() {
         <!-- Mobile logo -->
         <div class="lg:hidden text-center mb-8">
           <img
+            class="block dark:hidden"
             src="/crewly-logo-horizontal.svg"
             alt="Crewly"
-            style="height: 26px; width: auto; display: inline-block"
+            style="height: 26px; width: auto"
+          />
+          <img
+            class="hidden dark:block"
+            src="/crewly-logo-horizontal-white.svg"
+            alt="Crewly"
+            style="height: 26px; width: auto"
           />
           <p
             class="mt-2 text-sm"
@@ -990,9 +997,8 @@ async function resendVerification() {
 <style scoped>
 /* ── Dark/Light input overrides for Nuxt UI UInput ── */
 
-/* Nuxt UI v4 — cover all known wrapper slot names */
+/* Nuxt UI v4 — input wrappers only (not UButton which also has data-slot=base) */
 :deep([data-slot='input-root']),
-:deep([data-slot='base']),
 :deep([data-slot='input']) {
   background: var(--paper) !important;
   border-color: var(--line) !important;

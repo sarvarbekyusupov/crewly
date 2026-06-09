@@ -36,9 +36,16 @@ useHead({
     <nav class="terms-nav">
       <NuxtLink to="/" class="brand">
         <img
+          class="block dark:hidden"
           src="/crewly-logo-horizontal.svg"
           alt="Crewly"
-          style="height: 20px; width: auto; display: block"
+          style="height: 20px; width: auto"
+        />
+        <img
+          class="hidden dark:block"
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          style="height: 20px; width: auto"
         />
       </NuxtLink>
       <NuxtLink to="/employer/login?mode=signup" class="cta-btn">{{

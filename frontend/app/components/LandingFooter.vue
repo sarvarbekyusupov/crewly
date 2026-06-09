@@ -50,11 +50,7 @@
   width: 100%;
   padding: 0 24px 32px;
   box-sizing: border-box;
-  font-family:
-    system-ui,
-    'Inter',
-    -apple-system,
-    sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

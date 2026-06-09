@@ -55,7 +55,14 @@ router.afterEach(() => {
         <img
           src="/crewly-logo-horizontal.svg"
           alt="Crewly"
-          style="height: 20px; width: auto; display: block"
+          class="block dark:hidden"
+          style="height: 20px; width: auto"
+        />
+        <img
+          src="/crewly-logo-horizontal-white.svg"
+          alt="Crewly"
+          class="hidden dark:block"
+          style="height: 20px; width: auto"
         />
         <UBadge :label="t('staff.portal')" color="warning" variant="subtle" class="ml-auto" />
       </div>
@@ -136,7 +143,14 @@ router.afterEach(() => {
           <img
             src="/crewly-logo-horizontal.svg"
             alt="Crewly"
-            style="height: 18px; width: auto; display: block"
+            class="block dark:hidden"
+            style="height: 18px; width: auto"
+          />
+          <img
+            src="/crewly-logo-horizontal-white.svg"
+            alt="Crewly"
+            class="hidden dark:block"
+            style="height: 18px; width: auto"
           />
         </div>
         <div class="w-8" />

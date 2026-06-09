@@ -64,7 +64,7 @@ defineProps<{
 
     <!-- Bottom row -->
     <div style="display: flex; align-items: center; gap: 16px">
-      <div style="width: 36px; height: 3px; background: #c84a1f; border-radius: 2px" />
+      <div style="width: 36px; height: 3px; background: #5b6af5; border-radius: 2px" />
       <div style="font-size: 15px; color: #6b6760; letter-spacing: 0.04em; font-weight: 400">
         crewly.uz
       </div>
