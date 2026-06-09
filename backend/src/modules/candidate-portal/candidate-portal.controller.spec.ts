@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bull';
 import { CandidatePortalController } from './candidate-portal.controller';
 import { CandidatePortalService } from './candidate-portal.service';
+import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { QUEUES } from '../../workers/queue-names';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -55,6 +56,14 @@ describe('CandidatePortalController', () => {
       controllers: [CandidatePortalController],
       providers: [
         { provide: CandidatePortalService, useValue: svc },
+        {
+          provide: HhSuggestsService,
+          useValue: {
+            areas: jest.fn(),
+            skills: jest.fn(),
+            universities: jest.fn(),
+          },
+        },
         {
           provide: getQueueToken(QUEUES.SCORE_SEEKER_JOBS),
           useValue: scoreQueue,
@@ -115,7 +124,6 @@ describe('CandidatePortalController', () => {
       blacklistedCompanies: [],
       maxApplicationsPerDay: 5,
       expectedSalaryUzs: null,
-      hhOauthTokenSet: false,
     });
   });
 

@@ -3,18 +3,8 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
 import { HhClientService } from '../integrations/hh/hh-client.service';
-import { HhTokenService } from '../integrations/hh/hh-token.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
 import { QUEUES } from './queue-names';
-
-// Seeker-side: HH applicant negotiation state → SeekerApplication.status
-const HH_STATE_MAP: Record<string, string> = {
-  response: 'applied',
-  invitation: 'interview',
-  discard: 'rejected',
-  discard_after_interview: 'rejected',
-  offer: 'offer',
-};
 
 // Employer-side: HH employer negotiation state → Application.status
 const HH_EMPLOYER_STATE_MAP: Record<string, string> = {
@@ -33,76 +23,11 @@ export class SyncHhStatusProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly hh: HhClientService,
-    private readonly hhToken: HhTokenService,
     private readonly hhNegotiations: HhNegotiationsService,
   ) {}
 
   @Process()
   async handle(_job: Job) {
-    const apps = await this.db.seekerApplication.findMany({
-      where: {
-        source: 'hh.ru',
-        hhNegotiationId: { not: null },
-        status: { notIn: ['rejected', 'hired'] },
-      },
-      include: {
-        candidate: { select: { id: true, hhOauthToken: true } },
-      },
-      take: 200,
-    });
-
-    let updated = 0;
-    for (const app of apps) {
-      if (!app.hhNegotiationId) continue;
-      if (!app.candidate.hhOauthToken) {
-        this.logger.warn(
-          { appId: app.id },
-          'Candidate has no HH token — skipping',
-        );
-        continue;
-      }
-      try {
-        const token = await this.hhToken.getValidToken(app.candidate.id);
-        const hhState = await this.hh.getNegotiationStatus(
-          app.hhNegotiationId,
-          token,
-        );
-        const newStatus = hhState ? HH_STATE_MAP[hhState] : undefined;
-        if (newStatus && newStatus !== app.status) {
-          await this.db.seekerApplication.update({
-            where: { id: app.id },
-            data: { status: newStatus },
-          });
-          this.logger.log(
-            { appId: app.id, hhState, newStatus },
-            'HH status synced',
-          );
-          updated++;
-        }
-      } catch (err: any) {
-        const httpStatus = err?.response?.status;
-        if (httpStatus === 404) {
-          await this.db.seekerApplication.update({
-            where: { id: app.id },
-            data: { status: 'rejected', error: 'HH negotiation not found' },
-          });
-        } else if (httpStatus === 403) {
-          this.logger.warn({ appId: app.id }, 'HH token expired — skipping');
-        } else {
-          this.logger.error(
-            { appId: app.id, err: err.message },
-            'HH status sync error',
-          );
-        }
-      }
-    }
-
-    if (apps.length) {
-      this.logger.log(
-        { total: apps.length, updated },
-        'HH seeker status sync complete',
-      );
-    }
     await this.syncEmployerNegotiations();
     await this.syncInboundResponses();
   }
@@ -112,12 +37,6 @@ export class SyncHhStatusProcessor {
       where: {
         hhNegotiationId: { not: null },
         status: { notIn: ['rejected', 'hired'] },
-      },
-      include: {
-        conversations: {
-          where: { channel: 'hh' },
-          select: { id: true },
-        },
       },
       take: 200,
     });
@@ -137,12 +56,6 @@ export class SyncHhStatusProcessor {
             data: { status: newStatus },
           });
           updated++;
-        }
-
-        // Pull messages into conversation
-        const conv = app.conversations[0];
-        if (conv) {
-          await this.syncNegotiationMessages(conv.id, app.hhNegotiationId!);
         }
       } catch (err: any) {
         const httpStatus = err?.response?.status;
@@ -253,33 +166,6 @@ export class SyncHhStatusProcessor {
 
     if (created) {
       this.logger.log({ created }, 'HH inbound applications synced');
-    }
-  }
-
-  private async syncNegotiationMessages(
-    conversationId: string,
-    negotiationId: string,
-  ) {
-    const messages = await this.hhNegotiations.getMessages(negotiationId);
-    for (const msg of messages) {
-      const exists = await this.db.message.findFirst({
-        where: { conversationId, channelMessageId: msg.id },
-        select: { id: true },
-      });
-      if (exists) continue;
-
-      const isFromCandidate = msg.author.participant_type === 'applicant';
-
-      await this.db.message.create({
-        data: {
-          conversationId,
-          direction: isFromCandidate ? 'inbound' : 'outbound',
-          sender: isFromCandidate ? 'candidate' : 'recruiter',
-          content: msg.text,
-          channelMessageId: msg.id,
-          delivered: true,
-        },
-      });
     }
   }
 

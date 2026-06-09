@@ -2,165 +2,114 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SyncHhStatusProcessor } from './sync-hh-status.processor';
 import { PrismaService } from '../prisma/prisma.service';
 import { HhClientService } from '../integrations/hh/hh-client.service';
-import { HhTokenService } from '../integrations/hh/hh-token.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
 
 describe('SyncHhStatusProcessor', () => {
   let processor: SyncHhStatusProcessor;
   let db: any;
-  let hh: any;
+  let hhNeg: any;
 
   const mockJob = {} as any;
 
-  const makeApp = (overrides: object = {}) => ({
-    id: 'app-1',
-    hhNegotiationId: 'neg-1',
-    status: 'applied',
-    source: 'hh.ru',
-    candidate: { id: 'cand-1', hhOauthToken: 'tok-abc' },
-    ...overrides,
-  });
-
   beforeEach(async () => {
     db = {
-      seekerApplication: {
-        findMany: jest.fn(),
-        update: jest.fn().mockResolvedValue({}),
-      },
       application: {
         findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
         update: jest.fn().mockResolvedValue({}),
+        upsert: jest.fn().mockResolvedValue({}),
       },
       job: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      candidate: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'cand-new' }),
+      },
     };
 
-    hh = { getNegotiationStatus: jest.fn() };
-    const hhNegMock = {
+    hhNeg = {
       getEmployerNegotiationState: jest.fn().mockResolvedValue(null),
+      getVacancyResponses: jest.fn().mockResolvedValue({ items: [] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SyncHhStatusProcessor,
         { provide: PrismaService, useValue: db },
-        { provide: HhClientService, useValue: hh },
-        {
-          provide: HhTokenService,
-          useValue: {
-            refreshCandidateToken: jest.fn(),
-            getValidToken: jest.fn().mockResolvedValue('tok-abc'),
-          },
-        },
-        { provide: HhNegotiationsService, useValue: hhNegMock },
+        { provide: HhClientService, useValue: { getResume: jest.fn() } },
+        { provide: HhNegotiationsService, useValue: hhNeg },
       ],
     }).compile();
 
     processor = module.get(SyncHhStatusProcessor);
   });
 
-  it('returns early when no applications found', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([]);
-
+  it('does nothing when no employer applications or jobs', async () => {
     await processor.handle(mockJob);
 
-    expect(hh.getNegotiationStatus).not.toHaveBeenCalled();
-    expect(db.seekerApplication.update).not.toHaveBeenCalled();
+    expect(hhNeg.getEmployerNegotiationState).not.toHaveBeenCalled();
+    expect(hhNeg.getVacancyResponses).not.toHaveBeenCalled();
   });
 
-  it('maps HH state "invitation" → status "interview"', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    hh.getNegotiationStatus.mockResolvedValue('invitation');
-
-    await processor.handle(mockJob);
-
-    expect(db.seekerApplication.update).toHaveBeenCalledWith({
-      where: { id: 'app-1' },
-      data: { status: 'interview' },
+  describe('syncEmployerNegotiations', () => {
+    const makeApp = (overrides: object = {}) => ({
+      id: 'app-1',
+      hhNegotiationId: 'neg-1',
+      status: 'outreach_sent',
+      ...overrides,
     });
-  });
 
-  it('maps HH state "discard" → status "rejected"', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    hh.getNegotiationStatus.mockResolvedValue('discard');
+    it('maps HH state "invitation" → status "screening_passed"', async () => {
+      db.application.findMany.mockResolvedValue([makeApp()]);
+      hhNeg.getEmployerNegotiationState.mockResolvedValue('invitation');
 
-    await processor.handle(mockJob);
+      await processor.handle(mockJob);
 
-    expect(db.seekerApplication.update).toHaveBeenCalledWith({
-      where: { id: 'app-1' },
-      data: { status: 'rejected' },
+      expect(db.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'screening_passed' }),
+        }),
+      );
     });
-  });
 
-  it('maps HH state "discard_after_interview" → status "rejected"', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    hh.getNegotiationStatus.mockResolvedValue('discard_after_interview');
+    it('maps HH state "discard" → status "rejected"', async () => {
+      db.application.findMany.mockResolvedValue([makeApp()]);
+      hhNeg.getEmployerNegotiationState.mockResolvedValue('discard');
 
-    await processor.handle(mockJob);
+      await processor.handle(mockJob);
 
-    expect(db.seekerApplication.update).toHaveBeenCalledWith({
-      where: { id: 'app-1' },
-      data: { status: 'rejected' },
+      expect(db.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'rejected' }),
+        }),
+      );
     });
-  });
 
-  it('does not update when HH state is unknown', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    hh.getNegotiationStatus.mockResolvedValue('some_unknown_state');
+    it('does not update when status already matches', async () => {
+      db.application.findMany.mockResolvedValue([
+        makeApp({ status: 'screening_passed' }),
+      ]);
+      hhNeg.getEmployerNegotiationState.mockResolvedValue('invitation');
 
-    await processor.handle(mockJob);
+      await processor.handle(mockJob);
 
-    expect(db.seekerApplication.update).not.toHaveBeenCalled();
-  });
-
-  it('does not update when status already matches new status', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([
-      makeApp({ status: 'interview' }),
-    ]);
-    hh.getNegotiationStatus.mockResolvedValue('invitation');
-
-    await processor.handle(mockJob);
-
-    expect(db.seekerApplication.update).not.toHaveBeenCalled();
-  });
-
-  it('marks as rejected on 404 response', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    const err = Object.assign(new Error('Not Found'), {
-      response: { status: 404 },
+      expect(db.application.update).not.toHaveBeenCalled();
     });
-    hh.getNegotiationStatus.mockRejectedValue(err);
 
-    await processor.handle(mockJob);
+    it('marks rejected on 404', async () => {
+      db.application.findMany.mockResolvedValue([makeApp()]);
+      hhNeg.getEmployerNegotiationState.mockRejectedValue(
+        Object.assign(new Error('Not Found'), { response: { status: 404 } }),
+      );
 
-    expect(db.seekerApplication.update).toHaveBeenCalledWith({
-      where: { id: 'app-1' },
-      data: { status: 'rejected', error: 'HH negotiation not found' },
+      await processor.handle(mockJob);
+
+      expect(db.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'rejected' }),
+        }),
+      );
     });
-  });
-
-  it('skips app without updating on 403 response', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([makeApp()]);
-    const err = Object.assign(new Error('Forbidden'), {
-      response: { status: 403 },
-    });
-    hh.getNegotiationStatus.mockRejectedValue(err);
-
-    await processor.handle(mockJob);
-
-    expect(db.seekerApplication.update).not.toHaveBeenCalled();
-  });
-
-  it('skips app when hhOauthToken is null', async () => {
-    db.seekerApplication.findMany.mockResolvedValue([
-      makeApp({ candidate: { id: 'cand-1', hhOauthToken: null } }),
-    ]);
-
-    await processor.handle(mockJob);
-
-    // It should not even try to fetch status if token is missing
-    expect(hh.getNegotiationStatus).not.toHaveBeenCalled();
-    expect(db.seekerApplication.update).not.toHaveBeenCalled();
   });
 });

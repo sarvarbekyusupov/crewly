@@ -57,13 +57,6 @@ export interface HhVacancyDetail {
   salary?: { from?: number; to?: number; currency?: string; gross?: boolean };
 }
 
-export interface HhTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
-}
-
 export interface HhSearchParams {
   text?: string;
   area?: string;

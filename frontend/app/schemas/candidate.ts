@@ -280,7 +280,6 @@ export const candidatePreferencesSchema = z.object({
   maxApplicationsPerDay: z.coerce.number().min(1).max(50),
   preferredWorkMode: z.string().optional(),
   expectedSalaryUzs: z.string().optional(),
-  hhResumeId: z.string().optional(),
 })
 
 export type CandidateProfileInput = z.infer<typeof candidateProfileSchema>

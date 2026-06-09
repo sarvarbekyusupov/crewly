@@ -22,6 +22,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable, fromEvent, interval, merge } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { CandidatePortalService } from './candidate-portal.service';
+import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
 import { z } from 'zod';
@@ -66,6 +67,7 @@ type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
 export class CandidatePortalController {
   constructor(
     private readonly portalService: CandidatePortalService,
+    private readonly hhSuggests: HhSuggestsService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
@@ -146,7 +148,6 @@ export class CandidatePortalController {
       expectedSalaryUzs:
         p.expectedSalaryUzs != null ? String(p.expectedSalaryUzs) : null,
       hhResumeId: p.hhResumeId,
-      hhOauthTokenSet: !!p.hhOauthToken,
       resumeFileUrl: p.resumeFileUrl,
     }));
   }
@@ -275,5 +276,22 @@ export class CandidatePortalController {
       id,
       body.status,
     );
+  }
+
+  // ── HH Suggests (no auth required) ────────────────────────────────────────
+
+  @Get('hh/suggests/areas')
+  suggestAreas(@Query('text') text: string) {
+    return this.hhSuggests.areas(text ?? '');
+  }
+
+  @Get('hh/suggests/skills')
+  suggestSkills(@Query('text') text: string) {
+    return this.hhSuggests.skills(text ?? '');
+  }
+
+  @Get('hh/suggests/universities')
+  suggestUniversities(@Query('text') text: string) {
+    return this.hhSuggests.universities(text ?? '');
   }
 }

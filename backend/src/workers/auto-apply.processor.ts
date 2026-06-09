@@ -5,9 +5,7 @@ import { Prisma, DiscoveredJob } from '@prisma/client';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
-import { HhApplyService } from '../integrations/apply/hh-apply.service';
 import { HhClientService } from '../integrations/hh/hh-client.service';
-import { HhTokenService } from '../integrations/hh/hh-token.service';
 import { LinkedInApplyService } from '../integrations/apply/linkedin-apply.service';
 import { QUEUES } from './queue-names';
 import { ConfigService } from '@nestjs/config';
@@ -21,8 +19,6 @@ type AutoApplyCandidate = {
   city: string | null;
   email: string | null;
   phone: string | null;
-  hhResumeId: string | null;
-  hhOauthToken: string | null;
   agentSettings: Prisma.JsonValue | null;
   socialProof: Prisma.JsonValue | null;
 };
@@ -38,9 +34,7 @@ export class AutoApplyProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly agent: SeekerAgent,
-    private readonly hhApply: HhApplyService,
     private readonly hhClient: HhClientService,
-    private readonly hhToken: HhTokenService,
     private readonly linkedinApply: LinkedInApplyService,
     private readonly config: ConfigService,
   ) {}
@@ -62,8 +56,6 @@ export class AutoApplyProcessor {
             city: true,
             email: true,
             phone: true,
-            hhResumeId: true,
-            hhOauthToken: true,
             agentSettings: true,
             socialProof: true,
           },
@@ -82,6 +74,12 @@ export class AutoApplyProcessor {
         'Application not in queued state — skipping',
       );
       return;
+    }
+
+    if (seekerApp.source === 'hh.ru') {
+      throw new NonRetryableError(
+        'HH applicant API is deprecated — HH auto-apply is no longer supported',
+      );
     }
 
     const candidate = seekerApp.candidate;
@@ -152,29 +150,7 @@ export class AutoApplyProcessor {
         { candidateId: candidate.id, todayCount, maxPerDay },
         'Daily limit reached — requeueing tomorrow',
       );
-      // Leave status as queued — the job will be retried or picked up next day
       return;
-    }
-
-    // For HH.ru: validate vacancy before the LLM cover letter call (saves cost)
-    if (seekerApp.source === 'hh.ru') {
-      if (!candidate.hhOauthToken) {
-        throw new NonRetryableError(
-          `Candidate ${candidate.id} has no hhOauthToken — cannot apply to HH`,
-        );
-      }
-      const urlMatch = discoveredJob.sourceUrl.match(/\/vacancy\/(\d+)/);
-      if (!urlMatch) {
-        throw new NonRetryableError(
-          `Cannot extract vacancy ID from URL: ${discoveredJob.sourceUrl}`,
-        );
-      }
-      const vacancyDetail = await this.hhClient.getVacancyDetail(urlMatch[1]);
-      if (vacancyDetail.type.id === 'direct') {
-        throw new NonRetryableError(
-          `Vacancy ${urlMatch[1]} is a direct vacancy — HH API apply not supported`,
-        );
-      }
     }
 
     // Save cover letter
@@ -184,14 +160,7 @@ export class AutoApplyProcessor {
     });
 
     try {
-      if (seekerApp.source === 'hh.ru') {
-        await this.applyHh(
-          seekerApplicationId,
-          candidate,
-          discoveredJob,
-          coverLetter,
-        );
-      } else if (seekerApp.source === 'linkedin') {
+      if (seekerApp.source === 'linkedin') {
         await this.applyLinkedIn(
           seekerApplicationId,
           candidate,
@@ -217,58 +186,6 @@ export class AutoApplyProcessor {
       }
       throw err;
     }
-  }
-
-  private async applyHh(
-    seekerApplicationId: string,
-    candidate: AutoApplyCandidate,
-    discoveredJob: DiscoveredJob,
-    coverLetter: string,
-  ) {
-    // Get a fresh token (auto-refreshes if near expiry)
-    const hhOauthToken = await this.hhToken.getValidToken(candidate.id);
-
-    // Resolve resume ID if not cached
-    let hhResumeId = candidate.hhResumeId ?? undefined;
-    if (!hhResumeId) {
-      const resolved = await this.hhApply.getResumeId(hhOauthToken);
-      hhResumeId = resolved ?? undefined;
-      if (hhResumeId) {
-        await this.db.candidate.update({
-          where: { id: candidate.id },
-          data: { hhResumeId },
-        });
-      }
-    }
-    if (!hhResumeId) {
-      throw new NonRetryableError('Could not find HH resume for candidate');
-    }
-
-    // Vacancy ID was already extracted and validated in handle()
-    const match = discoveredJob.sourceUrl.match(/\/vacancy\/(\d+)/);
-    const vacancyId = match![1];
-
-    const result = await this.hhApply.apply({
-      vacancyId,
-      hhOauthToken,
-      hhResumeId,
-      coverLetter,
-    });
-
-    await this.db.seekerApplication.update({
-      where: { id: seekerApplicationId },
-      data: {
-        status: 'applied',
-        hhNegotiationId: result.negotiationId,
-        appliedAt: new Date(),
-        error: null,
-      },
-    });
-
-    this.logger.log(
-      { seekerApplicationId, negotiationId: result.negotiationId },
-      'HH application complete',
-    );
   }
 
   private async applyLinkedIn(

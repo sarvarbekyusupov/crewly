@@ -8,7 +8,6 @@ definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
-const route = useRoute()
 const { t } = useI18n()
 
 useHead({ title: t('candidate.preferences.title') })
@@ -16,19 +15,6 @@ useHead({ title: t('candidate.preferences.title') })
 const { data: prefs, refresh } = await useAsyncData('candidate-preferences', () =>
   api.get<CandidatePreferences>('/api/v1/candidate-portal/preferences').catch(() => null),
 )
-
-onMounted(() => {
-  if (route.query.hh_connected) {
-    toast.add({ title: t('candidate.preferences.hhConnected'), color: 'success' })
-    refresh()
-  } else if (route.query.hh_error) {
-    const msg =
-      route.query.hh_error === 'access_denied'
-        ? t('candidate.preferences.hhAccessDenied')
-        : t('candidate.preferences.hhConnectFailed')
-    toast.add({ title: msg, color: 'error' })
-  }
-})
 
 // --- VeeValidate form ---
 const { errors, handleSubmit, defineField, setValues } = useForm({
@@ -38,7 +24,6 @@ const { errors, handleSubmit, defineField, setValues } = useForm({
     maxApplicationsPerDay: 5,
     preferredWorkMode: '',
     expectedSalaryUzs: '',
-    hhResumeId: '',
   },
 })
 
@@ -51,7 +36,6 @@ const [maxApplicationsPerDay, maxApplicationsPerDayProps] = defineField(
 ) as unknown as [import('vue').Ref<number>, object]
 const [preferredWorkMode] = defineField('preferredWorkMode')
 const [expectedSalaryUzs, expectedSalaryUzsProps] = defineField('expectedSalaryUzs')
-const [hhResumeId, hhResumeIdProps] = defineField('hhResumeId')
 
 const blacklistedCompanies = ref<string[]>([])
 const blacklistInput = ref('')
@@ -65,7 +49,6 @@ watch(
       maxApplicationsPerDay: p.maxApplicationsPerDay ?? 5,
       preferredWorkMode: p.preferredWorkMode ?? '',
       expectedSalaryUzs: p.expectedSalaryUzs ? String(p.expectedSalaryUzs) : '',
-      hhResumeId: p.hhResumeId ?? '',
     })
     blacklistedCompanies.value = [...(p.blacklistedCompanies ?? [])]
   },
@@ -93,7 +76,6 @@ const save = handleSubmit(async (values) => {
       maxApplicationsPerDay: values.maxApplicationsPerDay,
       preferredWorkMode: values.preferredWorkMode || null,
       expectedSalaryUzs: values.expectedSalaryUzs ? Number(values.expectedSalaryUzs) : null,
-      ...(values.hhResumeId && { hhResumeId: values.hhResumeId }),
     })
     toast.add({ title: t('candidate.preferences.saved'), color: 'success' })
     refresh()
@@ -103,27 +85,6 @@ const save = handleSubmit(async (values) => {
     saving.value = false
   }
 })
-
-// HH OAuth actions
-function connectHh() {
-  window.location.href = '/api/v1/candidate-portal/hh/connect'
-}
-
-const disconnecting = ref(false)
-
-async function disconnectHh() {
-  if (!window.confirm(t('candidate.preferences.hhDisconnectConfirm'))) return
-  disconnecting.value = true
-  try {
-    await api.del('/api/v1/candidate-portal/hh/disconnect')
-    toast.add({ title: t('candidate.preferences.hhDisconnected'), color: 'success' })
-    refresh()
-  } catch (e) {
-    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
-  } finally {
-    disconnecting.value = false
-  }
-}
 </script>
 
 <template>
@@ -307,64 +268,6 @@ async function disconnectHh() {
             style="color: var(--ink-subtle)"
             >{{ t('candidate.preferences.noBlacklist') }}</span
           >
-        </div>
-      </UCard>
-
-      <!-- HH.ru OAuth -->
-      <UCard>
-        <h3 class="section-label mb-3">{{ t('candidate.preferences.hhTitle') }}</h3>
-        <p class="text-sm mb-4" style="color: var(--ink-muted)">
-          {{ t('candidate.preferences.hhDesc') }}
-        </p>
-
-        <div v-if="prefs?.hhOauthTokenSet" class="space-y-4">
-          <div
-            class="flex items-center gap-3 px-4 py-3 rounded-lg"
-            style="
-              background: color-mix(in srgb, var(--color-success-500) 10%, transparent);
-              border: 1px solid color-mix(in srgb, var(--color-success-500) 25%, transparent);
-            "
-          >
-            <UIcon name="i-heroicons-check-circle" class="text-green-500 shrink-0" />
-            <div>
-              <p class="text-sm font-medium" style="color: var(--ink)">
-                {{ t('candidate.preferences.hhConnectedLabel') }}
-              </p>
-              <p class="text-xs" style="color: var(--ink-muted)">
-                {{ t('candidate.preferences.hhActiveDesc') }}
-              </p>
-            </div>
-            <UButton
-              type="button"
-              variant="ghost"
-              color="error"
-              size="xs"
-              class="ml-auto"
-              :loading="disconnecting"
-              @click="disconnectHh"
-            >
-              {{ t('candidate.preferences.disconnect') }}
-            </UButton>
-          </div>
-
-          <UFormField
-            label="HH.ru Resume ID"
-            hint="Leave blank to auto-detect from your HH account"
-            :error="errors.hhResumeId"
-          >
-            <UInput
-              v-model="hhResumeId"
-              v-bind="hhResumeIdProps"
-              placeholder="e.g. abc123def456"
-              class="w-full font-mono"
-            />
-          </UFormField>
-        </div>
-
-        <div v-else>
-          <UButton type="button" variant="outline" icon="i-heroicons-link" @click="connectHh">
-            {{ t('candidate.preferences.hhConnect') }}
-          </UButton>
         </div>
       </UCard>
 

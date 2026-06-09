@@ -8,11 +8,9 @@ import {
   HhResumeSummary,
   HhSearchParams,
   HhVacancyDetail,
-  HhTokenResponse,
   HhMeResponse,
   HhResumeViewItem,
 } from './hh.types';
-import { HhNegotiationItem } from './hh-negotiations.service';
 
 @Injectable()
 export class HhClientService {
@@ -121,32 +119,6 @@ export class HhClientService {
     return response.data;
   }
 
-  async refreshCandidateToken(refreshToken: string): Promise<HhTokenResponse> {
-    const clientId = this.config.get('HH_CLIENT_ID');
-    const clientSecret = this.config.get('HH_CLIENT_SECRET');
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
-
-    const response = await firstValueFrom(
-      this.http.post<HhTokenResponse>(
-        'https://hh.uz/oauth/token',
-        new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          client_id: clientId ?? '',
-          client_secret: clientSecret ?? '',
-        }).toString(),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-          },
-        },
-      ),
-    );
-    return response.data;
-  }
-
   async getPotentialResumes(vacancyId: string): Promise<HhResumeSummary[]> {
     const response = await firstValueFrom(
       this.http.get<HhResumeListResponse>(
@@ -195,7 +167,7 @@ export class HhClientService {
     }
   }
 
-  /** Returns info about the authenticated user (employer or applicant). */
+  /** Returns info about the authenticated user (employer). */
   async getMe(token: string): Promise<HhMeResponse> {
     const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
@@ -208,67 +180,5 @@ export class HhClientService {
       }),
     );
     return response.data;
-  }
-
-  /** Returns the seeker's active (non-rejected) HH applications. */
-  async getActiveNegotiations(
-    candidateToken: string,
-  ): Promise<HhNegotiationItem[]> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
-    const response = await firstValueFrom(
-      this.http.get<{ items: HhNegotiationItem[] }>(
-        `${this.baseUrl}/negotiations/active`,
-        {
-          headers: {
-            Authorization: `Bearer ${candidateToken}`,
-            'User-Agent': userAgent,
-            'HH-User-Agent': userAgent,
-          },
-          params: { per_page: 100 },
-        },
-      ),
-    );
-    return response.data.items ?? [];
-  }
-
-  /** Hides/archives a seeker application on HH. */
-  async hideNegotiation(
-    negotiationId: string,
-    candidateToken: string,
-  ): Promise<void> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
-    await firstValueFrom(
-      this.http.delete(`${this.baseUrl}/negotiations/active/${negotiationId}`, {
-        headers: {
-          Authorization: `Bearer ${candidateToken}`,
-          'User-Agent': userAgent,
-          'HH-User-Agent': userAgent,
-        },
-      }),
-    );
-  }
-
-  async getNegotiationStatus(
-    negotiationId: string,
-    candidateToken: string,
-  ): Promise<string | null> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ state?: { id: string } }>(
-          `${this.baseUrl}/negotiations/${negotiationId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${candidateToken}`,
-              'User-Agent': this.config.get('HH_USER_AGENT') ?? 'crewly/1.0',
-            },
-          },
-        ),
-      );
-      return response.data?.state?.id ?? null;
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 404 || status === 403) throw err;
-      throw err;
-    }
   }
 }
