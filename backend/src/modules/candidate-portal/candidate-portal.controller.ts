@@ -31,6 +31,7 @@ import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
 import { HhResumeService } from '../../integrations/hh/hh-resume.service';
 import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
 import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
+import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
@@ -85,6 +86,7 @@ export class CandidatePortalController {
     private readonly hhJobs: HhJobsAdapter,
     private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
+    private readonly llm: PromptRunnerService,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
   ) {}
@@ -616,5 +618,140 @@ export class CandidatePortalController {
   @Get('hh/suggests/universities')
   suggestUniversities(@Query('text') text: string) {
     return this.hhSuggests.universities(text ?? '');
+  }
+
+  // ── Interview Prep ─────────────────────────────────────────────────────────
+
+  @Post('prep/questions')
+  @HttpCode(HttpStatus.OK)
+  async generatePrepQuestions(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          jobTitle: z.string().min(1).max(200),
+          jobDescription: z.string().max(5000).optional(),
+          count: z.number().int().min(1).max(10).default(5),
+        }),
+      ),
+    )
+    body: { jobTitle: string; jobDescription?: string; count: number },
+  ) {
+    const profile = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { currentPosition: true, skills: true, yearsExperience: true },
+    });
+
+    const context = [
+      `Role: ${body.jobTitle}`,
+      profile?.skills?.length
+        ? `Candidate skills: ${profile.skills.slice(0, 10).join(', ')}`
+        : '',
+      profile?.yearsExperience
+        ? `Experience: ${profile.yearsExperience} years`
+        : '',
+      body.jobDescription
+        ? `Job description snippet: ${body.jobDescription.slice(0, 800)}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const { output } = await this.llm.run(
+      'prep-questions',
+      '1',
+      'interview-prep',
+      [
+        {
+          role: 'user',
+          content: `Generate ${body.count} insightful interview questions for the following context. Mix behavioral, situational, and technical questions. Return ONLY a JSON array of strings, no other text.\n\n${context}`,
+        },
+      ],
+      { maxTokens: 600, temperature: 0.7 },
+    );
+
+    let questions: string[] = [];
+    try {
+      const parsed = JSON.parse(output.trim());
+      if (Array.isArray(parsed))
+        questions = parsed.map(String).slice(0, body.count);
+    } catch {
+      questions = output
+        .split('\n')
+        .map((l) =>
+          l
+            .replace(/^[\d.*-]+\s*/, '')
+            .replace(/^["']|["']$/g, '')
+            .trim(),
+        )
+        .filter(Boolean)
+        .slice(0, body.count);
+    }
+
+    return { questions };
+  }
+
+  // ── Candidate Analytics ────────────────────────────────────────────────────
+
+  @Get('analytics')
+  async getCandidateAnalytics(@CurrentCandidate() candidate: { id: string }) {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [byStatus, recentActivity, inboundCount, topSources] =
+      await Promise.all([
+        this.db.seekerApplication.groupBy({
+          by: ['status'],
+          where: { candidateId: candidate.id },
+          _count: true,
+        }),
+        this.db.seekerApplication.findMany({
+          where: {
+            candidateId: candidate.id,
+            createdAt: { gte: thirtyDaysAgo },
+          },
+          select: { createdAt: true, status: true, source: true },
+          orderBy: { createdAt: 'asc' },
+        }),
+        this.db.application.count({ where: { candidateId: candidate.id } }),
+        this.db.seekerApplication.groupBy({
+          by: ['source'],
+          where: { candidateId: candidate.id },
+          _count: true,
+          orderBy: { _count: { source: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+    const statusMap = Object.fromEntries(
+      byStatus.map((b) => [b.status, b._count]),
+    );
+    const total = Object.values(statusMap).reduce((a, b) => a + b, 0);
+    const applied = statusMap['applied'] ?? 0;
+    const interviewed =
+      (statusMap['interview'] ?? 0) + (statusMap['phone_interview'] ?? 0);
+    const offers = statusMap['offer_made'] ?? 0;
+
+    // Daily bucketed activity for last 30 days
+    const dailyMap: Record<string, number> = {};
+    for (const app of recentActivity) {
+      const day = app.createdAt.toISOString().slice(0, 10);
+      dailyMap[day] = (dailyMap[day] ?? 0) + 1;
+    }
+
+    return {
+      total,
+      applied,
+      interviewed,
+      offers,
+      rejected: statusMap['rejected'] ?? 0,
+      inboundCount,
+      responseRate:
+        total > 0 ? Math.round(((interviewed + offers) / total) * 100) : 0,
+      byStatus: statusMap,
+      bySources: Object.fromEntries(
+        topSources.map((s) => [s.source, s._count]),
+      ),
+      dailyActivity: dailyMap,
+    };
   }
 }

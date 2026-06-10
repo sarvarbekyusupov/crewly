@@ -1,0 +1,307 @@
+<script setup lang="ts">
+definePageMeta({ layout: 'candidate' })
+
+const api = useCandidateApi()
+const { t } = useI18n()
+
+useHead({ title: 'Analytics' })
+
+interface AnalyticsData {
+  total: number
+  applied: number
+  interviewed: number
+  offers: number
+  rejected: number
+  inboundCount: number
+  responseRate: number
+  byStatus: Record<string, number>
+  bySources: Record<string, number>
+  dailyActivity: Record<string, number>
+}
+
+const {
+  data: analytics,
+  pending,
+  error,
+} = await useAsyncData('candidate-analytics', () =>
+  api.get<AnalyticsData>('/api/v1/candidate-portal/analytics'),
+)
+
+const funnel = computed(() => {
+  if (!analytics.value) return []
+  return [
+    { label: 'Total Applied', value: analytics.value.total, color: '#6366f1' },
+    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: '#3b82f6' },
+    { label: 'Interviewed', value: analytics.value.interviewed, color: '#f59e0b' },
+    { label: 'Offers', value: analytics.value.offers, color: '#22c55e' },
+  ]
+})
+
+const maxFunnelValue = computed(() => Math.max(...funnel.value.map((f) => f.value), 1))
+
+const statusLabels: Record<string, string> = {
+  queued: 'Queued',
+  applying: 'Applying',
+  applied: 'Applied',
+  skipped: 'Skipped',
+  failed: 'Failed',
+  phone_interview: 'Phone Screen',
+  interview: 'Interview',
+  offer_made: 'Offer',
+  hired: 'Hired',
+  rejected: 'Rejected',
+}
+
+const statusColor: Record<string, string> = {
+  applied: '#3b82f6',
+  interview: '#f59e0b',
+  phone_interview: '#f59e0b',
+  offer_made: '#22c55e',
+  hired: '#16a34a',
+  rejected: '#ef4444',
+  skipped: '#9ca3af',
+  failed: '#dc2626',
+  queued: '#6366f1',
+  applying: '#8b5cf6',
+}
+
+// Build daily activity chart data (last 30 days)
+const chartDays = computed(() => {
+  const days: { date: string; label: string; count: number }[] = []
+  const now = new Date()
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().slice(0, 10)
+    days.push({
+      date: key,
+      label: d.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+      count: analytics.value?.dailyActivity[key] ?? 0,
+    })
+  }
+  return days
+})
+
+const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.count), 1))
+</script>
+
+<template>
+  <div class="space-y-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="pb-4 border-b border-line">
+      <p
+        style="
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: var(--ink-subtle);
+          margin-bottom: 6px;
+        "
+      >
+        Dashboard
+      </p>
+      <h1
+        style="
+          font-family: 'Fraunces', serif;
+          font-size: 28px;
+          line-height: 1.05;
+          letter-spacing: -0.03em;
+          color: var(--ink);
+          font-weight: 400;
+        "
+      >
+        Your Job Search Analytics
+      </h1>
+      <p class="text-sm mt-1" style="color: var(--ink-muted)">
+        Track your application activity and funnel performance.
+      </p>
+    </div>
+
+    <div v-if="pending" class="flex justify-center py-20">
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="w-8 h-8 animate-spin"
+        style="color: var(--ink-subtle)"
+      />
+    </div>
+
+    <template v-else-if="analytics">
+      <!-- Top stat cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div
+          class="rounded-xl p-4 text-center"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-3xl font-mono font-bold" style="color: var(--ink)">
+            {{ analytics.total }}
+          </p>
+          <p class="text-xs mt-1" style="color: var(--ink-muted)">Total Applied</p>
+        </div>
+        <div
+          class="rounded-xl p-4 text-center"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-3xl font-mono font-bold" style="color: #f59e0b">
+            {{ analytics.interviewed }}
+          </p>
+          <p class="text-xs mt-1" style="color: var(--ink-muted)">Interviews</p>
+        </div>
+        <div
+          class="rounded-xl p-4 text-center"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-3xl font-mono font-bold" style="color: #22c55e">{{ analytics.offers }}</p>
+          <p class="text-xs mt-1" style="color: var(--ink-muted)">Offers</p>
+        </div>
+        <div
+          class="rounded-xl p-4 text-center"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p class="text-3xl font-mono font-bold" style="color: #6366f1">
+            {{ analytics.responseRate }}%
+          </p>
+          <p class="text-xs mt-1" style="color: var(--ink-muted)">Response Rate</p>
+        </div>
+      </div>
+
+      <!-- Application funnel -->
+      <div
+        class="rounded-xl p-5 space-y-3"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <p
+          class="text-xs font-mono font-bold uppercase tracking-wider"
+          style="color: var(--ink-subtle)"
+        >
+          Application Funnel
+        </p>
+        <div class="space-y-2.5">
+          <div v-for="step in funnel" :key="step.label" class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span style="color: var(--ink-muted)">{{ step.label }}</span>
+              <span class="font-mono font-bold" style="color: var(--ink)">{{ step.value }}</span>
+            </div>
+            <div class="rounded-full h-2 overflow-hidden" style="background: var(--bg-deep)">
+              <div
+                class="h-full rounded-full transition-all duration-500"
+                :style="{
+                  width: `${Math.round((step.value / maxFunnelValue) * 100)}%`,
+                  background: step.color,
+                }"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily activity bar chart -->
+      <div
+        class="rounded-xl p-5 space-y-3"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <p
+          class="text-xs font-mono font-bold uppercase tracking-wider"
+          style="color: var(--ink-subtle)"
+        >
+          Applications (Last 30 Days)
+        </p>
+        <div class="flex items-end gap-0.5 h-20">
+          <template v-for="day in chartDays" :key="day.date">
+            <div
+              class="flex-1 rounded-t transition-all duration-300"
+              :title="`${day.label}: ${day.count}`"
+              :style="{
+                height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
+                background: day.count > 0 ? '#6366f1' : 'var(--bg-deep)',
+                opacity: day.count > 0 ? '1' : '0.3',
+              }"
+            />
+          </template>
+        </div>
+        <div class="flex justify-between text-xs" style="color: var(--ink-subtle)">
+          <span>{{ chartDays[0]?.label }}</span>
+          <span>{{ chartDays[chartDays.length - 1]?.label }}</span>
+        </div>
+      </div>
+
+      <!-- Status breakdown + sources row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- By status -->
+        <div
+          class="rounded-xl p-5 space-y-2"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <p
+            class="text-xs font-mono font-bold uppercase tracking-wider"
+            style="color: var(--ink-subtle)"
+          >
+            By Status
+          </p>
+          <div
+            v-for="(count, status) in analytics.byStatus"
+            :key="status"
+            class="flex items-center justify-between py-1.5"
+            style="border-bottom: 1px solid var(--line-soft)"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="w-2 h-2 rounded-full"
+                :style="{ background: statusColor[status] ?? '#9ca3af' }"
+              />
+              <span class="text-sm" style="color: var(--ink-muted)">{{
+                statusLabels[status] ?? status
+              }}</span>
+            </div>
+            <span class="text-sm font-mono font-bold" style="color: var(--ink)">{{ count }}</span>
+          </div>
+        </div>
+
+        <!-- By source + inbound -->
+        <div
+          class="rounded-xl p-5 space-y-4"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <div class="space-y-2">
+            <p
+              class="text-xs font-mono font-bold uppercase tracking-wider"
+              style="color: var(--ink-subtle)"
+            >
+              By Source
+            </p>
+            <div
+              v-for="(count, source) in analytics.bySources"
+              :key="source"
+              class="flex items-center justify-between py-1"
+            >
+              <span class="text-sm" style="color: var(--ink-muted)">{{ source }}</span>
+              <span class="text-sm font-mono font-bold" style="color: var(--ink)">{{ count }}</span>
+            </div>
+            <p
+              v-if="!Object.keys(analytics.bySources).length"
+              class="text-xs"
+              style="color: var(--ink-subtle)"
+            >
+              No data yet
+            </p>
+          </div>
+          <div class="pt-2" style="border-top: 1px solid var(--line-soft)">
+            <p
+              class="text-xs font-mono font-bold uppercase tracking-wider mb-1"
+              style="color: var(--ink-subtle)"
+            >
+              Inbound (employers found you)
+            </p>
+            <p class="text-2xl font-mono font-bold" style="color: var(--ink)">
+              {{ analytics.inboundCount }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div v-else-if="error" class="py-12 text-center text-sm" style="color: var(--ink-muted)">
+      Failed to load analytics
+    </div>
+  </div>
+</template>

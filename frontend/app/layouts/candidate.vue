@@ -53,6 +53,12 @@ const nav = [
     icon: 'i-heroicons-paper-airplane',
   },
   {
+    label: 'Analytics',
+    to: '/candidate/analytics',
+    icon: 'i-heroicons-chart-bar',
+    mobileHidden: true,
+  },
+  {
     label: 'Interview Prep',
     to: '/candidate/prep',
     icon: 'i-heroicons-microphone',

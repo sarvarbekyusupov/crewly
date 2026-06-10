@@ -1,19 +1,105 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'candidate' })
 
+const api = useCandidateApi()
 const toast = useToast()
 const { playPop, playSwoosh } = useAudio()
+
+// ── Job picker + question loading ────────────────────────────────────────────
+
+interface JobOption {
+  id: string
+  title: string
+  company: string
+  description?: string
+}
+
+const { data: recentJobs } = await useAsyncData('prep-jobs', () =>
+  api
+    .get<{
+      data: {
+        id: string
+        discoveredJob: { title: string; company: string; description?: string }
+      }[]
+    }>('/api/v1/candidate-portal/seeker-applications', { limit: 20, sortBy: 'recent' })
+    .then((r) =>
+      (r.data ?? []).map(
+        (a: any) =>
+          ({
+            id: a.id,
+            title: a.discoveredJob?.title ?? 'Unknown role',
+            company: a.discoveredJob?.company ?? '',
+            description: a.discoveredJob?.description,
+          }) as JobOption,
+      ),
+    )
+    .catch(() => [] as JobOption[]),
+)
+
+const jobOptions = computed(() => [
+  { id: '', title: 'Custom / no job', company: '' },
+  ...(recentJobs.value ?? []),
+])
+
+const selectedJobId = ref('')
+const customJobTitle = ref('')
+const loadingQuestions = ref(false)
+const questions = ref<string[]>([])
+const sessionReady = ref(false)
+
+const selectedJob = computed(
+  () => jobOptions.value.find((j) => j.id === selectedJobId.value) ?? null,
+)
+
+async function loadQuestions() {
+  const title =
+    selectedJob.value?.title && selectedJob.value.id
+      ? selectedJob.value.title
+      : customJobTitle.value.trim()
+
+  if (!title) {
+    toast.add({ title: 'Enter a job title first', color: 'warning' })
+    return
+  }
+
+  loadingQuestions.value = true
+  try {
+    const resp = await api.post<{ questions: string[] }>(
+      '/api/v1/candidate-portal/prep/questions',
+      {
+        jobTitle: title,
+        jobDescription: selectedJob.value?.description,
+        count: 5,
+      },
+    )
+    questions.value = resp.questions ?? []
+    sessionReady.value = true
+    activeQuestionIdx.value = 0
+    evaluationComplete.value = false
+    transcript.value = ''
+  } catch {
+    toast.add({ title: 'Failed to generate questions', color: 'error' })
+  } finally {
+    loadingQuestions.value = false
+  }
+}
+
+const activeQuestions = computed(() =>
+  questions.value.length
+    ? questions.value
+    : [
+        'Tell me about yourself and your background.',
+        'Describe a challenging project you worked on and how you handled it.',
+        'Where do you see yourself in 3 years?',
+        'What is your greatest professional strength?',
+        'Why are you interested in this role?',
+      ],
+)
 
 const isRecording = ref(false)
 const timer = ref(0)
 let intervalId: any = null
-
 const activeQuestionIdx = ref(0)
-const mockQuestions = [
-  'Tell me about yourself and your experience with Vue.js / Nuxt.',
-  'How do you manage state and architectural consistency in large SPAs?',
-  'Explain a challenging technical bug you resolved, and how you diagnosed it.',
-]
 
 const transcript = ref('')
 const wpm = ref(0)
@@ -115,7 +201,7 @@ function evaluateTranscript() {
 }
 
 function nextQuestion() {
-  if (activeQuestionIdx.value < mockQuestions.length - 1) {
+  if (activeQuestionIdx.value < activeQuestions.value.length - 1) {
     playPop()
     activeQuestionIdx.value++
     evaluationComplete.value = false
@@ -166,6 +252,60 @@ function formatTimer(sec: number) {
       </p>
     </div>
 
+    <!-- Job picker + question loader -->
+    <div
+      class="rounded-xl p-5 space-y-4"
+      style="background: var(--surface); border: 1px solid var(--line-soft)"
+    >
+      <p
+        class="text-xs font-mono font-bold uppercase tracking-wider"
+        style="color: var(--ink-subtle)"
+      >
+        Prep for
+      </p>
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-0 space-y-1">
+          <label class="text-xs" style="color: var(--ink-muted)">Recent application</label>
+          <USelect
+            v-model="selectedJobId"
+            :items="
+              jobOptions.map((j) => ({
+                label: j.id ? `${j.title} — ${j.company}` : 'Custom / no job',
+                value: j.id,
+              }))
+            "
+            class="w-full"
+          />
+        </div>
+        <div v-if="!selectedJobId" class="flex-1 min-w-0 space-y-1">
+          <label class="text-xs" style="color: var(--ink-muted)">Or enter job title</label>
+          <UInput v-model="customJobTitle" placeholder="e.g. Senior Backend Engineer" />
+        </div>
+        <UButton :loading="loadingQuestions" icon="i-heroicons-sparkles" @click="loadQuestions">
+          Generate AI Questions
+        </UButton>
+      </div>
+      <div v-if="sessionReady" class="flex flex-wrap gap-1.5 pt-1">
+        <span
+          v-for="(q, i) in activeQuestions"
+          :key="i"
+          class="px-2 py-0.5 rounded text-xs cursor-pointer transition-colors"
+          :style="
+            i === activeQuestionIdx
+              ? 'background: var(--ink); color: var(--bg)'
+              : 'background: var(--bg-deep); color: var(--ink-muted); border: 1px solid var(--line-soft)'
+          "
+          @click="
+            activeQuestionIdx = i
+            evaluationComplete = false
+            transcript = ''
+          "
+        >
+          Q{{ i + 1 }}
+        </span>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Left column: Teleprompter / Question deck -->
       <div class="md:col-span-2 space-y-4">
@@ -176,7 +316,7 @@ function formatTimer(sec: number) {
           <div
             class="absolute top-2 right-3 font-mono text-[9px] uppercase tracking-wider text-ink-subtle"
           >
-            Question {{ activeQuestionIdx + 1 }} of {{ mockQuestions.length }}
+            Question {{ activeQuestionIdx + 1 }} of {{ activeQuestions.length }}
           </div>
 
           <div class="space-y-4 my-auto">
@@ -184,7 +324,7 @@ function formatTimer(sec: number) {
               >AI Recruiter asks:</span
             >
             <p class="text-xl font-serif text-ink leading-snug">
-              "{{ mockQuestions[activeQuestionIdx] }}"
+              "{{ activeQuestions[activeQuestionIdx] }}"
             </p>
           </div>
 
@@ -216,7 +356,7 @@ function formatTimer(sec: number) {
             </div>
 
             <UButton
-              v-if="activeQuestionIdx < mockQuestions.length - 1"
+              v-if="activeQuestionIdx < activeQuestions.length - 1"
               variant="ghost"
               size="xs"
               icon="i-heroicons-arrow-right"
