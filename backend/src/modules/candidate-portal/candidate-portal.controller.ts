@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Patch,
   Post,
@@ -29,10 +30,7 @@ import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { Public } from '../../common/decorators/public.decorator';
 import { QUEUES } from '../../workers/queue-names';
-import {
-  LLM_JOB_OPTIONS,
-  INGEST_JOB_OPTIONS,
-} from '../../workers/queue-options';
+import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 
 const UpdateProfileSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -68,14 +66,14 @@ type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
 @Public()
 @SkipThrottle({ auth: true })
 export class CandidatePortalController {
+  private readonly logger = new Logger(CandidatePortalController.name);
+
   constructor(
     private readonly portalService: CandidatePortalService,
     private readonly hhSuggests: HhSuggestsService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
-    @InjectQueue(QUEUES.DISCOVER_JOBS)
-    private readonly discoverJobsQueue: Queue,
   ) {}
 
   @Sse('events')
@@ -242,10 +240,14 @@ export class CandidatePortalController {
   @Post('discovered-jobs/discover')
   @HttpCode(HttpStatus.ACCEPTED)
   async triggerDiscover(@CurrentCandidate() candidate: { id: string }) {
-    await this.discoverJobsQueue.add(
-      { source: 'hh.ru', candidateId: candidate.id, maxPages: 3 },
-      INGEST_JOB_OPTIONS,
-    );
+    this.portalService
+      .discoverJobsForCandidate(candidate.id, 3)
+      .catch((err) =>
+        this.logger.warn(
+          { candidateId: candidate.id, error: err.message },
+          'Manual discovery failed',
+        ),
+      );
     return { queued: true };
   }
 

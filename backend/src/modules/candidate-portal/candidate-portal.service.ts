@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from '../../integrations/storage/s3.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 import { PDFParse } from 'pdf-parse';
@@ -22,6 +23,7 @@ export class CandidatePortalService {
     private readonly db: PrismaService,
     private readonly s3: S3Service,
     private readonly conv: ConversationsService,
+    private readonly hhJobsAdapter: HhJobsAdapter,
     @InjectQueue(QUEUES.PARSE_CANDIDATE) private readonly parseQueue: Queue,
   ) {}
 
@@ -420,5 +422,120 @@ export class CandidatePortalService {
         },
       },
     });
+  }
+
+  async discoverJobsForCandidate(
+    candidateId: string,
+    maxPages = 3,
+  ): Promise<void> {
+    const seeker = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { currentPosition: true, city: true },
+    });
+
+    const query = seeker?.currentPosition ?? undefined;
+    const location = seeker?.city ?? undefined;
+
+    const run = await this.db.jobDiscoveryRun.create({
+      data: {
+        source: 'hh.uz',
+        trigger: 'manual',
+        query,
+        location,
+        status: 'running',
+      },
+    });
+
+    let fetched = 0,
+      created = 0,
+      updated = 0;
+
+    try {
+      for (let page = 0; page < maxPages; page++) {
+        let result: Awaited<ReturnType<HhJobsAdapter['fetchPage']>>;
+        try {
+          result = await this.hhJobsAdapter.fetchPage({
+            query,
+            location,
+            page,
+          });
+        } catch (err: any) {
+          this.logger.error({ page, error: err.message }, 'HH fetch failed');
+          break;
+        }
+
+        for (const job of result.jobs) {
+          fetched++;
+          try {
+            const existing = await this.db.discoveredJob.findUnique({
+              where: { sourceUrl: job.sourceUrl },
+              select: { id: true },
+            });
+            if (existing) {
+              await this.db.discoveredJob.update({
+                where: { sourceUrl: job.sourceUrl },
+                data: {
+                  title: job.title,
+                  company: job.company,
+                  status: 'active',
+                  skills: job.skills,
+                  rawPayload: job.rawPayload as any,
+                },
+              });
+              updated++;
+            } else {
+              await this.db.discoveredJob.create({
+                data: {
+                  source: 'hh.uz',
+                  externalId: job.externalId,
+                  sourceUrl: job.sourceUrl,
+                  title: job.title,
+                  company: job.company,
+                  location: job.location,
+                  description: job.description,
+                  skills: job.skills,
+                  salaryMinUzs: job.salaryMinUzs,
+                  salaryMaxUzs: job.salaryMaxUzs,
+                  employmentType: job.employmentType,
+                  workMode: job.workMode,
+                  postedAt: job.postedAt,
+                  rawPayload: job.rawPayload as any,
+                },
+              });
+              created++;
+            }
+          } catch (err: any) {
+            this.logger.warn(
+              { sourceUrl: job.sourceUrl, error: err.message },
+              'Failed to save job',
+            );
+          }
+        }
+
+        if (!result.hasMore) break;
+      }
+
+      await this.db.jobDiscoveryRun.update({
+        where: { id: run.id },
+        data: {
+          status: 'completed',
+          jobsFetched: fetched,
+          jobsNew: created,
+          jobsUpdated: updated,
+          completedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        { candidateId, fetched, created, updated },
+        'Manual discovery complete',
+      );
+    } catch (err: any) {
+      await this.db.jobDiscoveryRun.update({
+        where: { id: run.id },
+        data: { status: 'failed', error: err.message, completedAt: new Date() },
+      });
+      throw err;
+    }
   }
 }

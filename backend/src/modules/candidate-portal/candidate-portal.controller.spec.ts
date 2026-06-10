@@ -19,6 +19,7 @@ describe('CandidatePortalController', () => {
     getSeekerApplications: jest.Mock;
     queueApplication: jest.Mock;
     updateSeekerApplicationStatus: jest.Mock;
+    discoverJobsForCandidate: jest.Mock;
   };
   let scoreQueue: { add: jest.Mock };
   let autoApplyQueue: { add: jest.Mock };
@@ -48,10 +49,10 @@ describe('CandidatePortalController', () => {
       updateSeekerApplicationStatus: jest
         .fn()
         .mockResolvedValue({ id: 'sa-1' }),
+      discoverJobsForCandidate: jest.fn().mockResolvedValue(undefined),
     };
     scoreQueue = { add: jest.fn().mockResolvedValue({}) };
     autoApplyQueue = { add: jest.fn().mockResolvedValue({}) };
-    const discoverJobsQueue = { add: jest.fn().mockResolvedValue({}) };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CandidatePortalController],
@@ -70,10 +71,6 @@ describe('CandidatePortalController', () => {
           useValue: scoreQueue,
         },
         { provide: getQueueToken(QUEUES.AUTO_APPLY), useValue: autoApplyQueue },
-        {
-          provide: getQueueToken(QUEUES.DISCOVER_JOBS),
-          useValue: discoverJobsQueue,
-        },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     })
