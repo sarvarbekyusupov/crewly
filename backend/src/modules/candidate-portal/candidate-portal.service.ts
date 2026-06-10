@@ -434,14 +434,12 @@ export class CandidatePortalService {
     });
 
     const query = seeker?.currentPosition ?? undefined;
-    const location = seeker?.city ?? undefined;
 
     const run = await this.db.jobDiscoveryRun.create({
       data: {
         source: 'hh.uz',
         trigger: 'manual',
         query,
-        location,
         status: 'running',
       },
     });
@@ -454,11 +452,7 @@ export class CandidatePortalService {
       for (let page = 0; page < maxPages; page++) {
         let result: Awaited<ReturnType<HhJobsAdapter['fetchPage']>>;
         try {
-          result = await this.hhJobsAdapter.fetchPage({
-            query,
-            location,
-            page,
-          });
+          result = await this.hhJobsAdapter.fetchPage({ query, page });
         } catch (err: any) {
           this.logger.error({ page, error: err.message }, 'HH fetch failed');
           break;
