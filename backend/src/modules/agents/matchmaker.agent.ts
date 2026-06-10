@@ -242,9 +242,9 @@ export class MatchmakerAgent extends BaseAgent {
       'seeker_job_score',
       [{ role: 'user', content: prompt }],
       {
-        maxTokens: 512,
+        maxTokens: 2048,
         responseFormat: { type: 'json_object' },
-        provider: 'bedrock',
+        provider: 'groq',
       },
       candidateId
         ? { related_entity_type: 'candidate', related_entity_id: candidateId }
