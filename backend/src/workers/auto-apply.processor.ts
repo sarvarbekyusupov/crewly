@@ -6,6 +6,8 @@ import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
 import { HhClientService } from '../integrations/hh/hh-client.service';
+import { HhApplicantService } from '../integrations/hh/hh-applicant.service';
+import { HhOAuthService } from '../integrations/hh/hh-oauth.service';
 import { LinkedInApplyService } from '../integrations/apply/linkedin-apply.service';
 import { QUEUES } from './queue-names';
 import { ConfigService } from '@nestjs/config';
@@ -35,6 +37,8 @@ export class AutoApplyProcessor {
     private readonly db: PrismaService,
     private readonly agent: SeekerAgent,
     private readonly hhClient: HhClientService,
+    private readonly hhApplicant: HhApplicantService,
+    private readonly hhOAuth: HhOAuthService,
     private readonly linkedinApply: LinkedInApplyService,
     private readonly config: ConfigService,
   ) {}
@@ -74,12 +78,6 @@ export class AutoApplyProcessor {
         'Application not in queued state — skipping',
       );
       return;
-    }
-
-    if (seekerApp.source === 'hh.ru') {
-      throw new NonRetryableError(
-        'HH applicant API is deprecated — HH auto-apply is no longer supported',
-      );
     }
 
     const candidate = seekerApp.candidate;
@@ -160,7 +158,14 @@ export class AutoApplyProcessor {
     });
 
     try {
-      if (seekerApp.source === 'linkedin') {
+      if (seekerApp.source === 'hh.ru') {
+        await this.applyHh(
+          seekerApplicationId,
+          candidate.id,
+          discoveredJob,
+          coverLetter,
+        );
+      } else if (seekerApp.source === 'linkedin') {
         await this.applyLinkedIn(
           seekerApplicationId,
           candidate,
@@ -186,6 +191,45 @@ export class AutoApplyProcessor {
       }
       throw err;
     }
+  }
+
+  private async applyHh(
+    seekerApplicationId: string,
+    candidateId: string,
+    discoveredJob: DiscoveredJob,
+    coverLetter: string,
+  ) {
+    const hhCand = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhResumeId: true },
+    });
+    if (!hhCand?.hhResumeId) {
+      throw new NonRetryableError(
+        'Candidate has no HH resume linked — cannot auto-apply',
+      );
+    }
+    if (!discoveredJob.externalId) {
+      throw new NonRetryableError(
+        'HH vacancy has no externalId — cannot apply',
+      );
+    }
+    const token = await this.hhOAuth.getCandidateToken(candidateId);
+    const negotiationId = await this.hhApplicant.applyToVacancy(
+      token,
+      discoveredJob.externalId,
+      hhCand.hhResumeId,
+      coverLetter || undefined,
+    );
+    await this.db.seekerApplication.update({
+      where: { id: seekerApplicationId },
+      data: {
+        status: 'applied',
+        appliedAt: new Date(),
+        error: null,
+        ...(negotiationId && { hhNegotiationId: negotiationId }),
+      },
+    });
+    this.logger.log({ seekerApplicationId }, 'HH application complete');
   }
 
   private async applyLinkedIn(

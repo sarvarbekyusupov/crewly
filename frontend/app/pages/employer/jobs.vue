@@ -100,6 +100,38 @@ async function closeJob(id: string) {
     /* useApi already shows error toast */
   }
 }
+
+// HH active postings
+interface HhActiveVacancy {
+  id: string
+  name: string
+  alternate_url: string
+  area?: { name: string }
+  published_at?: string
+}
+
+const hhPanelOpen = ref(false)
+const hhActive = ref<HhActiveVacancy[]>([])
+const hhActivePending = ref(false)
+const hhActiveLoaded = ref(false)
+
+async function loadHhActive() {
+  if (hhActiveLoaded.value) return
+  hhActivePending.value = true
+  try {
+    const data = await api.get<HhActiveVacancy[]>('/api/v1/jobs/hh/active')
+    hhActive.value = Array.isArray(data) ? data : []
+    hhActiveLoaded.value = true
+  } catch {
+    /* useApi shows error toast */
+  } finally {
+    hhActivePending.value = false
+  }
+}
+
+watch(hhPanelOpen, (open) => {
+  if (open) loadHhActive()
+})
 </script>
 
 <template>
@@ -236,6 +268,79 @@ async function closeJob(id: string) {
           <UPagination v-model="page" :total="total" :page-size="limit" />
         </div>
       </UCard>
+
+      <!-- HH Active Postings accordion -->
+      <div class="mt-4">
+        <button
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+          style="background: var(--surface); border: 1px solid var(--line-soft); color: var(--ink)"
+          @click="hhPanelOpen = !hhPanelOpen"
+        >
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
+            HH Active Postings
+            <UBadge v-if="hhActiveLoaded" color="neutral" variant="subtle" size="xs">{{
+              hhActive.length
+            }}</UBadge>
+          </div>
+          <UIcon
+            :name="hhPanelOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+            class="w-4 h-4"
+            style="color: var(--ink-subtle)"
+          />
+        </button>
+
+        <div
+          v-if="hhPanelOpen"
+          class="mt-2 rounded-lg overflow-hidden"
+          style="border: 1px solid var(--line-soft)"
+        >
+          <div v-if="hhActivePending" class="flex justify-center py-8">
+            <UIcon
+              name="i-heroicons-arrow-path"
+              class="w-5 h-5 animate-spin"
+              style="color: var(--ink-subtle)"
+            />
+          </div>
+          <div
+            v-else-if="!hhActive.length"
+            class="py-8 text-center text-sm"
+            style="color: var(--ink-muted)"
+          >
+            No active HH postings found
+          </div>
+          <div v-else>
+            <div
+              v-for="v in hhActive"
+              :key="v.id"
+              class="flex items-center justify-between px-4 py-3"
+              style="border-bottom: 1px solid var(--line-soft)"
+            >
+              <div>
+                <a
+                  :href="v.alternate_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-sm font-medium hover:underline"
+                  style="color: var(--ink)"
+                  >{{ v.name }}</a
+                >
+                <p v-if="v.area" class="text-xs mt-0.5" style="color: var(--ink-subtle)">
+                  {{ v.area.name }}
+                </p>
+              </div>
+              <span
+                v-if="v.published_at"
+                class="text-xs shrink-0 ml-4"
+                style="color: var(--ink-subtle)"
+              >
+                {{ formatDate(v.published_at) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
 
     <NuxtPage />

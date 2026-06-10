@@ -3,17 +3,191 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import type { CandidatePreferences } from '~/types/api'
 import { candidatePreferencesSchema } from '~/schemas/candidate'
+import { isHhNotConnected } from '~/utils/hhErrors'
 
 definePageMeta({ layout: 'candidate' })
 
 const api = useCandidateApi()
 const toast = useToast()
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 
 useHead({ title: t('candidate.preferences.title') })
 
 const { data: prefs, refresh } = await useAsyncData('candidate-preferences', () =>
   api.get<CandidatePreferences>('/api/v1/candidate-portal/preferences').catch(() => null),
+)
+
+// Handle HH OAuth callback result from query param
+const hhConnecting = ref(false)
+
+onMounted(() => {
+  const hhParam = route.query.hh as string | undefined
+  if (!hhParam) return
+  router.replace({ query: { ...route.query, hh: undefined } })
+
+  if (hhParam === 'connected') {
+    toast.add({ title: t('candidate.preferences.hhConnected'), color: 'success' })
+    refresh()
+  } else if (hhParam === 'denied') {
+    toast.add({ title: t('candidate.preferences.hhAccessDenied'), color: 'warning' })
+  } else if (hhParam === 'no_resume') {
+    toast.add({
+      title: t('candidate.preferences.hhConnectFailed'),
+      description: 'No resumes found on your HH account',
+      color: 'error',
+    })
+  } else if (hhParam === 'error') {
+    toast.add({ title: t('candidate.preferences.hhConnectFailed'), color: 'error' })
+  }
+})
+
+async function connectHh() {
+  hhConnecting.value = true
+  try {
+    const { url } = await api.get<{ url: string }>('/api/v1/candidate-portal/hh/oauth-url')
+    window.location.href = url
+  } catch (e) {
+    toast.add({
+      title: t('candidate.preferences.hhConnectFailed'),
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+    hhConnecting.value = false
+  }
+}
+
+const disconnecting = ref(false)
+
+async function disconnectHh() {
+  disconnecting.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/hh/disconnect', {})
+    toast.add({ title: t('candidate.preferences.hhDisconnected'), color: 'success' })
+    refresh()
+  } catch (e) {
+    toast.add({
+      title: t('candidate.preferences.hhDisconnectFailed'),
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+  } finally {
+    disconnecting.value = false
+  }
+}
+
+const syncing = ref(false)
+const publishing = ref(false)
+const hiding = ref(false)
+const syncingSkills = ref(false)
+const viewsCount = ref<number | null>(null)
+const viewsLoading = ref(false)
+
+async function syncHhResume() {
+  syncing.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/hh/resume/sync', {})
+    toast.add({ title: t('candidate.preferences.hhResumeSynced'), color: 'success' })
+    refresh()
+  } catch (e) {
+    toast.add({
+      title: t('candidate.preferences.hhResumeSyncFailed'),
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+  } finally {
+    syncing.value = false
+  }
+}
+
+async function publishHhResume() {
+  publishing.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/hh/resume/publish', {})
+    toast.add({ title: t('candidate.preferences.hhResumePublished'), color: 'success' })
+  } catch (e) {
+    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
+  } finally {
+    publishing.value = false
+  }
+}
+
+async function syncSkillsToHh() {
+  syncingSkills.value = true
+  try {
+    const profile = await api.get<{ skills: string[] }>('/api/v1/candidate-portal/profile')
+    await api.put('/api/v1/candidate-portal/hh/resume', { skill_set: profile.skills ?? [] })
+    toast.add({ title: t('candidate.preferences.hhResumeUpdated'), color: 'success' })
+  } catch (e) {
+    if (isHhNotConnected(e)) {
+      toast.add({
+        title: 'HH not connected',
+        description: 'Connect your HH account below',
+        color: 'warning',
+      })
+    } else {
+      toast.add({
+        title: t('candidate.preferences.hhResumeUpdateFailed'),
+        description: extractApiErrorMessage(e),
+        color: 'error',
+      })
+    }
+  } finally {
+    syncingSkills.value = false
+  }
+}
+
+async function hideHhResume() {
+  hiding.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/hh/resume/hide', {})
+    toast.add({ title: t('candidate.preferences.hhResumeHidden'), color: 'success' })
+  } catch (e) {
+    toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
+  } finally {
+    hiding.value = false
+  }
+}
+
+async function loadViews() {
+  if (!prefs.value?.hhResumeId) return
+  viewsLoading.value = true
+  try {
+    const resp = await api.get<{ found: number }>('/api/v1/candidate-portal/hh/resume/views')
+    viewsCount.value = resp.found
+  } catch {
+    // silently ignore
+  } finally {
+    viewsLoading.value = false
+  }
+}
+
+watch(
+  () => prefs.value?.hhResumeId,
+  (id) => {
+    if (id) loadViews()
+  },
+  { immediate: true },
+)
+
+const hhMe = ref<{ first_name?: string; last_name?: string; email?: string } | null>(null)
+
+async function loadHhMe() {
+  if (!prefs.value?.hhResumeId) return
+  try {
+    hhMe.value = await api.get('/api/v1/candidate-portal/hh/me')
+  } catch {
+    // silently ignore
+  }
+}
+
+watch(
+  () => prefs.value?.hhResumeId,
+  (id) => {
+    if (id) loadHhMe()
+  },
+  { immediate: true },
 )
 
 // --- VeeValidate form ---
@@ -240,6 +414,95 @@ const save = handleSubmit(async (values) => {
             />
           </UFormField>
         </div>
+      </UCard>
+
+      <!-- HH Connect -->
+      <UCard>
+        <h3 class="section-label mb-3">{{ t('candidate.preferences.hhTitle') }}</h3>
+        <p class="text-sm mb-4" style="color: var(--ink-muted)">
+          {{ t('candidate.preferences.hhDesc') }}
+        </p>
+
+        <div v-if="prefs?.hhResumeId" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-check-circle" class="text-green-500 w-5 h-5" />
+              <div>
+                <p class="text-sm font-medium" style="color: var(--ink)">
+                  <template v-if="hhMe?.first_name">
+                    {{ t('candidate.preferences.hhConnectedAs') }} {{ hhMe.first_name }}
+                    {{ hhMe.last_name }}
+                  </template>
+                  <template v-else>{{ t('candidate.preferences.hhConnectedLabel') }}</template>
+                </p>
+                <p class="text-xs" style="color: var(--ink-subtle)">
+                  <template v-if="hhMe?.email">{{ hhMe.email }} · </template>
+                  {{ t('candidate.preferences.hhActiveDesc') }}
+                  <template v-if="viewsCount !== null">
+                    · {{ viewsCount }} {{ t('candidate.preferences.hhResumeViews').toLowerCase() }}
+                  </template>
+                </p>
+              </div>
+            </div>
+            <UButton
+              variant="ghost"
+              color="error"
+              size="sm"
+              :loading="disconnecting"
+              @click="disconnectHh"
+            >
+              {{ t('candidate.preferences.disconnect') }}
+            </UButton>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              size="sm"
+              variant="outline"
+              icon="i-heroicons-arrow-path"
+              :loading="syncing"
+              @click="syncHhResume"
+            >
+              {{ t('candidate.preferences.hhResumeSync') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="outline"
+              icon="i-heroicons-eye"
+              :loading="publishing"
+              @click="publishHhResume"
+            >
+              {{ t('candidate.preferences.hhResumePublish') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="outline"
+              icon="i-heroicons-eye-slash"
+              :loading="hiding"
+              @click="hideHhResume"
+            >
+              {{ t('candidate.preferences.hhResumeHide') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="outline"
+              icon="i-heroicons-sparkles"
+              :loading="syncingSkills"
+              @click="syncSkillsToHh"
+            >
+              {{ t('candidate.preferences.hhResumeUpdate') }}
+            </UButton>
+          </div>
+        </div>
+
+        <UButton
+          v-else
+          :loading="hhConnecting"
+          icon="i-heroicons-link"
+          variant="outline"
+          @click="connectHh"
+        >
+          {{ t('candidate.preferences.hhConnect') }}
+        </UButton>
       </UCard>
 
       <!-- Blacklisted companies -->

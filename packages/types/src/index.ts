@@ -336,6 +336,7 @@ export interface DiscoveredJob {
   salaryMaxUzs?: string
   employmentType?: string
   workMode?: string
+  description?: string | null
   postedAt?: string
   discoveredAt: string
   // Scoring fields (present when returned from /discovered-jobs)

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,7 +9,9 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
+  UnprocessableEntityException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -24,6 +27,11 @@ import { Observable, fromEvent, interval, merge } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { CandidatePortalService } from './candidate-portal.service';
 import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
+import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
+import { HhResumeService } from '../../integrations/hh/hh-resume.service';
+import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
+import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
 import { z } from 'zod';
@@ -71,6 +79,11 @@ export class CandidatePortalController {
   constructor(
     private readonly portalService: CandidatePortalService,
     private readonly hhSuggests: HhSuggestsService,
+    private readonly hhOAuth: HhOAuthService,
+    private readonly hhResume: HhResumeService,
+    private readonly hhApplicant: HhApplicantService,
+    private readonly hhJobs: HhJobsAdapter,
+    private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
@@ -301,7 +314,294 @@ export class CandidatePortalController {
     );
   }
 
-  // ── HH Suggests (no auth required) ────────────────────────────────────────
+  // ── HH OAuth ──────────────────────────────────────────────────────────────
+
+  @Get('hh/oauth-url')
+  getHhOAuthUrl(@CurrentCandidate() candidate: { id: string }) {
+    const url = this.hhOAuth.getAuthorizationUrl(candidate.id);
+    return { url };
+  }
+
+  @Post('hh/disconnect')
+  @HttpCode(HttpStatus.OK)
+  async disconnectHh(@CurrentCandidate() candidate: { id: string }) {
+    await this.hhOAuth.clearResumeId(candidate.id);
+    return { disconnected: true };
+  }
+
+  // ── HH Resume ─────────────────────────────────────────────────────────────
+
+  @Get('hh/resume')
+  async getHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
+    return this.hhResume.getResume(token, cand.hhResumeId);
+  }
+
+  @Post('hh/resume/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
+
+    const resume = await this.hhResume.getResume(token, cand.hhResumeId);
+    const skills = resume.skill_set ?? [];
+    const position = resume.title ?? undefined;
+    const updates: Record<string, unknown> = {};
+    if (skills.length) updates['skills'] = skills;
+    if (position) updates['currentPosition'] = position;
+
+    if (Object.keys(updates).length) {
+      await this.portalService.updateProfile(candidate.id, updates);
+    }
+
+    return { synced: true, skills, position };
+  }
+
+  @Post('hh/resume/publish')
+  @HttpCode(HttpStatus.OK)
+  async publishHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
+    await this.hhResume.publishResume(token, cand.hhResumeId);
+    return { published: true };
+  }
+
+  @Post('hh/resume/hide')
+  @HttpCode(HttpStatus.OK)
+  async hideHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
+    await this.hhResume.hideResume(token, cand.hhResumeId);
+    return { hidden: true };
+  }
+
+  @Get('hh/resume/views')
+  async getHhResumeViews(@CurrentCandidate() candidate: { id: string }) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId) return { items: [], found: 0 };
+    return this.hhResume.getResumeViews(token, cand.hhResumeId);
+  }
+
+  // ── HH Negotiations + Vacancy Search ──────────────────────────────────────
+
+  @Get('hh/negotiations')
+  async getHhNegotiations(
+    @CurrentCandidate() candidate: { id: string },
+    @Query('page') page?: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhApplicant.getNegotiations(token, {
+      page: page ? parseInt(page, 10) : 0,
+    });
+  }
+
+  @Get('hh/vacancies')
+  async searchHhVacancies(
+    @Query('text') text?: string,
+    @Query('area') area?: string,
+    @Query('experience') experience?: string,
+    @Query('salary') salary?: string,
+    @Query('order_by') order_by?: string,
+    @Query('page') page?: string,
+    @Query('per_page') per_page?: string,
+  ) {
+    return this.hhApplicant.searchVacancies({
+      text,
+      area,
+      experience: experience as any,
+      salary: salary ? parseInt(salary, 10) : undefined,
+      order_by: order_by as any,
+      page: page ? parseInt(page, 10) : 0,
+      per_page: per_page ? parseInt(per_page, 10) : 20,
+    });
+  }
+
+  @Get('hh/vacancies/:id/similar')
+  async getSimilarVacancies(@Param('id') id: string) {
+    return this.hhJobs.getSimilarVacancies(id);
+  }
+
+  @Post('hh/vacancies/:id/apply')
+  @HttpCode(HttpStatus.OK)
+  async applyToHhVacancy(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') vacancyId: string,
+    @Body(
+      new ZodValidationPipe(
+        z.object({ message: z.string().max(2000).optional() }),
+      ),
+    )
+    body: { message?: string },
+  ) {
+    const [token, cand] = await Promise.all([
+      this.hhOAuth.getCandidateToken(candidate.id),
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+    ]);
+    if (!cand?.hhResumeId)
+      return { error: 'No HH resume linked — connect HH account first' };
+    await this.hhApplicant.applyToVacancy(
+      token,
+      vacancyId,
+      cand.hhResumeId,
+      body.message,
+    );
+    return { applied: true };
+  }
+
+  @Get('hh/me')
+  async getHhMe(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhApplicant.getMe(token);
+  }
+
+  @Get('hh/negotiations/:id/messages')
+  async getHhNegotiationMessages(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') negotiationId: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhApplicant.getNegotiationMessages(token, negotiationId);
+  }
+
+  @Post('hh/negotiations/:id/messages')
+  @HttpCode(HttpStatus.OK)
+  async postHhNegotiationMessage(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') negotiationId: string,
+    @Body(
+      new ZodValidationPipe(z.object({ message: z.string().min(1).max(2000) })),
+    )
+    body: { message: string },
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhApplicant.postNegotiationMessage(
+      token,
+      negotiationId,
+      body.message,
+    );
+    return { sent: true };
+  }
+
+  @Get('hh/vacancies/:id')
+  async getHhVacancy(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') vacancyId: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhApplicant.getVacancy(token, vacancyId);
+  }
+
+  @Get('hh/resume/similar-vacancies')
+  async getHhSimilarVacancies(
+    @CurrentCandidate() candidate: { id: string },
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    const [cand, token] = await Promise.all([
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+      this.hhOAuth.getCandidateToken(candidate.id),
+    ]);
+    if (!cand?.hhResumeId) {
+      throw new UnprocessableEntityException({
+        code: 'hh_not_connected',
+        message: 'No HH resume linked',
+      });
+    }
+    return this.hhApplicant.getSimilarVacancies(token, cand.hhResumeId, {
+      page: page ? Number(page) : 0,
+      per_page: perPage ? Number(perPage) : 20,
+    });
+  }
+
+  @Delete('hh/negotiations/:id')
+  @HttpCode(HttpStatus.OK)
+  async withdrawHhNegotiation(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') negotiationId: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhApplicant.deleteNegotiation(token, negotiationId);
+    return { withdrawn: true };
+  }
+
+  @Put('hh/resume')
+  @HttpCode(HttpStatus.OK)
+  async updateHhResume(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          title: z.string().max(200).optional(),
+          skill_set: z.array(z.string().max(100)).max(30).optional(),
+          skills: z.string().max(5000).optional(),
+          salary: z
+            .object({ amount: z.number().positive(), currency: z.string() })
+            .optional(),
+        }),
+      ),
+    )
+    body: {
+      title?: string;
+      skill_set?: string[];
+      skills?: string;
+      salary?: { amount: number; currency: string };
+    },
+  ) {
+    const [cand, token] = await Promise.all([
+      this.db.candidate.findUnique({
+        where: { id: candidate.id },
+        select: { hhResumeId: true },
+      }),
+      this.hhOAuth.getCandidateToken(candidate.id),
+    ]);
+    if (!cand?.hhResumeId) {
+      throw new UnprocessableEntityException({
+        code: 'hh_not_connected',
+        message: 'No HH resume linked',
+      });
+    }
+    await this.hhResume.updateResume(token, cand.hhResumeId, body);
+    return { updated: true };
+  }
+
+  // ── HH Suggests ────────────────────────────────────────────────────────────
 
   @Get('hh/suggests/areas')
   suggestAreas(@Query('text') text: string) {

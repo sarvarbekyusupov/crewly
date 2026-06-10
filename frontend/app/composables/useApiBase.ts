@@ -73,6 +73,8 @@ export function buildApiClient(baseURL: string, handlers: ApiClientHandlers) {
 
     patch: <T>(path: string, body?: any) => request<T>(path, { method: 'PATCH', body }),
 
+    put: <T>(path: string, body?: any) => request<T>(path, { method: 'PUT', body }),
+
     del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   }
 }

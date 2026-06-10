@@ -58,6 +58,74 @@ watch(hhViewersOpen, (open) => {
   if (open) refreshViewers()
 })
 
+// HH Negotiations pipeline
+interface HhNegItem {
+  id: string
+  state: { id: string; name: string }
+  resume: { id: string; title?: string; first_name?: string; last_name?: string }
+  created_at: string
+}
+
+const hhNegOpen = ref(false)
+const hhNegItems = ref<HhNegItem[]>([])
+const hhNegPending = ref(false)
+const movingNegId = ref<string | null>(null)
+
+async function loadHhNegotiations() {
+  if (!job.value?.hhVacancyId) return
+  hhNegPending.value = true
+  try {
+    const resp = await api.get<{ items: HhNegItem[] }>(`/api/v1/jobs/${jobId}/hh/negotiations`)
+    hhNegItems.value = resp.items ?? []
+  } catch (e) {
+    toast.add({
+      title: extractApiErrorMessage(e, 'Failed to load HH applications'),
+      color: 'error',
+    })
+  } finally {
+    hhNegPending.value = false
+  }
+}
+
+watch(hhNegOpen, (open) => {
+  if (open && !hhNegItems.value.length) loadHhNegotiations()
+})
+
+const HH_STAGES = [
+  { id: 'phone_interview', label: 'Phone interview' },
+  { id: 'interview', label: 'Interview' },
+  { id: 'test_task', label: 'Test task' },
+  { id: 'offer', label: 'Offer' },
+  { id: 'discard', label: 'Discard' },
+]
+
+async function moveHhNeg(negId: string, collection: string) {
+  movingNegId.value = negId
+  try {
+    await api.put(`/api/v1/jobs/${jobId}/hh/negotiations/${negId}`, { collection })
+    toast.add({ title: 'Candidate moved', color: 'success' })
+    loadHhNegotiations()
+  } catch (e) {
+    toast.add({ title: extractApiErrorMessage(e, 'Failed to move candidate'), color: 'error' })
+  } finally {
+    movingNegId.value = null
+  }
+}
+
+// HH detailed stats (invitations + discard)
+const { data: hhDetailStats } = await useAsyncData(`job-${jobId}-hh-stats`, () =>
+  job.value?.hhVacancyId
+    ? api
+        .get<{
+          views: { value: number }
+          responses: { value: number }
+          invitations: { value: number }
+          discard: { value: number }
+        }>(`/api/v1/jobs/${jobId}/hh/stats`)
+        .catch(() => null)
+    : Promise.resolve(null),
+)
+
 const hhPublishing = ref(false)
 async function publishToHh() {
   hhPublishing.value = true
@@ -621,7 +689,30 @@ const appColumns: any[] = [
             <h3 class="section-label">HH.ru</h3>
             <UBadge color="neutral" variant="subtle" size="xs">{{ job.hhVacancyId }}</UBadge>
           </div>
-          <div v-if="hhStats" class="grid grid-cols-2 gap-3 mb-4">
+
+          <!-- Detailed stats from /hh/stats -->
+          <div v-if="hhDetailStats" class="grid grid-cols-2 gap-2 mb-4">
+            <div
+              v-for="{ key, label } in [
+                { key: 'views', label: 'Views' },
+                { key: 'responses', label: 'Responses' },
+                { key: 'invitations', label: 'Invitations' },
+                { key: 'discard', label: 'Discarded' },
+              ]"
+              :key="key"
+              class="rounded-lg p-2.5 text-center"
+              style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+            >
+              <p
+                style="font-family: 'JetBrains Mono', monospace; font-size: 20px; color: var(--ink)"
+              >
+                {{ (hhDetailStats as any)[key]?.value ?? 0 }}
+              </p>
+              <p style="font-size: 10px; color: var(--ink-subtle); margin-top: 2px">{{ label }}</p>
+            </div>
+          </div>
+          <!-- Fallback to old stats -->
+          <div v-else-if="hhStats" class="grid grid-cols-2 gap-3 mb-4">
             <div
               class="rounded-lg p-3 text-center"
               style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
@@ -645,6 +736,68 @@ const appColumns: any[] = [
               <p style="font-size: 11px; color: var(--ink-subtle); margin-top: 2px">Responses</p>
             </div>
           </div>
+
+          <!-- HH Pipeline (negotiations) -->
+          <UButton
+            size="xs"
+            variant="outline"
+            block
+            icon="i-heroicons-users"
+            :loading="hhNegPending"
+            class="mb-2"
+            @click="hhNegOpen = !hhNegOpen"
+          >
+            {{ hhNegOpen ? 'Hide' : 'Show' }} HH Pipeline ({{ hhNegItems.length || '…' }})
+          </UButton>
+          <div v-if="hhNegOpen" class="mb-3 space-y-2">
+            <div v-if="hhNegPending" class="flex justify-center py-3">
+              <UIcon
+                name="i-heroicons-arrow-path"
+                class="w-4 h-4 animate-spin"
+                style="color: var(--ink-subtle)"
+              />
+            </div>
+            <template v-else>
+              <div
+                v-for="neg in hhNegItems"
+                :key="neg.id"
+                class="rounded-lg p-2.5 text-xs"
+                style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+              >
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="font-medium" style="color: var(--ink)">
+                    {{ neg.resume?.first_name }}
+                    {{ neg.resume?.last_name ?? neg.resume?.title ?? neg.resume?.id }}
+                  </span>
+                  <UBadge color="neutral" variant="subtle" size="xs">{{ neg.state.name }}</UBadge>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <button
+                    v-for="stage in HH_STAGES"
+                    :key="stage.id"
+                    class="px-1.5 py-0.5 rounded text-xs transition-opacity hover:opacity-80"
+                    :style="
+                      neg.state.id === stage.id
+                        ? 'background: var(--accent); color: #fff;'
+                        : 'background: var(--bg-deep); color: var(--ink-muted); border: 1px solid var(--line-soft);'
+                    "
+                    :disabled="movingNegId === neg.id"
+                    @click="moveHhNeg(neg.id, stage.id)"
+                  >
+                    {{ stage.label }}
+                  </button>
+                </div>
+              </div>
+              <p
+                v-if="!hhNegItems.length"
+                class="text-xs text-center py-2"
+                style="color: var(--ink-subtle)"
+              >
+                No HH applications yet
+              </p>
+            </template>
+          </div>
+
           <UButton
             size="xs"
             variant="outline"

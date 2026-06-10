@@ -188,6 +188,26 @@ export class HhVacancyService {
     };
   }
 
+  /** List employer's active vacancies on HH. */
+  async listActiveVacancies(): Promise<
+    {
+      id: string;
+      name: string;
+      alternate_url: string;
+      area?: { name: string };
+      published_at?: string;
+    }[]
+  > {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
+    const response = await firstValueFrom(
+      this.http.get<{ items: unknown[] }>(
+        `${this.baseUrl}/employers/${employerId}/vacancies/active`,
+        { headers: this.headers, params: { per_page: 100 } },
+      ),
+    );
+    return (response.data.items ?? []) as any[];
+  }
+
   /** Extend the posting period of a vacancy. */
   async prolongVacancy(hhVacancyId: string): Promise<void> {
     await firstValueFrom(

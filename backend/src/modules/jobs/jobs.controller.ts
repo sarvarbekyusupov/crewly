@@ -3,13 +3,17 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { z } from 'zod';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -166,5 +170,57 @@ export class JobsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.jobsService.prolongOnHh(user.companyId, id);
+  }
+
+  // ── HH Analytics & Negotiation Management ─────────────────────────────────
+
+  @Get('hh/active')
+  @RequireRole('hiring_manager')
+  listActiveHhVacancies() {
+    return this.jobsService.listActiveHhVacancies();
+  }
+
+  @Get(':id/hh/stats')
+  @RequireRole('hiring_manager')
+  getHhStats(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.jobsService.getHhStats(user.companyId, id);
+  }
+
+  @Get(':id/hh/negotiations')
+  @RequireRole('hiring_manager')
+  getHhNegotiations(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.jobsService.getHhNegotiations(user.companyId, id);
+  }
+
+  @Put(':id/hh/negotiations/:negId')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole('hiring_manager')
+  moveHhNegotiation(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('negId') negId: string,
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          collection: z.string().min(1),
+          message: z.string().max(2000).optional(),
+        }),
+      ),
+    )
+    body: { collection: string; message?: string },
+  ) {
+    return this.jobsService.moveHhNegotiation(
+      user.companyId,
+      id,
+      negId,
+      body.collection,
+      body.message,
+    );
   }
 }

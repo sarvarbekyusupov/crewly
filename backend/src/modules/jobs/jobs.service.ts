@@ -10,6 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateJobDto, UpdateJobDto } from './dto/job.dto';
 import { HhVacancyService } from '../../integrations/hh/hh-vacancy.service';
+import { HhNegotiationsService } from '../../integrations/hh/hh-negotiations.service';
 import { QUEUES } from '../../workers/queue-names';
 import {
   LLM_JOB_OPTIONS,
@@ -23,6 +24,7 @@ export class JobsService {
   constructor(
     private readonly db: PrismaService,
     private readonly hhVacancy: HhVacancyService,
+    private readonly hhNegotiations: HhNegotiationsService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.PARSE_JOB) private readonly parseJobQueue: Queue,
     @InjectQueue(QUEUES.MATCH_CANDIDATES) private readonly matchQueue: Queue,
@@ -304,6 +306,40 @@ export class JobsService {
     if (!job.hhVacancyId)
       throw new BadRequestException('Job not published on HH');
     return this.hhVacancy.getResumeViews(job.hhVacancyId);
+  }
+
+  async getHhStats(companyId: string, id: string) {
+    const job = await this.findOne(companyId, id);
+    if (!job.hhVacancyId)
+      throw new BadRequestException('Job not published on HH');
+    return this.hhVacancy.getVacancyStats(job.hhVacancyId);
+  }
+
+  async getHhNegotiations(companyId: string, id: string) {
+    const job = await this.findOne(companyId, id);
+    if (!job.hhVacancyId)
+      throw new BadRequestException('Job not published on HH');
+    return this.hhNegotiations.getVacancyResponses(job.hhVacancyId);
+  }
+
+  async moveHhNegotiation(
+    companyId: string,
+    jobId: string,
+    negotiationId: string,
+    collection: string,
+    message?: string,
+  ) {
+    await this.findOne(companyId, jobId);
+    await this.hhNegotiations.moveNegotiation(
+      collection,
+      negotiationId,
+      message,
+    );
+    return { moved: true };
+  }
+
+  async listActiveHhVacancies() {
+    return this.hhVacancy.listActiveVacancies();
   }
 
   async getStats(companyId: string, jobId: string) {
