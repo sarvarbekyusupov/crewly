@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { PromptRunnerService } from '../integrations/llm/prompt-runner.service';
@@ -17,6 +18,7 @@ export class EmbedCandidateProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly llm: PromptRunnerService,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   @Process()
@@ -28,6 +30,12 @@ export class EmbedCandidateProcessor {
     });
     if (!candidate)
       throw new NonRetryableError(`Candidate ${candidateId} not found`);
+
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'embedding' },
+    });
 
     const text = [
       candidate.currentPosition,
@@ -47,6 +55,12 @@ export class EmbedCandidateProcessor {
           embedding_generated_at = NOW()
       WHERE id = ${candidateId}
     `;
+
+    this.emitter.emit('candidate.event', {
+      candidateId,
+      type: 'resume_parse_progress',
+      payload: { status: 'embedding_done' },
+    });
   }
 
   @OnQueueFailed()

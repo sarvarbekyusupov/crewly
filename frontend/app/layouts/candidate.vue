@@ -33,43 +33,16 @@ onErrorCaptured((err) => {
 })
 
 const nav = [
-  { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home', mobileHidden: true },
-  { label: 'Applications', to: '/candidate/offers', icon: 'i-heroicons-briefcase' },
-  {
-    label: 'Messages',
-    to: '/candidate/chat',
-    icon: 'i-heroicons-chat-bubble-left-right',
-    mobileHidden: true,
-  },
-  {
-    label: 'Job Discovery',
-    to: '/candidate/jobs',
-    icon: 'i-heroicons-magnifying-glass',
-    mobileHidden: true,
-  },
-  {
-    label: 'Job Tracker',
-    to: '/candidate/tracker',
-    icon: 'i-heroicons-paper-airplane',
-  },
-  {
-    label: 'Analytics',
-    to: '/candidate/analytics',
-    icon: 'i-heroicons-chart-bar',
-    mobileHidden: true,
-  },
-  {
-    label: 'Preferences',
-    to: '/candidate/preferences',
-    icon: 'i-heroicons-adjustments-horizontal',
-  },
-  { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user', mobileHidden: true },
+  { label: 'Command', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Jobs', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
+  { label: 'Inbox', to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
+  { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
 ]
 
 const mobileNav = [
-  { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
-  { label: 'Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
-  { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
+  { label: 'Command', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Jobs', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
+  { label: 'Inbox', to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
   { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
 ]
 
@@ -156,17 +129,11 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        <div
-          class="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-ink-subtle lg:hidden"
-        >
-          More Pages
-        </div>
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
           :to="item.to"
           class="nav-item flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors"
-          :class="{ 'hidden lg:flex': item.mobileHidden }"
           style="color: var(--ink-muted)"
           active-class="nav-active"
         >
@@ -176,7 +143,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
             <span class="scanning-dot" />AI
           </span>
           <span
-            v-if="item.to === '/candidate/chat' && hasNewMessages"
+            v-if="item.to === '/candidate/inbox' && hasNewMessages"
             class="new-msg-dot ml-auto"
           />
         </NuxtLink>
@@ -206,6 +173,16 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
           </p>
           <p class="text-xs truncate" style="color: var(--ink-muted)">Job Seeker</p>
         </div>
+        <UTooltip text="Settings">
+          <UButton
+            variant="ghost"
+            size="xs"
+            color="neutral"
+            icon="i-heroicons-cog-6-tooth"
+            :ui="{ base: 'opacity-40 hover:opacity-100 transition-opacity' }"
+            to="/candidate/preferences"
+          />
+        </UTooltip>
         <UTooltip text="Sign out">
           <UButton
             variant="ghost"
@@ -270,7 +247,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
         >
           <div class="relative">
             <UIcon :name="item.icon" class="w-5 h-5" />
-            <span v-if="item.to === '/candidate/chat' && hasNewMessages" class="mobile-new-dot" />
+            <span v-if="item.to === '/candidate/inbox' && hasNewMessages" class="mobile-new-dot" />
           </div>
           <span class="mt-0.5">{{ item.label }}</span>
         </NuxtLink>

@@ -138,17 +138,29 @@ useEventBus<undefined>('candidate:scoring-complete').on(() => refresh())
 
 const applying = ref(new Set<string>())
 
+const router = useRouter()
+
 async function applyToJob(job: DiscoveredJob) {
   if (applying.value.has(job.id)) return
   const next = new Set(applying.value)
   next.add(job.id)
   applying.value = next
   try {
-    await api.post('/api/v1/candidate-portal/seeker-applications', { discoveredJobId: job.id })
+    const result = await api.post<{ id: string }>('/api/v1/candidate-portal/seeker-applications', {
+      discoveredJobId: job.id,
+    })
     toast.add({
       title: 'Application queued',
       description: `Applying to ${job.title} at ${job.company}`,
       color: 'success',
+      actions: [
+        {
+          label: 'Track in Inbox →',
+          onClick: () => {
+            void router.push(result?.id ? `/candidate/inbox?app=${result.id}` : '/candidate/inbox')
+          },
+        },
+      ],
     })
     refresh()
   } catch (e) {
@@ -958,8 +970,25 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         />
       </div>
 
+      <!-- Loading skeleton -->
+      <div v-if="pending" class="space-y-2 py-2">
+        <div
+          v-for="n in 4"
+          :key="n"
+          class="rounded-lg p-3 flex gap-3"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <USkeleton class="w-8 h-8 rounded-full shrink-0" />
+          <div class="flex-1 space-y-2">
+            <USkeleton class="h-4 w-2/3 rounded" />
+            <USkeleton class="h-3 w-1/2 rounded" />
+            <USkeleton class="h-1.5 w-full rounded-full mt-1" />
+          </div>
+        </div>
+      </div>
+
       <!-- Empty state -->
-      <div v-if="!pending && !jobs.length" class="empty-state">
+      <div v-else-if="!jobs.length" class="empty-state">
         <UIcon name="i-heroicons-briefcase" class="w-12 h-12" style="color: var(--ink-subtle)" />
         <p class="empty-title">{{ t('candidate.jobs.noJobs') }}</p>
         <p class="empty-desc">
@@ -1007,6 +1036,19 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                   {{ job.displayScore != null ? `${job.displayScore}%` : '—' }}
                 </span>
               </div>
+              <!-- Match explanation visible on card -->
+              <p v-if="job.matchExplanation" class="card-match-hint">
+                {{ job.matchExplanation }}
+              </p>
+              <!-- skillMatch + gap summary chips -->
+              <div v-if="job.skillMatch != null || job.matchGaps?.length" class="card-skill-row">
+                <span v-if="job.skillMatch != null" class="card-skill-chip card-skill-chip--match">
+                  {{ job.skillMatch }}% skills
+                </span>
+                <span v-if="job.matchGaps?.length" class="card-skill-chip card-skill-chip--gap">
+                  Missing {{ job.matchGaps.length }}
+                </span>
+              </div>
               <div class="card-meta">
                 <span v-if="job.workMode" class="meta-item">
                   <UIcon name="i-heroicons-building-office-2" class="w-3 h-3" />
@@ -1021,6 +1063,17 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                   :style="{ background: jobStatus(job).bg, color: jobStatus(job).fg }"
                   >{{ jobStatus(job).label }}</span
                 >
+              </div>
+              <!-- Quick apply button on card -->
+              <div v-if="!job.application" class="card-quick-apply" @click.stop>
+                <UButton
+                  size="xs"
+                  :loading="applying.has(job.id)"
+                  icon="i-heroicons-paper-airplane"
+                  @click="applyToJob(job)"
+                >
+                  Apply
+                </UButton>
               </div>
             </div>
           </div>
@@ -1518,6 +1571,52 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   font-weight: 600;
   min-width: 30px;
   text-align: right;
+}
+
+.card-match-hint {
+  font-size: 11px;
+  color: var(--ink-subtle);
+  line-height: 1.5;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-skill-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.card-skill-chip {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.card-skill-chip--match {
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+  color: var(--positive);
+  border: 1px solid color-mix(in srgb, var(--positive) 25%, transparent);
+}
+
+.card-skill-chip--gap {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+.card-quick-apply {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .card-meta {

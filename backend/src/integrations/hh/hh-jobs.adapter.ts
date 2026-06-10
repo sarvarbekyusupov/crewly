@@ -125,6 +125,24 @@ export class HhJobsAdapter extends JobSourceAdapter {
     };
   }
 
+  async fetchVacancySkills(vacancyId: string): Promise<string[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ key_skills?: { name: string }[] }>(
+          `https://api.hh.uz/vacancies/${vacancyId}`,
+          { headers: this.headers },
+        ),
+      );
+      return (response.data.key_skills ?? []).map((s) => s.name);
+    } catch (err: any) {
+      this.logger.warn(
+        { vacancyId, error: err.message },
+        'Vacancy detail fetch failed',
+      );
+      return [];
+    }
+  }
+
   async getSimilarVacancies(vacancyId: string): Promise<NormalizedJob[]> {
     try {
       const response = await firstValueFrom(

@@ -4,14 +4,17 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { Bot, InlineKeyboard } from 'grammy';
+import { I18nService } from 'nestjs-i18n';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { PDFParse } from 'pdf-parse';
+import * as Sentry from '@sentry/nestjs';
 import OpenAI, { toFile } from 'openai';
 import { S3Service } from '../storage/s3.service';
 import { QUEUES } from '../../workers/queue-names';
@@ -35,6 +38,20 @@ export class TelegramBotService implements OnModuleInit {
   // Track deep-linked or user-selected job interests per chat
   private readonly pendingJobApp = new Map<string, string>();
 
+  // Track candidateId to Telegram message details for progress reporting
+  private readonly pendingParses = new Map<
+    string,
+    {
+      chatId: string;
+      messageId: number;
+      lang: string;
+      jobTitle: string;
+      companyName: string;
+      screeningId: string;
+      applicationId: string;
+    }
+  >();
+
   // Injected by app.module after Conversations module is ready
   private onMessage?: (
     chatId: string,
@@ -52,6 +69,7 @@ export class TelegramBotService implements OnModuleInit {
     private readonly config: ConfigService,
     private readonly db: PrismaService,
     private readonly s3: S3Service,
+    private readonly i18n: I18nService,
     @InjectQueue(QUEUES.PARSE_CANDIDATE) private readonly parseQueue: Queue,
     @InjectQueue(QUEUES.ADVANCE_SCREENING)
     private readonly screeningQueue: Queue,
@@ -97,6 +115,13 @@ export class TelegramBotService implements OnModuleInit {
     }
   }
 
+  private getLang(ctx: any): string {
+    const code = ctx.from?.language_code?.toLowerCase();
+    if (code === 'uz') return 'uz';
+    if (code === 'en') return 'en';
+    return 'ru'; // default
+  }
+
   async getDashboardData(user: any) {
     const activeJobs = await this.db.job.count({
       where: { companyId: user.companyId, status: 'active', deletedAt: null },
@@ -132,15 +157,15 @@ export class TelegramBotService implements OnModuleInit {
       `Выберите раздел ниже для управления:`;
 
     const keyboard = new InlineKeyboard()
-      .text('📋 Новые кандидаты', 'view_new|0')
-      .text('💬 На интервью', 'view_screening|0')
+      .text('📋 Новые кандидаты', JSON.stringify({ a: 'v_new', p: 0 }))
+      .text('💬 На интервью', JSON.stringify({ a: 'v_scr', p: 0 }))
       .row()
       .webApp(
         '🖥️ Веб-панель (TMA)',
         `${this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru'}/tma`,
       )
       .row()
-      .text('🔄 Обновить', 'back_to_dash');
+      .text('🔄 Обновить', JSON.stringify({ a: 'dash' }));
 
     return { text, keyboard };
   }
@@ -148,10 +173,16 @@ export class TelegramBotService implements OnModuleInit {
   async onModuleInit() {
     if (!this.bot) return;
 
+    this.bot.catch((err) => {
+      this.logger.error(err, 'Telegram bot error');
+      Sentry.captureException(err.error);
+    });
+
     this.bot.command('start', async (ctx) => {
       const username = ctx.from?.username;
       const chatId = String(ctx.chat.id);
       const match = ctx.match; // Deep link payload e.g. "job_xxxxxx"
+      const lang = this.getLang(ctx);
 
       if (username) {
         const user = await this.db.user.findFirst({
@@ -162,9 +193,11 @@ export class TelegramBotService implements OnModuleInit {
             where: { id: user.id },
             data: { telegramChatId: chatId },
           });
-          await ctx.reply(
-            `Привет, ${user.fullName}! Ваш аккаунт успешно привязан. Теперь вы будете получать уведомления о новых кандидатах здесь.`,
-          );
+          const welcomeMsg = this.i18n.t('bot.welcome_manager', {
+            lang,
+            args: { fullName: user.fullName },
+          });
+          await ctx.reply(welcomeMsg);
           return;
         }
       }
@@ -179,10 +212,11 @@ export class TelegramBotService implements OnModuleInit {
           });
           if (job) {
             this.pendingJobApp.set(chatId, jobId);
-            await ctx.reply(
-              `Привет! Вы откликаетесь на вакансию *${job.title}* в компании *${job.company.name}*.\n\nПожалуйста, отправьте ваше резюме в формате PDF, чтобы начать процесс собеседования.`,
-              { parse_mode: 'Markdown' },
-            );
+            const deepLinkMsg = this.i18n.t('bot.deep_link_welcome', {
+              lang,
+              args: { title: job.title, companyName: job.company.name },
+            });
+            await ctx.reply(deepLinkMsg, { parse_mode: 'Markdown' });
             return;
           }
         } catch (err) {
@@ -207,38 +241,41 @@ export class TelegramBotService implements OnModuleInit {
             keyboard
               .text(
                 `${job.title} (${job.company.name})`,
-                `select_job|${job.id}`,
+                JSON.stringify({ a: 'sel_job', i: job.id }),
               )
               .row();
           });
 
-          await ctx.reply(
-            'Привет! Это AI-рекрутинговое агентство.\n\nПожалуйста, выберите вакансию ниже, на которую вы хотите откликнуться, или просто отправьте ваше резюме в формате PDF:',
-            { reply_markup: keyboard },
-          );
+          const welcomeJobsMsg = this.i18n.t('bot.default_welcome_jobs', {
+            lang,
+          });
+          await ctx.reply(welcomeJobsMsg, { reply_markup: keyboard });
           return;
         }
       } catch (err) {
         this.logger.error(err, 'Failed to fetch active jobs for /start');
       }
 
-      await ctx.reply(
-        'Привет! Это AI-рекрутинговое агентство. Пожалуйста, отправьте ваше резюме в формате PDF, чтобы мы могли подобрать для вас подходящие вакансии.',
-      );
+      const welcomeNoJobsMsg = this.i18n.t('bot.default_welcome_no_jobs', {
+        lang,
+      });
+      await ctx.reply(welcomeNoJobsMsg);
     });
 
     // Manager dashboard commands
     this.bot.command(['dashboard', 'pipeline'], async (ctx) => {
       const chatId = String(ctx.chat.id);
+      const lang = this.getLang(ctx);
       const user = await this.db.user.findFirst({
         where: { telegramChatId: chatId, deletedAt: null },
         include: { company: true },
       });
 
       if (!user) {
-        await ctx.reply(
-          'Доступ запрещен. Эта команда доступна только для нанимающих менеджеров. Пожалуйста, убедитесь, что ваш Telegram Username привязан к вашей учетной записи My-HR.',
-        );
+        const accessDeniedMsg = this.i18n.t('bot.manager_access_denied', {
+          lang,
+        });
+        await ctx.reply(accessDeniedMsg);
         return;
       }
 
@@ -250,13 +287,14 @@ export class TelegramBotService implements OnModuleInit {
     this.bot.hears(/^\/app_(.+)$/, async (ctx) => {
       const chatId = String(ctx.chat.id);
       const appId = ctx.match[1];
+      const lang = this.getLang(ctx);
 
       const user = await this.db.user.findFirst({
         where: { telegramChatId: chatId, deletedAt: null },
       });
 
       if (!user) {
-        await ctx.reply('Доступ запрещен.');
+        await ctx.reply(this.i18n.t('bot.access_denied', { lang }));
         return;
       }
 
@@ -267,37 +305,62 @@ export class TelegramBotService implements OnModuleInit {
         });
 
         if (!app) {
-          await ctx.reply('Заявка не найдена.');
+          await ctx.reply(this.i18n.t('bot.app_not_found', { lang }));
           return;
         }
 
         const cand = app.candidate;
-        let details =
-          `👤 *Карточка кандидата*\n` +
-          `ФИО: *${cand.fullName || 'Не указано'}*\n` +
-          `Вакансия: *${app.job.title}*\n` +
-          `Статус: *${app.status}*\n` +
-          `Опыт работы: *${cand.yearsExperience ? cand.yearsExperience + ' лет' : 'Не указано'}*\n` +
-          `Город: *${cand.city || 'Не указано'}*\n\n`;
+        const expStr = cand.yearsExperience
+          ? this.i18n.t('bot.years_format', {
+              lang,
+              args: { count: cand.yearsExperience },
+            })
+          : this.i18n.t('bot.not_specified', { lang });
+
+        let details = this.i18n.t('bot.candidate_card', {
+          lang,
+          args: {
+            fullName:
+              cand.fullName || this.i18n.t('bot.not_specified', { lang }),
+            jobTitle: app.job.title,
+            status: app.status,
+            experience: expStr,
+            city: cand.city || this.i18n.t('bot.not_specified', { lang }),
+          },
+        });
 
         if (app.matchScore) {
-          details += `🎯 *AI-Совпадение:* *${app.matchScore}%*\n`;
+          details += this.i18n.t('bot.ai_match', {
+            lang,
+            args: { score: app.matchScore },
+          });
         }
 
         if (app.matchRecommendation) {
-          details += `💡 *Рекомендация:* ${app.matchRecommendation}\n\n`;
+          details += this.i18n.t('bot.ai_recommendation', {
+            lang,
+            args: { recommendation: app.matchRecommendation },
+          });
         }
 
         const keyboard = new InlineKeyboard();
 
         if (['matched', 'queued_outreach'].includes(app.status)) {
           keyboard
-            .text('✅ Одобрить на AI-интервью', `approve_screening|${app.id}`)
+            .text(
+              this.i18n.t('bot.approve_btn', { lang }),
+              JSON.stringify({ a: 'app_scr', i: app.id }),
+            )
             .row();
-          keyboard.text('❌ Отклонить кандидата', `reject_app|${app.id}`).row();
+          keyboard
+            .text(
+              this.i18n.t('bot.reject_btn', { lang }),
+              JSON.stringify({ a: 'rej_app', i: app.id }),
+            )
+            .row();
         }
 
-        keyboard.text('🏠 В меню', 'back_to_dash');
+        keyboard.text(this.i18n.t('bot.menu_btn', { lang }), 'back_to_dash');
 
         await ctx.reply(details, {
           reply_markup: keyboard,
@@ -308,7 +371,7 @@ export class TelegramBotService implements OnModuleInit {
           { appId, error: err.message },
           'Failed to fetch candidate details',
         );
-        await ctx.reply('Произошла ошибка при загрузке данных кандидата.');
+        await ctx.reply(this.i18n.t('bot.error_loading_app', { lang }));
       }
     });
 
@@ -316,10 +379,27 @@ export class TelegramBotService implements OnModuleInit {
       const chatId = String(ctx.chat?.id);
       const data = ctx.callbackQuery.data;
       const messageId = String(ctx.update.callback_query.message?.message_id);
+      const lang = this.getLang(ctx);
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        // Delegate to setCallbackHandler if it's not JSON (e.g. for legacy strings)
+        if (this.onCallback) {
+          await this.onCallback(chatId, data, messageId).catch((err) => {
+            this.logger.error(err, 'Failed to handle Telegram legacy callback');
+          });
+        }
+        await ctx.answerCallbackQuery();
+        return;
+      }
+
+      const action = parsed.a;
 
       // Handle job selection callbacks directly
-      if (data.startsWith('select_job|')) {
-        const jobId = data.split('|')[1];
+      if (action === 'sel_job') {
+        const jobId = parsed.i;
         try {
           const job = await this.db.job.findUnique({
             where: { id: jobId },
@@ -327,10 +407,11 @@ export class TelegramBotService implements OnModuleInit {
           });
           if (job) {
             this.pendingJobApp.set(chatId, jobId);
-            await ctx.editMessageText(
-              `Вы выбрали вакансию *${job.title}* в компании *${job.company.name}*.\n\nПожалуйста, отправьте ваше резюме в формате PDF, чтобы начать.`,
-              { parse_mode: 'Markdown' },
-            );
+            const selectedMsg = this.i18n.t('bot.selected_job', {
+              lang,
+              args: { title: job.title, companyName: job.company.name },
+            });
+            await ctx.editMessageText(selectedMsg, { parse_mode: 'Markdown' });
           }
         } catch (err) {
           this.logger.error(
@@ -343,7 +424,7 @@ export class TelegramBotService implements OnModuleInit {
       }
 
       // Handle back to dashboard callback
-      if (data === 'back_to_dash') {
+      if (action === 'dash') {
         const user = await this.db.user.findFirst({
           where: { telegramChatId: chatId, deletedAt: null },
           include: { company: true },
@@ -362,10 +443,8 @@ export class TelegramBotService implements OnModuleInit {
       }
 
       // Handle view matched / screening lists with pagination
-      if (data.startsWith('view_new|') || data.startsWith('view_screening|')) {
-        const parts = data.split('|');
-        const action = parts[0];
-        const page = parseInt(parts[1], 10);
+      if (action === 'v_new' || action === 'v_scr') {
+        const page = parsed.p;
 
         const user = await this.db.user.findFirst({
           where: { telegramChatId: chatId, deletedAt: null },
@@ -376,7 +455,7 @@ export class TelegramBotService implements OnModuleInit {
         }
 
         const statusFilter =
-          action === 'view_new'
+          action === 'v_new'
             ? ['matched', 'queued_outreach']
             : ['screening', 'responded'];
         const total = await this.db.application.count({
@@ -392,7 +471,7 @@ export class TelegramBotService implements OnModuleInit {
         });
 
         let msgText =
-          action === 'view_new'
+          action === 'v_new'
             ? `📋 *Кандидаты на согласовании* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`
             : `💬 *Кандидаты на интервью* (Стр. ${page + 1} из ${Math.ceil(total / 5) || 1})\n\n`;
 
@@ -410,12 +489,15 @@ export class TelegramBotService implements OnModuleInit {
 
         const keyboard = new InlineKeyboard();
         if (page > 0) {
-          keyboard.text('◀️ Назад', `${action}|${page - 1}`);
+          keyboard.text('◀️ Назад', JSON.stringify({ a: action, p: page - 1 }));
         }
         if ((page + 1) * 5 < total) {
-          keyboard.text('Вперед ▶️', `${action}|${page + 1}`);
+          keyboard.text(
+            'Вперед ▶️',
+            JSON.stringify({ a: action, p: page + 1 }),
+          );
         }
-        keyboard.row().text('🏠 В меню', 'back_to_dash');
+        keyboard.row().text('🏠 В меню', JSON.stringify({ a: 'dash' }));
 
         await ctx.editMessageText(msgText, {
           reply_markup: keyboard,
@@ -439,19 +521,18 @@ export class TelegramBotService implements OnModuleInit {
       const doc = ctx.message.document;
       const fileName = doc.file_name ?? '';
       const mimeType = doc.mime_type ?? '';
+      const lang = this.getLang(ctx);
 
       if (
         mimeType !== 'application/pdf' &&
         !fileName.toLowerCase().endsWith('.pdf')
       ) {
-        await ctx.reply(
-          'К сожалению, мы принимаем резюме только в формате PDF. Пожалуйста, отправьте файл резюме еще раз.',
-        );
+        await ctx.reply(this.i18n.t('bot.pdf_only', { lang }));
         return;
       }
 
       const statusMsg = await ctx.reply(
-        'Получил ваше резюме. Начинаю обработку и извлечение данных... ⏳',
+        this.i18n.t('bot.got_resume', { lang }),
       );
 
       try {
@@ -472,7 +553,7 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            'Не удалось извлечь текст из файла резюме. Пожалуйста, убедитесь, что это текстовый (не сканированный) PDF и попробуйте снова.',
+            this.i18n.t('bot.pdf_parse_failed', { lang }),
           );
           return;
         }
@@ -540,7 +621,7 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            'Резюме получено! В данный момент у нас нет открытых активных вакансий. Мы сохранили вашу анкету и свяжемся, когда появится подходящая позиция.',
+            this.i18n.t('bot.no_active_jobs_resume', { lang }),
           );
           await this.parseQueue.add(
             { candidateId: candidate.id },
@@ -558,7 +639,7 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            'Произошла ошибка при связывании резюме с вакансией. Пожалуйста, попробуйте еще раз.',
+            this.i18n.t('bot.job_link_failed', { lang }),
           );
           return;
         }
@@ -569,10 +650,14 @@ export class TelegramBotService implements OnModuleInit {
         });
 
         if (existingApp) {
+          const duplicateMsg = this.i18n.t('bot.duplicate_application', {
+            lang,
+            args: { title: job.title, companyName: job.company.name },
+          });
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            `Вы уже откликнулись на вакансию *${job.title}* в компании *${job.company.name}*! Наш AI-рекрутер сейчас продолжит диалог.`,
+            duplicateMsg,
             { parse_mode: 'Markdown' },
           );
           return;
@@ -616,18 +701,16 @@ export class TelegramBotService implements OnModuleInit {
           },
         });
 
-        // Start AI interview
-        await this.screeningQueue.add(
-          { screeningId: screening.id },
-          { ...LLM_JOB_OPTIONS, jobId: `screening-${screening.id}` },
-        );
-
-        await ctx.api.editMessageText(
+        // Register in pending parses to report progress and queue screening asynchronously when done
+        this.pendingParses.set(candidate.id, {
           chatId,
-          statusMsg.message_id,
-          `Отлично! Резюме принято на вакансию *${job.title}* (${job.company.name}).\n\nСейчас наш AI-рекрутер начнет собеседование прямо здесь. Пожалуйста, ответьте на его первое сообщение! 👇`,
-          { parse_mode: 'Markdown' },
-        );
+          messageId: statusMsg.message_id,
+          lang,
+          jobTitle: job.title,
+          companyName: job.company.name,
+          screeningId: screening.id,
+          applicationId: application.id,
+        });
 
         this.pendingJobApp.delete(chatId);
       } catch (err: any) {
@@ -638,7 +721,7 @@ export class TelegramBotService implements OnModuleInit {
         await ctx.api.editMessageText(
           chatId,
           statusMsg.message_id,
-          'Произошла ошибка при обработке резюме. Пожалуйста, попробуйте еще раз позже.',
+          this.i18n.t('bot.processing_resume_failed', { lang }),
         );
       }
     });
@@ -648,6 +731,7 @@ export class TelegramBotService implements OnModuleInit {
       const chatId = String(ctx.chat.id);
       const voice = ctx.message.voice;
       const messageId = String(ctx.message.message_id);
+      const lang = this.getLang(ctx);
 
       // Verify active conversation
       const activeConv = await this.db.conversation.findFirst({
@@ -660,12 +744,14 @@ export class TelegramBotService implements OnModuleInit {
 
       if (!activeConv) {
         await ctx.reply(
-          'Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.',
+          this.i18n.t('bot.voice_video_no_conversation', { lang }),
         );
         return;
       }
 
-      const statusMsg = await ctx.reply('Распознаю вашу речь... 🎙️');
+      const statusMsg = await ctx.reply(
+        this.i18n.t('bot.recognizing_voice', { lang }),
+      );
 
       try {
         const file = await ctx.api.getFile(voice.file_id);
@@ -682,7 +768,7 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            'Не удалось разобрать слова. Пожалуйста, попробуйте записать аудио еще раз или отправьте текст.',
+            this.i18n.t('bot.voice_parsing_failed', { lang }),
           );
           return;
         }
@@ -706,7 +792,7 @@ export class TelegramBotService implements OnModuleInit {
         await ctx.api.editMessageText(
           chatId,
           statusMsg.message_id,
-          'Произошла ошибка при распознавании голоса. Пожалуйста, попробуйте записать еще раз.',
+          this.i18n.t('bot.voice_error', { lang }),
         );
       }
     });
@@ -716,6 +802,7 @@ export class TelegramBotService implements OnModuleInit {
       const chatId = String(ctx.chat.id);
       const videoNote = ctx.message.video_note;
       const messageId = String(ctx.message.message_id);
+      const lang = this.getLang(ctx);
 
       // Verify active conversation
       const activeConv = await this.db.conversation.findFirst({
@@ -728,13 +815,13 @@ export class TelegramBotService implements OnModuleInit {
 
       if (!activeConv) {
         await ctx.reply(
-          'Привет! Рад вашему сообщению. 😊 Пожалуйста, сначала отправьте ваше резюме в формате PDF (или выберите вакансию выше), чтобы мы могли начать собеседование.',
+          this.i18n.t('bot.voice_video_no_conversation', { lang }),
         );
         return;
       }
 
       const statusMsg = await ctx.reply(
-        'Извлекаю аудио и распознаю видео-кружок... 📹',
+        this.i18n.t('bot.recognizing_video', { lang }),
       );
 
       try {
@@ -752,7 +839,7 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.api.editMessageText(
             chatId,
             statusMsg.message_id,
-            'Не удалось разобрать слова в видео. Пожалуйста, попробуйте записать кружок еще раз или отправьте текст.',
+            this.i18n.t('bot.video_parsing_failed', { lang }),
           );
           return;
         }
@@ -779,7 +866,7 @@ export class TelegramBotService implements OnModuleInit {
         await ctx.api.editMessageText(
           chatId,
           statusMsg.message_id,
-          'Произошла ошибка при обработке видео-кружка. Пожалуйста, попробуйте записать еще раз.',
+          this.i18n.t('bot.video_error', { lang }),
         );
       }
     });
@@ -816,6 +903,84 @@ export class TelegramBotService implements OnModuleInit {
         this.logger.error(err, 'Telegram polling error');
       });
       this.logger.log('Telegram bot started in polling mode');
+    }
+  }
+
+  @OnEvent('candidate.event')
+  async handleCandidateEvent(event: {
+    candidateId: string;
+    type: string;
+    payload: any;
+  }) {
+    if (event.type !== 'resume_parse_progress') return;
+
+    const pending = this.pendingParses.get(event.candidateId);
+    if (!pending) return;
+
+    const {
+      chatId,
+      messageId,
+      lang,
+      jobTitle,
+      companyName,
+      screeningId,
+      applicationId,
+    } = pending;
+    const status = event.payload.status;
+
+    try {
+      if (status === 'parsing') {
+        const text =
+          this.i18n.t('bot.parsing_resume_text', { lang }) ??
+          'Разбираю текст вашего резюме... 📖';
+        await this.editMessage(chatId, messageId, text);
+      } else if (status === 'embedding') {
+        const text =
+          this.i18n.t('bot.matching_resume_text', { lang }) ??
+          'Анализирую навыки и соответствие вакансии... 🎯';
+        await this.editMessage(chatId, messageId, text);
+      } else if (status === 'embedding_done') {
+        // Edit to final application created message
+        const finalMsg =
+          this.i18n.t('bot.application_created', {
+            lang,
+            args: { title: jobTitle, companyName },
+          }) ??
+          `Отлично! Резюме принято на вакансию *${jobTitle}* (${companyName}).\n\nСейчас наш AI-рекрутер начнет собеседование прямо здесь. Пожалуйста, ответьте на его первое сообщение! 👇`;
+
+        const publicUrl =
+          this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+        const keyboard = new InlineKeyboard().webApp(
+          this.i18n.t('bot.web_chat_btn', { lang }) ?? '🖥️ Веб-чат (TMA)',
+          `${publicUrl}/candidate/chat/${applicationId}`,
+        );
+
+        if (this.bot) {
+          await this.bot.api.editMessageText(
+            Number(chatId),
+            Number(messageId),
+            finalMsg,
+            {
+              reply_markup: keyboard,
+              parse_mode: 'Markdown',
+            },
+          );
+        }
+
+        // Start AI interview
+        await this.screeningQueue.add(
+          { screeningId },
+          { ...LLM_JOB_OPTIONS, jobId: `screening-${screeningId}` },
+        );
+
+        // Remove from pending map
+        this.pendingParses.delete(event.candidateId);
+      }
+    } catch (err: any) {
+      this.logger.error(
+        { candidateId: event.candidateId, status, error: err.message },
+        'Failed to report parse progress to Telegram',
+      );
     }
   }
 

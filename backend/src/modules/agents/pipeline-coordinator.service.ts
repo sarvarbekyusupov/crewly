@@ -161,9 +161,12 @@ export class PipelineCoordinator {
             buttons: [
               {
                 text: '✅ Одобрить (AI Screen)',
-                callbackData: `approve_screening|${app.id}`,
+                callbackData: JSON.stringify({ a: 'app_scr', i: app.id }),
               },
-              { text: '❌ Пропустить', callbackData: `reject_app|${app.id}` },
+              {
+                text: '❌ Пропустить',
+                callbackData: JSON.stringify({ a: 'rej_app', i: app.id }),
+              },
             ],
           });
 

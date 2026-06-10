@@ -4,6 +4,8 @@ import { appStatusColor } from '~/utils/statusColors'
 import { formatRelativeTime } from '~/utils/formatters'
 
 definePageMeta({ layout: 'candidate' })
+// Moved to Inbox — keep route alive for backward compat
+await navigateTo('/candidate/inbox', { redirectCode: 301 })
 
 const api = useCandidateApi()
 const { t } = useI18n()
