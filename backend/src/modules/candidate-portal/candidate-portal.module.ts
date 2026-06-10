@@ -5,7 +5,6 @@ import { CandidatePortalService } from './candidate-portal.service';
 import { CandidateAuthModule } from '../candidate-auth/candidate-auth.module';
 import { HhModule } from '../../integrations/hh/hh.module';
 import { ConversationsModule } from '../conversations/conversations.module';
-import { LlmModule } from '../../integrations/llm/llm.module';
 import { QUEUES } from '../../workers/queue-names';
 
 @Module({
@@ -13,7 +12,6 @@ import { QUEUES } from '../../workers/queue-names';
     CandidateAuthModule,
     HhModule,
     ConversationsModule,
-    LlmModule,
     BullModule.registerQueue({ name: QUEUES.SCORE_SEEKER_JOBS }),
     BullModule.registerQueue({ name: QUEUES.AUTO_APPLY }),
     BullModule.registerQueue({ name: QUEUES.PARSE_CANDIDATE }),

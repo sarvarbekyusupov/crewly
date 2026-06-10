@@ -36,3 +36,4 @@ nginx/certs/
 
 # Planning docs (ephemeral, not repo assets)
 conductor/
+design_handoff_crewly

@@ -59,12 +59,6 @@ const nav = [
     mobileHidden: true,
   },
   {
-    label: 'Interview Prep',
-    to: '/candidate/prep',
-    icon: 'i-heroicons-microphone',
-    mobileHidden: true,
-  },
-  {
     label: 'Preferences',
     to: '/candidate/preferences',
     icon: 'i-heroicons-adjustments-horizontal',
@@ -75,7 +69,6 @@ const nav = [
 const mobileNav = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
   { label: 'Discovery', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
-  { label: 'Prep', to: '/candidate/prep', icon: 'i-heroicons-microphone' },
   { label: 'Messages', to: '/candidate/chat', icon: 'i-heroicons-chat-bubble-left-right' },
   { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
 ]
