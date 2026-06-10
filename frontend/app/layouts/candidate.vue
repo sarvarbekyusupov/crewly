@@ -183,41 +183,39 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
       </nav>
 
       <!-- User section -->
-      <div class="p-4" style="border-top: 1px solid var(--line)">
-        <div class="flex items-center gap-3 mb-3">
-          <div
-            class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"
-            style="
-              background: var(--accent-soft);
-              color: var(--accent);
-              font-family: 'Fraunces', serif;
-              font-style: italic;
-              border: 1px solid var(--line);
-            "
-          >
-            {{
-              store.candidate?.fullName?.[0]?.toUpperCase() ??
-              store.candidate?.email?.[0]?.toUpperCase() ??
-              'C'
-            }}
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate" style="color: var(--ink)">
-              {{ store.candidate?.fullName ?? store.candidate?.email }}
-            </p>
-            <p class="text-xs truncate" style="color: var(--ink-muted)">Job Seeker</p>
-          </div>
-        </div>
-        <UButton
-          variant="ghost"
-          size="xs"
-          color="error"
-          icon="i-heroicons-arrow-right-on-rectangle"
-          block
-          @click="handleLogout"
+      <div class="px-4 py-3 flex items-center gap-3" style="border-top: 1px solid var(--line)">
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"
+          style="
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            border: 1px solid var(--line);
+          "
         >
-          Sign out
-        </UButton>
+          {{
+            store.candidate?.fullName?.[0]?.toUpperCase() ??
+            store.candidate?.email?.[0]?.toUpperCase() ??
+            'C'
+          }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate" style="color: var(--ink)">
+            {{ store.candidate?.fullName ?? store.candidate?.email }}
+          </p>
+          <p class="text-xs truncate" style="color: var(--ink-muted)">Job Seeker</p>
+        </div>
+        <UTooltip text="Sign out">
+          <UButton
+            variant="ghost"
+            size="xs"
+            color="neutral"
+            icon="i-heroicons-arrow-right-on-rectangle"
+            :ui="{ base: 'opacity-40 hover:opacity-100 transition-opacity' }"
+            @click="handleLogout"
+          />
+        </UTooltip>
       </div>
     </aside>
 
