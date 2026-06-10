@@ -178,6 +178,17 @@ describe('CandidatePortalController', () => {
     );
   });
 
+  it('triggerDiscover calls service and enqueues scoring after completion', async () => {
+    const result = await controller.triggerDiscover(cand);
+    await new Promise((r) => setTimeout(r, 0)); // flush microtasks
+    expect(svc.discoverJobsForCandidate).toHaveBeenCalledWith('cand-1', 3);
+    expect(scoreQueue.add).toHaveBeenCalledWith(
+      { candidateId: 'cand-1', limit: 100 },
+      expect.any(Object),
+    );
+    expect(result).toEqual({ queued: true });
+  });
+
   it('triggerScoring enqueues job and returns queued', async () => {
     const result = await controller.triggerScoring(cand);
     expect(scoreQueue.add).toHaveBeenCalledWith(

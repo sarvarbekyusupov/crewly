@@ -242,6 +242,12 @@ export class CandidatePortalController {
   async triggerDiscover(@CurrentCandidate() candidate: { id: string }) {
     this.portalService
       .discoverJobsForCandidate(candidate.id, 3)
+      .then(() =>
+        this.scoreQueue.add(
+          { candidateId: candidate.id, limit: 100 },
+          LLM_JOB_OPTIONS,
+        ),
+      )
       .catch((err) =>
         this.logger.warn(
           { candidateId: candidate.id, error: err.message },
