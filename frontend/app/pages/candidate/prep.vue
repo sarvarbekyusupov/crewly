@@ -197,6 +197,12 @@ function evaluateTranscript() {
   evaluationComplete.value = true
 }
 
+function selectQuestion(i: number) {
+  activeQuestionIdx.value = i
+  evaluationComplete.value = false
+  transcript.value = ''
+}
+
 function nextQuestion() {
   if (activeQuestionIdx.value < activeQuestions.value.length - 1) {
     playPop()
@@ -292,11 +298,7 @@ function formatTimer(sec: number) {
               ? 'background: var(--ink); color: var(--bg)'
               : 'background: var(--bg-deep); color: var(--ink-muted); border: 1px solid var(--line-soft)'
           "
-          @click="
-            activeQuestionIdx = i
-            evaluationComplete = false
-            transcript = ''
-          "
+          @click="selectQuestion(i)"
         >
           Q{{ i + 1 }}
         </span>
