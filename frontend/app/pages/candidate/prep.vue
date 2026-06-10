@@ -308,7 +308,7 @@ function formatTimer(sec: number) {
       <div class="md:col-span-2 space-y-4">
         <!-- Interactive Teleprompter Card -->
         <div
-          class="rounded-xl p-6 bg-surface border border-line flex flex-col justify-between min-h-[300px] relative overflow-hidden"
+          class="rounded-xl p-6 bg-surface border border-line flex flex-col justify-between min-h-75 relative overflow-hidden"
         >
           <div
             class="absolute top-2 right-3 font-mono text-[9px] uppercase tracking-wider text-ink-subtle"
@@ -366,7 +366,7 @@ function formatTimer(sec: number) {
 
         <!-- Real-Time Speech transcription -->
         <div
-          class="bg-surface border border-line-soft rounded-xl p-4 min-h-[120px] flex flex-col justify-between"
+          class="bg-surface border border-line-soft rounded-xl p-4 min-h-30 flex flex-col justify-between"
         >
           <span
             class="text-[10px] font-mono font-bold text-ink-subtle uppercase tracking-wider mb-2"
@@ -384,7 +384,7 @@ function formatTimer(sec: number) {
       <div class="space-y-4">
         <!-- Communication Score widget -->
         <div
-          class="bg-surface border border-line rounded-xl p-5 text-center flex flex-col items-center justify-center min-h-[180px]"
+          class="bg-surface border border-line rounded-xl p-5 text-center flex flex-col items-center justify-center min-h-45"
         >
           <span class="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider mb-3"
             >Speech Evaluation Score</span
