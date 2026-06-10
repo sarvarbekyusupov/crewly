@@ -361,6 +361,7 @@ export class CandidatePortalService {
             id: true,
             title: true,
             company: true,
+            description: true,
             location: true,
             sourceUrl: true,
             workMode: true,

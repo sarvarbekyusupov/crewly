@@ -16,14 +16,11 @@ interface JobOption {
 
 const { data: recentJobs } = await useAsyncData('prep-jobs', () =>
   api
-    .get<{
-      data: {
-        id: string
-        discoveredJob: { title: string; company: string; description?: string }
-      }[]
-    }>('/api/v1/candidate-portal/seeker-applications', { limit: 20, sortBy: 'recent' })
+    .get<{ id: string; discoveredJob: { title: string; company: string; description?: string } }[]>(
+      '/api/v1/candidate-portal/seeker-applications',
+    )
     .then((r) =>
-      (r.data ?? []).map(
+      (r ?? []).slice(0, 20).map(
         (a: any) =>
           ({
             id: a.id,
