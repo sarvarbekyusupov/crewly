@@ -11,6 +11,15 @@ watch(
     mobileOpen.value = false
   },
 )
+
+function selectEmployer() {
+  set('employer')
+  mobileOpen.value = false
+}
+function selectCandidate() {
+  set('candidate')
+  mobileOpen.value = false
+}
 </script>
 
 <template>
@@ -117,20 +126,14 @@ watch(
           to="/"
           class="mob-link"
           :class="{ on: audience === 'employer' }"
-          @click="
-            set('employer')
-            mobileOpen = false
-          "
+          @click="selectEmployer"
           >Employers</NuxtLink
         >
         <NuxtLink
           to="/candidate"
           class="mob-link"
           :class="{ on: audience === 'candidate' }"
-          @click="
-            set('candidate')
-            mobileOpen = false
-          "
+          @click="selectCandidate"
           >Candidates</NuxtLink
         >
         <a href="#how-it-works" class="mob-link" @click="mobileOpen = false">How it works</a>
