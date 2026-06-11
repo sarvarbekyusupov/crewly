@@ -23,6 +23,11 @@ COPY backend          ./backend
 RUN ./backend/node_modules/.bin/tsc -p packages/prompts/tsconfig.build.json
 RUN pnpm --filter backend exec prisma generate
 RUN NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter backend run build
+RUN ./backend/node_modules/.bin/tsc \
+    --module commonjs --target ES2022 --moduleResolution node \
+    --esModuleInterop true --skipLibCheck \
+    --rootDir backend/prisma --outDir backend/prisma/dist \
+    backend/prisma/seed.ts
 
 # ── prod-only deps ────────────────────────────────────────────────────────────
 FROM base AS prod-deps
@@ -53,6 +58,7 @@ COPY --from=prod-deps /app/packages/types         ./packages/types
 COPY --from=prod-deps /app/packages/prompts       ./packages/prompts
 COPY --from=builder   /app/packages/prompts/dist  ./packages/prompts/dist
 COPY --from=prod-deps /app/backend/prisma         ./backend/prisma
+COPY --from=builder  /app/backend/prisma/dist/seed.js ./backend/prisma/dist/seed.js
 COPY package.json pnpm-lock.yaml ./
 COPY packages/types/package.json   ./packages/types/
 COPY packages/prompts/package.json ./packages/prompts/
@@ -71,4 +77,4 @@ USER appuser
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "dist/backend/src/main"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node prisma/dist/seed.js && node dist/backend/src/main"]

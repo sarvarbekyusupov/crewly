@@ -24,6 +24,20 @@ async function main() {
     });
   }
 
+  // ── Staff user (production-safe) ───────────────────────────────────────────
+  const staffExists = await prisma.staff.findUnique({ where: { email: 'staff@agency.local' } });
+  if (!staffExists) {
+    await prisma.staff.create({
+      data: {
+        email: 'staff@agency.local',
+        passwordHash: await argon2.hash('staff1234'),
+        fullName: 'Agency Founder',
+        role: 'founder',
+      },
+    });
+    console.log('Created staff user: staff@agency.local / staff1234');
+  }
+
   if (process.env.NODE_ENV === 'production') {
     console.log('Seed complete (production — skipping demo data)');
     return;
@@ -52,20 +66,6 @@ async function main() {
       },
     });
     console.log('Created demo user: admin@test.local / test1234');
-  }
-
-  // ── Staff user ──────────────────────────────────────────────────────────────
-  const staffExists = await prisma.staff.findUnique({ where: { email: 'staff@agency.local' } });
-  if (!staffExists) {
-    await prisma.staff.create({
-      data: {
-        email: 'staff@agency.local',
-        passwordHash: await argon2.hash('staff1234'),
-        fullName: 'Agency Founder',
-        role: 'founder',
-      },
-    });
-    console.log('Created staff user: staff@agency.local / staff1234');
   }
 
   // ── Demo jobs ───────────────────────────────────────────────────────────────
