@@ -1,6 +1,42 @@
 <script setup lang="ts">
-defineProps<{ audience: 'employer' | 'candidate' }>()
+const props = defineProps<{ audience: 'employer' | 'candidate' }>()
 const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
+
+const stat0 = ref<HTMLElement | null>(null)
+const stat1 = ref<HTMLElement | null>(null)
+const stat2 = ref<HTMLElement | null>(null)
+
+function countUp(el: HTMLElement, target: number, prefix: string, suffix: string, duration = 900) {
+  const start = performance.now()
+  const step = (now: number) => {
+    const progress = Math.min((now - start) / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    el.textContent = prefix + Math.round(eased * target).toLocaleString() + suffix
+    if (progress < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
+onMounted(() => {
+  const statsRow = document.querySelector('.stats-row')
+  if (!statsRow) return
+
+  const obs = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry.isIntersecting) return
+      obs.disconnect()
+
+      if (props.audience === 'employer') {
+        if (stat0.value) countUp(stat0.value, 43, '', '', 800)
+      } else {
+        if (stat0.value) countUp(stat0.value, 1200, '', '+', 1000)
+        if (stat1.value) countUp(stat1.value, 18, '', '', 700)
+      }
+    },
+    { threshold: 0.4 },
+  )
+  obs.observe(statsRow)
+})
 </script>
 
 <template>
@@ -10,7 +46,7 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
       <div class="stats-row fade">
         <template v-if="audience === 'employer'">
           <div class="stat">
-            <div class="stat-n"><em>43</em></div>
+            <div class="stat-n"><em ref="stat0">43</em></div>
             <div class="stat-l">companies hired last month</div>
           </div>
           <div class="stat">
@@ -24,11 +60,11 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
         </template>
         <template v-else>
           <div class="stat">
-            <div class="stat-n"><em>1,200+</em></div>
+            <div class="stat-n"><em ref="stat0">1,200+</em></div>
             <div class="stat-l">candidates placed</div>
           </div>
           <div class="stat">
-            <div class="stat-n"><em>18</em> days</div>
+            <div class="stat-n"><em ref="stat1">18</em> days</div>
             <div class="stat-l">avg. time to first interview</div>
           </div>
           <div class="stat">
@@ -166,10 +202,10 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 /* Fade */
 .fade {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(18px);
   transition:
-    opacity 0.5s,
-    transform 0.5s;
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fade.in {
   opacity: 1;

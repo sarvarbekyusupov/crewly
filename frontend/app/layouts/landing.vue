@@ -57,33 +57,48 @@ const { audience } = useAudience()
 .landing-shell::before {
   content: '';
   position: absolute;
-  top: -180px;
+  top: -200px;
   left: 50%;
-  width: 900px;
-  height: 600px;
+  width: 1000px;
+  height: 680px;
   transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgba(91, 106, 245, 0.18) 0%, transparent 70%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(91, 106, 245, 0.16) 0%,
+    rgba(91, 106, 245, 0.06) 45%,
+    transparent 70%
+  );
   pointer-events: none;
   z-index: 0;
-  animation: glow-drift 10s ease-in-out infinite;
+  animation: glow-drift 14s ease-in-out infinite;
   will-change: transform, opacity;
 }
 @keyframes glow-drift {
   0% {
-    transform: translateX(-50%) scale(1);
-    opacity: 0.8;
+    transform: translateX(-50%) scale(1) rotate(0deg);
+    opacity: 0.75;
   }
-  30% {
-    transform: translateX(-42%) scale(1.08);
+  25% {
+    transform: translateX(-44%) scale(1.1) rotate(1deg);
     opacity: 1;
   }
-  60% {
-    transform: translateX(-58%) scale(0.96);
-    opacity: 0.85;
+  55% {
+    transform: translateX(-57%) scale(0.94) rotate(-1deg);
+    opacity: 0.8;
+  }
+  80% {
+    transform: translateX(-48%) scale(1.04) rotate(0.5deg);
+    opacity: 0.9;
   }
   100% {
-    transform: translateX(-50%) scale(1);
-    opacity: 0.8;
+    transform: translateX(-50%) scale(1) rotate(0deg);
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-shell::before {
+    animation: none;
   }
 }
 .site-header {

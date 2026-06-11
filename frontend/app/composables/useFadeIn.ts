@@ -11,12 +11,18 @@ export function useFadeIn() {
           }
         })
       },
-      { threshold: 0, rootMargin: '0px 0px 100px 0px' },
+      { threshold: 0.06, rootMargin: '0px 0px -32px 0px' },
     )
 
     requestAnimationFrame(() => {
-      document.querySelectorAll('.fade').forEach((el, i) => {
-        ;(el as HTMLElement).style.transitionDelay = `${(i % 4) * 0.07}s`
+      // Stagger per-section so each section starts fresh at delay 0
+      const sectionCounters = new Map<Element | null, number>()
+
+      document.querySelectorAll('.fade').forEach((el) => {
+        const section = el.closest('section') ?? el.parentElement ?? null
+        const idx = sectionCounters.get(section) ?? 0
+        ;(el as HTMLElement).style.transitionDelay = `${idx * 0.09}s`
+        sectionCounters.set(section, idx + 1)
         obs!.observe(el)
       })
     })

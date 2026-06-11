@@ -172,10 +172,10 @@ const candidateFaqs = [
 }
 .fade {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(18px);
   transition:
-    opacity 0.5s,
-    transform 0.5s;
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fade.in {
   opacity: 1;

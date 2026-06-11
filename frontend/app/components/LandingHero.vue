@@ -168,6 +168,59 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ── Hero entrance animations ── */
+@keyframes heroSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes heroArtIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-copy > * {
+  animation: heroSlideUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-badge {
+  animation-delay: 0.04s;
+}
+.hero-copy h1 {
+  animation-delay: 0.13s;
+}
+.hero-sub {
+  animation-delay: 0.22s;
+}
+.hero-form {
+  animation-delay: 0.3s;
+}
+.hero-micro {
+  animation-delay: 0.36s;
+}
+
+.hero-art {
+  animation: heroArtIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy > *,
+  .hero-art {
+    animation: none;
+  }
+}
+
 /* ── Hero layout ── */
 .hero {
   max-width: 1440px;

@@ -86,6 +86,15 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s,
+    border-color 0.22s;
+}
+.testi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.09);
+  border-color: var(--ld-bd);
 }
 .testi-quote {
   font-size: 14px;
@@ -133,10 +142,10 @@
 
 .fade {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(18px);
   transition:
-    opacity 0.5s,
-    transform 0.5s;
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fade.in {
   opacity: 1;

@@ -133,10 +133,17 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 .feat {
   background: var(--ld-bg);
   padding: 32px 28px;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s;
 }
 .feat:hover {
   background: var(--ld-surf);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
 }
 
 .feat-n {
@@ -232,10 +239,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
 /* Fade animation */
 .fade {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(18px);
   transition:
-    opacity 0.5s,
-    transform 0.5s;
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fade.in {
   opacity: 1;
