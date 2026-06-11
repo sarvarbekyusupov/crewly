@@ -91,6 +91,7 @@ interface UnifiedApp {
   lastActivity?: string
   hasChat: boolean
   isNew: boolean
+  matchScore?: string
   raw: SeekerApplication | HrApplication
 }
 
@@ -137,6 +138,7 @@ const unifiedApps = computed<UnifiedApp[]>(() => {
     lastActivity: a.matchedAt,
     hasChat: ['screening', 'responded', 'outreach_sent', 'shortlisted'].includes(a.status),
     isNew: newMessageApplicationIds.value.has(a.id),
+    matchScore: a.matchScore,
     raw: a,
   }))
 
@@ -561,10 +563,18 @@ const hrApp = computed(() =>
             </div>
           </div>
 
-          <!-- Right: time only -->
-          <span v-if="app.lastActivity" class="app-row-time">
-            {{ formatRelativeTime(app.lastActivity) }}
-          </span>
+          <!-- Right: match score (HR) or time -->
+          <div class="flex flex-col items-end gap-0.5 shrink-0">
+            <span
+              v-if="app.matchScore"
+              class="text-[11px] font-mono font-semibold"
+              style="color: var(--positive)"
+              >{{ Math.round(Number(app.matchScore)) }}%</span
+            >
+            <span v-if="app.lastActivity" class="app-row-time">
+              {{ formatRelativeTime(app.lastActivity) }}
+            </span>
+          </div>
         </div>
       </div>
 

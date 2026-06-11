@@ -118,12 +118,46 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
       </p>
     </div>
 
-    <div v-if="pending" class="flex justify-center py-20">
-      <UIcon
-        name="i-heroicons-arrow-path"
-        class="w-8 h-8 animate-spin"
-        style="color: var(--ink-subtle)"
-      />
+    <div v-if="pending" class="space-y-6">
+      <!-- Stat cards skeleton -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div
+          v-for="n in 4"
+          :key="n"
+          class="rounded-xl p-4 flex flex-col items-center gap-2"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <USkeleton class="h-9 w-16 rounded" />
+          <USkeleton class="h-3 w-20 rounded" />
+        </div>
+      </div>
+      <!-- Funnel skeleton -->
+      <div
+        class="rounded-xl p-5 space-y-3"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <USkeleton class="h-4 w-32 rounded mb-4" />
+        <div v-for="n in 5" :key="n" class="flex items-center gap-3">
+          <USkeleton class="h-3 w-24 rounded shrink-0" />
+          <USkeleton class="h-3 rounded flex-1" :style="`width: ${80 - n * 12}%`" />
+          <USkeleton class="h-3 w-8 rounded shrink-0" />
+        </div>
+      </div>
+      <!-- Chart skeleton -->
+      <div
+        class="rounded-xl p-5"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <USkeleton class="h-4 w-28 rounded mb-4" />
+        <div class="flex items-end gap-1 h-24">
+          <USkeleton
+            v-for="n in 20"
+            :key="n"
+            class="flex-1 rounded-t"
+            :style="`height: ${20 + Math.abs(Math.sin(n) * 60)}%`"
+          />
+        </div>
+      </div>
     </div>
 
     <template v-else-if="analytics">
