@@ -36,27 +36,38 @@ interface Profile {
 }
 
 const [profileRes, topJobsRes, seekerAppsRes, hrAppsRes] = await Promise.all([
-  useAsyncData('dash-profile', () =>
-    api.get<Profile>('/api/v1/candidate-portal/profile').catch(() => null),
+  useAsyncData(
+    'dash-profile',
+    () => api.get<Profile>('/api/v1/candidate-portal/profile').catch(() => null),
+    { lazy: true },
   ),
-  useAsyncData('dash-top-jobs', () =>
-    api
-      .get<PaginatedResponse<DiscoveredJob>>('/api/v1/candidate-portal/discovered-jobs', {
-        sortBy: 'score',
-        page: 1,
-        limit: 3,
-      })
-      .catch(() => null),
+  useAsyncData(
+    'dash-top-jobs',
+    () =>
+      api
+        .get<PaginatedResponse<DiscoveredJob>>('/api/v1/candidate-portal/discovered-jobs', {
+          sortBy: 'score',
+          page: 1,
+          limit: 3,
+        })
+        .catch(() => null),
+    { lazy: true },
   ),
-  useAsyncData('dash-seeker-apps', () =>
-    api
-      .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
-      .catch(() => [] as SeekerApplication[]),
+  useAsyncData(
+    'dash-seeker-apps',
+    () =>
+      api
+        .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
+        .catch(() => [] as SeekerApplication[]),
+    { lazy: true },
   ),
-  useAsyncData('dash-hr-apps', () =>
-    api
-      .get<HrApplication[]>('/api/v1/candidate-portal/applications')
-      .catch(() => [] as HrApplication[]),
+  useAsyncData(
+    'dash-hr-apps',
+    () =>
+      api
+        .get<HrApplication[]>('/api/v1/candidate-portal/applications')
+        .catch(() => [] as HrApplication[]),
+    { lazy: true },
   ),
 ])
 
@@ -233,6 +244,28 @@ function activityIcon(type: ActivityEvent['type']) {
     match: 'i-heroicons-magnifying-glass',
   }
   return map[type] ?? 'i-heroicons-bolt'
+}
+
+const COMPANY_COLORS = [
+  { bg: 'oklch(0.55 0.22 264)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 145)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 30)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 320)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 200)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.18 60)', fg: '#fff' },
+]
+
+function companyColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i)) % COMPANY_COLORS.length
+  return COMPANY_COLORS[h] ?? COMPANY_COLORS[0]
+}
+
+function activityColor(type: ActivityEvent['type']): string {
+  if (type === 'scan' || type === 'match') return 'var(--positive)'
+  if (type === 'parse') return 'var(--warning)'
+  if (type === 'message') return 'var(--accent)'
+  return 'var(--warning)'
 }
 
 function relTime(d: Date) {
@@ -422,7 +455,17 @@ const showCoachModal = ref(false)
           <!-- Info -->
           <div class="job-briefing-info">
             <p class="job-briefing-title">{{ job.title }}</p>
-            <p class="job-briefing-company">{{ job.company }}</p>
+            <div class="flex items-center gap-1.5">
+              <span
+                class="job-company-badge"
+                :style="{
+                  background: companyColor(job.company).bg,
+                  color: companyColor(job.company).fg,
+                }"
+                >{{ (job.company[0] ?? '?').toUpperCase() }}</span
+              >
+              <p class="job-briefing-company">{{ job.company }}</p>
+            </div>
             <p v-if="job.matchExplanation" class="job-briefing-explanation">
               {{ job.matchExplanation }}
             </p>
@@ -477,7 +520,7 @@ const showCoachModal = ref(false)
               <UIcon
                 :name="activityIcon(event.type)"
                 class="w-3 h-3"
-                style="color: var(--accent)"
+                :style="{ color: activityColor(event.type) }"
               />
             </div>
             <p class="activity-text">{{ event.text }}</p>
@@ -493,7 +536,7 @@ const showCoachModal = ref(false)
 
 <style scoped>
 .dashboard-root {
-  max-width: 720px;
+  max-width: 900px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -684,6 +727,8 @@ const showCoachModal = ref(false)
   scroll-snap-type: x mandatory;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  mask-image: linear-gradient(to right, black calc(100% - 56px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 56px), transparent 100%);
 }
 .matches-scroll::-webkit-scrollbar {
   display: none;
@@ -757,6 +802,18 @@ const showCoachModal = ref(false)
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.job-company-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Fraunces', serif;
+  flex-shrink: 0;
 }
 .job-briefing-company {
   font-size: 11px;

@@ -130,7 +130,11 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
           class="hidden dark:block"
           style="height: 20px; width: auto"
         />
-        <UBadge label="Jobs" color="primary" variant="subtle" class="ml-auto" />
+        <span
+          class="text-[9px] font-mono font-bold uppercase tracking-widest ml-auto px-2 py-0.5 rounded-full"
+          style="background: var(--accent); color: #fff; letter-spacing: 0.1em"
+          >Beta</span
+        >
       </div>
 
       <!-- Navigation -->

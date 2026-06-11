@@ -67,20 +67,27 @@ interface ChatMessage {
 }
 
 const [seekerRes, hrRes] = await Promise.all([
-  useAsyncData('inbox-seeker', () =>
-    api
-      .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
-      .catch(() => [] as SeekerApplication[]),
+  useAsyncData(
+    'inbox-seeker',
+    () =>
+      api
+        .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
+        .catch(() => [] as SeekerApplication[]),
+    { lazy: true },
   ),
-  useAsyncData('inbox-hr', () =>
-    api
-      .get<HrApplication[]>('/api/v1/candidate-portal/applications')
-      .catch(() => [] as HrApplication[]),
+  useAsyncData(
+    'inbox-hr',
+    () =>
+      api
+        .get<HrApplication[]>('/api/v1/candidate-portal/applications')
+        .catch(() => [] as HrApplication[]),
+    { lazy: true },
   ),
 ])
 
 const seekerApps = computed(() => seekerRes.data.value ?? [])
 const hrApps = computed(() => hrRes.data.value ?? [])
+const inboxPending = computed(() => seekerRes.pending.value || hrRes.pending.value)
 
 interface UnifiedApp {
   id: string
@@ -409,9 +416,21 @@ function stageClass(app: UnifiedApp): string {
   return ''
 }
 
+const INBOX_AVATAR_COLORS = [
+  { bg: 'oklch(0.55 0.22 264)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 145)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 30)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 320)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 200)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.18 60)', fg: '#fff' },
+]
+
 function avatarStyle(app: UnifiedApp): string {
-  const color = stageColor(app.status)
-  return `background: color-mix(in srgb, ${color} 15%, transparent); color: ${color}; border: 1.5px solid color-mix(in srgb, ${color} 30%, transparent);`
+  let h = 0
+  for (let i = 0; i < app.company.length; i++)
+    h = (h + app.company.charCodeAt(i)) % INBOX_AVATAR_COLORS.length
+  const c = INBOX_AVATAR_COLORS[h] ?? INBOX_AVATAR_COLORS[0]!
+  return `background: ${c.bg}; color: ${c.fg};`
 }
 
 function pipelineSteps(app: UnifiedApp): string[] {
@@ -529,9 +548,26 @@ const hrApp = computed(() =>
         style="width: 100%; max-width: 100%; border-color: var(--line); background: var(--bg)"
         :style="{ 'max-width': selectedId ? '360px' : '100%' }"
       >
+        <!-- Loading skeleton -->
+        <div v-if="inboxPending" class="flex flex-col gap-0">
+          <div
+            v-for="n in 5"
+            :key="n"
+            class="flex items-center gap-3 px-4 py-3"
+            style="border-bottom: 1px solid var(--line-soft)"
+          >
+            <USkeleton class="w-9 h-9 rounded-full shrink-0" />
+            <div class="flex-1 space-y-1.5">
+              <USkeleton class="h-3 w-3/4 rounded" />
+              <USkeleton class="h-2.5 w-1/2 rounded" />
+            </div>
+            <USkeleton class="h-2.5 w-10 rounded shrink-0" />
+          </div>
+        </div>
+
         <!-- Empty state -->
         <div
-          v-if="!unifiedApps.length"
+          v-else-if="!unifiedApps.length"
           class="flex flex-col items-center justify-center flex-1 gap-3 py-12"
         >
           <UIcon name="i-heroicons-inbox" class="w-12 h-12" style="color: var(--ink-subtle)" />
@@ -590,14 +626,12 @@ const hrApp = computed(() =>
             >
               {{ hintLine(app) }}
             </p>
-            <div v-else class="pipeline-dots">
-              <span
-                v-for="(_, i) in pipelineSteps(app)"
-                :key="i"
-                class="pipeline-dot"
-                :class="`pipeline-dot--${dotState(app, i)}`"
-              />
-            </div>
+            <span
+              v-else
+              class="text-[10px] font-mono uppercase tracking-wide"
+              style="color: var(--ink-subtle)"
+              >{{ app.status.replace(/_/g, ' ') }}</span
+            >
           </div>
 
           <!-- Right: match score (HR) or time -->

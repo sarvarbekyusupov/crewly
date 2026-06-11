@@ -46,7 +46,7 @@ const {
       page: page.value,
       limit,
     }),
-  { watch: [search, workMode, minScore, sortBy, page] },
+  { watch: [search, workMode, minScore, sortBy, page], lazy: true },
 )
 
 const jobs = computed(() => result.value?.data ?? [])
@@ -457,12 +457,12 @@ watchDebounced(
 )
 
 const AVATAR_COLORS = [
-  { bg: '#dbeafe', fg: '#1d4ed8' },
-  { bg: '#dcfce7', fg: '#15803d' },
-  { bg: '#fce7f3', fg: '#9d174d' },
-  { bg: '#ede9fe', fg: '#6d28d9' },
-  { bg: '#ffedd5', fg: '#c2410c' },
-  { bg: '#fef9c3', fg: '#a16207' },
+  { bg: 'oklch(0.55 0.22 264)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 145)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 30)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.22 320)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.20 200)', fg: '#fff' },
+  { bg: 'oklch(0.55 0.18 60)', fg: '#fff' },
 ] as const
 
 function avatarColor(name: string) {
@@ -668,6 +668,30 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         />
       </div>
 
+      <div
+        v-else-if="!liveSearchResults.length && !liveSearchTotal"
+        class="flex flex-col items-center py-16 gap-3 text-center"
+      >
+        <UIcon
+          name="i-heroicons-magnifying-glass-circle"
+          class="w-10 h-10"
+          style="color: var(--ink-subtle)"
+        />
+        <p
+          style="
+            font-family: 'Fraunces', serif;
+            font-size: 18px;
+            color: var(--ink);
+            font-weight: 400;
+          "
+        >
+          Search HH vacancies
+        </p>
+        <p class="text-sm max-w-xs" style="color: var(--ink-muted)">
+          Type a job title or keyword above and press Enter to find matching vacancies from hh.uz.
+        </p>
+      </div>
+
       <div v-else class="space-y-2">
         <div
           v-for="job in liveSearchResults"
@@ -835,6 +859,9 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
           <p class="text-sm" style="color: var(--ink-muted)">
             Connect HH and add a resume to see matched vacancies
           </p>
+          <UButton to="/candidate/preferences" size="sm" variant="outline" icon="i-heroicons-link">
+            Connect HH account
+          </UButton>
         </div>
         <div v-else class="space-y-2">
           <div
@@ -1255,7 +1282,12 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
             </div>
 
             <!-- AI Match section -->
-            <div v-if="selectedJob.displayScore != null" class="match-section">
+            <div
+              v-if="
+                selectedJob.displayScore != null && selectedJob.application?.status !== 'failed'
+              "
+              class="match-section"
+            >
               <div class="match-header">
                 <span class="match-label">AI MATCH</span>
                 <span
@@ -1489,8 +1521,8 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
 }
 
 .panel-left {
-  width: 340px;
-  min-width: 280px;
+  width: 380px;
+  min-width: 300px;
   flex-shrink: 0;
   overflow-y: auto;
   border-right: 1px solid var(--line);

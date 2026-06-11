@@ -19,7 +19,6 @@ const FIELD_LABELS: Record<string, string> = {
   currentCompany: 'Current company',
   preferredWorkMode: 'Work mode',
   resumeFileUrl: 'CV / Resume',
-  telegramUsername: 'Telegram',
   yearsExperience: 'Years experience',
   skills: 'Skills',
 }
@@ -37,7 +36,6 @@ export function useProfileCompletion(profile: Ref<ProfileCompletionFields | null
       'currentCompany',
       'preferredWorkMode',
       'resumeFileUrl',
-      'telegramUsername',
       'yearsExperience',
     ]
     for (const key of scalar) {
@@ -50,7 +48,10 @@ export function useProfileCompletion(profile: Ref<ProfileCompletionFields | null
 
   const percent = computed(() => {
     const total = Object.keys(FIELD_LABELS).length
-    return Math.round(((total - missing.value.length) / total) * 100)
+    const raw = Math.round(((total - missing.value.length) / total) * 100)
+    // CV is required for AI matching — cap at 80% when missing
+    if (!profile.value?.resumeFileUrl) return Math.min(raw, 80)
+    return raw
   })
 
   return { percent, missing }

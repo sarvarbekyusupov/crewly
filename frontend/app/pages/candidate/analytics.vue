@@ -23,8 +23,10 @@ const {
   data: analytics,
   pending,
   error,
-} = await useAsyncData('candidate-analytics', () =>
-  api.get<AnalyticsData>('/api/v1/candidate-portal/analytics'),
+} = await useAsyncData(
+  'candidate-analytics',
+  () => api.get<AnalyticsData>('/api/v1/candidate-portal/analytics'),
+  { lazy: true },
 )
 
 const funnel = computed(() => {
@@ -86,7 +88,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
 </script>
 
 <template>
-  <div class="space-y-6 max-w-6xl mx-auto">
+  <div class="space-y-6">
     <!-- Header -->
     <div class="pb-4 border-b border-line">
       <p
@@ -201,63 +203,66 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
         </div>
       </div>
 
-      <!-- Application funnel -->
-      <div
-        class="rounded-xl p-5 space-y-3"
-        style="background: var(--surface); border: 1px solid var(--line-soft)"
-      >
-        <p
-          class="text-xs font-mono font-bold uppercase tracking-wider"
-          style="color: var(--ink-subtle)"
+      <!-- Funnel + Chart side by side -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Application funnel -->
+        <div
+          class="rounded-xl p-5 space-y-3"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          Application Funnel
-        </p>
-        <div class="space-y-2.5">
-          <div v-for="step in funnel" :key="step.label" class="space-y-1">
-            <div class="flex justify-between text-xs">
-              <span style="color: var(--ink-muted)">{{ step.label }}</span>
-              <span class="font-mono font-bold" style="color: var(--ink)">{{ step.value }}</span>
-            </div>
-            <div class="rounded-full h-2 overflow-hidden" style="background: var(--bg-deep)">
-              <div
-                class="h-full rounded-full transition-all duration-500"
-                :style="{
-                  width: `${Math.round((step.value / maxFunnelValue) * 100)}%`,
-                  background: step.color,
-                }"
-              />
+          <p
+            class="text-xs font-mono font-bold uppercase tracking-wider"
+            style="color: var(--ink-subtle)"
+          >
+            Application Funnel
+          </p>
+          <div class="space-y-2.5">
+            <div v-for="step in funnel" :key="step.label" class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span style="color: var(--ink-muted)">{{ step.label }}</span>
+                <span class="font-mono font-bold" style="color: var(--ink)">{{ step.value }}</span>
+              </div>
+              <div class="rounded-full h-2 overflow-hidden" style="background: var(--bg-deep)">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :style="{
+                    width: `${Math.round((step.value / maxFunnelValue) * 100)}%`,
+                    background: step.color,
+                  }"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Daily activity bar chart -->
-      <div
-        class="rounded-xl p-5 space-y-3"
-        style="background: var(--surface); border: 1px solid var(--line-soft)"
-      >
-        <p
-          class="text-xs font-mono font-bold uppercase tracking-wider"
-          style="color: var(--ink-subtle)"
+        <!-- Daily activity bar chart -->
+        <div
+          class="rounded-xl p-5 space-y-3"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          Applications (Last 30 Days)
-        </p>
-        <div class="flex items-end gap-0.5 h-20">
-          <template v-for="day in chartDays" :key="day.date">
-            <div
-              class="flex-1 rounded-t transition-all duration-300"
-              :title="`${day.label}: ${day.count}`"
-              :style="{
-                height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
-                background: day.count > 0 ? 'var(--accent)' : 'var(--bg-deep)',
-                opacity: day.count > 0 ? '1' : '0.3',
-              }"
-            />
-          </template>
-        </div>
-        <div class="flex justify-between text-xs" style="color: var(--ink-subtle)">
-          <span>{{ chartDays[0]?.label }}</span>
-          <span>{{ chartDays[chartDays.length - 1]?.label }}</span>
+          <p
+            class="text-xs font-mono font-bold uppercase tracking-wider"
+            style="color: var(--ink-subtle)"
+          >
+            Applications (Last 30 Days)
+          </p>
+          <div class="flex items-end gap-0.5 h-20">
+            <template v-for="day in chartDays" :key="day.date">
+              <div
+                class="flex-1 rounded-t transition-all duration-300"
+                :title="`${day.label}: ${day.count}`"
+                :style="{
+                  height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
+                  background: day.count > 0 ? 'var(--accent)' : 'var(--bg-deep)',
+                  opacity: day.count > 0 ? '1' : '0.3',
+                }"
+              />
+            </template>
+          </div>
+          <div class="flex justify-between text-xs" style="color: var(--ink-subtle)">
+            <span>{{ chartDays[0]?.label }}</span>
+            <span>{{ chartDays[chartDays.length - 1]?.label }}</span>
+          </div>
         </div>
       </div>
 

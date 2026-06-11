@@ -117,14 +117,75 @@ useHead({
     },
   ],
 })
+
+const heroRef = ref<HTMLElement | null>(null)
+const showFloatingCta = ref(false)
+let heroObs: IntersectionObserver | null = null
+
+onMounted(() => {
+  heroObs = new IntersectionObserver(
+    ([entry]) => {
+      showFloatingCta.value = !entry!.isIntersecting
+    },
+    { threshold: 0.1 },
+  )
+  if (heroRef.value) heroObs.observe(heroRef.value)
+})
+
+onUnmounted(() => heroObs?.disconnect())
 </script>
 
 <template>
   <div>
-    <LandingHero audience="employer" />
+    <div ref="heroRef">
+      <LandingHero audience="employer" />
+    </div>
     <LandingHowItWorks audience="employer" />
     <LandingTestimonials />
     <LandingFinalCta audience="employer" />
     <LandingFaq audience="employer" />
+
+    <!-- Floating CTA — visible after hero scrolls out of view -->
+    <Transition name="float-cta">
+      <NuxtLink v-if="showFloatingCta" to="/employer/login" class="float-cta-btn">
+        Start hiring →
+      </NuxtLink>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.float-cta-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+  padding: 12px 22px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.float-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+}
+.float-cta-enter-active,
+.float-cta-leave-active {
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.float-cta-enter-from,
+.float-cta-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+</style>

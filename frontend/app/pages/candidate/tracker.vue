@@ -133,10 +133,13 @@ const {
   data: applications,
   pending,
   refresh,
-} = await useAsyncData('seeker-applications', () =>
-  api
-    .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
-    .catch(() => [] as SeekerApplication[]),
+} = await useAsyncData(
+  'seeker-applications',
+  () =>
+    api
+      .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
+      .catch(() => [] as SeekerApplication[]),
+  { lazy: true },
 )
 
 const viewMode = ref<'list' | 'kanban'>('kanban')
@@ -489,12 +492,11 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="!applications?.length" class="flex flex-col items-center py-16 gap-3">
-        <UIcon
-          name="i-heroicons-paper-airplane"
-          class="w-12 h-12"
-          style="color: var(--ink-subtle)"
-        />
+      <div v-else-if="!applications?.length" class="flex flex-col items-center py-16 gap-4">
+        <!-- Pulsing AI watcher indicator -->
+        <div class="tracker-watch-ring">
+          <span class="tracker-watch-dot" />
+        </div>
         <p
           style="
             font-family: 'Fraunces', serif;
@@ -505,7 +507,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
         >
           {{ t('candidate.tracker.empty') }}
         </p>
-        <p class="text-sm" style="color: var(--ink-muted)">
+        <p class="text-sm text-center max-w-sm" style="color: var(--ink-muted)">
           {{ t('candidate.tracker.emptyDesc') }}
         </p>
         <UButton
@@ -546,6 +548,18 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               class="rounded-lg min-h-20 p-1.5 space-y-1.5"
               style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
             >
+              <!-- Empty column indicator -->
+              <div
+                v-if="!columnApps(col.status).length"
+                class="flex flex-col items-center justify-center gap-1.5 py-4"
+              >
+                <span class="col-watch-dot" />
+                <span
+                  class="text-[10px] font-mono"
+                  style="color: var(--ink-subtle); letter-spacing: 0.06em"
+                  >watching</span
+                >
+              </div>
               <div
                 v-for="app in columnApps(col.status)"
                 :key="app.id"
@@ -652,14 +666,6 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                   </p>
                 </div>
               </div>
-
-              <p
-                v-if="!columnApps(col.status).length"
-                class="text-xs text-center py-4"
-                style="color: var(--ink-subtle)"
-              >
-                —
-              </p>
             </div>
           </div>
         </div>
@@ -763,3 +769,62 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
     <!-- end platform tab wrapper -->
   </div>
 </template>
+
+<style scoped>
+.tracker-watch-ring {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tracker-watch-ring::before,
+.tracker-watch-ring::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--positive);
+  animation: watch-ripple 2.4s ease-out infinite;
+}
+.tracker-watch-ring::after {
+  animation-delay: 1.2s;
+}
+.tracker-watch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--positive);
+  animation: watch-pulse 2s ease-in-out infinite;
+}
+@keyframes watch-ripple {
+  0% {
+    width: 10px;
+    height: 10px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 48px;
+    height: 48px;
+    opacity: 0;
+  }
+}
+@keyframes watch-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+.col-watch-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-subtle);
+  animation: watch-pulse 2s ease-in-out infinite;
+}
+</style>

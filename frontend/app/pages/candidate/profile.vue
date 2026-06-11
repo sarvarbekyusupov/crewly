@@ -531,10 +531,13 @@ async function uploadCv(event: Event) {
   const body = new FormData()
   body.append('file', file)
   try {
-    const res = await api.post<{ url: string; uploaded: boolean; parsing?: boolean }>(
-      '/api/v1/candidate-portal/cv',
-      body,
-    )
+    const res = await api.post<{
+      url: string
+      uploaded: boolean
+      parsing?: boolean
+      error?: string
+    }>('/api/v1/candidate-portal/cv', body)
+    if ((res as any).error) throw new Error((res as any).error)
     toast.add({ title: t('candidate.profile.cvUploaded'), color: 'success' })
     if (parsingTimeoutId) {
       clearTimeout(parsingTimeoutId)
@@ -684,7 +687,7 @@ const linksFilled = computed(() => [linkedinUrl.value, githubUrl.value].filter(B
 </script>
 
 <template>
-  <div class="max-w-2xl space-y-6 pb-24" style="flex: 1">
+  <div class="max-w-3xl space-y-6 pb-24" style="flex: 1">
     <!-- Loading skeleton -->
     <template v-if="profilePending">
       <div class="pb-4" style="border-bottom: 1px solid var(--line)">
@@ -2121,9 +2124,13 @@ const linksFilled = computed(() => [linkedinUrl.value, githubUrl.value].filter(B
           </div>
         </details>
 
+        <!-- spacer so last fields aren't hidden behind sticky bar -->
+        <div class="h-20" />
+
         <!-- Sticky Bottom Save Changes Action Bar -->
         <div
-          class="sticky bottom-4 z-10 p-4 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-line shadow-lg flex justify-end"
+          class="sticky bottom-4 z-10 p-4 rounded-xl backdrop-blur border border-line shadow-lg flex justify-end"
+          style="background: color-mix(in srgb, var(--bg) 90%, transparent)"
         >
           <UButton
             :loading="saving"
