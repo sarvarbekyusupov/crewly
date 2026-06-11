@@ -479,8 +479,17 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
         <span style="color: var(--accent)">View Applications →</span>
       </NuxtLink>
 
+      <!-- Loading skeleton -->
+      <div v-if="pending" class="flex gap-3 overflow-hidden pt-1">
+        <div v-for="n in 4" :key="n" class="w-64 shrink-0 flex flex-col gap-2">
+          <USkeleton class="h-5 w-24 rounded" />
+          <USkeleton class="h-24 w-full rounded-xl" />
+          <USkeleton class="h-24 w-full rounded-xl opacity-60" />
+        </div>
+      </div>
+
       <!-- Empty state -->
-      <div v-if="!pending && !applications?.length" class="flex flex-col items-center py-16 gap-3">
+      <div v-else-if="!applications?.length" class="flex flex-col items-center py-16 gap-3">
         <UIcon
           name="i-heroicons-paper-airplane"
           class="w-12 h-12"

@@ -562,7 +562,7 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
       </button>
       <button
         type="button"
-        class="px-4 py-1.5 text-sm transition-colors"
+        class="px-4 py-1.5 text-sm transition-colors flex items-center gap-1.5"
         :style="
           activeMainTab === 'live'
             ? 'background: var(--ink); color: var(--bg);'
@@ -570,11 +570,20 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         "
         @click="activeMainTab = 'live'"
       >
+        <span
+          class="text-[9px] font-bold px-1 py-0.5 rounded"
+          :style="
+            activeMainTab === 'live'
+              ? 'background: rgba(255,255,255,0.2)'
+              : 'background: var(--accent-soft); color: var(--accent)'
+          "
+          >HH</span
+        >
         {{ t('candidate.preferences.hhLiveSearch') }}
       </button>
       <button
         type="button"
-        class="px-4 py-1.5 text-sm transition-colors"
+        class="px-4 py-1.5 text-sm transition-colors flex items-center gap-1.5"
         :style="
           activeMainTab === 'match'
             ? 'background: var(--ink); color: var(--bg);'
@@ -582,6 +591,15 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         "
         @click="activeMainTab = 'match'"
       >
+        <span
+          class="text-[9px] font-bold px-1 py-0.5 rounded"
+          :style="
+            activeMainTab === 'match'
+              ? 'background: rgba(255,255,255,0.2)'
+              : 'background: var(--accent-soft); color: var(--accent)'
+          "
+          >HH</span
+        >
         {{ t('candidate.preferences.hhMatchedVacancies') }}
       </button>
     </div>

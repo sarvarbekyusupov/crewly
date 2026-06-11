@@ -155,6 +155,17 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
         </NuxtLink>
       </nav>
 
+      <!-- AI Agent status -->
+      <div class="px-4 py-2 flex items-center gap-2" style="border-top: 1px solid var(--line)">
+        <span
+          class="w-1.5 h-1.5 rounded-full shrink-0 transition-colors"
+          :style="scoringActive ? 'background: var(--positive)' : 'background: var(--ink-subtle)'"
+        />
+        <span class="text-xs font-mono" style="color: var(--ink-subtle); letter-spacing: 0.04em">{{
+          scoringActive ? 'Agent: scanning' : 'Agent: idle'
+        }}</span>
+      </div>
+
       <!-- User section -->
       <div class="px-4 py-3 flex items-center gap-3" style="border-top: 1px solid var(--line)">
         <div
