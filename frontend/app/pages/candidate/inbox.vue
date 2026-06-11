@@ -427,6 +427,30 @@ function dotState(app: UnifiedApp, i: number): string {
   return 'inactive'
 }
 
+function hintLine(app: UnifiedApp): string | null {
+  const score = app.matchScore ? Math.round(Number(app.matchScore)) : null
+  switch (app.status) {
+    case 'offer':
+      return 'Offer received — review now'
+    case 'interview':
+      return 'Interview stage'
+    case 'shortlisted':
+      return "You're on the shortlist"
+    case 'responded':
+      return 'HR has replied'
+    case 'screening':
+      return score != null && score >= 80
+        ? `Strong match · recruiter reviewing`
+        : 'Recruiter reviewing'
+    case 'outreach_sent':
+      return 'Outreach sent — watching for response'
+    case 'viewed':
+      return 'Application viewed by employer'
+    default:
+      return null
+  }
+}
+
 // HR app shorthand for detail panel
 const hrApp = computed(() =>
   selectedApp.value?.type === 'hr' ? (selectedApp.value.raw as HrApplication) : null,
@@ -552,8 +576,21 @@ const hrApp = computed(() =>
               <span v-if="app.isNew" class="unread-dot shrink-0" />
             </div>
             <p class="app-row-company">{{ app.company }}</p>
-            <!-- Pipeline progress dots -->
-            <div class="pipeline-dots">
+            <!-- AI hint or pipeline dots -->
+            <p
+              v-if="hintLine(app)"
+              class="text-[10.5px] mt-0.5 truncate"
+              :style="
+                app.status === 'offer'
+                  ? 'color: var(--positive); font-weight: 600'
+                  : app.status === 'interview' || app.status === 'shortlisted'
+                    ? 'color: var(--warning)'
+                    : 'color: var(--ink-subtle)'
+              "
+            >
+              {{ hintLine(app) }}
+            </p>
+            <div v-else class="pipeline-dots">
               <span
                 v-for="(_, i) in pipelineSteps(app)"
                 :key="i"
