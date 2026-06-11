@@ -66,9 +66,11 @@ COPY backend/package.json         ./backend/
 RUN printf 'packages:\n  - "packages/*"\n  - "backend"\noverrides:\n  vue-router: ^5.0.0\nallowBuilds:\n  "@nestjs/core": true\n  "@prisma/client": true\n  "@prisma/engines": true\n  "@scarf/scarf": true\n  argon2: true\n  msgpackr-extract: true\n  prisma: true\n  unrs-resolver: true\n' > pnpm-workspace.yaml
 
 COPY --from=builder /app/backend/dist ./backend/dist
+COPY backend/start.sh ./backend/start.sh
 
 EXPOSE 3000
 WORKDIR /app/backend
+RUN chmod +x ./start.sh
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
  && chown -R appuser:appgroup /app
@@ -77,4 +79,4 @@ USER appuser
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node prisma/dist/seed.js && node dist/backend/src/main"]
+CMD ["./start.sh"]

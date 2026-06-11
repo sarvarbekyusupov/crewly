@@ -88,4 +88,6 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env.production --env-file .env.images up -d --remove-orphans
             sleep 20
             curl -sf http://localhost/health && echo "Deploy OK" || { docker compose -f docker-compose.prod.yml logs --tail=40; exit 1; }
+            docker compose -f docker-compose.prod.yml exec -T backend ./node_modules/.bin/prisma migrate deploy || echo "WARNING: migrate deploy failed, check manually"
+            docker compose -f docker-compose.prod.yml exec -T backend node prisma/dist/seed.js || echo "WARNING: seed failed, check manually"
             docker image prune -f
