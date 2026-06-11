@@ -155,7 +155,6 @@ export default defineNuxtConfig({
       '/api/v1/**': {
         proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/**`,
       },
-      '/': { redirect: { to: '/candidate', statusCode: 302 } },
       '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
       '/candidate/job-discovery': { redirect: { to: '/candidate/jobs', statusCode: 301 } },
       // Private app routes — no SSR needed
