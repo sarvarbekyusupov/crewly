@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -139,7 +140,7 @@ export class CandidatePortalController {
     @CurrentCandidate() candidate: { id: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
-    if (!file) return { error: 'No file provided' };
+    if (!file) throw new BadRequestException('No file provided');
     return this.portalService.uploadCv(
       candidate.id,
       file.buffer,

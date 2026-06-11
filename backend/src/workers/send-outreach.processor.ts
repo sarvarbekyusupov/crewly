@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
-import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
-import { Job } from 'bull';
+import { Process, Processor, OnQueueFailed, InjectQueue } from '@nestjs/bull';
+import * as Sentry from '@sentry/nestjs';
+import { Job, Queue } from 'bull';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { OutreachAgent } from '../modules/agents/outreach.agent';
@@ -27,6 +28,7 @@ export class SendOutreachProcessor {
     private readonly eskiz: EskizService,
     private readonly hhNegotiations: HhNegotiationsService,
     private readonly hhClient: HhClientService,
+    @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
 
   @Process('send')
@@ -213,6 +215,55 @@ export class SendOutreachProcessor {
     });
 
     this.logger.log({ applicationId, channel }, 'Outreach sent');
+
+    if (channel === 'telegram' && app.candidate.phone) {
+      await this.outreachQueue.add(
+        'sms-fallback',
+        { applicationId },
+        { delay: 24 * 60 * 60 * 1000 }, // 24 hours delay
+      );
+    }
+  }
+
+  @Process('sms-fallback')
+  async handleFallback(job: Job<SendOutreachPayload>) {
+    const { applicationId } = job.data;
+    const app = await this.db.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        candidate: true,
+        job: true,
+      },
+    });
+
+    if (!app || app.status !== 'outreach_sent') {
+      // Candidate already responded or app status changed, skip fallback
+      return;
+    }
+
+    const phone = app.candidate.phone;
+    if (!phone) return;
+
+    // Detect language preference or fall back to phone prefix
+    const isUzbek = phone.startsWith('998') || phone.startsWith('+998');
+    const smsMessage = isUzbek
+      ? `Salom! Sizga "${app.job.title}" vakansiyasi taklif qilingan edi. Suhbatni boshlash: t.me/crewly_bot?start=job_${app.job.id}`
+      : `Привет! Вам была предложена вакансия "${app.job.title}". Начать собеседование: t.me/crewly_bot?start=job_${app.job.id}`;
+
+    this.logger.log(
+      `Telegram outreach unread after 24h — sending Eskiz SMS fallback to ${phone}`,
+    );
+    await this.eskiz.sendSms(phone, smsMessage);
+
+    // Save fallback outreach attempt
+    await this.db.outreachAttempt.create({
+      data: {
+        applicationId,
+        channel: 'sms',
+        attemptNumber: 2,
+        status: 'sent',
+      },
+    });
   }
 
   @OnQueueFailed()
@@ -221,6 +272,9 @@ export class SendOutreachProcessor {
       { applicationId: job.data.applicationId, error: err.message },
       'send-outreach failed',
     );
+    Sentry.captureException(err, {
+      extra: { applicationId: job.data.applicationId, jobId: job.id },
+    });
     if (err instanceof NonRetryableError) {
       job.discard().catch(() => {});
       return;

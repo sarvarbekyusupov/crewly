@@ -12,6 +12,7 @@ export const QUEUES = {
   SCORE_SEEKER_JOBS: 'score-seeker-jobs',
   AUTO_APPLY: 'auto-apply',
   SYNC_HH_STATUS: 'sync-hh-status',
+  ENRICH_JOB: 'enrich-job',
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

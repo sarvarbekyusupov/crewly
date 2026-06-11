@@ -52,10 +52,10 @@ const talkingPoints = [
 
 <template>
   <UModal
-    :model-value="open"
+    :open="open"
     title="AI Salary Coach & Negotiator"
     class="w-full max-w-lg"
-    @update:model-value="emit('update:open', $event)"
+    @update:open="emit('update:open', $event)"
   >
     <template #content>
       <div class="p-6 space-y-6">

@@ -122,30 +122,52 @@ async function saveProfile() {
       </div>
 
       <!-- Steps Stepper header -->
-      <div class="flex items-center justify-between border-b border-line-soft pb-4">
+      <div class="flex items-center border-b border-line-soft pb-4 relative">
+        <!-- Connecting track behind circles -->
+        <div
+          class="absolute h-px"
+          style="
+            top: 16px;
+            left: calc(16.67% + 12px);
+            right: calc(16.67% + 12px);
+            background: var(--line);
+            z-index: 0;
+          "
+        />
+        <!-- Progress fill -->
+        <div
+          class="absolute h-px transition-all duration-500"
+          style="top: 16px; left: calc(16.67% + 12px); background: var(--accent); z-index: 0"
+          :style="{
+            width:
+              currentStep === 0 ? '0%' : currentStep === 1 ? 'calc(33% - 0px)' : 'calc(66% - 0px)',
+          }"
+        />
         <div
           v-for="(step, idx) in steps"
           :key="step.title"
-          class="flex flex-col items-center flex-1 relative"
+          class="flex flex-col items-center flex-1 relative z-10"
         >
           <div
-            class="w-8 h-8 rounded-full border flex items-center justify-center transition-colors"
+            class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300"
             :style="
               currentStep === idx
-                ? 'background: var(--accent); border-color: var(--accent); color: white'
+                ? 'background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)'
                 : currentStep > idx
-                  ? 'background: var(--positive-soft); border-color: var(--positive); color: var(--positive)'
+                  ? 'background: color-mix(in srgb, var(--positive) 15%, transparent); border-color: var(--positive); color: var(--positive)'
                   : 'background: var(--bg-deep); border-color: var(--line); color: var(--ink-subtle)'
             "
           >
             <UIcon :name="step.icon" class="w-4 h-4" />
           </div>
           <span
-            class="text-[10px] font-mono mt-1 uppercase"
+            class="text-[10px] font-mono mt-1.5 uppercase tracking-wide"
             :style="
               currentStep === idx
-                ? 'color: var(--accent); font-weight: 600'
-                : 'color: var(--ink-subtle)'
+                ? 'color: var(--accent); font-weight: 700'
+                : currentStep > idx
+                  ? 'color: var(--positive); font-weight: 600'
+                  : 'color: var(--ink-subtle)'
             "
           >
             {{ step.title }}
@@ -228,39 +250,53 @@ async function saveProfile() {
             </UFormField>
           </div>
           <UFormField label="Preferred Work Mode" name="preferredWorkMode">
-            <USelect
-              v-model="form.preferredWorkMode"
-              :items="[
-                { label: 'Remote', value: 'remote' },
-                { label: 'Hybrid', value: 'hybrid' },
-                { label: 'On-site', value: 'office' },
-              ]"
-              class="w-full"
-            />
+            <div class="flex gap-2 flex-wrap">
+              <button
+                v-for="mode in [
+                  { label: 'Remote', value: 'remote' },
+                  { label: 'Hybrid', value: 'hybrid' },
+                  { label: 'On-site', value: 'office' },
+                ]"
+                :key="mode.value"
+                type="button"
+                class="px-3 py-1.5 text-sm rounded-lg border transition-colors"
+                :style="
+                  form.preferredWorkMode === mode.value
+                    ? 'background: var(--ink); color: var(--bg); border-color: var(--ink);'
+                    : 'background: var(--surface); color: var(--ink-muted); border-color: var(--line);'
+                "
+                @click="form.preferredWorkMode = mode.value"
+              >
+                {{ mode.label }}
+              </button>
+            </div>
           </UFormField>
-          <UFormField
-            label="Core Skills (comma separated)"
-            name="skills"
-            description="These keywords are used to align matches."
-          >
+          <UFormField label="Core Skills" name="skills">
             <UTextarea
               v-model="form.skillsText"
-              placeholder="TypeScript, Nuxt.js, Node.js, PostgreSQL"
+              placeholder="TypeScript, Vue.js, Node.js, PostgreSQL…"
               class="w-full"
               :rows="2"
             />
+            <template #description>
+              <span style="color: var(--ink-subtle); font-size: 11px">
+                Comma-separated — AI uses these to score job matches
+              </span>
+            </template>
           </UFormField>
         </div>
 
         <div class="pt-4 border-t border-line-soft flex justify-between gap-3">
-          <UButton variant="outline" size="sm" @click="currentStep = 0">Back</UButton>
+          <UButton variant="ghost" size="sm" @click="currentStep = 0">← Back</UButton>
           <UButton
-            color="success"
             size="sm"
             :disabled="!form.fullName || !form.skillsText"
+            :style="
+              form.fullName && form.skillsText ? 'background: var(--ink); color: var(--bg);' : ''
+            "
             @click="saveProfile"
           >
-            Complete Setup
+            Complete Setup →
           </UButton>
         </div>
       </div>

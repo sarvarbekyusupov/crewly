@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
+import * as Sentry from '@sentry/nestjs';
 import { Job, Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -154,6 +155,9 @@ export class ParseCandidateProcessor {
       { candidateId: job.data.candidateId, error: err.message },
       'parse-candidate failed',
     );
+    Sentry.captureException(err, {
+      extra: { candidateId: job.data.candidateId, jobId: job.id },
+    });
     this.emitter.emit('candidate.event', {
       candidateId: job.data.candidateId,
       type: 'resume_parse_progress',

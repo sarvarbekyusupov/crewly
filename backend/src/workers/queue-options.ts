@@ -11,3 +11,11 @@ export const INGEST_JOB_OPTIONS: Partial<JobOptions> = {
   attempts: 3,
   backoff: { type: 'exponential', delay: 30_000 },
 };
+
+// hh.ru vacancy detail enrichment: 3 attempts, deduplicated by jobId
+export const ENRICH_JOB_OPTIONS: Partial<JobOptions> = {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 10_000 },
+  removeOnComplete: true,
+  removeOnFail: false,
+};

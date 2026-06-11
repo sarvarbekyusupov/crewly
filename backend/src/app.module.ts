@@ -5,6 +5,8 @@ import { UserThrottlerGuard } from './common/guards/user-throttler.guard';
 import { BullModule } from '@nestjs/bull';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
+import { I18nModule, AcceptLanguageResolver } from 'nestjs-i18n';
+import * as path from 'path';
 import { AppConfigModule } from './config/config.module';
 import { CommonModule } from './common/common.module';
 import { JwtCoreModule } from './common/jwt-core.module';
@@ -64,6 +66,15 @@ import { QUEUES } from './workers/queue-names';
     GoogleCalendarModule,
     TelegramModule,
     HhModule,
+
+    I18nModule.forRoot({
+      fallbackLanguage: 'ru',
+      loaderOptions: {
+        path: path.join(__dirname, '../../i18n/'),
+        watch: true,
+      },
+      resolvers: [AcceptLanguageResolver],
+    }),
 
     BullModule.forRootAsync({
       inject: [ConfigService],

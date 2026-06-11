@@ -62,8 +62,17 @@ export class CandidatePortalService {
     });
     if (!candidate || candidate.deletedAt) throw new NotFoundException();
 
-    // We return rawResumeText and parsedResume to track parsing status on frontend
-    const { ...safe } = candidate as any;
+    const safe = { ...candidate } as any;
+    if (candidate.resumeFileUrl) {
+      const key = this.s3.extractKey(candidate.resumeFileUrl as string);
+      if (key) {
+        try {
+          safe.resumeFileUrl = await this.s3.getSignedUrl(key, 3600);
+        } catch {
+          // keep raw public URL if signing fails
+        }
+      }
+    }
     return safe;
   }
 

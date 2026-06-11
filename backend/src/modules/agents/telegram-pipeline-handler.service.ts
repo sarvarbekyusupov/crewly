@@ -20,17 +20,20 @@ export class TelegramPipelineHandler implements OnModuleInit {
     this.telegram.setCallbackHandler(async (chatId, data, messageId) => {
       this.logger.log(`Telegram callback: ${data} from ${chatId}`);
 
-      const pipeIdx = data.indexOf('|');
-      if (pipeIdx === -1) {
+      let parsed: any;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
         this.logger.warn(
-          `Malformed Telegram callback data (missing delimiter): "${data}"`,
+          `Failed to parse Telegram callback data as JSON: "${data}"`,
         );
         return;
       }
-      const action = data.slice(0, pipeIdx);
-      const applicationId = data.slice(pipeIdx + 1);
 
-      if (action === 'approve_screening') {
+      const action = parsed.a;
+      const applicationId = parsed.i;
+
+      if (action === 'app_scr') {
         await this.outreachQueue.add(
           'send',
           { applicationId },
@@ -41,7 +44,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
           messageId,
           '✅ Одобрено: Кандидат отправлен на AI-интервью.',
         );
-      } else if (action === 'reject_app') {
+      } else if (action === 'rej_app') {
         await this.db.application.update({
           where: { id: applicationId },
           data: {

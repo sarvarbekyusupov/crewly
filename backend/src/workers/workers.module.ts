@@ -23,6 +23,7 @@ import { GenerateDossierProcessor } from './generate-dossier.processor';
 import { CleanupProcessor } from './cleanup.processor';
 import { IngestCandidatesProcessor } from './ingest-candidates.processor';
 import { SyncHhStatusProcessor } from './sync-hh-status.processor';
+import { EnrichJobProcessor } from './enrich-job.processor';
 
 const allQueues = Object.values(QUEUES).map((name) =>
   BullModule.registerQueue({ name }),
@@ -55,6 +56,7 @@ const allQueues = Object.values(QUEUES).map((name) =>
     GenerateDossierProcessor,
     CleanupProcessor,
     IngestCandidatesProcessor,
+    EnrichJobProcessor,
   ],
 })
 export class WorkersModule {}

@@ -23,17 +23,19 @@ const {
   data: analytics,
   pending,
   error,
-} = await useAsyncData('candidate-analytics', () =>
-  api.get<AnalyticsData>('/api/v1/candidate-portal/analytics'),
+} = await useAsyncData(
+  'candidate-analytics',
+  () => api.get<AnalyticsData>('/api/v1/candidate-portal/analytics'),
+  { lazy: true },
 )
 
 const funnel = computed(() => {
   if (!analytics.value) return []
   return [
-    { label: 'Total Applied', value: analytics.value.total, color: '#6366f1' },
-    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: '#3b82f6' },
-    { label: 'Interviewed', value: analytics.value.interviewed, color: '#f59e0b' },
-    { label: 'Offers', value: analytics.value.offers, color: '#22c55e' },
+    { label: 'Total Applied', value: analytics.value.total, color: 'var(--accent)' },
+    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: 'var(--ink-muted)' },
+    { label: 'Interviewed', value: analytics.value.interviewed, color: 'var(--warning)' },
+    { label: 'Offers', value: analytics.value.offers, color: 'var(--positive)' },
   ]
 })
 
@@ -53,16 +55,16 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColor: Record<string, string> = {
-  applied: '#3b82f6',
-  interview: '#f59e0b',
-  phone_interview: '#f59e0b',
-  offer_made: '#22c55e',
-  hired: '#16a34a',
-  rejected: '#ef4444',
-  skipped: '#9ca3af',
-  failed: '#dc2626',
-  queued: '#6366f1',
-  applying: '#8b5cf6',
+  applied: 'var(--accent)',
+  interview: 'var(--warning)',
+  phone_interview: 'var(--warning)',
+  offer_made: 'var(--positive)',
+  hired: 'var(--positive)',
+  rejected: 'var(--negative)',
+  skipped: 'var(--ink-subtle)',
+  failed: 'var(--negative)',
+  queued: 'var(--accent)',
+  applying: 'var(--accent)',
 }
 
 // Build daily activity chart data (last 30 days)
@@ -86,7 +88,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
 </script>
 
 <template>
-  <div class="space-y-6 max-w-4xl mx-auto">
+  <div class="space-y-6">
     <!-- Header -->
     <div class="pb-4 border-b border-line">
       <p
@@ -99,7 +101,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           margin-bottom: 6px;
         "
       >
-        Dashboard
+        Analytics
       </p>
       <h1
         style="
@@ -118,12 +120,46 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
       </p>
     </div>
 
-    <div v-if="pending" class="flex justify-center py-20">
-      <UIcon
-        name="i-heroicons-arrow-path"
-        class="w-8 h-8 animate-spin"
-        style="color: var(--ink-subtle)"
-      />
+    <div v-if="pending" class="space-y-6">
+      <!-- Stat cards skeleton -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div
+          v-for="n in 4"
+          :key="n"
+          class="rounded-xl p-4 flex flex-col items-center gap-2"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <USkeleton class="h-9 w-16 rounded" />
+          <USkeleton class="h-3 w-20 rounded" />
+        </div>
+      </div>
+      <!-- Funnel skeleton -->
+      <div
+        class="rounded-xl p-5 space-y-3"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <USkeleton class="h-4 w-32 rounded mb-4" />
+        <div v-for="n in 5" :key="n" class="flex items-center gap-3">
+          <USkeleton class="h-3 w-24 rounded shrink-0" />
+          <USkeleton class="h-3 rounded flex-1" :style="`width: ${80 - n * 12}%`" />
+          <USkeleton class="h-3 w-8 rounded shrink-0" />
+        </div>
+      </div>
+      <!-- Chart skeleton -->
+      <div
+        class="rounded-xl p-5"
+        style="background: var(--surface); border: 1px solid var(--line-soft)"
+      >
+        <USkeleton class="h-4 w-28 rounded mb-4" />
+        <div class="flex items-end gap-1 h-24">
+          <USkeleton
+            v-for="n in 20"
+            :key="n"
+            class="flex-1 rounded-t"
+            :style="`height: ${20 + Math.abs(Math.sin(n) * 60)}%`"
+          />
+        </div>
+      </div>
     </div>
 
     <template v-else-if="analytics">
@@ -142,7 +178,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #f59e0b">
+          <p class="text-3xl font-mono font-bold" style="color: var(--warning)">
             {{ analytics.interviewed }}
           </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Interviews</p>
@@ -151,77 +187,82 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #22c55e">{{ analytics.offers }}</p>
+          <p class="text-3xl font-mono font-bold" style="color: var(--positive)">
+            {{ analytics.offers }}
+          </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Offers</p>
         </div>
         <div
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #6366f1">
+          <p class="text-3xl font-mono font-bold" style="color: var(--accent)">
             {{ analytics.responseRate }}%
           </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Response Rate</p>
         </div>
       </div>
 
-      <!-- Application funnel -->
-      <div
-        class="rounded-xl p-5 space-y-3"
-        style="background: var(--surface); border: 1px solid var(--line-soft)"
-      >
-        <p
-          class="text-xs font-mono font-bold uppercase tracking-wider"
-          style="color: var(--ink-subtle)"
+      <!-- Funnel + Chart side by side -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Application funnel -->
+        <div
+          class="rounded-xl p-5 space-y-3"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          Application Funnel
-        </p>
-        <div class="space-y-2.5">
-          <div v-for="step in funnel" :key="step.label" class="space-y-1">
-            <div class="flex justify-between text-xs">
-              <span style="color: var(--ink-muted)">{{ step.label }}</span>
-              <span class="font-mono font-bold" style="color: var(--ink)">{{ step.value }}</span>
-            </div>
-            <div class="rounded-full h-2 overflow-hidden" style="background: var(--bg-deep)">
-              <div
-                class="h-full rounded-full transition-all duration-500"
-                :style="{
-                  width: `${Math.round((step.value / maxFunnelValue) * 100)}%`,
-                  background: step.color,
-                }"
-              />
+          <p
+            class="text-xs font-mono font-bold uppercase tracking-wider"
+            style="color: var(--ink-subtle)"
+          >
+            Application Funnel
+          </p>
+          <div class="space-y-2.5">
+            <div v-for="step in funnel" :key="step.label" class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span style="color: var(--ink-muted)">{{ step.label }}</span>
+                <span class="font-mono font-bold" style="color: var(--ink)">{{ step.value }}</span>
+              </div>
+              <div class="rounded-full h-2 overflow-hidden" style="background: var(--bg-deep)">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  :style="{
+                    width: `${Math.round((step.value / maxFunnelValue) * 100)}%`,
+                    background: step.color,
+                  }"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Daily activity bar chart -->
-      <div
-        class="rounded-xl p-5 space-y-3"
-        style="background: var(--surface); border: 1px solid var(--line-soft)"
-      >
-        <p
-          class="text-xs font-mono font-bold uppercase tracking-wider"
-          style="color: var(--ink-subtle)"
+        <!-- Daily activity bar chart -->
+        <div
+          class="rounded-xl p-5 space-y-3"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          Applications (Last 30 Days)
-        </p>
-        <div class="flex items-end gap-0.5 h-20">
-          <template v-for="day in chartDays" :key="day.date">
-            <div
-              class="flex-1 rounded-t transition-all duration-300"
-              :title="`${day.label}: ${day.count}`"
-              :style="{
-                height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
-                background: day.count > 0 ? '#6366f1' : 'var(--bg-deep)',
-                opacity: day.count > 0 ? '1' : '0.3',
-              }"
-            />
-          </template>
-        </div>
-        <div class="flex justify-between text-xs" style="color: var(--ink-subtle)">
-          <span>{{ chartDays[0]?.label }}</span>
-          <span>{{ chartDays[chartDays.length - 1]?.label }}</span>
+          <p
+            class="text-xs font-mono font-bold uppercase tracking-wider"
+            style="color: var(--ink-subtle)"
+          >
+            Applications (Last 30 Days)
+          </p>
+          <div class="flex items-end gap-0.5 h-20">
+            <template v-for="day in chartDays" :key="day.date">
+              <div
+                class="flex-1 rounded-t transition-all duration-300"
+                :title="`${day.label}: ${day.count}`"
+                :style="{
+                  height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
+                  background: day.count > 0 ? 'var(--accent)' : 'var(--bg-deep)',
+                  opacity: day.count > 0 ? '1' : '0.3',
+                }"
+              />
+            </template>
+          </div>
+          <div class="flex justify-between text-xs" style="color: var(--ink-subtle)">
+            <span>{{ chartDays[0]?.label }}</span>
+            <span>{{ chartDays[chartDays.length - 1]?.label }}</span>
+          </div>
         </div>
       </div>
 

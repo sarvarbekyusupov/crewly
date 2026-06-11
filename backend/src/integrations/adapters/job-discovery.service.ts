@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JobSourceAdapter, JobSearchParams } from './job-source.adapter';
+import { QUEUES } from '../../workers/queue-names';
+import { ENRICH_JOB_OPTIONS } from '../../workers/queue-options';
 
 @Injectable()
 export class JobDiscoveryService {
@@ -10,6 +14,7 @@ export class JobDiscoveryService {
   constructor(
     private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
+    @InjectQueue(QUEUES.ENRICH_JOB) private readonly enrichQueue: Queue,
   ) {}
 
   async discover(
@@ -62,7 +67,7 @@ export class JobDiscoveryService {
             });
             updated++;
           } else {
-            await this.db.discoveredJob.create({
+            const created_ = await this.db.discoveredJob.create({
               data: {
                 source: adapter.sourceName,
                 externalId: job.externalId,
@@ -79,7 +84,18 @@ export class JobDiscoveryService {
                 postedAt: job.postedAt,
                 rawPayload: job.rawPayload as any,
               },
+              select: { id: true },
             });
+            if (job.externalId) {
+              await this.enrichQueue.add(
+                {
+                  discoveredJobId: created_.id,
+                  externalId: job.externalId,
+                  source: adapter.sourceName,
+                },
+                { ...ENRICH_JOB_OPTIONS, jobId: `enrich-${job.externalId}` },
+              );
+            }
             created++;
           }
         } catch (err: any) {
@@ -173,7 +189,7 @@ export class JobDiscoveryService {
           });
           updated++;
         } else {
-          await this.db.discoveredJob.create({
+          const created_ = await this.db.discoveredJob.create({
             data: {
               source,
               externalId: job.externalId,
@@ -190,7 +206,18 @@ export class JobDiscoveryService {
               postedAt: job.postedAt,
               rawPayload: job.rawPayload as any,
             },
+            select: { id: true },
           });
+          if (job.externalId) {
+            await this.enrichQueue.add(
+              {
+                discoveredJobId: created_.id,
+                externalId: job.externalId,
+                source,
+              },
+              { ...ENRICH_JOB_OPTIONS, jobId: `enrich-${job.externalId}` },
+            );
+          }
           created++;
         }
       } catch (err: any) {

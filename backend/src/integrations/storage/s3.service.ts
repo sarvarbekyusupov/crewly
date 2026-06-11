@@ -14,6 +14,7 @@ export class S3Service {
   private readonly client: S3Client | null;
   private readonly bucket: string;
   private readonly endpoint: string;
+  private readonly region: string;
 
   constructor(private readonly config: ConfigService) {
     const endpoint = config.get<string>('S3_ENDPOINT') ?? '';
@@ -21,6 +22,10 @@ export class S3Service {
     const secretAccessKey = config.get<string>('S3_SECRET_KEY') ?? '';
     this.bucket = config.get<string>('S3_BUCKET') ?? '';
     this.endpoint = endpoint;
+    this.region =
+      config.get<string>('S3_REGION') ??
+      endpoint.match(/s3\.([^.]+)\.amazonaws\.com/)?.[1] ??
+      'us-east-1';
 
     if (!endpoint || !accessKeyId || !secretAccessKey || !this.bucket) {
       this.logger.warn('S3 not configured — storage calls will be no-ops');
@@ -30,7 +35,7 @@ export class S3Service {
 
     this.client = new S3Client({
       endpoint,
-      region: 'auto',
+      region: this.region,
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: true,
     });
@@ -91,5 +96,12 @@ export class S3Service {
 
   isConfigured(): boolean {
     return this.client !== null;
+  }
+
+  extractKey(publicUrl: string): string | null {
+    if (!this.endpoint || !this.bucket) return null;
+    const prefix = `${this.endpoint}/${this.bucket}/`;
+    if (!publicUrl.startsWith(prefix)) return null;
+    return publicUrl.slice(prefix.length);
   }
 }

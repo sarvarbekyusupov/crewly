@@ -82,7 +82,7 @@ function lastMessage(conv: Conversation) {
         <div
           v-for="i in 6"
           :key="i"
-          class="rounded-xl animate-pulse h-[72px] bg-bg-elevated border border-line-soft"
+          class="rounded-xl animate-pulse h-18 bg-bg-elevated border border-line-soft"
         />
       </div>
 

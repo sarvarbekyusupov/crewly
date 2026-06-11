@@ -20,6 +20,12 @@ export default defineNuxtConfig({
     fallback: 'dark',
   },
 
+  icon: {
+    serverBundle: {
+      collections: ['heroicons'],
+    },
+  },
+
   modules: [
     '@nuxt/ui',
     '@pinia/nuxt',
@@ -65,6 +71,8 @@ export default defineNuxtConfig({
       '/candidate/preferences',
       '/candidate/prep',
       '/candidate/tracker',
+      '/candidate/analytics',
+      '/candidate/inbox',
       '/candidate/chat',
       '/candidate/chat/**',
       '/candidate/onboarding',
@@ -160,6 +168,8 @@ export default defineNuxtConfig({
       '/candidate/preferences': { ssr: false },
       '/candidate/prep': { ssr: false },
       '/candidate/tracker': { ssr: false },
+      '/candidate/analytics': { ssr: false },
+      '/candidate/inbox': { ssr: false },
       '/candidate/chat/**': { ssr: false },
       '/candidate/onboarding': { ssr: false },
       '/candidate/login': { ssr: false },
