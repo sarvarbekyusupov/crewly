@@ -82,6 +82,8 @@ jobs:
             echo "IMAGE_BACKEND=$IMAGE_BACKEND"   > .env.images
             echo "IMAGE_FRONTEND=$IMAGE_FRONTEND" >> .env.images
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+            docker system prune -f
+            docker image prune -af
             docker compose -f docker-compose.prod.yml --env-file .env.production --env-file .env.images pull
             docker compose -f docker-compose.prod.yml --env-file .env.production --env-file .env.images up -d --remove-orphans
             sleep 15
