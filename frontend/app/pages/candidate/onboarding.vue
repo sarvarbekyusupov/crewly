@@ -1,305 +1,640 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'empty', auth: 'guest' })
 
+const store = useOnboardingStore()
 const api = useCandidateApi()
-const toast = useToast()
 const router = useRouter()
+const toast = useToast()
 
-const steps = [
-  { title: 'Upload Resume', icon: 'i-heroicons-document-arrow-up' },
-  { title: 'AI Parsing', icon: 'i-heroicons-cpu-chip' },
-  { title: 'Confirm Profile', icon: 'i-heroicons-user' },
+const saving = ref(false)
+const autosaved = ref(false)
+let autosaveTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => ({ ...store.$state }),
+  () => {
+    if (autosaveTimer) clearTimeout(autosaveTimer)
+    autosaveTimer = setTimeout(() => {
+      autosaved.value = true
+      setTimeout(() => {
+        autosaved.value = false
+      }, 2000)
+    }, 600)
+  },
+  { deep: true },
+)
+
+const STEP_META = [
+  {
+    label: 'RESUME',
+    title: 'Upload your CV',
+    desc: "CV yuklab, AI-ga profilingizni avtomatik to'ldirish imkonini bering.",
+    why: "AI CV-ni tahlil qilib, ko'nikmalar va tajribani chiqaradi — sizga kerakli ish o'rinlarini aniqroq topadi.",
+  },
+  {
+    label: 'LOCATION',
+    title: 'Qayerda yashaysiz?',
+    desc: "Joylashuvingizni kiriting — mahalliy va eng mos imkoniyatlarni birinchi ko'rsatamiz.",
+    why: "Ko'pgina ish beruvchilar kandidatlarni manzil bo'yicha filtrlaydi. Bu ma'lumot mos takliflarni aniqlashda yordam beradi.",
+  },
+  {
+    label: 'CONTACT',
+    title: "Siz bilan qanday bog'lanish mumkin?",
+    desc: "Ish beruvchilar qiziqsalar, to'g'ridan-to'g'ri siz bilan bog'lana olsin.",
+    why: "To'g'ridan-to'g'ri murojaat sekin ariza portallari orqali emas — javob tezroq keladi.",
+  },
+  {
+    label: 'SKILLS',
+    title: "Ko'nikmalar va tajriba",
+    desc: "Ko'nikmalaringizni tanlang va tajriba darajangizni belgilang.",
+    why: "Ko'nikmalar moslamasi — bizning asosiy algoritmimiz. Qanchalik to'g'ri bo'lsa, shunchalik yaxshi natija.",
+  },
+  {
+    label: 'JOB PREFS',
+    title: 'Nima qidirmoqdasiz?',
+    desc: 'Istagan lavozim, maosh kutishi va ish formatini belgilang.',
+    why: "Faqat mezon bo'yicha mos ish o'rinlarini yuboramiz — spam yo'q, mos kelmagan takliflar yo'q.",
+  },
+  {
+    label: 'CHECKLIST',
+    title: 'Bir necha savol',
+    desc: "Ish beruvchilar ko'pincha bu savollarni oldindan so'raydi.",
+    why: 'Bularni oldindan hal qilish ariza jarayonini tezlashtiradi.',
+  },
+  {
+    label: 'SETTINGS',
+    title: 'Ariza sozlamalari',
+    desc: 'AI arizalaringizni qanday boshqarishini tanlang.',
+    why: "Bu sozlamalar avtomatlashtirishni qanchalik xohlashingizni nazorat qiladi. Istalgan vaqt o'zgartirish mumkin.",
+  },
 ]
 
-const currentStep = ref(0)
-const isUploading = ref(false)
-const selectedFile = ref<File | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
+const meta = computed(() => STEP_META[store.currentStep - 1] ?? STEP_META[0]!)
+const progress = computed(() => ((store.currentStep - 1) / 7) * 100)
 
-// Profile form state
-const form = reactive({
-  fullName: '',
-  phone: '',
-  city: '',
-  preferredWorkMode: 'remote',
-  skillsText: '',
+const canContinue = computed(() => {
+  if (store.isUploadingCv) return false
+  switch (store.currentStep) {
+    case 2:
+      return !!store.location.city && !!store.location.region
+    case 4:
+      return store.skills.tags.length > 0 && !!store.skills.experienceLevel
+    case 5:
+      return !!store.jobPreferences.desiredRole
+    default:
+      return true
+  }
 })
 
-async function onFileChange(e: any) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  if (file.type !== 'application/pdf') {
-    toast.add({ title: 'Only PDF resumes are supported', color: 'error' })
-    return
-  }
-  selectedFile.value = file
-  await uploadAndParse()
+function deriveWorkMode() {
+  const f = store.jobPreferences.formats
+  if (f.remote) return 'remote'
+  if (f.hybrid) return 'hybrid'
+  if (f.onsite) return 'office'
+  if (f.abroad) return 'remote'
+  return undefined
 }
 
-async function uploadAndParse() {
-  if (!selectedFile.value) return
-  isUploading.value = true
-  currentStep.value = 1 // Move to Parsing step
-
-  const formData = new FormData()
-  formData.append('resume', selectedFile.value)
-
-  try {
-    // Call resume upload/parse endpoint
-    const res = await api.post<{
-      fullName?: string
-      phone?: string
-      city?: string
-      skills?: string[]
-      preferredWorkMode?: string
-    }>('/api/v1/candidate-portal/profile/resume', formData)
-
-    // Pre-fill form from AI extraction results
-    if (res) {
-      form.fullName = res.fullName ?? ''
-      form.phone = res.phone ?? ''
-      form.city = res.city ?? ''
-      form.preferredWorkMode = res.preferredWorkMode ?? 'remote'
-      form.skillsText = res.skills?.join(', ') ?? ''
-    }
-
-    toast.add({ title: 'Resume parsed successfully', color: 'success' })
-    currentStep.value = 2 // Move to Confirm step
-  } catch {
-    toast.add({
-      title: 'AI extraction warning',
-      description: 'Could not fully extract details. Please fill in your profile manually.',
-      color: 'warning',
-    })
-    currentStep.value = 2 // Fallback to manual confirm
-  } finally {
-    isUploading.value = false
+function yearsFromLevel(lvl: string) {
+  const map: Record<string, number> = {
+    Intern: 0,
+    Junior: 1,
+    Middle: 3,
+    Senior: 5,
+    Lead: 7,
+    'C-Level': 10,
   }
+  return map[lvl] ?? undefined
 }
 
-async function saveProfile() {
+async function handleFinish() {
+  saving.value = true
   try {
-    const skills = form.skillsText
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
+    const workMode = deriveWorkMode()
+    const linkedin = store.contact.linkedin
+      ? store.contact.linkedin.startsWith('http')
+        ? store.contact.linkedin
+        : `https://linkedin.com/in/${store.contact.linkedin}`
+      : undefined
 
     await api.patch('/api/v1/candidate-portal/profile', {
-      fullName: form.fullName,
-      phone: form.phone,
-      city: form.city,
-      preferredWorkMode: form.preferredWorkMode,
-      skills,
+      fullName: store.contact.fullName || undefined,
+      phone: store.contact.phone || undefined,
+      city: store.location.city || undefined,
+      country: store.location.country !== "O'zbekiston" ? store.location.country : undefined,
+      linkedinUrl: linkedin,
+      telegramUsername: store.contact.telegram || undefined,
+      preferredWorkMode: workMode,
+      willingToRelocate: store.checklist.willingToRelocate,
+      skills: store.skills.tags.length ? store.skills.tags : undefined,
+      yearsExperience: store.skills.experienceLevel
+        ? yearsFromLevel(store.skills.experienceLevel)
+        : undefined,
+      currentPosition: store.jobPreferences.desiredRole || undefined,
+      noticePeriodDays: store.checklist.noticePeriodDays ?? undefined,
+    })
+
+    const salaryMax = store.jobPreferences.salaryMax
+    const salaryUzs = salaryMax
+      ? store.jobPreferences.currency === 'USD'
+        ? salaryMax * 12700
+        : salaryMax
+      : undefined
+
+    await api.patch('/api/v1/candidate-portal/preferences', {
+      preferredWorkMode: workMode,
+      expectedSalaryUzs: salaryUzs,
     })
 
     const { triggerConfetti } = useConfetti()
     triggerConfetti()
-
-    toast.add({ title: 'Profile set up completed!', color: 'success' })
+    toast.add({ title: 'Profil sozlash tugadi!', color: 'success' })
     router.push('/candidate/dashboard')
   } catch (e) {
     toast.add({
-      title: 'Failed to complete setup',
+      title: 'Saqlashda xatolik',
       description: extractApiErrorMessage(e),
       color: 'error',
     })
+  } finally {
+    saving.value = false
   }
 }
+
+async function handleContinue() {
+  if (!canContinue.value) return
+  if (store.currentStep === 7) {
+    await handleFinish()
+  } else {
+    store.nextStep()
+  }
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  const tag = (e.target as HTMLElement).tagName
+  if (e.key === 'Enter' && !e.shiftKey && tag !== 'TEXTAREA' && tag !== 'BUTTON') {
+    e.preventDefault()
+    handleContinue()
+  }
+  if (e.key === 'Tab' && e.shiftKey) {
+    if (store.currentStep > 1) {
+      e.preventDefault()
+      store.prevStep()
+    }
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div
-      class="max-w-xl w-full mx-auto space-y-8 bg-surface border border-line p-8 rounded-2xl shadow-sm"
-    >
-      <!-- Brand logo -->
-      <div class="text-center">
-        <img src="/crewly-app-icon.svg" alt="Crewly" class="w-12 h-12 mb-4 mx-auto" />
-        <h2 class="text-3xl font-serif text-ink tracking-tight">Set Up Your Career Pilot</h2>
-        <p class="text-sm text-ink-muted mt-1">
-          Our AI Matchmaker will help find the best job fits for your skill stack.
-        </p>
-      </div>
+  <div class="ob-root">
+    <!-- Progress bar -->
+    <div class="ob-prog-track">
+      <div class="ob-prog-fill" :style="{ width: progress + '%' }" />
+    </div>
 
-      <!-- Steps Stepper header -->
-      <div class="flex items-center border-b border-line-soft pb-4 relative">
-        <!-- Connecting track behind circles -->
-        <div
-          class="absolute h-px"
-          style="
-            top: 16px;
-            left: calc(16.67% + 12px);
-            right: calc(16.67% + 12px);
-            background: var(--line);
-            z-index: 0;
-          "
-        />
-        <!-- Progress fill -->
-        <div
-          class="absolute h-px transition-all duration-500"
-          style="top: 16px; left: calc(16.67% + 12px); background: var(--accent); z-index: 0"
-          :style="{
-            width:
-              currentStep === 0 ? '0%' : currentStep === 1 ? 'calc(33% - 0px)' : 'calc(66% - 0px)',
-          }"
-        />
-        <div
-          v-for="(step, idx) in steps"
-          :key="step.title"
-          class="flex flex-col items-center flex-1 relative z-10"
-        >
-          <div
-            class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300"
-            :style="
-              currentStep === idx
-                ? 'background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)'
-                : currentStep > idx
-                  ? 'background: color-mix(in srgb, var(--positive) 15%, transparent); border-color: var(--positive); color: var(--positive)'
-                  : 'background: var(--bg-deep); border-color: var(--line); color: var(--ink-subtle)'
-            "
-          >
-            <UIcon :name="step.icon" class="w-4 h-4" />
-          </div>
-          <span
-            class="text-[10px] font-mono mt-1.5 uppercase tracking-wide"
-            :style="
-              currentStep === idx
-                ? 'color: var(--accent); font-weight: 700'
-                : currentStep > idx
-                  ? 'color: var(--positive); font-weight: 600'
-                  : 'color: var(--ink-subtle)'
-            "
-          >
-            {{ step.title }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Step 0: Upload CV -->
-      <div v-if="currentStep === 0" class="space-y-6">
-        <div
-          class="border-2 border-dashed border-line-soft rounded-xl p-8 text-center bg-bg-deep flex flex-col items-center gap-4 relative overflow-hidden"
-        >
-          <UIcon name="i-heroicons-document-arrow-up" class="w-12 h-12 text-accent" />
-          <div>
-            <p class="text-sm font-semibold text-ink">Upload your CV / Resume</p>
-            <p class="text-xs text-ink-muted mt-1">
-              Only PDF format is supported. Our AI Matchmaker will parse your skills automatically.
-            </p>
-          </div>
-
-          <input
-            id="file-upload"
-            ref="fileInput"
-            type="file"
-            accept=".pdf"
-            class="hidden"
-            @change="onFileChange"
+    <!-- Content area -->
+    <div class="ob-body">
+      <!-- Left panel -->
+      <aside class="ob-left">
+        <NuxtLink to="/" class="ob-logo">
+          <img
+            src="/crewly-logo-horizontal.svg"
+            alt="Crewly"
+            class="block dark:hidden"
+            height="22"
           />
-          <UButton size="sm" class="font-medium cursor-pointer" @click="fileInput?.click()">
-            Choose PDF file
-          </UButton>
+          <img
+            src="/crewly-logo-horizontal-white.svg"
+            alt="Crewly"
+            class="hidden dark:block"
+            height="22"
+          />
+        </NuxtLink>
+
+        <div class="ob-step-info">
+          <div class="ob-step-label-row">
+            <span class="ob-step-label">{{ meta.label }}</span>
+            <span
+              class="ob-step-dot"
+              :class="store.completed.includes(store.currentStep) ? 'dot-done' : 'dot-active'"
+            />
+          </div>
+          <p class="ob-step-desc">{{ meta.desc }}</p>
         </div>
 
-        <div class="text-center">
+        <div class="ob-why">
+          <p class="ob-why-title">Nega so'raymiz</p>
+          <p class="ob-why-text">{{ meta.why }}</p>
+        </div>
+
+        <!-- Step dots nav -->
+        <div class="ob-dots-nav">
           <button
+            v-for="n in 7"
+            :key="n"
             type="button"
-            class="text-xs text-ink-subtle hover:underline cursor-pointer"
-            @click="currentStep = 2"
+            class="step-dot-btn"
+            :class="{
+              'dot-btn-active': store.currentStep === n,
+              'dot-btn-done': store.completed.includes(n),
+            }"
+            :title="`Step ${n}`"
+            @click="
+              store.completed.includes(n) || n === store.currentStep ? store.setStep(n) : null
+            "
+          />
+        </div>
+      </aside>
+
+      <!-- Right panel -->
+      <main class="ob-right">
+        <!-- Right header -->
+        <div class="ob-right-header">
+          <div class="ob-step-badge">Step {{ store.currentStep }} of 7</div>
+          <button
+            v-if="store.currentStep > 1"
+            type="button"
+            class="ob-back-btn"
+            @click="store.prevStep()"
           >
-            Or skip upload and fill details manually →
+            ← Back
           </button>
         </div>
-      </div>
 
-      <!-- Step 1: AI Parsing Loading -->
-      <div
-        v-else-if="currentStep === 1"
-        class="py-12 flex flex-col items-center justify-center text-center gap-4"
-      >
-        <!-- Pulse animation -->
-        <div class="relative w-16 h-14 flex items-center justify-center">
-          <div class="absolute inset-0 rounded-full bg-accent/20 animate-ping" />
-          <div
-            class="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center shadow-md"
-          >
-            <UIcon name="i-heroicons-cpu-chip" class="w-6 h-6 animate-spin" />
-          </div>
-        </div>
-        <div>
-          <h3 class="text-base font-semibold text-ink">AI Matchmaker is parsing your CV...</h3>
-          <p class="text-xs text-ink-muted mt-1.5 max-w-sm leading-relaxed">
-            Extracting professional experience, education, work modes, and matching alignments
-            dynamically. This takes up to 10 seconds.
-          </p>
-        </div>
-      </div>
+        <!-- Step title -->
+        <h2 class="ob-step-title">{{ meta.title }}</h2>
 
-      <!-- Step 2: Confirm profile form -->
-      <div v-else-if="currentStep === 2" class="space-y-4">
-        <div class="space-y-3">
-          <UFormField label="Full Name" name="fullName">
-            <UInput v-model="form.fullName" placeholder="e.g. John Doe" class="w-full" />
-          </UFormField>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Phone" name="phone">
-              <UInput v-model="form.phone" placeholder="e.g. +998901234567" class="w-full" />
-            </UFormField>
-            <UFormField label="City" name="city">
-              <UInput v-model="form.city" placeholder="e.g. Tashkent" class="w-full" />
-            </UFormField>
-          </div>
-          <UFormField label="Preferred Work Mode" name="preferredWorkMode">
-            <div class="flex gap-2 flex-wrap">
-              <button
-                v-for="mode in [
-                  { label: 'Remote', value: 'remote' },
-                  { label: 'Hybrid', value: 'hybrid' },
-                  { label: 'On-site', value: 'office' },
-                ]"
-                :key="mode.value"
-                type="button"
-                class="px-3 py-1.5 text-sm rounded-lg border transition-colors"
-                :style="
-                  form.preferredWorkMode === mode.value
-                    ? 'background: var(--ink); color: var(--bg); border-color: var(--ink);'
-                    : 'background: var(--surface); color: var(--ink-muted); border-color: var(--line);'
-                "
-                @click="form.preferredWorkMode = mode.value"
-              >
-                {{ mode.label }}
-              </button>
+        <!-- Autosave indicator -->
+        <Transition name="fade">
+          <span v-if="autosaved" class="autosave-badge">• Autosaved</span>
+        </Transition>
+
+        <!-- Step content -->
+        <div class="ob-step-content">
+          <Transition name="step" mode="out-in">
+            <div :key="store.currentStep" class="ob-step-inner">
+              <OnboardingStepResume v-if="store.currentStep === 1" />
+              <OnboardingStepLocation v-else-if="store.currentStep === 2" />
+              <OnboardingStepContact v-else-if="store.currentStep === 3" />
+              <OnboardingStepSkills v-else-if="store.currentStep === 4" />
+              <OnboardingStepJobPrefs v-else-if="store.currentStep === 5" />
+              <OnboardingStepChecklist v-else-if="store.currentStep === 6" />
+              <OnboardingStepSettings v-else-if="store.currentStep === 7" />
             </div>
-          </UFormField>
-          <UFormField label="Core Skills" name="skills">
-            <UTextarea
-              v-model="form.skillsText"
-              placeholder="TypeScript, Vue.js, Node.js, PostgreSQL…"
-              class="w-full"
-              :rows="2"
-            />
-            <template #description>
-              <span style="color: var(--ink-subtle); font-size: 11px">
-                Comma-separated — AI uses these to score job matches
-              </span>
-            </template>
-          </UFormField>
+          </Transition>
         </div>
 
-        <div class="pt-4 border-t border-line-soft flex justify-between gap-3">
-          <UButton variant="ghost" size="sm" @click="currentStep = 0">← Back</UButton>
-          <UButton
-            size="sm"
-            :disabled="!form.fullName || !form.skillsText"
-            :style="
-              form.fullName && form.skillsText ? 'background: var(--ink); color: var(--bg);' : ''
-            "
-            @click="saveProfile"
+        <!-- Bottom bar -->
+        <div class="ob-bottom">
+          <div class="ob-kbd-hints">
+            <span class="kbd-hint"><kbd>Enter</kbd> Continue</span>
+            <span class="kbd-hint"><kbd>⇧ Tab</kbd> Back</span>
+          </div>
+          <button
+            type="button"
+            class="ob-continue-btn"
+            :disabled="!canContinue || saving"
+            @click="handleContinue"
           >
-            Complete Setup →
-          </UButton>
+            <span v-if="saving" class="btn-spinner" />
+            <span v-else>{{ store.currentStep === 7 ? 'Finish Setup →' : 'Continue →' }}</span>
+          </button>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
+
+<style scoped>
+.ob-root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* Progress bar */
+.ob-prog-track {
+  height: 3px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+.ob-prog-fill {
+  height: 100%;
+  background: var(--ink);
+  transition: width 0.4s ease;
+}
+
+/* Body layout */
+.ob-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* Left panel */
+.ob-left {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-deep);
+  overflow-y: auto;
+}
+
+.ob-logo {
+  display: flex;
+  align-items: center;
+}
+.ob-logo img {
+  height: 22px;
+  width: auto;
+}
+
+.ob-step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ob-step-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ob-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-subtle);
+}
+.ob-step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-active {
+  background: var(--accent);
+}
+.dot-done {
+  background: var(--positive);
+}
+
+.ob-step-desc {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.55;
+}
+
+.ob-why {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ob-why-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-subtle);
+}
+.ob-why-text {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+.ob-dots-nav {
+  margin-top: auto;
+  display: flex;
+  gap: 6px;
+}
+.step-dot-btn {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  background: var(--line);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+}
+.dot-btn-active {
+  background: var(--ink);
+  transform: scale(1.3);
+}
+.dot-btn-done {
+  background: var(--positive);
+  cursor: pointer;
+}
+
+/* Right panel */
+.ob-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.ob-right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px 0;
+  flex-shrink: 0;
+}
+
+.ob-step-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-subtle);
+  letter-spacing: 0.02em;
+}
+
+.ob-back-btn {
+  font-size: 13px;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.12s;
+}
+.ob-back-btn:hover {
+  color: var(--ink);
+  background: var(--bg-elevated);
+}
+
+.ob-step-title {
+  padding: 16px 40px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-strong);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.autosave-badge {
+  display: block;
+  padding: 0 40px;
+  font-size: 11px;
+  color: var(--positive);
+  font-weight: 500;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.ob-step-content {
+  flex: 1;
+  padding: 20px 40px;
+  overflow-y: auto;
+}
+
+.ob-step-inner {
+  width: 100%;
+  max-width: 520px;
+}
+
+/* Bottom bar */
+.ob-bottom {
+  padding: 16px 40px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.ob-kbd-hints {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.kbd-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--ink-subtle);
+}
+kbd {
+  display: inline-block;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--ink-subtle);
+}
+
+.ob-continue-btn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  background: var(--ink);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
+}
+.ob-continue-btn:hover:not(:disabled) {
+  background: var(--ink-strong);
+  transform: translateY(-1px);
+}
+.ob-continue-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Step transitions */
+.step-enter-active,
+.step-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.step-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+.step-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ob-left {
+    display: none;
+  }
+  .ob-right-header {
+    padding: 16px 20px 0;
+  }
+  .ob-step-title {
+    padding: 12px 20px 0;
+    font-size: 18px;
+  }
+  .ob-step-content {
+    padding: 16px 20px;
+  }
+  .ob-bottom {
+    padding: 12px 20px 20px;
+  }
+  .ob-kbd-hints {
+    display: none;
+  }
+  .autosave-badge {
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ob-continue-btn {
+    min-width: 120px;
+  }
+}
+</style>
