@@ -27,7 +27,7 @@ useSeoMeta({
     'Browse open roles matched by Crewly AI. Tech, product, design, and ops at top companies in Central Asia.',
 })
 
-defineOgImageComponent('Default', {
+defineOgImage({
   title: 'Open Jobs',
   description: 'Browse roles matched by Crewly AI across Central Asia and beyond.',
 })

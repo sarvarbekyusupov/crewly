@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'empty', auth: false })
 
-defineOgImageComponent('Default', {
+defineOgImage({
   title: 'Terms of Service',
   description: 'Crewly service terms — 15% success fee, billed only on hire.',
 })

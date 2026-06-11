@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
-defineOgImageComponent('Default', {
+defineOgImage({
   title: 'Find work and get hired',
   description:
     "Build your profile once. Crewly matches you to roles and reaches out when there's a real fit.",
