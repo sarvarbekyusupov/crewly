@@ -152,8 +152,8 @@ export default defineNuxtConfig({
       routes: ['/', '/candidate', '/terms', '/jobs'],
     },
     routeRules: {
-      '/api/**': {
-        proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/**`,
+      '/api/v1/**': {
+        proxy: `${process.env.BACKEND_URL ?? 'http://localhost:3000'}/api/v1/**`,
       },
       '/': { redirect: { to: '/candidate', statusCode: 302 } },
       '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
