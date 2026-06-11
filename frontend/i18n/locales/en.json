@@ -761,6 +761,8 @@
       "successCandidate": "Got it! We'll notify you when Crewly opens up.",
       "duplicate": "You're already on the list.",
       "error": "Something went wrong. Try again.",
+      "heroEmployerSub": "Be first to hire with Crewly.",
+      "heroCandidateSub": "Get early access to matched roles.",
       "navCta": "Join waitlist"
     }
   },

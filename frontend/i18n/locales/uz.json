@@ -538,6 +538,8 @@
       "successCandidate": "Qabul qilindi! Crewly ochilganda bildirtiramiz.",
       "duplicate": "Siz allaqachon ro'yxatdasiz.",
       "error": "Xatolik yuz berdi. Qayta urinib ko'ring.",
+      "heroEmployerSub": "Crewly bilan birinchi bo'lib yollash.",
+      "heroCandidateSub": "Mos rollarga erta kirish.",
       "navCta": "Ro'yxatga"
     }
   },
