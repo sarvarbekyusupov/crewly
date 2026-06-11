@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
-defineOgImage({
+defineOgImageComponent('Default', {
   title: 'Hire the right people, faster',
   description:
     'AI-native recruiting: source, screen, and shortlist — you only meet people worth hiring.',

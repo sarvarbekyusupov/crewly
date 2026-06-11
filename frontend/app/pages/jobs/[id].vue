@@ -35,7 +35,7 @@ useSeoMeta({
   twitterCard: 'summary_large_image',
 })
 
-defineOgImage({
+defineOgImageComponent('Default', {
   title: `${job.value.title} at ${job.value.company.name}`,
   description: `Apply now on Crewly — ${job.value.officeLocation ?? 'Remote / Uzbekistan'}`,
 })

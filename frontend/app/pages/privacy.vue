@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'empty', auth: false })
 
-defineOgImage({
+defineOgImageComponent('Default', {
   title: 'Privacy Policy',
   description: 'How Crewly collects, uses, and protects your data.',
 })
