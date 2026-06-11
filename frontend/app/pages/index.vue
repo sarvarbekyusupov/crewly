@@ -1,8 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
-await navigateTo('/candidate', { replace: true })
-
 defineOgImageComponent('Default', {
   title: 'Hire the right people, faster',
   description:

@@ -62,22 +62,24 @@ function selectCandidate() {
 
       <!-- Desktop right -->
       <div class="nav-r">
-        <button
-          type="button"
-          class="theme-btn"
-          :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
-          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
-        >
-          <UIcon
-            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
-            style="width: 14px; height: 14px"
-          />
-        </button>
-        <NuxtLink
-          :to="audience === 'employer' ? '/employer/login' : '/candidate/login'"
-          class="btn btn-ghost"
-          >Login</NuxtLink
-        >
+        <ClientOnly>
+          <button
+            type="button"
+            class="theme-btn"
+            :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
+            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+          >
+            <UIcon
+              :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+              style="width: 14px; height: 14px"
+            />
+          </button>
+          <NuxtLink
+            :to="audience === 'employer' ? '/employer/login' : '/candidate/login'"
+            class="btn btn-ghost"
+            >Login</NuxtLink
+          >
+        </ClientOnly>
         <template v-if="waitlistMode">
           <a href="#waitlist" class="btn btn-primary">Join waitlist</a>
         </template>
@@ -93,17 +95,19 @@ function selectCandidate() {
 
       <!-- Mobile right: theme toggle + hamburger -->
       <div class="nav-mobile-r">
-        <button
-          type="button"
-          class="theme-btn"
-          :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
-          @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
-        >
-          <UIcon
-            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
-            style="width: 14px; height: 14px"
-          />
-        </button>
+        <ClientOnly>
+          <button
+            type="button"
+            class="theme-btn"
+            :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
+            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+          >
+            <UIcon
+              :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+              style="width: 14px; height: 14px"
+            />
+          </button>
+        </ClientOnly>
         <button
           type="button"
           class="hamburger"
