@@ -167,18 +167,35 @@ const statusOptions = computed(() => [
     />
 
     <!-- AI Copilot Filter Command Bar -->
-    <div class="bg-accent-soft border border-line-soft rounded-xl p-3 flex items-center gap-3">
+    <div
+      class="flex items-center gap-3 px-4 py-3 rounded-xl"
+      style="
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      "
+    >
       <div
-        class="w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shrink-0 shadow-sm"
+        class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+        style="background: var(--accent); color: #fff"
       >
-        <UIcon name="i-heroicons-sparkles" class="w-4 h-4 animate-pulse" />
+        <UIcon name="i-heroicons-sparkles" class="w-4 h-4" />
       </div>
       <UInput
         v-model="copilotQuery"
-        placeholder="Ask Recruiter AI to filter candidates (e.g. 'Show screened candidates' or 'Clear filters')..."
-        class="flex-1 font-mono text-xs"
+        placeholder="Filter by status, stage, or action — e.g. 'show screening' or 'clear'"
+        class="flex-1"
+        :ui="{
+          base: 'font-mono text-xs bg-transparent border-none shadow-none ring-0 focus:ring-0',
+        }"
         autocomplete="off"
       />
+      <span
+        v-if="copilotQuery"
+        class="text-[10px] font-mono px-2 py-0.5 rounded cursor-pointer"
+        style="background: var(--accent); color: #fff"
+        @click="copilotQuery = ''"
+        >ESC</span
+      >
     </div>
 
     <div

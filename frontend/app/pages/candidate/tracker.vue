@@ -5,8 +5,6 @@ import { capitalizeStatus } from '~/utils/candidate'
 import { formatRelativeTime } from '~/utils/formatters'
 
 definePageMeta({ layout: 'candidate' })
-// Moved to Inbox — keep route alive for backward compat
-await navigateTo('/candidate/inbox', { redirectCode: 301 })
 
 const { t } = useI18n()
 const api = useCandidateApi()

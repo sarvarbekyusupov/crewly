@@ -18,10 +18,18 @@ useHead({ title: 'Job Discovery' })
 const search = ref('')
 const workMode = ref('all')
 const minScore = ref(0)
-const sortBy = ref<'recent' | 'score'>('recent')
+const sortBy = ref<'recent' | 'score'>('score')
 const page = ref(1)
 const limit = 20
-const viewMode = ref<'feed' | 'list'>('feed')
+const filtersOpen = ref(false)
+const activeFilters = computed(() => {
+  let count = 0
+  if (search.value) count++
+  if (workMode.value !== 'all') count++
+  if (minScore.value > 0) count++
+  if (sortBy.value !== 'recent') count++
+  return count
+})
 
 const {
   data: result,
@@ -57,11 +65,18 @@ watch([workMode, minScore, sortBy], () => {
 
 // Two-panel selected job
 const selectedJobId = ref<string | null>(null)
+const mobileJobView = ref<'list' | 'detail'>('list')
+
 const selectedJob = computed<DiscoveredJob | null>(() => {
   const id = selectedJobId.value
   if (!id) return jobs.value[0] ?? null
   return jobs.value.find((j) => j.id === id) ?? jobs.value[0] ?? null
 })
+
+function selectJob(id: string) {
+  selectedJobId.value = id
+  mobileJobView.value = 'detail'
+}
 
 watch(
   jobs,
@@ -174,9 +189,9 @@ async function applyToJob(job: DiscoveredJob) {
 
 function scoreBarColor(score: number | null | undefined): string {
   if (score == null) return 'var(--ink-subtle)'
-  if (score >= 70) return '#22c55e'
-  if (score >= 40) return '#f59e0b'
-  return '#ef4444'
+  if (score >= 70) return 'var(--positive)'
+  if (score >= 40) return 'var(--warning)'
+  return 'var(--negative)'
 }
 
 function scoreColor(score: number | null | undefined): 'neutral' | 'success' | 'warning' | 'error' {
@@ -459,15 +474,43 @@ function avatarColor(name: string) {
 function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string } {
   if (job.application) {
     const s = job.application.status
-    if (s === 'applied') return { label: 'Applied', bg: '#dcfce7', fg: '#15803d' }
+    if (s === 'applied')
+      return {
+        label: 'Applied',
+        bg: 'color-mix(in srgb, var(--positive) 14%, transparent)',
+        fg: 'var(--positive)',
+      }
     if (s === 'queued' || s === 'applying')
-      return { label: 'In progress', bg: '#dbeafe', fg: '#1d4ed8' }
-    if (s === 'failed') return { label: 'Failed', bg: '#fee2e2', fg: '#dc2626' }
-    return { label: capitalizeStatus(s), bg: '#f3f4f6', fg: '#6b7280' }
+      return {
+        label: 'In progress',
+        bg: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+        fg: 'var(--accent)',
+      }
+    if (s === 'failed')
+      return {
+        label: 'Failed',
+        bg: 'color-mix(in srgb, var(--negative) 14%, transparent)',
+        fg: 'var(--negative)',
+      }
+    return { label: capitalizeStatus(s), bg: 'var(--bg-elevated)', fg: 'var(--ink-muted)' }
   }
-  if (skippedIds.value.has(job.id)) return { label: 'Skipped', bg: '#fef9c3', fg: '#a16207' }
-  if (savedIds.value.has(job.id)) return { label: 'Saved', bg: '#ede9fe', fg: '#6d28d9' }
-  return { label: 'New', bg: '#dbeafe', fg: '#1d4ed8' }
+  if (skippedIds.value.has(job.id))
+    return {
+      label: 'Skipped',
+      bg: 'color-mix(in srgb, var(--warning) 14%, transparent)',
+      fg: 'var(--warning)',
+    }
+  if (savedIds.value.has(job.id))
+    return {
+      label: 'Saved',
+      bg: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+      fg: 'var(--accent)',
+    }
+  return {
+    label: 'New',
+    bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+    fg: 'var(--accent)',
+  }
 }
 </script>
 
@@ -481,44 +524,22 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         <p class="jobs-count">{{ t('candidate.jobs.matchingJobs', { n: total }) }}</p>
       </div>
       <div class="header-actions">
-        <div class="view-toggle">
-          <button
-            type="button"
-            :class="['toggle-btn', viewMode === 'feed' && 'active']"
-            @click="viewMode = 'feed'"
-          >
-            <UIcon name="i-heroicons-squares-2x2" class="w-3.5 h-3.5" />
-            Feed
-          </button>
-          <button
-            type="button"
-            :class="['toggle-btn', viewMode === 'list' && 'active']"
-            @click="viewMode = 'list'"
-          >
-            <UIcon name="i-heroicons-list-bullet" class="w-3.5 h-3.5" />
-            List
-          </button>
-        </div>
         <UButton
-          variant="outline"
+          variant="ghost"
           size="sm"
           icon="i-heroicons-magnifying-glass"
           :loading="discoveringInProgress"
-          class="whitespace-nowrap"
+          aria-label="Find Jobs"
           @click="triggerDiscover"
-        >
-          Find Jobs
-        </UButton>
+        />
         <UButton
-          variant="outline"
+          variant="ghost"
           size="sm"
           icon="i-heroicons-bolt"
           :loading="scoringInProgress"
-          class="whitespace-nowrap"
+          aria-label="AI Score All"
           @click="triggerScoring"
-        >
-          AI Score All
-        </UButton>
+        />
       </div>
     </div>
 
@@ -919,56 +940,69 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         </div>
       </Transition>
 
-      <!-- Filters -->
-      <div class="filters-row">
-        <UInput
-          v-model="search"
-          icon="i-heroicons-magnifying-glass"
-          placeholder="Search jobs..."
-          class="filter-search"
+      <!-- Filter bar toggle -->
+      <div class="filter-toggle-row">
+        <UButton
+          variant="soft"
           size="sm"
-        />
-        <USelect
-          v-model="workMode"
-          :items="workModeOptions"
-          size="sm"
-          class="w-36"
-          aria-label="Work mode"
-        />
-        <USelect
-          v-model="sortBy"
-          :items="sortOptions"
-          size="sm"
-          class="w-36"
-          aria-label="Sort by"
-        />
-        <div class="score-filter">
-          <UIcon
-            name="i-heroicons-adjustments-horizontal"
-            class="w-3.5 h-3.5 shrink-0"
-            style="color: var(--ink-muted)"
+          icon="i-heroicons-adjustments-horizontal"
+          @click="filtersOpen = !filtersOpen"
+        >
+          Filters{{ activeFilters > 0 ? ` (${activeFilters})` : '' }}
+        </UButton>
+        <span class="filter-job-count">{{ total }} jobs</span>
+        <span v-if="scoringActive" class="scanning-pill">
+          <span class="scanning-dot-sm" />AI scoring…
+        </span>
+      </div>
+
+      <!-- Collapsible filters -->
+      <Transition name="slide-down">
+        <div v-if="filtersOpen" class="filters-row">
+          <UInput
+            v-model="search"
+            icon="i-heroicons-magnifying-glass"
+            placeholder="Search jobs..."
+            class="filter-search"
+            size="sm"
           />
-          <span class="score-filter-label"
-            >Min score: <strong>{{ minScore }}%</strong></span
-          >
-          <input
-            v-model.number="minScore"
-            type="range"
-            min="0"
-            max="100"
-            step="10"
-            class="score-slider"
+          <USelect
+            v-model="workMode"
+            :items="workModeOptions"
+            size="sm"
+            class="w-36"
+            aria-label="Work mode"
+          />
+          <USelect
+            v-model="sortBy"
+            :items="sortOptions"
+            size="sm"
+            class="w-36"
+            aria-label="Sort by"
+          />
+          <div class="score-filter">
+            <span class="score-filter-label"
+              >Min: <strong>{{ minScore }}%</strong></span
+            >
+            <input
+              v-model.number="minScore"
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              class="score-slider"
+            />
+          </div>
+          <UButton
+            variant="ghost"
+            size="sm"
+            icon="i-heroicons-arrow-path"
+            :loading="pending"
+            aria-label="Refresh"
+            @click="() => refresh()"
           />
         </div>
-        <UButton
-          variant="ghost"
-          size="sm"
-          icon="i-heroicons-arrow-path"
-          :loading="pending"
-          aria-label="Refresh"
-          @click="() => refresh()"
-        />
-      </div>
+      </Transition>
 
       <!-- Loading skeleton -->
       <div v-if="pending" class="space-y-2 py-2">
@@ -1001,41 +1035,50 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
       </div>
 
       <!-- ── Two-panel Feed ── -->
-      <div v-else-if="viewMode === 'feed'" class="two-panel">
+      <div v-else class="two-panel">
         <!-- Left: compact job list -->
-        <div class="panel-left">
+        <div class="panel-left" :class="mobileJobView === 'detail' ? 'panel-left--hidden' : ''">
           <div
             v-for="job in jobs"
             :key="job.id"
             :class="['job-card-compact', job.id === selectedJob?.id && 'selected']"
-            @click="selectedJobId = job.id"
+            @click="selectJob(job.id)"
           >
-            <div
-              class="company-avatar"
-              :style="{
-                background: avatarColor(job.company).bg,
-                color: avatarColor(job.company).fg,
-              }"
-            >
-              {{ companyInitials(job.company) }}
+            <!-- Score ring replaces plain avatar -->
+            <div class="card-ring-wrap shrink-0">
+              <svg width="42" height="42">
+                <circle cx="21" cy="21" r="17" fill="none" stroke="var(--line)" stroke-width="3" />
+                <circle
+                  cx="21"
+                  cy="21"
+                  r="17"
+                  fill="none"
+                  :stroke="scoreBarColor(job.displayScore)"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  :stroke-dasharray="`${2 * Math.PI * 17}`"
+                  :stroke-dashoffset="`${2 * Math.PI * 17 * (1 - (job.displayScore ?? 0) / 100)}`"
+                  transform="rotate(-90 21 21)"
+                  style="transition: stroke-dashoffset 0.4s ease"
+                />
+                <text
+                  x="21"
+                  y="25"
+                  text-anchor="middle"
+                  font-size="9"
+                  font-weight="700"
+                  font-family="JetBrains Mono, monospace"
+                  :fill="
+                    job.displayScore != null ? scoreBarColor(job.displayScore) : 'var(--ink-subtle)'
+                  "
+                >
+                  {{ job.displayScore != null ? job.displayScore : '?' }}
+                </text>
+              </svg>
             </div>
             <div class="card-body">
               <div class="card-title">{{ job.title }}</div>
               <div class="card-company">{{ job.company }}</div>
-              <div class="score-bar-wrap">
-                <div class="score-bar-track">
-                  <div
-                    class="score-bar-fill"
-                    :style="{
-                      width: `${job.displayScore ?? 0}%`,
-                      background: scoreBarColor(job.displayScore),
-                    }"
-                  />
-                </div>
-                <span class="score-bar-num" :style="{ color: scoreBarColor(job.displayScore) }">
-                  {{ job.displayScore != null ? `${job.displayScore}%` : '—' }}
-                </span>
-              </div>
               <!-- Match explanation visible on card -->
               <p v-if="job.matchExplanation" class="card-match-hint">
                 {{ job.matchExplanation }}
@@ -1065,7 +1108,11 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                 >
               </div>
               <!-- Quick apply button on card -->
-              <div v-if="!job.application" class="card-quick-apply" @click.stop>
+              <div
+                v-if="!job.application && (job.displayScore == null || job.displayScore > 0)"
+                class="card-quick-apply"
+                @click.stop
+              >
                 <UButton
                   size="xs"
                   :loading="applying.has(job.id)"
@@ -1084,7 +1131,12 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         </div>
 
         <!-- Right: job detail -->
-        <div class="panel-right">
+        <div class="panel-right" :class="mobileJobView === 'list' ? 'panel-right--hidden' : ''">
+          <!-- Mobile back button -->
+          <button class="panel-back-btn" @click="mobileJobView = 'list'">
+            <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
+            All Jobs
+          </button>
           <div v-if="selectedJob" class="detail-content">
             <!-- Title + company -->
             <div class="detail-header">
@@ -1148,7 +1200,9 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                   {{ capitalizeStatus(selectedJob.application.status) }}
                 </UBadge>
               </template>
-              <template v-else>
+              <template
+                v-else-if="selectedJob.displayScore == null || selectedJob.displayScore > 0"
+              >
                 <UButton
                   size="sm"
                   icon="i-heroicons-paper-airplane"
@@ -1257,76 +1311,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
           </div>
         </div>
       </div>
-
-      <!-- ── Classic list ── -->
-      <div v-else class="space-y-2">
-        <div v-for="job in jobs" :key="job.id" class="list-row">
-          <div
-            class="company-avatar-sm"
-            :style="{ background: avatarColor(job.company).bg, color: avatarColor(job.company).fg }"
-          >
-            {{ companyInitials(job.company) }}
-          </div>
-          <div class="list-body">
-            <div class="list-title-row">
-              <a
-                :href="safeUrl(job.sourceUrl)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="list-title"
-              >
-                {{ job.title }}
-              </a>
-              <UBadge
-                v-if="job.displayScore != null"
-                :color="scoreColor(job.displayScore)"
-                variant="subtle"
-                size="xs"
-                class="font-mono shrink-0"
-              >
-                {{ job.displayScore }}%
-              </UBadge>
-            </div>
-            <p class="list-company">
-              {{ job.company
-              }}<span v-if="job.location" style="color: var(--ink-subtle)">
-                · {{ job.location }}</span
-              >
-            </p>
-            <div class="list-meta">
-              <span v-if="job.workMode">{{ job.workMode }}</span>
-              <span v-if="job.salaryMinUzs || job.salaryMaxUzs"
-                >{{ formatSalary(job.salaryMinUzs)
-                }}<template v-if="job.salaryMaxUzs">
-                  – {{ formatSalary(job.salaryMaxUzs) }}</template
-                ></span
-              >
-              <span v-if="formatPostedDate(job.postedAt)">{{
-                formatPostedDate(job.postedAt)
-              }}</span>
-            </div>
-          </div>
-          <div class="list-actions">
-            <template v-if="job.application">
-              <UBadge :color="appStatusColor(job.application.status)" variant="subtle" size="sm">{{
-                capitalizeStatus(job.application.status)
-              }}</UBadge>
-            </template>
-            <template v-else>
-              <UButton
-                size="sm"
-                icon="i-heroicons-paper-airplane"
-                :loading="applying.has(job.id)"
-                @click="applyToJob(job)"
-                >{{ t('candidate.jobs.apply') }}</UButton
-              >
-            </template>
-          </div>
-        </div>
-        <div v-if="total > limit" class="flex justify-center pt-3">
-          <UPagination v-model="page" :total="total" :page-size="limit" />
-        </div>
-      </div>
     </div>
     <!-- end discovered tab wrapper -->
   </div>
@@ -1384,30 +1368,44 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   justify-content: flex-end;
 }
 
-.view-toggle {
-  display: flex;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--bg-deep);
-}
-
-.toggle-btn {
-  padding: 5px 12px;
-  font-size: 12px;
+/* ── Filter toggle row ── */
+.filter-toggle-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  color: var(--ink-muted);
-  background: transparent;
-  border: none;
-  transition: all 0.12s;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.toggle-btn.active {
-  background: var(--ink);
-  color: var(--bg);
+.filter-job-count {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.scanning-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.scanning-dot-sm {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: scan-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes scan-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* ── Filters ── */
@@ -1487,6 +1485,44 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   background: var(--bg-elevated, var(--surface));
 }
 
+.panel-back-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+  cursor: pointer;
+  width: 100%;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+@media (max-width: 1023px) {
+  .two-panel {
+    min-height: unset;
+  }
+  .panel-left {
+    width: 100%;
+    min-width: unset;
+    border-right: none;
+  }
+  .panel-left--hidden {
+    display: none;
+  }
+  .panel-right--hidden {
+    display: none;
+  }
+  .panel-back-btn {
+    display: flex;
+  }
+}
+
 /* ── Compact job card ── */
 .job-card-compact {
   display: flex;
@@ -1544,33 +1580,28 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   margin: 2px 0 6px;
 }
 
-.score-bar-wrap {
+.card-ring-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 5px;
+  justify-content: center;
+  padding-top: 2px;
 }
 
-.score-bar-track {
-  flex: 1;
-  height: 4px;
-  background: var(--line);
-  border-radius: 2px;
+/* ── Slide-down filter transition ── */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease;
   overflow: hidden;
 }
-
-.score-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease;
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
 }
-
-.score-bar-num {
-  font-size: 11px;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 600;
-  min-width: 30px;
-  text-align: right;
+.slide-down-enter-to,
+.slide-down-leave-from {
+  opacity: 1;
+  max-height: 200px;
 }
 
 .card-match-hint {

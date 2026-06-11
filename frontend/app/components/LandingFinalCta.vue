@@ -65,7 +65,7 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
 
 <style scoped>
 .sec {
-  padding: 0 0 100px;
+  padding: 0 0 40px;
 }
 .wrap {
   max-width: 1440px;

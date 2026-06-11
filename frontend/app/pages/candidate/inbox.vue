@@ -391,6 +391,44 @@ const showShadowAnalysis = computed(
     selectedApp.value?.type === 'hr' &&
     ['shortlisted', 'interview', 'offer', 'responded'].includes(selectedApp.value.status),
 )
+
+// ── List item stage helpers ───────────────────────────────────────────────────
+function stageColor(status: string): string {
+  if (['screening', 'interview'].includes(status)) return 'var(--warning)'
+  if (['shortlisted', 'offer'].includes(status)) return 'var(--positive)'
+  if (['rejected', 'failed'].includes(status)) return 'var(--negative)'
+  if (['responded', 'viewed'].includes(status)) return 'var(--accent)'
+  return 'var(--ink-subtle)'
+}
+
+function stageClass(app: UnifiedApp): string {
+  if (['screening', 'interview'].includes(app.status)) return 'app-row-urgent'
+  if (['rejected', 'failed'].includes(app.status)) return 'app-row-dead'
+  return ''
+}
+
+function avatarStyle(app: UnifiedApp): string {
+  const color = stageColor(app.status)
+  return `background: color-mix(in srgb, ${color} 15%, transparent); color: ${color}; border: 1.5px solid color-mix(in srgb, ${color} 30%, transparent);`
+}
+
+function pipelineSteps(app: UnifiedApp): string[] {
+  return app.type === 'hr' ? HR_STEPS : SEEKER_STEPS
+}
+
+function dotState(app: UnifiedApp, i: number): string {
+  const steps = pipelineSteps(app)
+  const current = steps.indexOf(app.status)
+  if (app.status === 'rejected' || app.status === 'failed') return i === 0 ? 'dead' : 'inactive'
+  if (i < current) return 'done'
+  if (i === current) return 'active'
+  return 'inactive'
+}
+
+// HR app shorthand for detail panel
+const hrApp = computed(() =>
+  selectedApp.value?.type === 'hr' ? (selectedApp.value.raw as HrApplication) : null,
+)
 </script>
 
 <template>
@@ -496,41 +534,37 @@ const showShadowAnalysis = computed(
         <div
           v-for="app in unifiedApps"
           :key="app.id"
-          class="app-row flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
-          :class="{ 'app-row-selected': selectedId === app.id }"
-          style="border-bottom: 1px solid var(--line-soft)"
+          class="app-row"
+          :class="[stageClass(app), selectedId === app.id && 'app-row-selected']"
           @click="openDetail(app)"
         >
-          <!-- Type indicator -->
-          <div
-            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
-            :style="
-              app.type === 'hr'
-                ? 'background: var(--accent-soft); color: var(--accent);'
-                : 'background: var(--bg-elevated); color: var(--ink-muted); border: 1px solid var(--line);'
-            "
-          >
-            {{ app.type === 'hr' ? 'HR' : 'Me' }}
+          <!-- Company initial avatar (stage-colored) -->
+          <div class="app-avatar" :style="avatarStyle(app)">
+            {{ app.company.charAt(0).toUpperCase() || '?' }}
           </div>
 
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5">
-              <p class="text-sm font-medium truncate" style="color: var(--ink)">
-                {{ app.title }}
-              </p>
+          <!-- Center: title + company + pipeline dots -->
+          <div class="app-row-center">
+            <div class="app-row-title-line">
+              <p class="app-row-title" :class="{ 'font-semibold': app.isNew }">{{ app.title }}</p>
               <span v-if="app.isNew" class="unread-dot shrink-0" />
             </div>
-            <p class="text-xs truncate" style="color: var(--ink-muted)">{{ app.company }}</p>
+            <p class="app-row-company">{{ app.company }}</p>
+            <!-- Pipeline progress dots -->
+            <div class="pipeline-dots">
+              <span
+                v-for="(_, i) in pipelineSteps(app)"
+                :key="i"
+                class="pipeline-dot"
+                :class="`pipeline-dot--${dotState(app, i)}`"
+              />
+            </div>
           </div>
 
-          <div class="flex flex-col items-end gap-1 shrink-0">
-            <UBadge :color="statusColor(app)" variant="subtle" size="xs">
-              {{ capitalizeStatus(app.status) }}
-            </UBadge>
-            <span v-if="app.lastActivity" class="text-[10px]" style="color: var(--ink-subtle)">
-              {{ formatRelativeTime(app.lastActivity) }}
-            </span>
-          </div>
+          <!-- Right: time only -->
+          <span v-if="app.lastActivity" class="app-row-time">
+            {{ formatRelativeTime(app.lastActivity) }}
+          </span>
         </div>
       </div>
 
@@ -591,6 +625,55 @@ const showShadowAnalysis = computed(
             <!-- Detail body (scrollable except chat input) -->
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto">
+                <!-- AI Snapshot — shown first for HR apps with a match score -->
+                <div
+                  v-if="hrApp?.matchScore"
+                  class="ai-snapshot px-5 py-4"
+                  style="border-bottom: 1px solid var(--line-soft)"
+                >
+                  <div class="ai-snapshot-inner">
+                    <div class="ai-snapshot-score-block">
+                      <span class="ai-snapshot-score-num">
+                        {{ Math.round(Number(hrApp.matchScore)) }}
+                      </span>
+                      <span class="ai-snapshot-score-pct">%</span>
+                      <span class="ai-snapshot-score-label">match</span>
+                    </div>
+                    <div class="ai-snapshot-body">
+                      <UBadge
+                        v-if="hrApp.matchRecommendation"
+                        :color="
+                          hrApp.matchRecommendation?.includes('strong')
+                            ? 'success'
+                            : hrApp.matchRecommendation?.includes('weak')
+                              ? 'warning'
+                              : 'neutral'
+                        "
+                        variant="subtle"
+                        size="xs"
+                      >
+                        {{ matchRecommendationLabel(hrApp.matchRecommendation) }}
+                      </UBadge>
+                      <div v-if="hrApp.matchReasons?.strengths?.length" class="ai-snapshot-chips">
+                        <span
+                          v-for="s in hrApp.matchReasons.strengths.slice(0, 3)"
+                          :key="s"
+                          class="snapshot-chip snapshot-chip--green"
+                          >{{ s }}</span
+                        >
+                      </div>
+                      <div v-if="hrApp.matchReasons?.gaps?.length" class="ai-snapshot-chips mt-1">
+                        <span
+                          v-for="g in hrApp.matchReasons.gaps.slice(0, 2)"
+                          :key="g"
+                          class="snapshot-chip snapshot-chip--amber"
+                          >{{ g }}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Status timeline -->
                 <div class="px-5 py-4" style="border-bottom: 1px solid var(--line-soft)">
                   <p
@@ -787,22 +870,21 @@ const showShadowAnalysis = computed(
                   </div>
 
                   <!-- Match Reasons card -->
-                  <div
+                  <details
                     v-if="
                       fullAppDetail?.matchRecommendation ||
                       fullAppDetail?.matchReasons?.strengths?.length ||
                       fullAppDetail?.matchReasons?.gaps?.length
                     "
-                    class="px-5 py-4 space-y-3"
+                    class="ai-accordion"
                     style="border-bottom: 1px solid var(--line-soft)"
                   >
-                    <div class="flex items-center gap-2">
-                      <p
+                    <summary class="ai-accordion-summary px-5 py-3">
+                      <span
                         class="text-[10px] font-mono font-semibold uppercase tracking-wider"
                         style="color: var(--ink-subtle)"
+                        >AI Match Analysis</span
                       >
-                        AI Match Analysis
-                      </p>
                       <UBadge
                         v-if="fullAppDetail?.matchRecommendation"
                         :color="
@@ -817,58 +899,62 @@ const showShadowAnalysis = computed(
                       >
                         {{ matchRecommendationLabel(fullAppDetail.matchRecommendation) }}
                       </UBadge>
-                    </div>
-                    <div v-if="fullAppDetail?.matchReasons?.strengths?.length" class="space-y-1">
-                      <p class="text-[10px] font-semibold" style="color: var(--positive)">
-                        Why you match
-                      </p>
-                      <div class="flex flex-wrap gap-1.5">
-                        <span
-                          v-for="s in fullAppDetail.matchReasons.strengths"
-                          :key="s"
-                          class="text-xs px-2 py-0.5 rounded-md"
-                          style="
-                            background: color-mix(in srgb, var(--positive) 12%, transparent);
-                            color: var(--positive);
-                            border: 1px solid color-mix(in srgb, var(--positive) 25%, transparent);
-                          "
-                        >
-                          {{ s }}
-                        </span>
+                      <UIcon name="i-heroicons-chevron-down" class="ai-accordion-chevron ml-auto" />
+                    </summary>
+                    <div class="px-5 pb-4 space-y-3">
+                      <div v-if="fullAppDetail?.matchReasons?.strengths?.length" class="space-y-1">
+                        <p class="text-[10px] font-semibold" style="color: var(--positive)">
+                          Why you match
+                        </p>
+                        <div class="flex flex-wrap gap-1.5">
+                          <span
+                            v-for="s in fullAppDetail.matchReasons.strengths"
+                            :key="s"
+                            class="text-xs px-2 py-0.5 rounded-md"
+                            style="
+                              background: color-mix(in srgb, var(--positive) 12%, transparent);
+                              color: var(--positive);
+                              border: 1px solid color-mix(in srgb, var(--positive) 25%, transparent);
+                            "
+                          >
+                            {{ s }}
+                          </span>
+                        </div>
+                      </div>
+                      <div v-if="fullAppDetail?.matchReasons?.gaps?.length" class="space-y-1">
+                        <p class="text-[10px] font-semibold" style="color: var(--warning)">
+                          Missing
+                        </p>
+                        <div class="flex flex-wrap gap-1.5">
+                          <span
+                            v-for="g in fullAppDetail.matchReasons.gaps"
+                            :key="g"
+                            class="text-xs px-2 py-0.5 rounded-md"
+                            style="
+                              background: color-mix(in srgb, var(--warning) 12%, transparent);
+                              color: var(--warning);
+                              border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+                            "
+                          >
+                            {{ g }}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div v-if="fullAppDetail?.matchReasons?.gaps?.length" class="space-y-1">
-                      <p class="text-[10px] font-semibold" style="color: var(--warning)">Missing</p>
-                      <div class="flex flex-wrap gap-1.5">
-                        <span
-                          v-for="g in fullAppDetail.matchReasons.gaps"
-                          :key="g"
-                          class="text-xs px-2 py-0.5 rounded-md"
-                          style="
-                            background: color-mix(in srgb, var(--warning) 12%, transparent);
-                            color: var(--warning);
-                            border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
-                          "
-                        >
-                          {{ g }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  </details>
 
                   <!-- Screening Results card -->
-                  <div
+                  <details
                     v-if="completedScreening"
-                    class="px-5 py-4 space-y-3"
+                    class="ai-accordion"
                     style="border-bottom: 1px solid var(--line-soft)"
                   >
-                    <div class="flex items-center justify-between">
-                      <p
+                    <summary class="ai-accordion-summary px-5 py-3">
+                      <span
                         class="text-[10px] font-mono font-semibold uppercase tracking-wider"
                         style="color: var(--ink-subtle)"
+                        >AI Screening Results</span
                       >
-                        AI Screening Results
-                      </p>
                       <UBadge
                         v-if="completedScreening.aiAssessment?.recommendation"
                         :color="recommendationColor(completedScreening.aiAssessment.recommendation)"
@@ -877,111 +963,116 @@ const showShadowAnalysis = computed(
                       >
                         {{ recommendationLabel(completedScreening.aiAssessment.recommendation) }}
                       </UBadge>
-                    </div>
-                    <p
-                      v-if="completedScreening.aiAssessment?.summary"
-                      class="text-xs leading-relaxed"
-                      style="color: var(--ink-muted)"
-                    >
-                      {{ completedScreening.aiAssessment.summary }}
-                    </p>
-                    <!-- Score rings row -->
-                    <div class="flex gap-4">
-                      <div
-                        v-for="item in [
-                          { label: 'Overall', val: completedScreening.aiAssessment?.overall_score },
-                          {
-                            label: 'Technical',
-                            val: completedScreening.aiAssessment?.technical_score,
-                          },
-                          {
-                            label: 'Comms',
-                            val: completedScreening.aiAssessment?.communication_score,
-                          },
-                        ]"
-                        :key="item.label"
-                        class="flex flex-col items-center gap-1"
+                      <UIcon name="i-heroicons-chevron-down" class="ai-accordion-chevron ml-auto" />
+                    </summary>
+                    <div class="px-5 pb-4 space-y-3">
+                      <p
+                        v-if="completedScreening.aiAssessment?.summary"
+                        class="text-xs leading-relaxed"
+                        style="color: var(--ink-muted)"
                       >
-                        <div class="relative w-10 h-10">
-                          <svg class="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              fill="none"
-                              stroke="var(--line)"
-                              stroke-width="3"
-                            />
-                            <circle
-                              v-if="item.val != null"
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              fill="none"
-                              :stroke="scoreRing(item.val)"
-                              stroke-width="3"
-                              stroke-linecap="round"
-                              :stroke-dasharray="`${(item.val / 10) * 94.2} 94.2`"
-                            />
-                          </svg>
-                          <span
-                            class="absolute inset-0 flex items-center justify-center text-[9px] font-mono font-bold"
-                            :style="{ color: scoreRing(item.val) }"
-                          >
-                            {{ item.val != null ? item.val : '—' }}
-                          </span>
+                        {{ completedScreening.aiAssessment.summary }}
+                      </p>
+                      <!-- Score rings row -->
+                      <div class="flex gap-4">
+                        <div
+                          v-for="item in [
+                            {
+                              label: 'Overall',
+                              val: completedScreening.aiAssessment?.overall_score,
+                            },
+                            {
+                              label: 'Technical',
+                              val: completedScreening.aiAssessment?.technical_score,
+                            },
+                            {
+                              label: 'Comms',
+                              val: completedScreening.aiAssessment?.communication_score,
+                            },
+                          ]"
+                          :key="item.label"
+                          class="flex flex-col items-center gap-1"
+                        >
+                          <div class="relative w-10 h-10">
+                            <svg class="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                              <circle
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                fill="none"
+                                stroke="var(--line)"
+                                stroke-width="3"
+                              />
+                              <circle
+                                v-if="item.val != null"
+                                cx="18"
+                                cy="18"
+                                r="15"
+                                fill="none"
+                                :stroke="scoreRing(item.val)"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                :stroke-dasharray="`${(item.val / 10) * 94.2} 94.2`"
+                              />
+                            </svg>
+                            <span
+                              class="absolute inset-0 flex items-center justify-center text-[9px] font-mono font-bold"
+                              :style="{ color: scoreRing(item.val) }"
+                            >
+                              {{ item.val != null ? item.val : '—' }}
+                            </span>
+                          </div>
+                          <span class="text-[9px] font-mono" style="color: var(--ink-subtle)">{{
+                            item.label
+                          }}</span>
                         </div>
-                        <span class="text-[9px] font-mono" style="color: var(--ink-subtle)">{{
-                          item.label
-                        }}</span>
+                      </div>
+                      <!-- Strengths/Concerns -->
+                      <div
+                        v-if="completedScreening.aiAssessment?.strengths?.length"
+                        class="flex flex-wrap gap-1"
+                      >
+                        <span
+                          v-for="s in completedScreening.aiAssessment.strengths"
+                          :key="s"
+                          class="text-[10px] px-2 py-0.5 rounded"
+                          style="
+                            background: color-mix(in srgb, var(--positive) 12%, transparent);
+                            color: var(--positive);
+                          "
+                          >{{ s }}</span
+                        >
+                      </div>
+                      <div
+                        v-if="completedScreening.aiAssessment?.concerns?.length"
+                        class="flex flex-wrap gap-1"
+                      >
+                        <span
+                          v-for="c in completedScreening.aiAssessment.concerns"
+                          :key="c"
+                          class="text-[10px] px-2 py-0.5 rounded"
+                          style="
+                            background: color-mix(in srgb, var(--warning) 12%, transparent);
+                            color: var(--warning);
+                          "
+                          >{{ c }}</span
+                        >
                       </div>
                     </div>
-                    <!-- Strengths/Concerns -->
-                    <div
-                      v-if="completedScreening.aiAssessment?.strengths?.length"
-                      class="flex flex-wrap gap-1"
-                    >
-                      <span
-                        v-for="s in completedScreening.aiAssessment.strengths"
-                        :key="s"
-                        class="text-[10px] px-2 py-0.5 rounded"
-                        style="
-                          background: color-mix(in srgb, var(--positive) 12%, transparent);
-                          color: var(--positive);
-                        "
-                        >{{ s }}</span
-                      >
-                    </div>
-                    <div
-                      v-if="completedScreening.aiAssessment?.concerns?.length"
-                      class="flex flex-wrap gap-1"
-                    >
-                      <span
-                        v-for="c in completedScreening.aiAssessment.concerns"
-                        :key="c"
-                        class="text-[10px] px-2 py-0.5 rounded"
-                        style="
-                          background: color-mix(in srgb, var(--warning) 12%, transparent);
-                          color: var(--warning);
-                        "
-                        >{{ c }}</span
-                      >
-                    </div>
-                  </div>
+                  </details>
 
                   <!-- Shadow Analysis card (post-interview) -->
-                  <div
+                  <details
                     v-if="showShadowAnalysis"
-                    class="px-5 py-4 space-y-3"
+                    class="ai-accordion"
                     style="border-bottom: 1px solid var(--line-soft)"
                   >
-                    <div class="flex items-center justify-between">
-                      <p
+                    <summary class="ai-accordion-summary px-5 py-3">
+                      <span
                         class="text-[10px] font-mono font-semibold uppercase tracking-wider"
                         style="color: var(--ink-subtle)"
+                        >Interview Analysis</span
                       >
-                        Interview Analysis
-                      </p>
                       <span
                         v-if="shadowAnalysis?.overall_score != null"
                         class="text-xs font-mono font-bold"
@@ -989,59 +1080,62 @@ const showShadowAnalysis = computed(
                       >
                         {{ shadowAnalysis.overall_score }}/10
                       </span>
-                    </div>
-                    <p
-                      v-if="shadowAnalysis?.summary"
-                      class="text-xs leading-relaxed"
-                      style="color: var(--ink-muted)"
-                    >
-                      {{ shadowAnalysis.summary }}
-                    </p>
-                    <!-- Dimension bars -->
-                    <div v-if="shadowAnalysis?.dimensions" class="space-y-2">
-                      <div
-                        v-for="dim in shadowDimensions"
-                        :key="dim.key"
-                        class="flex items-center gap-2"
+                      <UIcon name="i-heroicons-chevron-down" class="ai-accordion-chevron ml-auto" />
+                    </summary>
+                    <div class="px-5 pb-4 space-y-3">
+                      <p
+                        v-if="shadowAnalysis?.summary"
+                        class="text-xs leading-relaxed"
+                        style="color: var(--ink-muted)"
                       >
-                        <span
-                          class="text-[10px] w-20 shrink-0 font-mono"
-                          style="color: var(--ink-subtle)"
-                          >{{ dim.label }}</span
-                        >
+                        {{ shadowAnalysis.summary }}
+                      </p>
+                      <!-- Dimension bars -->
+                      <div v-if="shadowAnalysis?.dimensions" class="space-y-2">
                         <div
-                          class="flex-1 h-1.5 rounded-full overflow-hidden"
-                          style="background: var(--bg-elevated)"
+                          v-for="dim in shadowDimensions"
+                          :key="dim.key"
+                          class="flex items-center gap-2"
                         >
+                          <span
+                            class="text-[10px] w-20 shrink-0 font-mono"
+                            style="color: var(--ink-subtle)"
+                            >{{ dim.label }}</span
+                          >
                           <div
-                            class="h-full rounded-full"
-                            :style="{
-                              width: `${((shadowAnalysis.dimensions?.[dim.key] ?? 0) / 10) * 100}%`,
-                              background: scoreRing(shadowAnalysis.dimensions?.[dim.key]),
-                            }"
-                          />
+                            class="flex-1 h-1.5 rounded-full overflow-hidden"
+                            style="background: var(--bg-elevated)"
+                          >
+                            <div
+                              class="h-full rounded-full"
+                              :style="{
+                                width: `${((shadowAnalysis.dimensions?.[dim.key] ?? 0) / 10) * 100}%`,
+                                background: scoreRing(shadowAnalysis.dimensions?.[dim.key]),
+                              }"
+                            />
+                          </div>
+                          <span
+                            class="text-[10px] font-mono w-6 text-right"
+                            style="color: var(--ink-subtle)"
+                          >
+                            {{ shadowAnalysis.dimensions?.[dim.key] ?? '—' }}
+                          </span>
                         </div>
-                        <span
-                          class="text-[10px] font-mono w-6 text-right"
-                          style="color: var(--ink-subtle)"
-                        >
-                          {{ shadowAnalysis.dimensions?.[dim.key] ?? '—' }}
-                        </span>
+                      </div>
+                      <div
+                        v-if="shadowAnalysis?.recruiter_advice"
+                        class="rounded-lg px-3 py-2.5 text-xs leading-relaxed"
+                        style="
+                          background: var(--bg-elevated);
+                          color: var(--ink-muted);
+                          border: 1px solid var(--line-soft);
+                        "
+                      >
+                        <span class="font-semibold" style="color: var(--accent)">Tip: </span
+                        >{{ shadowAnalysis.recruiter_advice }}
                       </div>
                     </div>
-                    <div
-                      v-if="shadowAnalysis?.recruiter_advice"
-                      class="rounded-lg px-3 py-2.5 text-xs leading-relaxed"
-                      style="
-                        background: var(--bg-elevated);
-                        color: var(--ink-muted);
-                        border: 1px solid var(--line-soft);
-                      "
-                    >
-                      <span class="font-semibold" style="color: var(--accent)">Tip: </span
-                      >{{ shadowAnalysis.recruiter_advice }}
-                    </div>
-                  </div>
+                  </details>
 
                   <!-- Loading detail skeleton -->
                   <div v-if="fullAppLoading" class="px-5 py-4 space-y-2">
@@ -1167,24 +1261,162 @@ const showShadowAnalysis = computed(
 </template>
 
 <style scoped>
+/* ── App row (redesigned) ── */
+.app-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+  border-left: 3px solid transparent;
+  transition:
+    background 0.1s,
+    border-left-color 0.2s;
+}
 .app-row:hover {
   background: var(--bg-elevated);
 }
 .app-row-selected {
   background: var(--bg-elevated) !important;
+  border-left-color: var(--accent) !important;
 }
-.app-row-selected::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
+.app-row-urgent {
+  border-left-color: var(--warning);
+}
+.app-row-dead {
+  opacity: 0.55;
+}
+.app-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.app-row-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.app-row-title-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.app-row-title {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.app-row-company {
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-row-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+
+/* ── Pipeline dots ── */
+.pipeline-dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+.pipeline-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pipeline-dot--done {
+  background: var(--positive);
+}
+.pipeline-dot--active {
   background: var(--accent);
-  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
-.app-row {
-  position: relative;
+.pipeline-dot--inactive {
+  background: var(--line);
+}
+.pipeline-dot--dead {
+  background: var(--negative);
+}
+
+/* ── AI Snapshot ── */
+.ai-snapshot-inner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.ai-snapshot-score-block {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ai-snapshot-score-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.ai-snapshot-score-pct {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+.ai-snapshot-score-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-subtle);
+  margin-left: 4px;
+}
+.ai-snapshot-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 2px;
+}
+.ai-snapshot-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.snapshot-chip {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.snapshot-chip--green {
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+  color: var(--positive);
+}
+.snapshot-chip--amber {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
 }
 .unread-dot {
   width: 7px;
@@ -1243,5 +1475,30 @@ const showShadowAnalysis = computed(
 .detail-fade-enter-from,
 .detail-fade-leave-to {
   opacity: 0;
+}
+
+.ai-accordion {
+  border: none;
+}
+.ai-accordion-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.ai-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+.ai-accordion-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--ink-subtle);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.ai-accordion[open] .ai-accordion-chevron {
+  transform: rotate(180deg);
 }
 </style>

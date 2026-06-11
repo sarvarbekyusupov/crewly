@@ -776,7 +776,7 @@
       "board": "Doska",
       "list": "Ro'yxat",
       "empty": "Hali arizalar yo'q",
-      "emptyDesc": "Vakansiyalarga qarab \"Ariza berish\" tugmasini bosing.",
+      "emptyDesc": "AI agentingiz faol ravishda mos vakansiyalar qidirmoqda. Vakansiyaga ariza bering — har bir bosqichni bu yerda kuzatadi: ko'rishlar, suhbatlar, takliflar.",
       "queued": "Navbatda",
       "applied": "Ariza berildi",
       "viewed": "Ko'rildi",

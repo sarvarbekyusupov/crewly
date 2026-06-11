@@ -681,7 +681,7 @@
       "board": "Board",
       "list": "List",
       "empty": "No applications yet",
-      "emptyDesc": "Browse jobs and hit Apply to start the queue.",
+      "emptyDesc": "Your AI agent is actively watching for matches. Apply to a job and it will track every stage here — views, interviews, offers.",
       "queued": "Queued",
       "applied": "Applied",
       "viewed": "Viewed",

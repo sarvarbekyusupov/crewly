@@ -50,7 +50,7 @@
 
 <style scoped>
 .sec {
-  padding: 0 0 88px;
+  padding: 0 0 48px;
 }
 .wrap {
   max-width: 1440px;

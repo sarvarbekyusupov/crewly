@@ -30,10 +30,10 @@ const {
 const funnel = computed(() => {
   if (!analytics.value) return []
   return [
-    { label: 'Total Applied', value: analytics.value.total, color: '#6366f1' },
-    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: '#3b82f6' },
-    { label: 'Interviewed', value: analytics.value.interviewed, color: '#f59e0b' },
-    { label: 'Offers', value: analytics.value.offers, color: '#22c55e' },
+    { label: 'Total Applied', value: analytics.value.total, color: 'var(--accent)' },
+    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: 'var(--ink-muted)' },
+    { label: 'Interviewed', value: analytics.value.interviewed, color: 'var(--warning)' },
+    { label: 'Offers', value: analytics.value.offers, color: 'var(--positive)' },
   ]
 })
 
@@ -53,16 +53,16 @@ const statusLabels: Record<string, string> = {
 }
 
 const statusColor: Record<string, string> = {
-  applied: '#3b82f6',
-  interview: '#f59e0b',
-  phone_interview: '#f59e0b',
-  offer_made: '#22c55e',
-  hired: '#16a34a',
-  rejected: '#ef4444',
-  skipped: '#9ca3af',
-  failed: '#dc2626',
-  queued: '#6366f1',
-  applying: '#8b5cf6',
+  applied: 'var(--accent)',
+  interview: 'var(--warning)',
+  phone_interview: 'var(--warning)',
+  offer_made: 'var(--positive)',
+  hired: 'var(--positive)',
+  rejected: 'var(--negative)',
+  skipped: 'var(--ink-subtle)',
+  failed: 'var(--negative)',
+  queued: 'var(--accent)',
+  applying: 'var(--accent)',
 }
 
 // Build daily activity chart data (last 30 days)
@@ -86,7 +86,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
 </script>
 
 <template>
-  <div class="space-y-6 max-w-4xl mx-auto">
+  <div class="space-y-6 max-w-6xl mx-auto">
     <!-- Header -->
     <div class="pb-4 border-b border-line">
       <p
@@ -99,7 +99,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           margin-bottom: 6px;
         "
       >
-        Dashboard
+        Analytics
       </p>
       <h1
         style="
@@ -142,7 +142,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #f59e0b">
+          <p class="text-3xl font-mono font-bold" style="color: var(--warning)">
             {{ analytics.interviewed }}
           </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Interviews</p>
@@ -151,14 +151,16 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #22c55e">{{ analytics.offers }}</p>
+          <p class="text-3xl font-mono font-bold" style="color: var(--positive)">
+            {{ analytics.offers }}
+          </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Offers</p>
         </div>
         <div
           class="rounded-xl p-4 text-center"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <p class="text-3xl font-mono font-bold" style="color: #6366f1">
+          <p class="text-3xl font-mono font-bold" style="color: var(--accent)">
             {{ analytics.responseRate }}%
           </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Response Rate</p>
@@ -213,7 +215,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
               :title="`${day.label}: ${day.count}`"
               :style="{
                 height: `${Math.max(4, Math.round((day.count / maxDailyCount) * 100))}%`,
-                background: day.count > 0 ? '#6366f1' : 'var(--bg-deep)',
+                background: day.count > 0 ? 'var(--accent)' : 'var(--bg-deep)',
                 opacity: day.count > 0 ? '1' : '0.3',
               }"
             />

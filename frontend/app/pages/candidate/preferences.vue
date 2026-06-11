@@ -262,283 +262,633 @@ const save = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="max-w-xl space-y-6">
-    <div class="pb-4" style="border-bottom: 1px solid var(--line)">
-      <p
-        style="
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: var(--ink-subtle);
-          margin-bottom: 6px;
-        "
-      >
-        {{ t('candidate.preferences.eyebrow') }}
-      </p>
-      <h1
-        style="
-          font-family: 'Fraunces', serif;
-          font-size: 28px;
-          line-height: 1.05;
-          letter-spacing: -0.03em;
-          color: var(--ink);
-          font-weight: 400;
-        "
-      >
-        {{ t('candidate.preferences.title') }}
-      </h1>
+  <div class="prefs-page">
+    <!-- Header -->
+    <div class="prefs-header">
+      <p class="prefs-eyebrow">{{ t('candidate.preferences.eyebrow') }}</p>
+      <h1 class="prefs-title">{{ t('candidate.preferences.title') }}</h1>
     </div>
 
-    <!-- Live settings summary -->
-    <div
-      class="rounded-lg px-4 py-3"
-      style="background: var(--bg-elevated); border: 1px solid var(--line)"
-    >
-      <p
-        class="text-xs font-medium mb-2"
-        style="color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em"
-      >
-        Current settings
-      </p>
-      <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm" style="color: var(--ink)">
-        <span>
-          <span style="color: var(--ink-subtle)">Min match </span>
-          <strong>{{ minMatchScore > 0 ? minMatchScore + '%' : 'None' }}</strong>
+    <!-- Live summary strip -->
+    <div class="prefs-summary-strip">
+      <div class="prefs-summary-pill">
+        <span class="prefs-summary-key">Work</span>
+        <span class="prefs-summary-val">{{ preferredWorkMode || 'Any' }}</span>
+      </div>
+      <div class="prefs-summary-pill">
+        <span class="prefs-summary-key">Match ≥</span>
+        <span class="prefs-summary-val" :style="minMatchScore > 0 ? 'color: var(--accent)' : ''">
+          {{ minMatchScore > 0 ? minMatchScore + '%' : 'Off' }}
         </span>
-        <span>
-          <span style="color: var(--ink-subtle)">Auto-apply </span>
-          <strong>{{ maxApplicationsPerDay }}/day</strong>
-        </span>
-        <span>
-          <span style="color: var(--ink-subtle)">Salary </span>
-          <strong>{{
-            expectedSalaryUzs ? Number(expectedSalaryUzs).toLocaleString() + ' UZS' : 'Any'
-          }}</strong>
-        </span>
-        <span>
-          <span style="color: var(--ink-subtle)">Blocked </span>
-          <strong
-            >{{ blacklistedCompanies.length }}
-            {{ blacklistedCompanies.length === 1 ? 'company' : 'companies' }}</strong
-          >
+      </div>
+      <div class="prefs-summary-pill">
+        <span class="prefs-summary-key">Auto-apply</span>
+        <span class="prefs-summary-val">{{ maxApplicationsPerDay }}/day</span>
+      </div>
+      <div class="prefs-summary-pill">
+        <span class="prefs-summary-key">Salary</span>
+        <span class="prefs-summary-val">
+          {{ expectedSalaryUzs ? Number(expectedSalaryUzs).toLocaleString() + ' UZS' : 'Any' }}
         </span>
       </div>
     </div>
 
-    <form class="space-y-6" @submit.prevent="save">
-      <UCard>
-        <h3 class="section-label mb-4">{{ t('candidate.preferences.title') }}</h3>
-        <div class="space-y-4">
-          <UFormField
-            :label="t('candidate.profile.preferredWorkMode')"
-            :error="errors.preferredWorkMode"
-          >
-            <div class="flex gap-2">
-              <button
-                v-for="mode in [
-                  { label: t('candidate.jobs.allModes'), value: '' },
-                  { label: t('jobs.workMode.remote'), value: 'remote' },
-                  { label: t('jobs.workMode.hybrid'), value: 'hybrid' },
-                  { label: t('jobs.workMode.office'), value: 'office' },
-                ]"
-                :key="mode.value"
-                type="button"
-                class="px-3 py-1.5 text-sm rounded-lg transition-colors"
-                :style="
-                  preferredWorkMode === mode.value
-                    ? 'background: var(--ink); color: var(--bg);'
-                    : 'background: var(--surface); color: var(--ink-muted); border: 1px solid var(--line);'
-                "
-                @click="preferredWorkMode = mode.value"
-              >
-                {{ mode.label }}
-              </button>
-            </div>
-          </UFormField>
-
-          <UFormField
-            :label="t('candidate.preferences.salaryLabel')"
-            :hint="t('candidate.preferences.salaryHint')"
-            :error="errors.expectedSalaryUzs"
-          >
-            <div class="flex items-center gap-3">
-              <UInput
-                v-model="expectedSalaryUzs"
-                v-bind="expectedSalaryUzsProps"
-                type="number"
-                min="0"
-                step="1000000"
-                placeholder="e.g. 5000000"
-                class="w-48"
-              />
-              <span v-if="expectedSalaryUzs" class="text-sm" style="color: var(--ink-muted)">
-                {{ Number(expectedSalaryUzs).toLocaleString() }} UZS
-              </span>
-            </div>
-          </UFormField>
-
-          <UFormField
-            :label="t('candidate.preferences.minScoreLabel')"
-            :hint="t('candidate.preferences.minScoreHint')"
-            :error="errors.minMatchScore"
-          >
-            <div class="flex items-center gap-3">
-              <UInput
-                v-model="minMatchScore"
-                v-bind="minMatchScoreProps"
-                type="number"
-                min="0"
-                max="100"
-                step="5"
-                class="w-24"
-              />
-              <span class="text-sm" style="color: var(--ink-muted)">
-                {{ minMatchScore || 'No' }} minimum
-              </span>
-            </div>
-          </UFormField>
-
-          <UFormField
-            :label="t('candidate.preferences.maxAppsLabel')"
-            :hint="t('candidate.preferences.maxAppsHint')"
-            :error="errors.maxApplicationsPerDay"
-          >
-            <UInput
-              v-model="maxApplicationsPerDay"
-              v-bind="maxApplicationsPerDayProps"
-              type="number"
-              min="1"
-              max="50"
-              class="w-24"
-            />
-          </UFormField>
+    <form class="prefs-form" @submit.prevent="save">
+      <!-- Section: Matching -->
+      <section class="prefs-section">
+        <div class="prefs-section-head">
+          <UIcon name="i-heroicons-sparkles" class="prefs-section-icon" />
+          <h2 class="prefs-section-title">Matching</h2>
         </div>
-      </UCard>
 
-      <!-- HH Connect -->
-      <UCard>
-        <h3 class="section-label mb-3">{{ t('candidate.preferences.hhTitle') }}</h3>
-        <p class="text-sm mb-4" style="color: var(--ink-muted)">
-          {{ t('candidate.preferences.hhDesc') }}
-        </p>
-
-        <div v-if="prefs?.hhResumeId" class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-check-circle" class="text-green-500 w-5 h-5" />
-              <div>
-                <p class="text-sm font-medium" style="color: var(--ink)">
-                  <template v-if="hhMe?.first_name">
-                    {{ t('candidate.preferences.hhConnectedAs') }} {{ hhMe.first_name }}
-                    {{ hhMe.last_name }}
-                  </template>
-                  <template v-else>{{ t('candidate.preferences.hhConnectedLabel') }}</template>
-                </p>
-                <p class="text-xs" style="color: var(--ink-subtle)">
-                  <template v-if="hhMe?.email">{{ hhMe.email }} · </template>
-                  {{ t('candidate.preferences.hhActiveDesc') }}
-                  <template v-if="viewsCount !== null">
-                    · {{ viewsCount }} {{ t('candidate.preferences.hhResumeViews').toLowerCase() }}
-                  </template>
-                </p>
-              </div>
-            </div>
-            <UButton
-              variant="ghost"
-              color="error"
-              size="sm"
-              :loading="disconnecting"
-              @click="disconnectHh"
+        <div class="prefs-field">
+          <label class="prefs-label">{{ t('candidate.profile.preferredWorkMode') }}</label>
+          <div class="prefs-mode-row">
+            <button
+              v-for="mode in [
+                { label: t('candidate.jobs.allModes'), value: '' },
+                { label: t('jobs.workMode.remote'), value: 'remote' },
+                { label: t('jobs.workMode.hybrid'), value: 'hybrid' },
+                { label: t('jobs.workMode.office'), value: 'office' },
+              ]"
+              :key="mode.value"
+              type="button"
+              class="prefs-mode-btn"
+              :class="{ 'prefs-mode-btn--active': preferredWorkMode === mode.value }"
+              @click="preferredWorkMode = mode.value"
             >
-              {{ t('candidate.preferences.disconnect') }}
-            </UButton>
+              {{ mode.label }}
+            </button>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <UButton
-              size="sm"
-              variant="outline"
-              icon="i-heroicons-arrow-path"
-              :loading="syncing"
+          <p v-if="errors.preferredWorkMode" class="prefs-error">{{ errors.preferredWorkMode }}</p>
+        </div>
+
+        <div class="prefs-field">
+          <label class="prefs-label">{{ t('candidate.preferences.minScoreLabel') }}</label>
+          <p class="prefs-hint">{{ t('candidate.preferences.minScoreHint') }}</p>
+          <div class="prefs-score-row">
+            <input
+              v-model="minMatchScore"
+              v-bind="minMatchScoreProps"
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              class="prefs-slider"
+            />
+            <span
+              class="prefs-score-badge"
+              :style="minMatchScore > 0 ? 'color: var(--accent); border-color: var(--accent)' : ''"
+            >
+              {{ minMatchScore > 0 ? minMatchScore + '%' : 'Off' }}
+            </span>
+          </div>
+          <p v-if="errors.minMatchScore" class="prefs-error">{{ errors.minMatchScore }}</p>
+        </div>
+
+        <div class="prefs-field">
+          <label class="prefs-label">{{ t('candidate.preferences.salaryLabel') }}</label>
+          <p class="prefs-hint">{{ t('candidate.preferences.salaryHint') }}</p>
+          <div class="prefs-salary-row">
+            <UInput
+              v-model="expectedSalaryUzs"
+              v-bind="expectedSalaryUzsProps"
+              type="number"
+              min="0"
+              step="1000000"
+              placeholder="e.g. 5000000"
+              class="prefs-salary-input"
+            />
+            <span class="prefs-salary-unit">UZS</span>
+          </div>
+          <p v-if="errors.expectedSalaryUzs" class="prefs-error">{{ errors.expectedSalaryUzs }}</p>
+        </div>
+
+        <div class="prefs-field">
+          <label class="prefs-label">{{ t('candidate.preferences.maxAppsLabel') }}</label>
+          <p class="prefs-hint">{{ t('candidate.preferences.maxAppsHint') }}</p>
+          <div class="prefs-apps-row">
+            <button
+              v-for="n in [1, 3, 5, 10, 20]"
+              :key="n"
+              type="button"
+              class="prefs-mode-btn"
+              :class="{ 'prefs-mode-btn--active': maxApplicationsPerDay === n }"
+              @click="maxApplicationsPerDay = n"
+            >
+              {{ n }}
+            </button>
+            <span class="text-xs ml-1" style="color: var(--ink-subtle)">per day</span>
+          </div>
+          <p v-if="errors.maxApplicationsPerDay" class="prefs-error">
+            {{ errors.maxApplicationsPerDay }}
+          </p>
+        </div>
+      </section>
+
+      <!-- Section: HH Integration -->
+      <section class="prefs-section">
+        <div class="prefs-section-head">
+          <span class="prefs-hh-badge">HH</span>
+          <h2 class="prefs-section-title">{{ t('candidate.preferences.hhTitle') }}</h2>
+        </div>
+        <p class="prefs-section-desc">{{ t('candidate.preferences.hhDesc') }}</p>
+
+        <!-- Connected state -->
+        <div v-if="prefs?.hhResumeId" class="prefs-hh-connected">
+          <div class="prefs-hh-identity">
+            <div class="prefs-hh-avatar">
+              {{ (hhMe?.first_name ?? 'H').charAt(0).toUpperCase() }}
+            </div>
+            <div class="prefs-hh-info">
+              <p class="prefs-hh-name">
+                <template v-if="hhMe?.first_name"
+                  >{{ hhMe.first_name }} {{ hhMe.last_name }}</template
+                >
+                <template v-else>{{ t('candidate.preferences.hhConnectedLabel') }}</template>
+              </p>
+              <p class="prefs-hh-meta">
+                <template v-if="hhMe?.email">{{ hhMe.email }}</template>
+                <template v-if="viewsCount !== null"> · {{ viewsCount }} views</template>
+              </p>
+            </div>
+            <span class="prefs-hh-status-dot" />
+          </div>
+          <div class="prefs-hh-actions">
+            <button
+              type="button"
+              class="prefs-hh-action-btn"
+              :disabled="syncing"
+              :title="t('candidate.preferences.hhResumeSync')"
               @click="syncHhResume"
             >
-              {{ t('candidate.preferences.hhResumeSync') }}
-            </UButton>
-            <UButton
-              size="sm"
-              variant="outline"
-              icon="i-heroicons-eye"
-              :loading="publishing"
+              <UIcon name="i-heroicons-arrow-path" :class="{ 'animate-spin': syncing }" />
+              <span>Sync CV</span>
+            </button>
+            <button
+              type="button"
+              class="prefs-hh-action-btn"
+              :disabled="publishing"
+              :title="t('candidate.preferences.hhResumePublish')"
               @click="publishHhResume"
             >
-              {{ t('candidate.preferences.hhResumePublish') }}
-            </UButton>
-            <UButton
-              size="sm"
-              variant="outline"
-              icon="i-heroicons-eye-slash"
-              :loading="hiding"
+              <UIcon name="i-heroicons-eye" />
+              <span>Publish</span>
+            </button>
+            <button
+              type="button"
+              class="prefs-hh-action-btn"
+              :disabled="hiding"
+              :title="t('candidate.preferences.hhResumeHide')"
               @click="hideHhResume"
             >
-              {{ t('candidate.preferences.hhResumeHide') }}
-            </UButton>
-            <UButton
-              size="sm"
-              variant="outline"
-              icon="i-heroicons-sparkles"
-              :loading="syncingSkills"
+              <UIcon name="i-heroicons-eye-slash" />
+              <span>Hide</span>
+            </button>
+            <button
+              type="button"
+              class="prefs-hh-action-btn"
+              :disabled="syncingSkills"
+              :title="t('candidate.preferences.hhResumeUpdate')"
               @click="syncSkillsToHh"
             >
-              {{ t('candidate.preferences.hhResumeUpdate') }}
-            </UButton>
+              <UIcon name="i-heroicons-sparkles" />
+              <span>Skills</span>
+            </button>
+            <button
+              type="button"
+              class="prefs-hh-action-btn prefs-hh-action-btn--danger"
+              :disabled="disconnecting"
+              @click="disconnectHh"
+            >
+              <UIcon name="i-heroicons-x-mark" />
+              <span>Disconnect</span>
+            </button>
           </div>
         </div>
 
-        <UButton
+        <!-- Not connected state -->
+        <button
           v-else
-          :loading="hhConnecting"
-          icon="i-heroicons-link"
-          variant="outline"
+          type="button"
+          class="prefs-hh-connect-btn"
+          :disabled="hhConnecting"
           @click="connectHh"
         >
-          {{ t('candidate.preferences.hhConnect') }}
-        </UButton>
-      </UCard>
+          <UIcon v-if="hhConnecting" name="i-heroicons-arrow-path" class="animate-spin" />
+          <UIcon v-else name="i-heroicons-link" />
+          <span>{{ t('candidate.preferences.hhConnect') }}</span>
+        </button>
+      </section>
 
-      <!-- Blacklisted companies -->
-      <UCard>
-        <h3 class="section-label mb-3">{{ t('candidate.preferences.blacklistTitle') }}</h3>
-        <p class="text-sm mb-3" style="color: var(--ink-muted)">
-          {{ t('candidate.preferences.blacklistDesc') }}
-        </p>
-        <div class="flex gap-2 mb-3">
+      <!-- Section: Blacklist -->
+      <section class="prefs-section" style="border-bottom: none">
+        <div class="prefs-section-head">
+          <UIcon name="i-heroicons-no-symbol" class="prefs-section-icon" />
+          <h2 class="prefs-section-title">{{ t('candidate.preferences.blacklistTitle') }}</h2>
+        </div>
+        <p class="prefs-section-desc">{{ t('candidate.preferences.blacklistDesc') }}</p>
+        <div class="prefs-blacklist-add">
           <UInput
             v-model="blacklistInput"
-            placeholder="Company name..."
+            placeholder="Company name…"
             class="flex-1"
             @keydown.enter.prevent="addBlacklist"
           />
           <UButton type="button" variant="outline" icon="i-heroicons-plus" @click="addBlacklist" />
         </div>
-        <div class="flex flex-wrap gap-2">
-          <UBadge v-for="c in blacklistedCompanies" :key="c" color="error" variant="subtle">
+        <div class="prefs-blacklist-chips">
+          <span v-for="c in blacklistedCompanies" :key="c" class="prefs-blacklist-chip">
             {{ c }}
-            <button class="ml-1 hover:opacity-70" @click="removeBlacklist(c)">×</button>
-          </UBadge>
-          <span
-            v-if="!blacklistedCompanies.length"
-            class="text-sm"
-            style="color: var(--ink-subtle)"
-            >{{ t('candidate.preferences.noBlacklist') }}</span
-          >
+            <button type="button" class="prefs-chip-remove" @click="removeBlacklist(c)">×</button>
+          </span>
+          <span v-if="!blacklistedCompanies.length" class="prefs-empty-hint">
+            {{ t('candidate.preferences.noBlacklist') }}
+          </span>
         </div>
-      </UCard>
+      </section>
 
-      <div class="flex justify-end">
-        <UButton type="submit" :loading="saving" icon="i-heroicons-check">{{
-          t('candidate.preferences.save')
-        }}</UButton>
+      <div class="prefs-save-row">
+        <UButton type="submit" :loading="saving" icon="i-heroicons-check" size="lg">
+          {{ t('candidate.preferences.save') }}
+        </UButton>
       </div>
     </form>
   </div>
 </template>
+
+<style scoped>
+.prefs-page {
+  max-width: 560px;
+}
+
+.prefs-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+.prefs-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-subtle);
+  margin-bottom: 6px;
+}
+
+.prefs-title {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.prefs-summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.prefs-summary-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+
+.prefs-summary-key {
+  color: var(--ink-subtle);
+}
+
+.prefs-summary-val {
+  color: var(--ink);
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.prefs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.prefs-section {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prefs-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prefs-section-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+
+.prefs-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.prefs-section-desc {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  margin-top: -8px;
+}
+
+.prefs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prefs-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.prefs-hint {
+  font-size: 12px;
+  color: var(--ink-subtle);
+  margin-top: -2px;
+}
+
+.prefs-error {
+  font-size: 12px;
+  color: var(--negative);
+}
+
+.prefs-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prefs-mode-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.prefs-mode-btn:hover {
+  border-color: var(--ink-subtle);
+  color: var(--ink);
+}
+
+.prefs-mode-btn--active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.prefs-score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prefs-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+}
+
+.prefs-score-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  color: var(--ink-subtle);
+  min-width: 52px;
+  text-align: center;
+}
+
+.prefs-salary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prefs-salary-input {
+  width: 180px;
+}
+
+.prefs-salary-unit {
+  font-size: 12px;
+  color: var(--ink-subtle);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.prefs-apps-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* HH Integration */
+.prefs-hh-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #d52b1e;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+.prefs-hh-connected {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+}
+
+.prefs-hh-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prefs-hh-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #d52b1e;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prefs-hh-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.prefs-hh-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.prefs-hh-meta {
+  font-size: 11px;
+  color: var(--ink-subtle);
+  margin-top: 1px;
+}
+
+.prefs-hh-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--positive);
+  flex-shrink: 0;
+}
+
+.prefs-hh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prefs-hh-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.prefs-hh-action-btn:hover:not(:disabled) {
+  border-color: var(--ink-subtle);
+  color: var(--ink);
+}
+
+.prefs-hh-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prefs-hh-action-btn--danger:hover:not(:disabled) {
+  border-color: var(--negative);
+  color: var(--negative);
+}
+
+.prefs-hh-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.prefs-hh-connect-btn:hover:not(:disabled) {
+  border-color: #d52b1e;
+  color: #d52b1e;
+  background: color-mix(in srgb, #d52b1e 6%, transparent);
+}
+
+.prefs-hh-connect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Blacklist */
+.prefs-blacklist-add {
+  display: flex;
+  gap: 8px;
+}
+
+.prefs-blacklist-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.prefs-blacklist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--negative) 10%, transparent);
+  color: var(--negative);
+  border: 1px solid color-mix(in srgb, var(--negative) 22%, transparent);
+}
+
+.prefs-chip-remove {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 0 1px;
+}
+
+.prefs-chip-remove:hover {
+  opacity: 1;
+}
+
+.prefs-empty-hint {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+
+.prefs-save-row {
+  padding-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

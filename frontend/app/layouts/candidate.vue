@@ -33,16 +33,19 @@ onErrorCaptured((err) => {
 })
 
 const nav = [
-  { label: 'Command', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Home', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
   { label: 'Jobs', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   { label: 'Inbox', to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
+  { label: 'Tracker', to: '/candidate/tracker', icon: 'i-heroicons-clipboard-document-list' },
   { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
+  { label: 'Analytics', to: '/candidate/analytics', icon: 'i-heroicons-chart-bar' },
 ]
 
 const mobileNav = [
-  { label: 'Command', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
+  { label: 'Home', to: '/candidate/dashboard', icon: 'i-heroicons-home' },
   { label: 'Jobs', to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   { label: 'Inbox', to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
+  { label: 'Tracker', to: '/candidate/tracker', icon: 'i-heroicons-clipboard-document-list' },
   { label: 'Profile', to: '/candidate/profile', icon: 'i-heroicons-user' },
 ]
 
@@ -62,7 +65,10 @@ const searchTerm = ref('')
 const navGroups = computed(() => [
   {
     label: 'Navigation',
-    items: nav.map((item) => ({ to: item.to, label: item.label, icon: item.icon })),
+    items: [
+      ...nav,
+      { label: 'Settings', to: '/candidate/preferences', icon: 'i-heroicons-cog-6-tooth' },
+    ].map((item) => ({ to: item.to, label: item.label, icon: item.icon })),
   },
 ])
 
@@ -228,7 +234,10 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
         <!-- Spacer -->
       </header>
 
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
+      <main
+        class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 flex flex-col"
+        style="height: 0"
+      >
         <slot />
       </main>
 
