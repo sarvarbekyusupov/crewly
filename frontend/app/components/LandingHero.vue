@@ -466,4 +466,21 @@ h1 {
     max-width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 40px 16px 40px;
+    gap: 32px;
+  }
+
+  .hero-sub {
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+
+  .hero-badge {
+    font-size: 11px;
+    margin-bottom: 16px;
+  }
+}
 </style>

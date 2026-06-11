@@ -50,7 +50,9 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3001',
+    origin: process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL.split(',').map((o) => o.trim())
+      : ['http://localhost:3001', 'http://localhost:4001'],
     credentials: true,
   });
 

@@ -190,4 +190,14 @@ onUnmounted(() => heroObs?.disconnect())
   opacity: 0;
   transform: translateY(12px);
 }
+
+@media (max-width: 480px) {
+  .float-cta-btn {
+    bottom: 20px;
+    right: 16px;
+    left: 16px;
+    text-align: center;
+    justify-content: center;
+  }
+}
 </style>

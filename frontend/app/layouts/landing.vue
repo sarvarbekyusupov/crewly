@@ -139,6 +139,16 @@ main {
     align-items: flex-start;
   }
 }
+
+@media (max-width: 480px) {
+  .footer-wrap {
+    padding: 20px 16px;
+    gap: 12px;
+  }
+  .footer-links {
+    gap: 12px;
+  }
+}
 </style>
 
 <style>

@@ -188,4 +188,22 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
     padding: 48px 24px;
   }
 }
+
+@media (max-width: 480px) {
+  .wrap {
+    padding: 0 16px;
+  }
+  .stat {
+    padding: 24px 20px;
+  }
+  .stat-n {
+    font-size: 36px;
+  }
+  .cta-box {
+    padding: 36px 20px;
+  }
+  .cta-box > p {
+    font-size: 14px;
+  }
+}
 </style>

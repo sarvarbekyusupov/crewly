@@ -1,5 +1,6 @@
 .PHONY: up down logs ps clean build pull deploy \
-        dev-db dev-redis migrate seed
+        dev-db dev-redis migrate seed \
+        dev-infra dev-infra-stop dev-logs
 
 # ── Local dev (builds images) ─────────────────────────────────────────────────
 up:
@@ -44,7 +45,25 @@ migrate-prod:
 	  docker compose -f docker-compose.prod.yml --env-file .env.production \
 	  run --rm backend pnpm exec prisma migrate deploy
 
-# ── Dev infra only (postgres + redis exposed on localhost) ────────────────────
+# ── Fast local dev: infra only (postgres:5435 + redis:6379) ──────────────────
+# 1. make dev-infra          — start postgres + redis
+# 2. cd backend && pnpm run start:dev    — NestJS watch mode (auto-restart on save)
+# 3. cd frontend && pnpm run dev         — Nuxt HMR (instant browser update)
+#
+# backend/.env needs:
+#   DATABASE_URL=postgresql://crewly:crewly@localhost:5435/crewly
+#   DIRECT_URL=postgresql://crewly:crewly@localhost:5435/crewly
+#   REDIS_URL=redis://localhost:6379
+dev-infra:
+	docker compose -f docker-compose.dev.yml up -d
+
+dev-infra-stop:
+	docker compose -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f
+
+# ── Legacy: single-service infra (old creds, kept for compat) ────────────────
 dev-db:
 	docker compose -f backend/docker-compose.yml up -d postgres
 

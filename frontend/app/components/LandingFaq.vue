@@ -181,4 +181,30 @@ const candidateFaqs = [
   opacity: 1;
   transform: none;
 }
+
+@media (max-width: 820px) {
+  .faq-wrap {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .wrap {
+    padding: 0 16px;
+  }
+  .sec-header {
+    margin-bottom: 28px;
+  }
+  .faq-q {
+    padding: 16px;
+    font-size: 13.5px;
+  }
+  .faq-a {
+    padding: 0 16px;
+    font-size: 13px;
+  }
+  .faq-item.open .faq-a {
+    padding: 0 16px 16px;
+  }
+}
 </style>

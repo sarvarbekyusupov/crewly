@@ -148,4 +148,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .wrap {
+    padding: 0 16px;
+  }
+  .testi-card {
+    padding: 20px 18px;
+  }
+  .sec-h {
+    margin-bottom: 32px;
+  }
+}
 </style>

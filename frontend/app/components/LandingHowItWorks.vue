@@ -251,4 +251,26 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
     align-items: flex-start;
   }
 }
+
+@media (max-width: 480px) {
+  .sec {
+    padding: 56px 0;
+  }
+  .wrap {
+    padding: 0 16px;
+  }
+  .feat {
+    padding: 24px 20px;
+  }
+  .trust {
+    padding: 20px 16px;
+    gap: 12px;
+  }
+  .trust-items {
+    gap: 16px;
+  }
+  .trust-divider {
+    display: none;
+  }
+}
 </style>
