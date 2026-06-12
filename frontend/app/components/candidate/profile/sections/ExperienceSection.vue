@@ -10,6 +10,8 @@ export interface Position {
 const props = defineProps<{ positions: Position[] }>()
 const emit = defineEmits<{ add: []; edit: [index: number] }>()
 
+const { t } = useI18n()
+
 const expanded = ref<Record<number, boolean>>({})
 
 function toggle(i: number) {
@@ -30,15 +32,19 @@ function isCurrentRole(p: Position) {
   <CandidateProfileUiSectionCard
     id="experience"
     icon="i-heroicons-briefcase"
-    title="Ish tajribasi"
-    :subtitle="positions.length ? `${positions.length} ta ish joyi` : undefined"
+    :title="t('candidate.sections.experience.title')"
+    :subtitle="
+      positions.length
+        ? t('candidate.sections.experience.subtitle', { n: positions.length })
+        : undefined
+    "
     @edit="emit('add')"
   >
     <template v-if="!positions.length">
       <CandidateProfileUiEmptyState
         icon="i-heroicons-briefcase"
-        text="Ish tajribasini qo'shing — ariza yuborishda muhim rol o'ynaydi"
-        cta="Tajriba qo'shish"
+        :text="t('candidate.sections.experience.empty')"
+        :cta="t('candidate.sections.experience.emptyCta')"
         @add="emit('add')"
       />
     </template>
@@ -50,12 +56,17 @@ function isCurrentRole(p: Position) {
         <div class="exp-body">
           <div class="exp-header">
             <div>
-              <p class="exp-title">{{ pos.title || 'Lavozim' }}</p>
-              <p class="exp-company">{{ pos.company || 'Kompaniya' }}</p>
+              <p class="exp-title">{{ pos.title || t('candidate.sections.experience.noTitle') }}</p>
+              <p class="exp-company">
+                {{ pos.company || t('candidate.sections.experience.noCompany') }}
+              </p>
             </div>
             <div class="exp-actions">
               <span class="exp-dates">
-                {{ pos.start || '—' }} — {{ isCurrentRole(pos) ? 'Hozir' : pos.end || '—' }}
+                {{ pos.start || '—' }} —
+                {{
+                  isCurrentRole(pos) ? t('candidate.sections.experience.present') : pos.end || '—'
+                }}
               </span>
               <button type="button" class="item-edit" @click="emit('edit', i)">
                 <UIcon name="i-heroicons-pencil" style="width: 12px; height: 12px" />
@@ -73,16 +84,20 @@ function isCurrentRole(p: Position) {
               class="expand-btn"
               @click="toggle(i)"
             >
-              {{ expanded[i] ? "Kamroq ko'rsatish" : `+${pos.bullets.length - 3} ta ko\'proq` }}
+              {{
+                expanded[i]
+                  ? t('candidate.sections.experience.showLess')
+                  : t('candidate.sections.experience.showMore', { n: pos.bullets.length - 3 })
+              }}
             </button>
           </template>
         </div>
       </div>
     </div>
 
-    <button type="button" class="add-row" @click="emit('add')">
+    <button v-if="positions.length" type="button" class="add-row" @click="emit('add')">
       <UIcon name="i-heroicons-plus" style="width: 13px; height: 13px" />
-      Ish joyi qo'shish
+      {{ t('candidate.sections.experience.addBtn') }}
     </button>
   </CandidateProfileUiSectionCard>
 </template>

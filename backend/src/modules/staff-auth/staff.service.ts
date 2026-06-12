@@ -1,10 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { hashToken, generateRawToken } from '../../common/utils/token.utils';
-import { DUMMY_HASH } from '../../common/auth.constants';
+import { DUMMY_HASH, STAFF_SESSION_TTL_MS } from '../../common/auth.constants';
 import * as argon2 from 'argon2';
-
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 @Injectable()
 export class StaffService {
@@ -31,7 +29,7 @@ export class StaffService {
       data: {
         staffId: staff.id,
         tokenHash,
-        expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+        expiresAt: new Date(Date.now() + STAFF_SESSION_TTL_MS),
       },
     });
 
@@ -65,7 +63,7 @@ export class StaffService {
         data: {
           staffId: session.staffId,
           tokenHash: newTokenHash,
-          expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+          expiresAt: new Date(Date.now() + STAFF_SESSION_TTL_MS),
         },
       }),
     ]);

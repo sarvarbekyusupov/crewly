@@ -9,21 +9,27 @@ export interface Education {
 
 defineProps<{ education: Education[] }>()
 const emit = defineEmits<{ add: []; edit: [index: number] }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <CandidateProfileUiSectionCard
     id="education"
     icon="i-heroicons-academic-cap"
-    title="Ta'lim"
-    :subtitle="education.length ? `${education.length} ta muassasa` : undefined"
+    :title="t('candidate.sections.education.title')"
+    :subtitle="
+      education.length
+        ? t('candidate.sections.education.subtitle', { n: education.length })
+        : undefined
+    "
     @edit="emit('add')"
   >
     <template v-if="!education.length">
       <CandidateProfileUiEmptyState
         icon="i-heroicons-academic-cap"
-        text="Ta'lim ma'lumotlarini qo'shing"
-        cta="Ta'lim qo'shish"
+        :text="t('candidate.sections.education.empty')"
+        :cta="t('candidate.sections.education.emptyCta')"
         @add="emit('add')"
       />
     </template>
@@ -34,9 +40,14 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
         <div class="edu-body">
           <div class="edu-header">
             <div>
-              <p class="edu-inst">{{ edu.institution || 'Muassasa' }}</p>
+              <p class="edu-inst">
+                {{ edu.institution || t('candidate.sections.education.noInstitution') }}
+              </p>
               <p class="edu-degree">
-                {{ [edu.degree, edu.field].filter(Boolean).join(' · ') || 'Diplom' }}
+                {{
+                  [edu.degree, edu.field].filter(Boolean).join(' · ') ||
+                  t('candidate.sections.education.noDegree')
+                }}
               </p>
             </div>
             <div class="edu-actions">
@@ -50,9 +61,9 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
       </div>
     </div>
 
-    <button type="button" class="add-row" @click="emit('add')">
+    <button v-if="education.length" type="button" class="add-row" @click="emit('add')">
       <UIcon name="i-heroicons-plus" style="width: 13px; height: 13px" />
-      Ta'lim qo'shish
+      {{ t('candidate.sections.education.addBtn') }}
     </button>
   </CandidateProfileUiSectionCard>
 </template>

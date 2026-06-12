@@ -6,21 +6,27 @@ export interface Language {
 
 defineProps<{ languages: Language[] }>()
 const emit = defineEmits<{ edit: [] }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <CandidateProfileUiSectionCard
     id="languages"
     icon="i-heroicons-language"
-    title="Tillar"
-    :subtitle="languages.length ? `${languages.length} ta til` : undefined"
+    :title="t('candidate.sections.languages.title')"
+    :subtitle="
+      languages.length
+        ? t('candidate.sections.languages.subtitle', { n: languages.length })
+        : undefined
+    "
     @edit="emit('edit')"
   >
     <template v-if="!languages.length">
       <CandidateProfileUiEmptyState
         icon="i-heroicons-language"
-        text="Biladigan tillaringizni qo'shing"
-        cta="Til qo'shish"
+        :text="t('candidate.sections.languages.empty')"
+        :cta="t('candidate.sections.languages.emptyCta')"
         @add="emit('edit')"
       />
     </template>

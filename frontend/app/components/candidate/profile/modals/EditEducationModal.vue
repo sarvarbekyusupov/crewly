@@ -12,6 +12,8 @@ const emit = defineEmits<{
   delete: [index: number]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive<Education>({
   institution: '',
   degree: '',
@@ -44,7 +46,11 @@ function submit() {
       <div class="modal-wrap">
         <div class="modal-head">
           <h3 class="modal-title">
-            {{ index === null ? "Ta'lim qo'shish" : "Ta'limni tahrirlash" }}
+            {{
+              index === null
+                ? t('candidate.modals.education.addTitle')
+                : t('candidate.modals.education.editTitle')
+            }}
           </h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
@@ -53,7 +59,9 @@ function submit() {
 
         <div class="modal-body">
           <div class="field-row">
-            <label class="field-label">Muassasa <span class="req">*</span></label>
+            <label class="field-label"
+              >{{ t('candidate.modals.education.institution') }} <span class="req">*</span></label
+            >
             <input
               v-model="form.institution"
               type="text"
@@ -64,11 +72,11 @@ function submit() {
 
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Daraja</label>
+              <label class="field-label">{{ t('candidate.modals.education.degree') }}</label>
               <input v-model="form.degree" type="text" class="field-input" placeholder="Bakalavr" />
             </div>
             <div class="field-row">
-              <label class="field-label">Yo'nalish</label>
+              <label class="field-label">{{ t('candidate.modals.education.field') }}</label>
               <input
                 v-model="form.field"
                 type="text"
@@ -80,11 +88,11 @@ function submit() {
 
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Boshlash</label>
+              <label class="field-label">{{ t('candidate.modals.education.start') }}</label>
               <input v-model="form.start" type="text" class="field-input" placeholder="2019" />
             </div>
             <div class="field-row">
-              <label class="field-label">Tugash</label>
+              <label class="field-label">{{ t('candidate.modals.education.end') }}</label>
               <input v-model="form.end" type="text" class="field-input" placeholder="2023" />
             </div>
           </div>
@@ -100,8 +108,12 @@ function submit() {
             O'chirish
           </button>
           <div class="footer-right">
-            <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
-            <button type="button" class="btn-save" @click="submit">Saqlash</button>
+            <button type="button" class="btn-cancel" @click="emit('close')">
+              {{ t('candidate.modals.cancel') }}
+            </button>
+            <button type="button" class="btn-save" @click="submit">
+              {{ t('candidate.modals.save') }}
+            </button>
           </div>
         </div>
       </div>

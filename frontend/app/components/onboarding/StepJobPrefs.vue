@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  JOB_FORMAT_OPTIONS,
+  JOB_TYPE_OPTIONS,
+  type JobFormatKey,
+  type JobTypeKey,
+} from '~/constants/jobs'
+
 const store = useOnboardingStore()
 
 function fmt(n: number) {
@@ -10,22 +17,8 @@ function parseSalary(v: string) {
   return parseInt(v.replace(/\D/g, ''), 10) || 0
 }
 
-type FormatKey = keyof typeof store.jobPreferences.formats
-type TypeKey = keyof typeof store.jobPreferences.types
-
-const FORMAT_LABELS: { key: FormatKey; label: string }[] = [
-  { key: 'remote', label: 'Remote' },
-  { key: 'hybrid', label: 'Hybrid' },
-  { key: 'onsite', label: 'Ofisda' },
-  { key: 'abroad', label: 'Xorijda' },
-]
-
-const TYPE_LABELS: { key: TypeKey; label: string }[] = [
-  { key: 'fullTime', label: 'Full-time' },
-  { key: 'partTime', label: 'Part-time' },
-  { key: 'freelance', label: 'Freelance' },
-  { key: 'internship', label: 'Internship' },
-]
+const FORMAT_LABELS = JOB_FORMAT_OPTIONS as { key: JobFormatKey; label: string }[]
+const TYPE_LABELS = JOB_TYPE_OPTIONS as { key: JobTypeKey; label: string }[]
 </script>
 
 <template>

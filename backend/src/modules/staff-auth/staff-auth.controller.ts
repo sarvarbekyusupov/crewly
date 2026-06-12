@@ -25,9 +25,9 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { z } from 'zod';
 import { QUEUES } from '../../workers/queue-names';
 import { INGEST_JOB_OPTIONS } from '../../workers/queue-options';
+import { STAFF_SESSION_TTL_MS } from '../../common/auth.constants';
 
 const COOKIE_NAME = 'staff_session';
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 const TriggerDiscoverJobsSchema = z.object({
   source: z.enum(['hh.ru', 'linkedin']),
@@ -82,7 +82,7 @@ export class StaffAuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: SESSION_TTL_MS,
+      maxAge: STAFF_SESSION_TTL_MS,
     });
 
     return { staff };
@@ -243,7 +243,7 @@ export class StaffAuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: SESSION_TTL_MS,
+      maxAge: STAFF_SESSION_TTL_MS,
     });
 
     return { ok: true };

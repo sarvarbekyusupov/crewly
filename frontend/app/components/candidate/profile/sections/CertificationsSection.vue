@@ -8,21 +8,27 @@ export interface Certification {
 
 defineProps<{ certs: Certification[] }>()
 const emit = defineEmits<{ add: []; edit: [index: number] }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <CandidateProfileUiSectionCard
     id="certifications"
     icon="i-heroicons-trophy"
-    title="Sertifikatlar"
-    :subtitle="certs.length ? `${certs.length} ta sertifikat` : undefined"
+    :title="t('candidate.sections.certifications.title')"
+    :subtitle="
+      certs.length
+        ? t('candidate.sections.certifications.subtitle', { n: certs.length })
+        : undefined
+    "
     @edit="emit('add')"
   >
     <template v-if="!certs.length">
       <CandidateProfileUiEmptyState
         icon="i-heroicons-trophy"
-        text="Sertifikatlaringizni qo'shing — profilingizni mustahkamlaydi"
-        cta="Sertifikat qo'shish"
+        :text="t('candidate.sections.certifications.empty')"
+        :cta="t('candidate.sections.certifications.emptyCta')"
         @add="emit('add')"
       />
     </template>
@@ -33,8 +39,12 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
         <div class="cert-body">
           <div class="cert-header">
             <div>
-              <p class="cert-name">{{ cert.name || 'Sertifikat' }}</p>
-              <p class="cert-issuer">{{ cert.issuer || 'Muassasa' }}</p>
+              <p class="cert-name">
+                {{ cert.name || t('candidate.sections.certifications.title') }}
+              </p>
+              <p class="cert-issuer">
+                {{ cert.issuer || t('candidate.sections.education.noInstitution') }}
+              </p>
             </div>
             <div class="cert-actions">
               <span v-if="cert.date" class="cert-date">{{ cert.date }}</span>
@@ -53,9 +63,9 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
       </div>
     </div>
 
-    <button type="button" class="add-row" @click="emit('add')">
+    <button v-if="certs.length" type="button" class="add-row" @click="emit('add')">
       <UIcon name="i-heroicons-plus" style="width: 13px; height: 13px" />
-      Sertifikat qo'shish
+      {{ t('candidate.sections.certifications.addBtn') }}
     </button>
   </CandidateProfileUiSectionCard>
 </template>

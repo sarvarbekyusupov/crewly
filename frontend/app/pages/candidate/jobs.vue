@@ -6,6 +6,7 @@ import { capitalizeStatus } from '~/utils/candidate'
 import { scoringActive, scoringLog, scoringProgress } from '~/composables/useCandidateEventStream'
 import { sanitizeHtml } from '~/utils/sanitize'
 import { isHhNotConnected } from '~/utils/hhErrors'
+import { AVATAR_COLORS } from '~/constants/ui'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -455,15 +456,6 @@ watchDebounced(
   },
   { debounce: 400 },
 )
-
-const AVATAR_COLORS = [
-  { bg: 'oklch(0.55 0.22 264)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.20 145)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.22 30)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.22 320)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.20 200)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.18 60)', fg: '#fff' },
-] as const
 
 function avatarColor(name: string) {
   let h = 0

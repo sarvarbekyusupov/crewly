@@ -1,32 +1,7 @@
 <script setup lang="ts">
+import { REGIONS, COUNTRIES } from '~/constants/geo'
+
 const store = useOnboardingStore()
-
-const REGIONS = [
-  'Toshkent shahri',
-  'Toshkent viloyati',
-  'Samarqand',
-  'Buxoro',
-  "Farg'ona",
-  'Namangan',
-  'Andijon',
-  'Qashqadaryo',
-  'Surxondaryo',
-  'Xorazm',
-  'Navoiy',
-  'Sirdaryo',
-  'Jizzax',
-  "Qoraqalpog'iston",
-]
-
-const COUNTRIES = [
-  "O'zbekiston",
-  'Rossiya',
-  "Qozog'iston",
-  'Turkiya',
-  'Germaniya',
-  'AQSh',
-  'Boshqa',
-]
 </script>
 
 <template>

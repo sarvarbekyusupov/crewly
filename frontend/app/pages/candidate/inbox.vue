@@ -4,6 +4,8 @@ import { seekerAppStatusColor, appStatusColor } from '~/utils/statusColors'
 import { capitalizeStatus } from '~/utils/candidate'
 import { formatRelativeTime } from '~/utils/formatters'
 import { safeUrl } from '~/utils/safeUrl'
+import { AVATAR_COLORS, CHAT_MAX_LENGTH as MAX_LENGTH } from '~/constants/ui'
+import { SEEKER_STEPS, HR_STEPS, APPLICATION_URGENCY } from '~/constants/jobs'
 import {
   newMessageApplicationIds,
   newMessageBus,
@@ -102,22 +104,10 @@ interface UnifiedApp {
   raw: SeekerApplication | HrApplication
 }
 
-const URGENCY = [
-  'screening',
-  'responded',
-  'outreach_sent',
-  'interview',
-  'shortlisted',
-  'applied',
-  'viewed',
-  'queued',
-  'offer',
-  'rejected',
-  'failed',
-]
+const URGENCY = APPLICATION_URGENCY
 
 function urgencyOf(status: string) {
-  const idx = URGENCY.indexOf(status)
+  const idx = (URGENCY as readonly string[]).indexOf(status)
   return idx === -1 ? URGENCY.length : idx
 }
 
@@ -188,8 +178,6 @@ const chatLoading = ref(false)
 const chatContent = ref('')
 const isSending = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
-const MAX_LENGTH = 500
-
 async function fetchMessages(appId: string) {
   chatLoading.value = true
   try {
@@ -288,10 +276,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (unsubscribe) unsubscribe()
 })
-
-// Seeker app status pipeline steps
-const SEEKER_STEPS = ['queued', 'applied', 'viewed', 'interview', 'offer']
-const HR_STEPS = ['outreach_sent', 'screening', 'responded', 'shortlisted', 'offer']
 
 function stepsDone(steps: string[], currentStatus: string): number {
   const idx = steps.indexOf(currentStatus)
@@ -416,20 +400,11 @@ function stageClass(app: UnifiedApp): string {
   return ''
 }
 
-const INBOX_AVATAR_COLORS = [
-  { bg: 'oklch(0.55 0.22 264)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.20 145)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.22 30)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.22 320)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.20 200)', fg: '#fff' },
-  { bg: 'oklch(0.55 0.18 60)', fg: '#fff' },
-]
-
 function avatarStyle(app: UnifiedApp): string {
   let h = 0
   for (let i = 0; i < app.company.length; i++)
-    h = (h + app.company.charCodeAt(i)) % INBOX_AVATAR_COLORS.length
-  const c = INBOX_AVATAR_COLORS[h] ?? INBOX_AVATAR_COLORS[0]!
+    h = (h + app.company.charCodeAt(i)) % AVATAR_COLORS.length
+  const c = AVATAR_COLORS[h] ?? AVATAR_COLORS[0]!
   return `background: ${c.bg}; color: ${c.fg};`
 }
 

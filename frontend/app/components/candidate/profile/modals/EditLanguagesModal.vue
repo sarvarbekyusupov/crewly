@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Language } from '../sections/LanguagesSection.vue'
+import { LANGUAGE_LEVELS } from '~/constants/candidate'
 
 const props = defineProps<{
   open: boolean
@@ -10,9 +11,11 @@ const emit = defineEmits<{
   save: [languages: Language[]]
 }>()
 
+const { t } = useI18n()
+
 const localLangs = ref<Language[]>([])
 
-const LEVELS = ['Native', 'Fluent', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1']
+const LEVELS = LANGUAGE_LEVELS
 
 watch(
   () => props.open,
@@ -36,7 +39,7 @@ function removeLang(i: number) {
     <template #content>
       <div class="modal-wrap">
         <div class="modal-head">
-          <h3 class="modal-title">Tillar</h3>
+          <h3 class="modal-title">{{ t('candidate.modals.language.title') }}</h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
           </button>
@@ -46,7 +49,7 @@ function removeLang(i: number) {
           <div v-for="(lang, i) in localLangs" :key="i" class="lang-row">
             <input v-model="lang.name" type="text" class="field-input" placeholder="English" />
             <select v-model="lang.level" class="field-select">
-              <option value="">Daraja…</option>
+              <option value="">{{ t('candidate.modals.language.levelPlaceholder') }}</option>
               <option v-for="lvl in LEVELS" :key="lvl" :value="lvl">{{ lvl }}</option>
             </select>
             <button type="button" class="rm-btn" @click="removeLang(i)">
@@ -56,12 +59,14 @@ function removeLang(i: number) {
 
           <button type="button" class="add-lang-btn" @click="addLang">
             <UIcon name="i-heroicons-plus" style="width: 13px; height: 13px" />
-            Til qo'shish
+            {{ t('candidate.modals.language.add') }}
           </button>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
+          <button type="button" class="btn-cancel" @click="emit('close')">
+            {{ t('candidate.modals.cancel') }}
+          </button>
           <button
             type="button"
             class="btn-save"
@@ -72,7 +77,7 @@ function removeLang(i: number) {
               )
             "
           >
-            Saqlash
+            {{ t('candidate.modals.save') }}
           </button>
         </div>
       </div>

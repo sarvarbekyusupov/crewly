@@ -1,15 +1,9 @@
 <script setup lang="ts">
+import { NOTICE_PERIOD_OPTIONS, GENDERS } from '~/constants/candidate'
+
 const store = useOnboardingStore()
 
-const NOTICE_OPTIONS = [
-  { label: 'Hoziroq', value: 0 },
-  { label: '2 hafta', value: 14 },
-  { label: '1 oy', value: 30 },
-  { label: '2 oy', value: 60 },
-  { label: '3 oy', value: 90 },
-]
-
-const GENDERS = ['Erkak', 'Ayol', 'Boshqa', "Ko'rsatishni xohlamayman"]
+const NOTICE_OPTIONS = NOTICE_PERIOD_OPTIONS
 
 type YesNo = boolean
 type ThreeWay = 'yes' | 'no' | 'prefer_not'

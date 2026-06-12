@@ -12,6 +12,8 @@ const emit = defineEmits<{
   delete: [index: number]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive<Position>({
   title: '',
   company: '',
@@ -37,9 +39,9 @@ watch(
 )
 
 function addBullet() {
-  const t = newBullet.value.trim()
-  if (t) {
-    form.bullets = [...(form.bullets ?? []), t]
+  const text = newBullet.value.trim()
+  if (text) {
+    form.bullets = [...(form.bullets ?? []), text]
     newBullet.value = ''
   }
 }
@@ -59,7 +61,11 @@ function submit() {
       <div class="modal-wrap">
         <div class="modal-head">
           <h3 class="modal-title">
-            {{ index === null ? "Tajriba qo'shish" : 'Tajribani tahrirlash' }}
+            {{
+              index === null
+                ? t('candidate.modals.experience.addTitle')
+                : t('candidate.modals.experience.editTitle')
+            }}
           </h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
@@ -69,7 +75,9 @@ function submit() {
         <div class="modal-body">
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Lavozim <span class="req">*</span></label>
+              <label class="field-label"
+                >{{ t('candidate.modals.experience.position') }} <span class="req">*</span></label
+              >
               <input
                 v-model="form.title"
                 type="text"
@@ -78,7 +86,9 @@ function submit() {
               />
             </div>
             <div class="field-row">
-              <label class="field-label">Kompaniya <span class="req">*</span></label>
+              <label class="field-label"
+                >{{ t('candidate.modals.experience.company') }} <span class="req">*</span></label
+              >
               <input
                 v-model="form.company"
                 type="text"
@@ -90,17 +100,17 @@ function submit() {
 
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Boshlash</label>
+              <label class="field-label">{{ t('candidate.modals.experience.start') }}</label>
               <input v-model="form.start" type="text" class="field-input" placeholder="Jan 2022" />
             </div>
             <div class="field-row">
-              <label class="field-label">Tugash (bo'sh = Hozir)</label>
+              <label class="field-label">{{ t('candidate.modals.experience.end') }}</label>
               <input v-model="form.end" type="text" class="field-input" placeholder="Present" />
             </div>
           </div>
 
           <div class="field-row">
-            <label class="field-label">Yutuqlar / vazifalar</label>
+            <label class="field-label">{{ t('candidate.modals.experience.bullets') }}</label>
             <ul v-if="form.bullets?.length" class="bullets-list">
               <li v-for="(b, i) in form.bullets" :key="i" class="bullet-item">
                 <span class="bullet-text">{{ b }}</span>
@@ -112,7 +122,7 @@ function submit() {
                 v-model="newBullet"
                 type="text"
                 class="field-input"
-                placeholder="Yangi yutuq qo'shish…"
+                :placeholder="t('candidate.modals.experience.addBullet')"
                 @keydown.enter.prevent="addBullet"
               />
               <button type="button" class="add-btn" @click="addBullet">+</button>
@@ -130,8 +140,12 @@ function submit() {
             O'chirish
           </button>
           <div class="footer-right">
-            <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
-            <button type="button" class="btn-save" @click="submit">Saqlash</button>
+            <button type="button" class="btn-cancel" @click="emit('close')">
+              {{ t('candidate.modals.cancel') }}
+            </button>
+            <button type="button" class="btn-save" @click="submit">
+              {{ t('candidate.modals.save') }}
+            </button>
           </div>
         </div>
       </div>

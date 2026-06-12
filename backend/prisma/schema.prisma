@@ -210,6 +210,7 @@ model Candidate {
   expectedSalaryCurrency String?   @default("UZS") @map("expected_salary_currency")
   noticePeriodDays       Int?      @map("notice_period_days")
   willingToRelocate      Boolean?  @map("willing_to_relocate")
+  hasTransport           Boolean?  @map("has_transport")
   preferredWorkMode      String?   @map("preferred_work_mode")
   languages              Json?
   rawResumeText          String?   @map("raw_resume_text")

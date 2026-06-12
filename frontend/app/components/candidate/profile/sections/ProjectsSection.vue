@@ -8,21 +8,27 @@ export interface Project {
 
 defineProps<{ projects: Project[] }>()
 const emit = defineEmits<{ add: []; edit: [index: number] }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <CandidateProfileUiSectionCard
     id="projects"
     icon="i-heroicons-code-bracket-square"
-    title="Loyihalar"
-    :subtitle="projects.length ? `${projects.length} ta loyiha` : undefined"
+    :title="t('candidate.sections.projects.title')"
+    :subtitle="
+      projects.length
+        ? t('candidate.sections.projects.subtitle', { n: projects.length })
+        : undefined
+    "
     @edit="emit('add')"
   >
     <template v-if="!projects.length">
       <CandidateProfileUiEmptyState
         icon="i-heroicons-code-bracket-square"
-        text="Yon loyihalar, o'quv ishlari yoki open-source hissalaringizni qo'shing"
-        cta="Loyiha qo'shish"
+        :text="t('candidate.sections.projects.empty')"
+        :cta="t('candidate.sections.projects.emptyCta')"
         @add="emit('add')"
       />
     </template>
@@ -31,10 +37,10 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
       <div v-for="(proj, i) in projects" :key="i" class="proj-item">
         <div class="proj-header">
           <div class="proj-left">
-            <p class="proj-name">{{ proj.name || 'Loyiha' }}</p>
+            <p class="proj-name">{{ proj.name || t('candidate.sections.projects.title') }}</p>
             <p v-if="proj.description" class="proj-desc">{{ proj.description }}</p>
             <div v-if="proj.tags && proj.tags.length" class="proj-tags">
-              <CandidateProfileUiSkillTag v-for="t in proj.tags" :key="t" :label="t" />
+              <CandidateProfileUiSkillTag v-for="tag in proj.tags" :key="tag" :label="tag" />
             </div>
           </div>
           <div class="proj-actions">
@@ -52,9 +58,9 @@ const emit = defineEmits<{ add: []; edit: [index: number] }>()
       </div>
     </div>
 
-    <button type="button" class="add-row" @click="emit('add')">
+    <button v-if="projects.length" type="button" class="add-row" @click="emit('add')">
       <UIcon name="i-heroicons-plus" style="width: 13px; height: 13px" />
-      Loyiha qo'shish
+      {{ t('candidate.sections.projects.addBtn') }}
     </button>
   </CandidateProfileUiSectionCard>
 </template>

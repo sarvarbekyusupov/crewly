@@ -26,6 +26,8 @@ const emit = defineEmits<{
   ]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive({
   fullName: '',
   summary: '',
@@ -75,7 +77,7 @@ async function submit() {
     <template #content>
       <div class="modal-wrap">
         <div class="modal-head">
-          <h3 class="modal-title">Profil ma'lumotlari</h3>
+          <h3 class="modal-title">{{ t('candidate.modals.header.title') }}</h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
           </button>
@@ -83,7 +85,9 @@ async function submit() {
 
         <div class="modal-body">
           <div class="field-row">
-            <label class="field-label">Ism familiya <span class="req">*</span></label>
+            <label class="field-label"
+              >{{ t('candidate.modals.header.fullName') }} <span class="req">*</span></label
+            >
             <input
               v-model="form.fullName"
               type="text"
@@ -93,18 +97,18 @@ async function submit() {
           </div>
 
           <div class="field-row">
-            <label class="field-label">Qisqacha tavsif</label>
+            <label class="field-label">{{ t('candidate.modals.header.bio') }}</label>
             <textarea
               v-model="form.summary"
               class="field-textarea"
               rows="3"
-              placeholder="Tajribangiz va maqsadlaringiz haqida 1-2 jumla…"
+              :placeholder="t('candidate.modals.header.bio')"
             />
           </div>
 
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Telefon</label>
+              <label class="field-label">{{ t('candidate.modals.header.phone') }}</label>
               <input
                 v-model="form.phone"
                 type="tel"
@@ -113,7 +117,7 @@ async function submit() {
               />
             </div>
             <div class="field-row">
-              <label class="field-label">Telegram</label>
+              <label class="field-label">{{ t('candidate.modals.header.telegram') }}</label>
               <input
                 v-model="form.telegramUsername"
                 type="text"
@@ -124,18 +128,18 @@ async function submit() {
           </div>
 
           <div class="field-row">
-            <label class="field-label">Shahar</label>
+            <label class="field-label">{{ t('candidate.modals.header.city') }}</label>
             <UInputMenu
               v-model="form.city"
               :items="cityItems"
-              placeholder="Shahar qidirish…"
+              :placeholder="t('candidate.modals.header.city')"
               class="field-input-menu"
               @update:search-term="onCitySearch"
             />
           </div>
 
           <div class="field-row">
-            <label class="field-label">LinkedIn URL</label>
+            <label class="field-label">{{ t('candidate.modals.header.linkedin') }}</label>
             <input
               v-model="form.linkedinUrl"
               type="url"
@@ -145,7 +149,7 @@ async function submit() {
           </div>
 
           <div class="field-row">
-            <label class="field-label">GitHub URL</label>
+            <label class="field-label">{{ t('candidate.modals.header.github') }}</label>
             <input
               v-model="form.githubUrl"
               type="url"
@@ -156,8 +160,12 @@ async function submit() {
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
-          <button type="button" class="btn-save" @click="submit">Saqlash</button>
+          <button type="button" class="btn-cancel" @click="emit('close')">
+            {{ t('candidate.modals.cancel') }}
+          </button>
+          <button type="button" class="btn-save" @click="submit">
+            {{ t('candidate.modals.save') }}
+          </button>
         </div>
       </div>
     </template>

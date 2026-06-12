@@ -12,6 +12,8 @@ const emit = defineEmits<{
   delete: [index: number]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive<Certification>({ name: '', issuer: '', date: '', url: '' })
 
 watch(
@@ -32,7 +34,11 @@ watch(
       <div class="modal-wrap">
         <div class="modal-head">
           <h3 class="modal-title">
-            {{ index === null ? "Sertifikat qo'shish" : 'Sertifikatni tahrirlash' }}
+            {{
+              index === null
+                ? t('candidate.modals.cert.addTitle')
+                : t('candidate.modals.cert.editTitle')
+            }}
           </h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
@@ -41,7 +47,9 @@ watch(
 
         <div class="modal-body">
           <div class="field-row">
-            <label class="field-label">Sertifikat nomi <span class="req">*</span></label>
+            <label class="field-label"
+              >{{ t('candidate.modals.cert.name') }} <span class="req">*</span></label
+            >
             <input
               v-model="form.name"
               type="text"
@@ -51,7 +59,7 @@ watch(
           </div>
           <div class="grid-2">
             <div class="field-row">
-              <label class="field-label">Muassasa</label>
+              <label class="field-label">{{ t('candidate.modals.cert.issuer') }}</label>
               <input
                 v-model="form.issuer"
                 type="text"
@@ -60,12 +68,12 @@ watch(
               />
             </div>
             <div class="field-row">
-              <label class="field-label">Sana</label>
+              <label class="field-label">{{ t('candidate.modals.cert.date') }}</label>
               <input v-model="form.date" type="text" class="field-input" placeholder="Jan 2025" />
             </div>
           </div>
           <div class="field-row">
-            <label class="field-label">URL (ixtiyoriy)</label>
+            <label class="field-label">{{ t('candidate.modals.cert.url') }}</label>
             <input v-model="form.url" type="url" class="field-input" placeholder="https://…" />
           </div>
         </div>
@@ -80,9 +88,11 @@ watch(
             O'chirish
           </button>
           <div class="footer-right">
-            <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
+            <button type="button" class="btn-cancel" @click="emit('close')">
+              {{ t('candidate.modals.cancel') }}
+            </button>
             <button type="button" class="btn-save" @click="emit('save', { ...form }, index)">
-              Saqlash
+              {{ t('candidate.modals.save') }}
             </button>
           </div>
         </div>

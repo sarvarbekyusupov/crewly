@@ -5,3 +5,5 @@ export const DUMMY_HASH =
   '$argon2id$v=19$m=65536,t=3,p=4$UigvnMDnMJ1JIFf1khfXEg$J6yE2LcMkE3u3YjzsJ0xR/30VIftDqQ9YVTJoXeaFzI';
 
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export const STAFF_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
