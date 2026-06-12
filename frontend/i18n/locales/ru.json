@@ -110,7 +110,8 @@
     "days": "дней",
     "notes": "Примечания",
     "candidate": "Кандидат",
-    "position": "Должность"
+    "position": "Должность",
+    "close": "Закрыть"
   },
   "agent": {
     "live": "Агент · онлайн",
@@ -326,26 +327,26 @@
         "experience": "Опыт",
         "enthusiasm": "Энтузиазм"
       }
+    },
+    "stepper": {
+      "title": "Прогресс найма",
+      "sourced": "Найден",
+      "screened": "Скринирован",
+      "delivered": "Передан",
+      "interview": "Интервью",
+      "offer": "Оффер",
+      "hired": "Нанят",
+      "terminal": "Заявка закрыта.",
+      "hintApprove": "Одобрите, чтобы продвинуть кандидата в воронке.",
+      "hintWaiting": "Ожидание ответа кандидата или скрининга агентом.",
+      "hintScreening": "AI-скрининг в процессе.",
+      "hintDelivered": "Изучите досье, затем назначьте интервью.",
+      "hintInterview": "Отметьте как проведённое, когда встреча завершена.",
+      "hintMarkInterviewed": "Зафиксируйте, что интервью состоялось.",
+      "hintOfferOrHire": "Сделайте оффер или наймите напрямую, если готовы.",
+      "hintHire": "Подтвердите найм для создания placement и счёта.",
+      "hintDone": "Найм завершён."
     }
-  },
-  "stepper": {
-    "title": "Прогресс найма",
-    "sourced": "Найден",
-    "screened": "Скринирован",
-    "delivered": "Передан",
-    "interview": "Интервью",
-    "offer": "Оффер",
-    "hired": "Нанят",
-    "terminal": "Заявка закрыта.",
-    "hintApprove": "Одобрите, чтобы продвинуть кандидата в воронке.",
-    "hintWaiting": "Ожидание ответа кандидата или скрининга агентом.",
-    "hintScreening": "AI-скрининг в процессе.",
-    "hintDelivered": "Изучите досье, затем назначьте интервью.",
-    "hintInterview": "Отметьте как проведённое, когда встреча завершена.",
-    "hintMarkInterviewed": "Зафиксируйте, что интервью состоялось.",
-    "hintOfferOrHire": "Сделайте оффер или наймите напрямую, если готовы.",
-    "hintHire": "Подтвердите найм для создания placement и счёта.",
-    "hintDone": "Найм завершён."
   },
   "status": {
     "matched": "Совпадение",
@@ -744,7 +745,46 @@
       "browseJobs": "Вакансии",
       "myApplications": "Мои отклики",
       "editProfile": "Редактировать профиль",
-      "preferences": "Настройки"
+      "preferences": "Настройки",
+      "searchPlaceholder": "Поиск по должности, компании...",
+      "filterDate": "Дата",
+      "filterLocation": "Местоположение",
+      "filterWorkplace": "Формат работы",
+      "filterExperience": "Опыт",
+      "filterJobType": "Тип работы",
+      "scoreBtn": "Оценить",
+      "addOwn": "Добавить свою",
+      "applyToAll": "Откликнуться на {n}",
+      "aiScanning": "AI ищет подходящие вакансии",
+      "aiScanningDesc": "Вернитесь через несколько минут",
+      "exploreManually": "Просмотреть вручную",
+      "matchLabel": "СОВПАД",
+      "passJob": "Пропустить",
+      "applyBtn": "Откликнуться",
+      "allApplications": "Все заявки",
+      "openTracker": "Открыть трекер",
+      "approveAll": "Одобрить все {n}",
+      "companySearch": "Поиск по компании...",
+      "tabAll": "Все",
+      "tabSubmitted": "Отправлено",
+      "tabInflight": "В процессе",
+      "tabNeedsYou": "Нужно действие",
+      "tabFailed": "Отклонено",
+      "tabSkipped": "Пропущено",
+      "colCompany": "КОМПАНИЯ",
+      "colResume": "РЕЗЮМЕ",
+      "colCoverLetter": "СОПРОВОДИТЕЛЬНОЕ",
+      "colStatus": "СТАТУС",
+      "colApplied": "ДАТА ЗАЯВКИ",
+      "resumeReview": "На проверке",
+      "resumeNone": "Нет",
+      "coverLetterYes": "Есть",
+      "coverLetterPending": "Ожидается",
+      "noApps": "Заявки не найдены",
+      "approve": "Одобрить",
+      "view": "Просмотр",
+      "rowsPerPage": "Строк на странице",
+      "showing": "Показаны 1-{n} из {total}"
     },
     "jobs": {
       "eyebrow": "Поиск вакансий",
@@ -790,6 +830,149 @@
       "generatedCoverLetter": "Сгенерированное сопроводительное письмо",
       "appliedAt": "Откликнулся",
       "queuedAt": "В очереди"
+    },
+    "layout": {
+      "agentScanning": "Агент: сканирует",
+      "agentIdle": "Агент: не активен",
+      "supportTitle": "Помощь и поддержка",
+      "supportSub": "Вопросы или отзывы",
+      "jobSeeker": "Соискатель"
+    },
+    "sections": {
+      "experience": {
+        "title": "Опыт работы",
+        "subtitle": "{n} мест работы",
+        "empty": "Добавьте опыт работы — это важно для заявок",
+        "emptyCta": "Добавить опыт",
+        "addBtn": "Добавить место работы",
+        "noTitle": "Должность",
+        "noCompany": "Компания",
+        "present": "По сей день",
+        "showLess": "Показать меньше",
+        "showMore": "+{n} ещё"
+      },
+      "education": {
+        "title": "Образование",
+        "subtitle": "{n} учебных заведений",
+        "empty": "Добавьте информацию об образовании",
+        "emptyCta": "Добавить образование",
+        "addBtn": "Добавить образование",
+        "noInstitution": "Учебное заведение",
+        "noDegree": "Степень"
+      },
+      "skills": {
+        "title": "Навыки",
+        "subtitle": "{n} навыков",
+        "empty": "Добавьте навыки — работодатели их увидят",
+        "emptyCta": "Добавить навыки"
+      },
+      "certifications": {
+        "title": "Сертификаты",
+        "subtitle": "{n} сертификатов",
+        "empty": "Добавьте сертификаты для усиления профиля",
+        "emptyCta": "Добавить сертификат",
+        "addBtn": "Добавить сертификат"
+      },
+      "projects": {
+        "title": "Проекты",
+        "subtitle": "{n} проектов",
+        "empty": "Добавьте пет-проекты, учебные работы или вклад в open-source",
+        "emptyCta": "Добавить проект",
+        "addBtn": "Добавить проект"
+      },
+      "languages": {
+        "title": "Языки",
+        "subtitle": "{n} языков",
+        "empty": "Добавьте языки, которыми вы владеете",
+        "emptyCta": "Добавить язык"
+      },
+      "appDefaults": {
+        "title": "Настройки вакансий",
+        "workMode": "Формат работы",
+        "relocation": "Готов к переезду",
+        "transport": "Личный транспорт",
+        "notice": "Срок уведомления",
+        "immediately": "Сразу"
+      },
+      "documents": {
+        "title": "Документы",
+        "cvOnFile": "Резюме загружено",
+        "noCv": "Резюме не загружено",
+        "upload": "Загрузить",
+        "replace": "Заменить"
+      }
+    },
+    "modals": {
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "header": {
+        "title": "Информация профиля",
+        "fullName": "Полное имя",
+        "bio": "Краткое описание",
+        "phone": "Телефон",
+        "telegram": "Telegram",
+        "city": "Город",
+        "linkedin": "LinkedIn URL",
+        "github": "GitHub URL"
+      },
+      "experience": {
+        "addTitle": "Добавить опыт",
+        "editTitle": "Редактировать опыт",
+        "position": "Должность",
+        "company": "Компания",
+        "start": "Начало",
+        "end": "Конец (пусто = по сей день)",
+        "bullets": "Достижения / задачи",
+        "addBullet": "Добавить достижение..."
+      },
+      "education": {
+        "addTitle": "Добавить образование",
+        "editTitle": "Редактировать образование",
+        "institution": "Учебное заведение",
+        "degree": "Степень",
+        "field": "Специальность",
+        "start": "Начало",
+        "end": "Конец"
+      },
+      "skills": {
+        "title": "Навыки",
+        "addPlaceholder": "Добавить навык..."
+      },
+      "cert": {
+        "addTitle": "Добавить сертификат",
+        "editTitle": "Редактировать сертификат",
+        "name": "Название сертификата",
+        "issuer": "Организация",
+        "date": "Дата",
+        "url": "URL (необязательно)"
+      },
+      "project": {
+        "addTitle": "Добавить проект",
+        "editTitle": "Редактировать проект",
+        "name": "Название проекта",
+        "description": "Описание",
+        "url": "URL (GitHub или live)",
+        "tags": "Технологии"
+      },
+      "language": {
+        "title": "Языки",
+        "levelPlaceholder": "Уровень...",
+        "add": "Добавить язык",
+        "remove": "Удалить"
+      },
+      "appDefaults": {
+        "title": "Настройки работы",
+        "workMode": "Формат работы",
+        "noticeLabel": "Срок уведомления",
+        "extra": "Дополнительно",
+        "relocate": "Готов к переезду",
+        "transport": "Личный транспорт",
+        "immediately": "Сразу",
+        "twoWeeks": "2 недели",
+        "oneMonth": "1 месяц",
+        "twoMonths": "2 месяца",
+        "threeMonths": "3 месяца"
+      }
     }
   }
 }

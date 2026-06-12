@@ -110,7 +110,8 @@
     "days": "kun",
     "notes": "Izohlar",
     "candidate": "Nomzod",
-    "position": "Lavozim"
+    "position": "Lavozim",
+    "close": "Yopish"
   },
   "agent": {
     "live": "Agent · jonli",
@@ -326,26 +327,26 @@
         "experience": "Tajriba",
         "enthusiasm": "Ishtiyoq"
       }
+    },
+    "stepper": {
+      "title": "Yollash jarayoni",
+      "sourced": "Topildi",
+      "screened": "Skrin qilindi",
+      "delivered": "Taqdim etildi",
+      "interview": "Intervyu",
+      "offer": "Taklif",
+      "hired": "Ishga olindi",
+      "terminal": "Ariza yopildi.",
+      "hintApprove": "Nomzodni pipelineda oldinga siljitish uchun tasdiqlang.",
+      "hintWaiting": "Nomzod javobi yoki agent skriningi kutilmoqda.",
+      "hintScreening": "AI skrining jarayonda.",
+      "hintDelivered": "Dosyeni ko'rib chiqing, keyin intervyu belgilang.",
+      "hintInterview": "Uchrashuv tugagach, intervyu o'tdi deb belgilang.",
+      "hintMarkInterviewed": "Intervyu bo'lganligini qayd eting.",
+      "hintOfferOrHire": "Tayyor bo'lsangiz, taklif yuboring yoki bevosita yollang.",
+      "hintHire": "Placement va hisob-faktura yaratish uchun yollashni tasdiqlang.",
+      "hintDone": "Yollash tugadi."
     }
-  },
-  "stepper": {
-    "title": "Yollash jarayoni",
-    "sourced": "Topildi",
-    "screened": "Skrin qilindi",
-    "delivered": "Taqdim etildi",
-    "interview": "Intervyu",
-    "offer": "Taklif",
-    "hired": "Ishga olindi",
-    "terminal": "Ariza yopildi.",
-    "hintApprove": "Nomzodni pipelineda oldinga siljitish uchun tasdiqlang.",
-    "hintWaiting": "Nomzod javobi yoki agent skriningi kutilmoqda.",
-    "hintScreening": "AI skrining jarayonda.",
-    "hintDelivered": "Dosyeni ko'rib chiqing, keyin intervyu belgilang.",
-    "hintInterview": "Uchrashuv tugagach, intervyu o'tdi deb belgilang.",
-    "hintMarkInterviewed": "Intervyu bo'lganligini qayd eting.",
-    "hintOfferOrHire": "Tayyor bo'lsangiz, taklif yuboring yoki bevosita yollang.",
-    "hintHire": "Placement va hisob-faktura yaratish uchun yollashni tasdiqlang.",
-    "hintDone": "Yollash tugadi."
   },
   "status": {
     "matched": "Mos keldi",
@@ -744,7 +745,46 @@
       "browseJobs": "Vakansiyalar",
       "myApplications": "Mening arizalarim",
       "editProfile": "Profilni tahrirlash",
-      "preferences": "Sozlamalar"
+      "preferences": "Sozlamalar",
+      "searchPlaceholder": "Ish nomi, kompaniya bo'yicha qidiring...",
+      "filterDate": "Sana",
+      "filterLocation": "Joylashuv",
+      "filterWorkplace": "Ish tartibi",
+      "filterExperience": "Tajriba",
+      "filterJobType": "Ish turi",
+      "scoreBtn": "Baholash",
+      "addOwn": "O'zim qo'shish",
+      "applyToAll": "Barcha {n} ga ariza",
+      "aiScanning": "AI mosliklarni qidiryapti",
+      "aiScanningDesc": "Bir necha daqiqadan so'ng qaytib keling",
+      "exploreManually": "Qo'lda ko'rish",
+      "matchLabel": "MOS",
+      "passJob": "O'tkazib yuborish",
+      "applyBtn": "Ariza",
+      "allApplications": "Barcha arizalar",
+      "openTracker": "Tracker ochish",
+      "approveAll": "Hammasini tasdiqlash {n}",
+      "companySearch": "Kompaniya nomi...",
+      "tabAll": "Hammasi",
+      "tabSubmitted": "Yuborilgan",
+      "tabInflight": "Jarayonda",
+      "tabNeedsYou": "Sizga kerak",
+      "tabFailed": "Rad etilgan",
+      "tabSkipped": "O'tkazilgan",
+      "colCompany": "KOMPANIYA",
+      "colResume": "REZYUME",
+      "colCoverLetter": "QO'SHTILMA XAT",
+      "colStatus": "HOLAT",
+      "colApplied": "ARIZA TOPSHIRILGAN",
+      "resumeReview": "Ko'rib chiqilmoqda",
+      "resumeNone": "Yo'q",
+      "coverLetterYes": "Bor",
+      "coverLetterPending": "Kutmoqda",
+      "noApps": "Arizalar topilmadi",
+      "approve": "Tasdiqlash",
+      "view": "Ko'rish",
+      "rowsPerPage": "Har sahifada",
+      "showing": "Ko'rsatilmoqda 1-{n} / {total}"
     },
     "jobs": {
       "eyebrow": "Vakansiya qidirish",
@@ -790,6 +830,149 @@
       "generatedCoverLetter": "AI yozgan motivatsion xat",
       "appliedAt": "Ariza berildi",
       "queuedAt": "Navbatga qo'yildi"
+    },
+    "layout": {
+      "agentScanning": "Agent: skanerlayapti",
+      "agentIdle": "Agent: dam olmoqda",
+      "supportTitle": "Yordam va Qo'llab-quvvatlash",
+      "supportSub": "Savol yoki fikr-mulohaza",
+      "jobSeeker": "Ish qidiruvchi"
+    },
+    "sections": {
+      "experience": {
+        "title": "Ish tajribasi",
+        "subtitle": "{n} ta ish joyi",
+        "empty": "Ish tajribasini qo'shing — ariza yuborishda muhim rol o'ynaydi",
+        "emptyCta": "Tajriba qo'shish",
+        "addBtn": "Ish joyi qo'shish",
+        "noTitle": "Lavozim",
+        "noCompany": "Kompaniya",
+        "present": "Hozir",
+        "showLess": "Kamroq ko'rsatish",
+        "showMore": "+{n} ta ko'proq"
+      },
+      "education": {
+        "title": "Ta'lim",
+        "subtitle": "{n} ta muassasa",
+        "empty": "Ta'lim ma'lumotlarini qo'shing",
+        "emptyCta": "Ta'lim qo'shish",
+        "addBtn": "Ta'lim qo'shish",
+        "noInstitution": "Muassasa",
+        "noDegree": "Daraja"
+      },
+      "skills": {
+        "title": "Ko'nikmalar",
+        "subtitle": "{n} ta ko'nikma",
+        "empty": "Ko'nikmalaringizni qo'shing — ish beruvchilar ko'radi",
+        "emptyCta": "Ko'nikmalar qo'shish"
+      },
+      "certifications": {
+        "title": "Sertifikatlar",
+        "subtitle": "{n} ta sertifikat",
+        "empty": "Sertifikatlaringizni qo'shing — profilingizni mustahkamlaydi",
+        "emptyCta": "Sertifikat qo'shish",
+        "addBtn": "Sertifikat qo'shish"
+      },
+      "projects": {
+        "title": "Loyihalar",
+        "subtitle": "{n} ta loyiha",
+        "empty": "Yon loyihalar, o'quv ishlari yoki open-source hissalaringizni qo'shing",
+        "emptyCta": "Loyiha qo'shish",
+        "addBtn": "Loyiha qo'shish"
+      },
+      "languages": {
+        "title": "Tillar",
+        "subtitle": "{n} ta til",
+        "empty": "Biladigan tillaringizni qo'shing",
+        "emptyCta": "Til qo'shish"
+      },
+      "appDefaults": {
+        "title": "Ish sozlamalari",
+        "workMode": "Ish tartibi",
+        "relocation": "Ko'chishga tayyor",
+        "transport": "Shaxsiy transport bor",
+        "notice": "Ishdan bo'shash muddati",
+        "immediately": "Hoziroq"
+      },
+      "documents": {
+        "title": "Hujjatlar",
+        "cvOnFile": "CV mavjud",
+        "noCv": "CV yuklanmagan",
+        "upload": "Yuklash",
+        "replace": "Almashtirish"
+      }
+    },
+    "modals": {
+      "cancel": "Bekor qilish",
+      "save": "Saqlash",
+      "header": {
+        "title": "Profil ma'lumotlari",
+        "fullName": "Ism familiya",
+        "bio": "Qisqacha tavsif",
+        "phone": "Telefon",
+        "telegram": "Telegram",
+        "city": "Shahar",
+        "linkedin": "LinkedIn URL",
+        "github": "GitHub URL"
+      },
+      "experience": {
+        "addTitle": "Tajriba qo'shish",
+        "editTitle": "Tajribani tahrirlash",
+        "position": "Lavozim",
+        "company": "Kompaniya",
+        "start": "Boshlash",
+        "end": "Tugash (bo'sh = Hozir)",
+        "bullets": "Yutuqlar / vazifalar",
+        "addBullet": "Yangi yutuq qo'shish..."
+      },
+      "education": {
+        "addTitle": "Ta'lim qo'shish",
+        "editTitle": "Ta'limni tahrirlash",
+        "institution": "Muassasa",
+        "degree": "Daraja",
+        "field": "Yo'nalish",
+        "start": "Boshlash",
+        "end": "Tugash"
+      },
+      "skills": {
+        "title": "Ko'nikmalar",
+        "addPlaceholder": "Boshqa ko'nikma qo'shish..."
+      },
+      "cert": {
+        "addTitle": "Sertifikat qo'shish",
+        "editTitle": "Sertifikatni tahrirlash",
+        "name": "Sertifikat nomi",
+        "issuer": "Muassasa",
+        "date": "Sana",
+        "url": "URL (ixtiyoriy)"
+      },
+      "project": {
+        "addTitle": "Loyiha qo'shish",
+        "editTitle": "Loyihani tahrirlash",
+        "name": "Loyiha nomi",
+        "description": "Tavsif",
+        "url": "URL (GitHub yoki live)",
+        "tags": "Texnologiyalar"
+      },
+      "language": {
+        "title": "Tillar",
+        "levelPlaceholder": "Daraja...",
+        "add": "Til qo'shish",
+        "remove": "O'chirish"
+      },
+      "appDefaults": {
+        "title": "Ish sozlamalari",
+        "workMode": "Ish tartibi",
+        "noticeLabel": "Bildirishnoma muddati",
+        "extra": "Qo'shimcha",
+        "relocate": "Ko'chirishga tayyor",
+        "transport": "Shaxsiy transport bor",
+        "immediately": "Hoziroq",
+        "twoWeeks": "2 hafta",
+        "oneMonth": "1 oy",
+        "twoMonths": "2 oy",
+        "threeMonths": "3 oy"
+      }
     }
   }
 }

@@ -1,19 +1,10 @@
 <script setup lang="ts">
+import { CV_OPT_OPTIONS, CL_OPT_OPTIONS, type OptLevel } from '~/constants/jobs'
+
 const store = useOnboardingStore()
 
-type OptLevel = 'off' | 'honest' | 'aggressive'
-
-const CV_OPTIONS: { value: OptLevel; label: string; desc: string }[] = [
-  { value: 'off', label: 'Off', desc: 'CV aynan yuboriladi' },
-  { value: 'honest', label: 'Honest', desc: 'Ish uchun tajribani qayta tartiblaydi' },
-  { value: 'aggressive', label: 'Aggressive', desc: 'CV matnini ish tavsifiga mos yozadi' },
-]
-
-const CL_OPTIONS: { value: OptLevel; label: string; desc: string }[] = [
-  { value: 'off', label: 'Off', desc: 'Cover letter yozilmaydi' },
-  { value: 'honest', label: 'Honest', desc: "Ton va urg'uni moslaydi" },
-  { value: 'aggressive', label: 'Aggressive', desc: 'Ish tavsifiga mos cover letter yozadi' },
-]
+const CV_OPTIONS = CV_OPT_OPTIONS
+const CL_OPTIONS = CL_OPT_OPTIONS
 </script>
 
 <template>

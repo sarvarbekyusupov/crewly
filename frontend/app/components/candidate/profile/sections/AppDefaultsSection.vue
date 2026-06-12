@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { WORK_MODE_LABELS } from '~/constants/candidate'
+
 const props = defineProps<{
   preferredWorkMode?: string
   willingToRelocate?: boolean
@@ -8,19 +10,15 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ edit: [] }>()
 
-const WORK_MODE_LABELS: Record<string, string> = {
-  remote: 'Remote',
-  office: 'Ofis',
-  hybrid: 'Gibrid',
-}
+const { t } = useI18n()
 
 const noticePeriodLabel = computed(() => {
   const days = Number(props.noticePeriodDays ?? 0)
-  if (!days) return 'Hoziroq'
-  if (days <= 14) return '2 hafta'
-  if (days <= 30) return '1 oy'
-  if (days <= 60) return '2 oy'
-  return '3 oy'
+  if (!days) return t('candidate.sections.appDefaults.immediately')
+  if (days <= 14) return t('candidate.modals.appDefaults.twoWeeks')
+  if (days <= 30) return t('candidate.modals.appDefaults.oneMonth')
+  if (days <= 60) return t('candidate.modals.appDefaults.twoMonths')
+  return t('candidate.modals.appDefaults.threeMonths')
 })
 </script>
 
@@ -28,17 +26,19 @@ const noticePeriodLabel = computed(() => {
   <CandidateProfileUiSectionCard
     id="app-defaults"
     icon="i-heroicons-adjustments-horizontal"
-    title="Ish sozlamalari"
+    :title="t('candidate.sections.appDefaults.title')"
     @edit="emit('edit')"
   >
     <div class="defaults-grid">
       <div class="def-group">
-        <p class="def-label">Ish tartibi</p>
+        <p class="def-label">{{ t('candidate.sections.appDefaults.workMode') }}</p>
         <div class="chips-row">
           <CandidateProfileUiTagChip
             :active="!!preferredWorkMode"
             :label="
-              WORK_MODE_LABELS[preferredWorkMode ?? ''] ?? preferredWorkMode ?? 'Ko\'rsatilmagan'
+              WORK_MODE_LABELS[preferredWorkMode ?? ''] ??
+              preferredWorkMode ??
+              t('candidate.sections.appDefaults.notice')
             "
           />
         </div>
@@ -47,14 +47,23 @@ const noticePeriodLabel = computed(() => {
       <div class="def-group">
         <p class="def-label">Preferences</p>
         <div class="chips-row">
-          <CandidateProfileUiTagChip :active="!!willingToRelocate" label="Ko'chirishga tayyor" />
-          <CandidateProfileUiTagChip :active="!!canStartImmediately" label="Darhol boshlaydi" />
-          <CandidateProfileUiTagChip :active="!!hasTransport" label="Shaxsiy transport" />
+          <CandidateProfileUiTagChip
+            :active="!!willingToRelocate"
+            :label="t('candidate.sections.appDefaults.relocation')"
+          />
+          <CandidateProfileUiTagChip
+            :active="!!canStartImmediately"
+            :label="t('candidate.sections.appDefaults.immediately')"
+          />
+          <CandidateProfileUiTagChip
+            :active="!!hasTransport"
+            :label="t('candidate.sections.appDefaults.transport')"
+          />
         </div>
       </div>
 
       <div class="def-group">
-        <p class="def-label">Bildirishnoma muddati</p>
+        <p class="def-label">{{ t('candidate.sections.appDefaults.notice') }}</p>
         <div class="chips-row">
           <CandidateProfileUiTagChip :active="true" :label="noticePeriodLabel" />
         </div>

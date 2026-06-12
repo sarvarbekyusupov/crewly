@@ -110,7 +110,8 @@
     "days": "days",
     "notes": "Notes",
     "candidate": "Candidate",
-    "position": "Position"
+    "position": "Position",
+    "close": "Close"
   },
   "agent": {
     "live": "Agent · live",
@@ -326,26 +327,26 @@
         "experience": "Experience",
         "enthusiasm": "Enthusiasm"
       }
+    },
+    "stepper": {
+      "title": "Hiring progress",
+      "sourced": "Sourced",
+      "screened": "Screened",
+      "delivered": "Delivered",
+      "interview": "Interview",
+      "offer": "Offer",
+      "hired": "Hired",
+      "terminal": "This application is closed.",
+      "hintApprove": "Approve to move the candidate forward in your pipeline.",
+      "hintWaiting": "Waiting for candidate response or agent screening.",
+      "hintScreening": "AI screening in progress.",
+      "hintDelivered": "Review the dossier, then schedule an interview.",
+      "hintInterview": "Mark interviewed when the meeting is done.",
+      "hintMarkInterviewed": "Record that the interview took place.",
+      "hintOfferOrHire": "Make an offer or hire directly if ready.",
+      "hintHire": "Confirm hire to create placement and invoice.",
+      "hintDone": "Hire complete."
     }
-  },
-  "stepper": {
-    "title": "Hiring progress",
-    "sourced": "Sourced",
-    "screened": "Screened",
-    "delivered": "Delivered",
-    "interview": "Interview",
-    "offer": "Offer",
-    "hired": "Hired",
-    "terminal": "This application is closed.",
-    "hintApprove": "Approve to move the candidate forward in your pipeline.",
-    "hintWaiting": "Waiting for candidate response or agent screening.",
-    "hintScreening": "AI screening in progress.",
-    "hintDelivered": "Review the dossier, then schedule an interview.",
-    "hintInterview": "Mark interviewed when the meeting is done.",
-    "hintMarkInterviewed": "Record that the interview took place.",
-    "hintOfferOrHire": "Make an offer or hire directly if ready.",
-    "hintHire": "Confirm hire to create placement and invoice.",
-    "hintDone": "Hire complete."
   },
   "status": {
     "matched": "Matched",
@@ -647,7 +648,46 @@
       "browseJobs": "Browse Jobs",
       "myApplications": "My Applications",
       "editProfile": "Edit Profile",
-      "preferences": "Preferences"
+      "preferences": "Preferences",
+      "searchPlaceholder": "Search by title, company...",
+      "filterDate": "Date",
+      "filterLocation": "Location",
+      "filterWorkplace": "Workplace",
+      "filterExperience": "Experience",
+      "filterJobType": "Job Type",
+      "scoreBtn": "Score",
+      "addOwn": "Add your own",
+      "applyToAll": "Apply to all {n}",
+      "aiScanning": "AI is scanning for matches",
+      "aiScanningDesc": "Check back in a few minutes",
+      "exploreManually": "Explore manually",
+      "matchLabel": "MATCH",
+      "passJob": "Pass",
+      "applyBtn": "Apply",
+      "allApplications": "All applications",
+      "openTracker": "Open tracker",
+      "approveAll": "Approve all {n}",
+      "companySearch": "Search company...",
+      "tabAll": "All",
+      "tabSubmitted": "Submitted",
+      "tabInflight": "In flight",
+      "tabNeedsYou": "Needs you",
+      "tabFailed": "Failed",
+      "tabSkipped": "Skipped",
+      "colCompany": "COMPANY",
+      "colResume": "RESUME",
+      "colCoverLetter": "COVER LETTER",
+      "colStatus": "STATUS",
+      "colApplied": "APPLIED",
+      "resumeReview": "Review",
+      "resumeNone": "None",
+      "coverLetterYes": "Yes",
+      "coverLetterPending": "Pending",
+      "noApps": "No applications found",
+      "approve": "Approve",
+      "view": "View",
+      "rowsPerPage": "Rows per page",
+      "showing": "Showing 1-{n} of {total}"
     },
     "jobs": {
       "eyebrow": "Job Discovery",
@@ -693,6 +733,149 @@
       "generatedCoverLetter": "Generated Cover Letter",
       "appliedAt": "Applied",
       "queuedAt": "Queued"
+    },
+    "layout": {
+      "agentScanning": "Agent: scanning",
+      "agentIdle": "Agent: idle",
+      "supportTitle": "Help & Support",
+      "supportSub": "Questions or feedback",
+      "jobSeeker": "Job Seeker"
+    },
+    "sections": {
+      "experience": {
+        "title": "Experience",
+        "subtitle": "{n} positions",
+        "empty": "Add your work experience — it matters most for job applications",
+        "emptyCta": "Add experience",
+        "addBtn": "Add position",
+        "noTitle": "Position",
+        "noCompany": "Company",
+        "present": "Present",
+        "showLess": "Show less",
+        "showMore": "+{n} more"
+      },
+      "education": {
+        "title": "Education",
+        "subtitle": "{n} institutions",
+        "empty": "Add your education history",
+        "emptyCta": "Add education",
+        "addBtn": "Add education",
+        "noInstitution": "Institution",
+        "noDegree": "Degree"
+      },
+      "skills": {
+        "title": "Skills",
+        "subtitle": "{n} skills",
+        "empty": "Add your skills — employers will see them",
+        "emptyCta": "Add skills"
+      },
+      "certifications": {
+        "title": "Certifications",
+        "subtitle": "{n} certifications",
+        "empty": "Add certifications to strengthen your profile",
+        "emptyCta": "Add certification",
+        "addBtn": "Add certification"
+      },
+      "projects": {
+        "title": "Projects",
+        "subtitle": "{n} projects",
+        "empty": "Add side projects, coursework or open-source contributions",
+        "emptyCta": "Add project",
+        "addBtn": "Add project"
+      },
+      "languages": {
+        "title": "Languages",
+        "subtitle": "{n} languages",
+        "empty": "Add the languages you speak",
+        "emptyCta": "Add language"
+      },
+      "appDefaults": {
+        "title": "Job preferences",
+        "workMode": "Work format",
+        "relocation": "Open to relocation",
+        "transport": "Own transportation",
+        "notice": "Notice period",
+        "immediately": "Immediately"
+      },
+      "documents": {
+        "title": "Documents",
+        "cvOnFile": "CV on file",
+        "noCv": "No CV uploaded",
+        "upload": "Upload",
+        "replace": "Replace"
+      }
+    },
+    "modals": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "header": {
+        "title": "Profile information",
+        "fullName": "Full name",
+        "bio": "Short bio",
+        "phone": "Phone",
+        "telegram": "Telegram",
+        "city": "City",
+        "linkedin": "LinkedIn URL",
+        "github": "GitHub URL"
+      },
+      "experience": {
+        "addTitle": "Add experience",
+        "editTitle": "Edit experience",
+        "position": "Position",
+        "company": "Company",
+        "start": "Start",
+        "end": "End (empty = Present)",
+        "bullets": "Achievements / tasks",
+        "addBullet": "Add achievement..."
+      },
+      "education": {
+        "addTitle": "Add education",
+        "editTitle": "Edit education",
+        "institution": "Institution",
+        "degree": "Degree",
+        "field": "Field of study",
+        "start": "Start",
+        "end": "End"
+      },
+      "skills": {
+        "title": "Skills",
+        "addPlaceholder": "Add another skill..."
+      },
+      "cert": {
+        "addTitle": "Add certification",
+        "editTitle": "Edit certification",
+        "name": "Certification name",
+        "issuer": "Issuer",
+        "date": "Date",
+        "url": "URL (optional)"
+      },
+      "project": {
+        "addTitle": "Add project",
+        "editTitle": "Edit project",
+        "name": "Project name",
+        "description": "Description",
+        "url": "URL (GitHub or live)",
+        "tags": "Technologies"
+      },
+      "language": {
+        "title": "Languages",
+        "levelPlaceholder": "Level...",
+        "add": "Add language",
+        "remove": "Remove"
+      },
+      "appDefaults": {
+        "title": "Job settings",
+        "workMode": "Work format",
+        "noticeLabel": "Notice period",
+        "extra": "Additional",
+        "relocate": "Open to relocation",
+        "transport": "Own transportation",
+        "immediately": "Right now",
+        "twoWeeks": "2 weeks",
+        "oneMonth": "1 month",
+        "twoMonths": "2 months",
+        "threeMonths": "3 months"
+      }
     }
   },
   "landing": {

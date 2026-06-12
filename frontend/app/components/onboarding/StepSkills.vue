@@ -1,45 +1,8 @@
 <script setup lang="ts">
+import { PRESET_SKILLS } from '~/constants/skills'
+import { EXPERIENCE_LEVELS, INDUSTRIES, EDUCATION_LEVELS } from '~/constants/candidate'
+
 const store = useOnboardingStore()
-
-const PRESET_SKILLS: Record<string, string[]> = {
-  Texnik: [
-    'JavaScript',
-    'TypeScript',
-    'Python',
-    'Java',
-    'React',
-    'Vue.js',
-    'Node.js',
-    'SQL',
-    'PostgreSQL',
-    'MongoDB',
-    'Docker',
-    'Git',
-    'AWS',
-    'REST API',
-    'GraphQL',
-    'Linux',
-  ],
-  Marketing: ['SEO', 'Google Ads', 'SMM', 'Content Writing', 'Email Marketing', 'Google Analytics'],
-  Moliya: ['Financial Analysis', 'Accounting', 'Excel', '1C', 'Budgeting'],
-  Boshqaruv: ['Project Management', 'Agile', 'Scrum', 'Jira', 'Team Leadership'],
-  Dizayn: ['Figma', 'UI/UX', 'Photoshop', 'Adobe XD'],
-  Tillar: ['English', 'Russian', 'Uzbek', 'German', 'Chinese'],
-}
-
-const EXPERIENCE_LEVELS = ['Intern', 'Junior', 'Middle', 'Senior', 'Lead', 'C-Level']
-const INDUSTRIES = [
-  'IT',
-  'Marketing',
-  'Moliya',
-  'Savdo',
-  'Dizayn',
-  'Muhandislik',
-  "Ta'lim",
-  'Tibbiyot',
-  'Boshqa',
-]
-const EDUCATION_LEVELS = ["O'rta maxsus", 'Bakalavr', 'Magistr', 'PhD', 'Boshqa']
 
 const customInput = ref('')
 const activeCategory = ref<string | null>(null)

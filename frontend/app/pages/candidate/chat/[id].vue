@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { newMessageBus } from '~/composables/useCandidateEventStream'
+import { CHAT_MAX_LENGTH as MAX_LENGTH } from '~/constants/ui'
 
 definePageMeta({ layout: 'candidate' })
 
@@ -10,7 +11,6 @@ const route = useRoute()
 const router = useRouter()
 const { playPop, playSwoosh } = useAudio()
 const applicationId = route.params.id as string
-const MAX_LENGTH = 500
 
 interface ApplicationContext {
   id: string
