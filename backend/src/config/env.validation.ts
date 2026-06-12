@@ -22,10 +22,17 @@ export const EnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional().or(z.literal('')),
   GOOGLE_CLIENT_SECRET: z.string().optional().or(z.literal('')),
   GOOGLE_CALLBACK_URL: z.string().url().optional().or(z.literal('')),
+  GOOGLE_REFRESH_TOKEN: z.string().optional().or(z.literal('')),
 
   GROQ_API_KEY: z.string().optional().or(z.literal('')),
   ANTHROPIC_API_KEY: z.string().optional().default(''),
   OPENAI_API_KEY: z.string().optional().default(''),
+  TAVILY_API_KEY: z.string().optional().or(z.literal('')),
+  JSEARCH_RAPIDAPI_KEY: z.string().optional().or(z.literal('')),
+
+  LANGFUSE_PUBLIC_KEY: z.string().optional().or(z.literal('')),
+  LANGFUSE_SECRET_KEY: z.string().optional().or(z.literal('')),
+  LANGFUSE_HOST: z.string().optional().or(z.literal('')),
 
   AWS_BEARER_TOKEN_BEDROCK: z.string().optional().or(z.literal('')),
   AWS_BEDROCK_REGION: z.string().optional().default('us-east-1'),
@@ -35,16 +42,21 @@ export const EnvSchema = z.object({
   HH_CLIENT_ID: z.string().optional().or(z.literal('')),
   HH_CLIENT_SECRET: z.string().optional().or(z.literal('')),
   HH_REDIRECT_URI: z.string().url().optional().or(z.literal('')),
-  HH_USER_AGENT: z.string().default('AIRecruiting/1.0 (contact@yourdomain.uz)'),
+  HH_USER_AGENT: z.string().default('Crewly/1.0 (contact@crewly.uz)'),
+  HH_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
+  HH_SPECIALIZATIONS: z.string().optional().or(z.literal('')),
 
   TELEGRAM_BOT_TOKEN: z.string().optional().or(z.literal('')),
   TELEGRAM_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
+  TELEGRAM_WEBHOOK_URL: z.string().optional().or(z.literal('')),
 
   RESEND_API_KEY: z.string().optional().or(z.literal('')),
+  RESEND_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
   FROM_EMAIL: z.string().email().default('noreply@crewly.uz'),
   BULL_BOARD_PASSWORD: z.string().min(16),
 
   S3_ENDPOINT: z.string().optional().or(z.literal('')),
+  S3_REGION: z.string().optional().or(z.literal('')),
   S3_ACCESS_KEY: z.string().optional().or(z.literal('')),
   S3_SECRET_KEY: z.string().optional().or(z.literal('')),
   S3_BUCKET: z.string().optional().or(z.literal('')),
@@ -52,6 +64,13 @@ export const EnvSchema = z.object({
   FRONTEND_URL: z.string().url(),
 
   PAYMENT_WEBHOOK_SECRET: z.string().optional().or(z.literal('')),
+  PAYME_MERCHANT_ID: z.string().optional().or(z.literal('')),
+  PAYME_MERCHANT_KEY: z.string().optional().or(z.literal('')),
+
+  LINKEDIN_RAPIDAPI_KEY: z.string().optional().or(z.literal('')),
+  LINKEDIN_RAPIDAPI_HOST: z.string().optional().or(z.literal('')),
+  LINKEDIN_EMAIL: z.string().optional().or(z.literal('')),
+  LINKEDIN_PASSWORD: z.string().optional().or(z.literal('')),
 
   ESKIZ_EMAIL: z.string().email().optional().or(z.literal('')),
   ESKIZ_PASSWORD: z.string().optional().or(z.literal('')),

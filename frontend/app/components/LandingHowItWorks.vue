@@ -75,20 +75,6 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           </p>
         </div>
       </div>
-
-      <!-- Trust strip (candidate only) -->
-      <div v-if="audience === 'candidate'" class="trust fade">
-        <span class="trust-label">Companies on Crewly</span>
-        <span class="trust-divider" />
-        <div class="trust-items">
-          <span class="trust-item"><span class="trust-dot" />Stripe</span>
-          <span class="trust-item"><span class="trust-dot" />Figma</span>
-          <span class="trust-item"><span class="trust-dot" />Notion</span>
-          <span class="trust-item"><span class="trust-dot" />Linear</span>
-          <span class="trust-item"><span class="trust-dot" />Vercel</span>
-          <span class="trust-item"><span class="trust-dot" />+38 more</span>
-        </div>
-      </div>
     </div>
   </section>
 </template>
@@ -189,53 +175,6 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   line-height: 1.7;
 }
 
-/* Trust strip */
-.trust {
-  border: 1px solid var(--ld-bd2);
-  border-radius: 10px;
-  padding: 28px 32px;
-  background: var(--ld-surf);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 48px;
-}
-.trust-label {
-  font-size: 12px;
-  color: var(--ld-t3);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.trust-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--ld-bd2);
-  flex-shrink: 0;
-}
-.trust-items {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.trust-item {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ld-t2);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.trust-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ld-acc);
-  opacity: 0.5;
-  flex-shrink: 0;
-}
-
 /* Fade animation */
 .fade {
   opacity: 0;
@@ -253,10 +192,6 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   .feat-grid {
     grid-template-columns: 1fr;
   }
-  .trust {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 @media (max-width: 480px) {
@@ -268,16 +203,6 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
   }
   .feat {
     padding: 24px 20px;
-  }
-  .trust {
-    padding: 20px 16px;
-    gap: 12px;
-  }
-  .trust-items {
-    gap: 16px;
-  }
-  .trust-divider {
-    display: none;
   }
 }
 </style>

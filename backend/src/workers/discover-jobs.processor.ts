@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
-import { Job } from 'bull';
+import { Process, Processor, OnQueueFailed, InjectQueue } from '@nestjs/bull';
+import { Job, Queue } from 'bull';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SourcingAgent } from '../modules/agents/sourcing.agent';
@@ -9,6 +9,7 @@ import { LinkedInJobsAdapter } from '../integrations/linkedin/linkedin-jobs.adap
 import { JobDiscoveryService } from '../integrations/adapters/job-discovery.service';
 import { JobSourceAdapter } from '../integrations/adapters/job-source.adapter';
 import { QUEUES } from './queue-names';
+import { LLM_JOB_OPTIONS } from './queue-options';
 
 interface DiscoverJobsPayload {
   candidateId?: string; // If provided, SourcingAgent will generate query for seeker
@@ -28,6 +29,8 @@ export class DiscoverJobsProcessor {
     private readonly hhJobsAdapter: HhJobsAdapter,
     private readonly linkedinJobsAdapter: LinkedInJobsAdapter,
     private readonly jobDiscovery: JobDiscoveryService,
+    @InjectQueue(QUEUES.SCORE_SEEKER_JOBS)
+    private readonly scoreQueue: Queue,
   ) {}
 
   private getAdapter(source: string): JobSourceAdapter {
@@ -94,6 +97,12 @@ export class DiscoverJobsProcessor {
       if (source === 'hh.ru') {
         await this.expandSimilarVacancies(run.id);
       }
+
+      // For scheduled (non-candidate-specific) runs, trigger scoring for all active candidates
+      // so newly discovered jobs get scored without requiring manual action.
+      if (!candidateId) {
+        await this.triggerScoringForActiveCandidates();
+      }
     } catch (err: any) {
       await this.db.jobDiscoveryRun.update({
         where: { id: run.id },
@@ -101,6 +110,27 @@ export class DiscoverJobsProcessor {
       });
       throw err;
     }
+  }
+
+  private async triggerScoringForActiveCandidates() {
+    const candidates = await this.db.candidate.findMany({
+      where: { deletedAt: null, doNotContact: false },
+      select: { id: true },
+    });
+
+    if (!candidates.length) return;
+
+    for (const { id } of candidates) {
+      await this.scoreQueue.add(
+        { candidateId: id, limit: 30 },
+        { ...LLM_JOB_OPTIONS, jobId: `score-${id}-post-discover` },
+      );
+    }
+
+    this.logger.log(
+      { count: candidates.length },
+      'Queued scoring for active candidates after discovery run',
+    );
   }
 
   private async expandSimilarVacancies(runId: string) {

@@ -342,7 +342,11 @@ export class WebhooksController implements OnModuleInit {
     @Headers('authorization') auth: string,
   ) {
     const secret = this.config.get<string>('HH_WEBHOOK_SECRET');
-    if (secret) {
+    if (!secret) {
+      this.logger.warn(
+        'HH_WEBHOOK_SECRET not set — skipping signature verification',
+      );
+    } else {
       const expected = `Bearer ${secret}`;
       const authBuf = Buffer.from(auth ?? '');
       const expectedBuf = Buffer.from(expected);

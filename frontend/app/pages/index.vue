@@ -141,7 +141,6 @@ onUnmounted(() => heroObs?.disconnect())
       <LandingHero audience="employer" />
     </div>
     <LandingHowItWorks audience="employer" />
-    <LandingTestimonials />
     <LandingFinalCta audience="employer" />
     <LandingFaq audience="employer" />
 
