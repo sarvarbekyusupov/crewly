@@ -1090,17 +1090,6 @@ watchDebounced(
             }}<template v-if="job.salaryMaxUzs"> – {{ formatSalary(job.salaryMaxUzs) }}</template>
           </p>
 
-          <!-- Match hint -->
-          <p v-if="job.matchExplanation" class="card-hint">{{ job.matchExplanation }}</p>
-
-          <!-- Skill chips -->
-          <div v-if="job.matchStrengths?.length || job.matchGaps?.length" class="card-skills">
-            <span v-for="s in job.matchStrengths?.slice(0, 3)" :key="s" class="skill-match">{{
-              s
-            }}</span>
-            <span v-for="g in job.matchGaps?.slice(0, 2)" :key="g" class="skill-gap">{{ g }}</span>
-          </div>
-
           <!-- Footer -->
           <div class="card-footer" @click.stop>
             <span class="card-date">{{ formatPostedDate(job.postedAt) }}</span>
@@ -1557,6 +1546,7 @@ watchDebounced(
 .jobs-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 210px;
   gap: 14px;
 }
 @media (max-width: 1280px) {
