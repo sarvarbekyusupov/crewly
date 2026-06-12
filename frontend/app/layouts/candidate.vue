@@ -63,7 +63,7 @@ const mobileNav = computed(() => [
     to: '/candidate/tracker',
     icon: 'i-heroicons-clipboard-document-list',
   },
-  { label: t('candidate.profile.title'), to: '/candidate/profile', icon: 'i-heroicons-user' },
+  { label: t('nav.settings'), to: '/candidate/preferences', icon: 'i-heroicons-cog-6-tooth' },
 ])
 
 async function handleLogout() {
@@ -203,7 +203,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 
       <!-- Help & Support -->
       <div class="px-3 pb-2">
-        <button type="button" class="support-card">
+        <a href="mailto:support@crewly.uz" class="support-card" style="text-decoration: none">
           <span class="support-icon">
             <UIcon name="i-heroicons-question-mark-circle" class="w-5 h-5" />
           </span>
@@ -211,7 +211,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
             <p class="support-title">{{ t('candidate.layout.supportTitle') }}</p>
             <p class="support-sub">{{ t('candidate.layout.supportSub') }}</p>
           </div>
-        </button>
+        </a>
       </div>
 
       <!-- User section -->

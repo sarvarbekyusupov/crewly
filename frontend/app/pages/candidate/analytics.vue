@@ -33,7 +33,7 @@ const funnel = computed(() => {
   if (!analytics.value) return []
   return [
     { label: 'Total Applied', value: analytics.value.total, color: 'var(--accent)' },
-    { label: 'Contacted / Reviewed', value: analytics.value.applied, color: 'var(--ink-muted)' },
+    { label: 'Viewed / Reviewed', value: analytics.value.inboundCount, color: 'var(--ink-muted)' },
     { label: 'Interviewed', value: analytics.value.interviewed, color: 'var(--warning)' },
     { label: 'Offers', value: analytics.value.offers, color: 'var(--positive)' },
   ]
@@ -197,7 +197,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
           <p class="text-3xl font-mono font-bold" style="color: var(--accent)">
-            {{ analytics.responseRate }}%
+            {{ Math.round(analytics.responseRate) }}%
           </p>
           <p class="text-xs mt-1" style="color: var(--ink-muted)">Response Rate</p>
         </div>
@@ -342,7 +342,7 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
     </template>
 
     <div v-else-if="error" class="py-12 text-center text-sm" style="color: var(--ink-muted)">
-      Failed to load analytics
+      {{ (error as any)?.message ?? 'Failed to load analytics' }}
     </div>
   </div>
 </template>

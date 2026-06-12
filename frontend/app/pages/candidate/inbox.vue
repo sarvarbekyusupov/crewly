@@ -218,6 +218,7 @@ async function sendMessage() {
   } catch (e) {
     toast.add({ title: 'Failed to send', description: extractApiErrorMessage(e), color: 'error' })
     messages.value = messages.value.filter((m) => !m.id.startsWith('temp-'))
+    chatContent.value = text
   } finally {
     isSending.value = false
   }

@@ -66,9 +66,21 @@ async function onCitySearch(text: string) {
   cityItems.value = items.map((i) => i.text)
 }
 
+const fullNameError = ref('')
 const saving = ref(false)
+
 async function submit() {
-  emit('save', { ...form })
+  if (!form.fullName.trim()) {
+    fullNameError.value = t('candidate.modals.header.fullName') + ' is required'
+    return
+  }
+  fullNameError.value = ''
+  saving.value = true
+  try {
+    emit('save', { ...form })
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -91,9 +103,11 @@ async function submit() {
             <input
               v-model="form.fullName"
               type="text"
-              class="field-input"
+              :class="['field-input', { 'field-input--error': fullNameError }]"
               placeholder="Abdullayev Bobur"
+              @input="fullNameError = ''"
             />
+            <span v-if="fullNameError" class="field-error">{{ fullNameError }}</span>
           </div>
 
           <div class="field-row">
@@ -127,15 +141,26 @@ async function submit() {
             </div>
           </div>
 
-          <div class="field-row">
-            <label class="field-label">{{ t('candidate.modals.header.city') }}</label>
-            <UInputMenu
-              v-model="form.city"
-              :items="cityItems"
-              :placeholder="t('candidate.modals.header.city')"
-              class="field-input-menu"
-              @update:search-term="onCitySearch"
-            />
+          <div class="grid-2">
+            <div class="field-row">
+              <label class="field-label">{{ t('candidate.modals.header.city') }}</label>
+              <UInputMenu
+                v-model="form.city"
+                :items="cityItems"
+                :placeholder="t('candidate.modals.header.city')"
+                class="field-input-menu"
+                @update:search-term="onCitySearch"
+              />
+            </div>
+            <div class="field-row">
+              <label class="field-label">{{ t('candidate.modals.header.country') }}</label>
+              <input
+                v-model="form.country"
+                type="text"
+                class="field-input"
+                placeholder="Uzbekistan"
+              />
+            </div>
           </div>
 
           <div class="field-row">
@@ -160,11 +185,16 @@ async function submit() {
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="emit('close')">
+          <button type="button" class="btn-cancel" :disabled="saving" @click="emit('close')">
             {{ t('candidate.modals.cancel') }}
           </button>
-          <button type="button" class="btn-save" @click="submit">
-            {{ t('candidate.modals.save') }}
+          <button
+            type="button"
+            class="btn-save"
+            :disabled="saving || !form.fullName.trim()"
+            @click="submit"
+          >
+            {{ saving ? '...' : t('candidate.modals.save') }}
           </button>
         </div>
       </div>
@@ -287,5 +317,18 @@ async function submit() {
 }
 .btn-save:hover {
   opacity: 0.85;
+}
+.btn-save:disabled,
+.btn-cancel:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.field-input--error {
+  border-color: var(--accent);
+}
+.field-error {
+  font-size: 11.5px;
+  color: var(--accent);
+  margin-top: 2px;
 }
 </style>

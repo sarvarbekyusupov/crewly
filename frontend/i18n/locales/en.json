@@ -650,6 +650,8 @@
       "editProfile": "Edit Profile",
       "preferences": "Preferences",
       "searchPlaceholder": "Search by title, company...",
+      "searchJobsPlaceholder": "Search jobs (press Enter to browse all)",
+      "searchJobsTitle": "Searches job discovery page — press Enter to go there",
       "filterDate": "Date",
       "filterLocation": "Location",
       "filterWorkplace": "Workplace",
@@ -704,7 +706,9 @@
       "bestMatch": "Best match",
       "noJobs": "No jobs found",
       "noJobsFiltered": "Adjust filters or run AI scoring to improve ranking.",
-      "noJobsDiscovered": "No roles discovered yet. Add more skills to your profile to improve matches."
+      "noJobsDiscovered": "No roles discovered yet. Add more skills to your profile to improve matches.",
+      "from": "from",
+      "upTo": "up to"
     },
     "offers": {
       "eyebrow": "Applications",
@@ -808,6 +812,8 @@
     "modals": {
       "cancel": "Cancel",
       "save": "Save",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this entry? This cannot be undone.",
       "header": {
         "title": "Profile information",
         "fullName": "Full name",
@@ -815,6 +821,7 @@
         "phone": "Phone",
         "telegram": "Telegram",
         "city": "City",
+        "country": "Country",
         "linkedin": "LinkedIn URL",
         "github": "GitHub URL"
       },
@@ -826,7 +833,8 @@
         "start": "Start",
         "end": "End (empty = Present)",
         "bullets": "Achievements / tasks",
-        "addBullet": "Add achievement..."
+        "addBullet": "Add achievement...",
+        "currentRoleHint": "Leave blank or write \"Present\" for current role"
       },
       "education": {
         "addTitle": "Add education",

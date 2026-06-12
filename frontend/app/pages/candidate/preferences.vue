@@ -23,6 +23,7 @@ const { data: prefs, refresh } = await useAsyncData('candidate-preferences', () 
 const hhConnecting = ref(false)
 
 onMounted(() => {
+  hhConnecting.value = false
   const hhParam = route.query.hh as string | undefined
   if (!hhParam) return
   router.replace({ query: { ...route.query, hh: undefined } })

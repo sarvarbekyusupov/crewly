@@ -747,6 +747,8 @@
       "editProfile": "Profilni tahrirlash",
       "preferences": "Sozlamalar",
       "searchPlaceholder": "Ish nomi, kompaniya bo'yicha qidiring...",
+      "searchJobsPlaceholder": "Vakansiya qidirish (Enter — o'tish)",
+      "searchJobsTitle": "Enter bosib vakansiyalar sahifasiga o'ting",
       "filterDate": "Sana",
       "filterLocation": "Joylashuv",
       "filterWorkplace": "Ish tartibi",
@@ -801,7 +803,9 @@
       "bestMatch": "Eng mos",
       "noJobs": "Vakansiyalar topilmadi",
       "noJobsFiltered": "Filtrlarni o'zgartiring yoki reytingni yaxshilash uchun AI baholashni ishga tushiring.",
-      "noJobsDiscovered": "Hali vakansiyalar topilmadi. Mosliklarni yaxshilash uchun profilingizga ko'proq ko'nikma qo'shing."
+      "noJobsDiscovered": "Hali vakansiyalar topilmadi. Mosliklarni yaxshilash uchun profilingizga ko'proq ko'nikma qo'shing.",
+      "from": "dan",
+      "upTo": "gacha"
     },
     "offers": {
       "eyebrow": "Arizalar",
@@ -905,6 +909,8 @@
     "modals": {
       "cancel": "Bekor qilish",
       "save": "Saqlash",
+      "delete": "O'chirish",
+      "deleteConfirm": "Bu yozuvni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.",
       "header": {
         "title": "Profil ma'lumotlari",
         "fullName": "Ism familiya",
@@ -912,6 +918,7 @@
         "phone": "Telefon",
         "telegram": "Telegram",
         "city": "Shahar",
+        "country": "Davlat",
         "linkedin": "LinkedIn URL",
         "github": "GitHub URL"
       },
@@ -923,7 +930,8 @@
         "start": "Boshlash",
         "end": "Tugash (bo'sh = Hozir)",
         "bullets": "Yutuqlar / vazifalar",
-        "addBullet": "Yangi yutuq qo'shish..."
+        "addBullet": "Yangi yutuq qo'shish...",
+        "currentRoleHint": "Hozirgi lavozim uchun bo'sh qoldiring yoki \"Hozir\" yozing"
       },
       "education": {
         "addTitle": "Ta'lim qo'shish",

@@ -80,11 +80,14 @@ const hrApps = computed(() => hrAppsRes.data.value ?? [])
 
 const { percent: completeness } = useProfileCompletion(profile)
 
-onMounted(() => {
-  if (completeness.value === 0) {
-    navigateTo('/candidate/onboarding')
-  }
-})
+watch(
+  () => profileRes.status.value,
+  (status) => {
+    if (status === 'success' && completeness.value === 0 && !profile.value) {
+      navigateTo('/candidate/onboarding')
+    }
+  },
+)
 
 // ── Score trigger ─────────────────────────────────────────────────────────────
 const scoringInProgress = ref(false)
@@ -114,7 +117,14 @@ async function passJob(id: string, e: Event) {
   passedJobIds.value = new Set([...passedJobIds.value, id])
   try {
     await api.post(`/api/v1/candidate-portal/discovered-jobs/${id}/skip`, {})
-  } catch {}
+  } catch (err) {
+    passedJobIds.value = new Set([...passedJobIds.value].filter((x) => x !== id))
+    toast.add({
+      title: t('common.error'),
+      description: extractApiErrorMessage(err),
+      color: 'error',
+    })
+  }
 }
 
 // ── Applications tabs ─────────────────────────────────────────────────────────
@@ -168,7 +178,7 @@ const tabCounts = computed(() => ({
     .length,
   needs_you: allApps.value.filter((a) => a.status === 'screening').length,
   failed: allApps.value.filter((a) => ['rejected', 'failed'].includes(a.status)).length,
-  skipped: 0,
+  skipped: passedJobIds.value.size,
 }))
 
 const filteredApps = computed(() => {
@@ -187,6 +197,16 @@ const filteredApps = computed(() => {
     )
   }
   return list
+})
+
+const tablePageSize = ref(12)
+const tablePageSizeOptions = [12, 25, 50]
+
+const paginatedApps = computed(() => filteredApps.value.slice(0, tablePageSize.value))
+const showingEnd = computed(() => Math.min(tablePageSize.value, filteredApps.value.length))
+
+watch([appTab, appsSearch], () => {
+  tablePageSize.value = 12
 })
 
 const needsYouApps = computed(() => allApps.value.filter((a) => a.status === 'screening'))
@@ -269,7 +289,8 @@ watch(resumeParseStatus, (status) => {
         <input
           type="text"
           class="search-input"
-          :placeholder="t('candidate.dashboard.searchPlaceholder')"
+          :placeholder="t('candidate.dashboard.searchJobsPlaceholder')"
+          :title="t('candidate.dashboard.searchJobsTitle')"
           @keydown.enter="navigateTo('/candidate/jobs')"
         />
       </div>
@@ -281,15 +302,10 @@ watch(resumeParseStatus, (status) => {
         {{ t('candidate.dashboard.filterDate') }}
         <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 ml-0.5" />
       </button>
-      <button
-        type="button"
-        class="chip-btn chip-btn--active"
-        @click="navigateTo('/candidate/jobs')"
-      >
+      <button type="button" class="chip-btn" @click="navigateTo('/candidate/jobs')">
         <UIcon name="i-heroicons-map-pin" class="w-3 h-3" />
         {{ t('candidate.dashboard.filterLocation') }}
-        <span class="chip-badge">1</span>
-        <UIcon name="i-heroicons-x-mark" class="w-3 h-3 ml-0.5 opacity-50" />
+        <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 ml-0.5" />
       </button>
       <button type="button" class="chip-btn" @click="navigateTo('/candidate/jobs')">
         {{ t('candidate.dashboard.filterWorkplace') }}
@@ -536,7 +552,7 @@ watch(resumeParseStatus, (status) => {
                 <span>{{ t('candidate.dashboard.noApps') }}</span>
               </td>
             </tr>
-            <tr v-for="app in filteredApps" :key="app.id" class="apps-row">
+            <tr v-for="app in paginatedApps" :key="app.id" class="apps-row">
               <td class="app-company-cell">
                 <span
                   class="app-company-initial"
@@ -606,15 +622,11 @@ watch(resumeParseStatus, (status) => {
       <!-- Pagination info -->
       <div v-if="filteredApps.length" class="table-footer">
         <span>{{ t('candidate.dashboard.rowsPerPage') }}</span>
-        <select class="page-size-select">
-          <option>12</option>
-          <option>25</option>
-          <option>50</option>
+        <select v-model="tablePageSize" class="page-size-select">
+          <option v-for="n in tablePageSizeOptions" :key="n" :value="n">{{ n }}</option>
         </select>
         <span style="color: var(--ink-muted)">
-          {{
-            t('candidate.dashboard.showing', { n: filteredApps.length, total: filteredApps.length })
-          }}
+          {{ t('candidate.dashboard.showing', { n: showingEnd, total: filteredApps.length }) }}
         </span>
       </div>
     </div>

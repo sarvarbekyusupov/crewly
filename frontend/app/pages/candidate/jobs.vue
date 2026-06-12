@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watchDebounced, useEventBus } from '@vueuse/core'
+import { watchDebounced, useEventBus, useLocalStorage, onClickOutside } from '@vueuse/core'
 import { safeUrl } from '~/utils/safeUrl'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import { capitalizeStatus } from '~/utils/candidate'
@@ -89,18 +89,21 @@ watch(
   { immediate: true },
 )
 
-const skippedIds = ref(new Set<string>())
-const savedIds = ref(new Set<string>())
+const _skippedArr = useLocalStorage<string[]>('candidate:skipped-jobs', [])
+const _savedArr = useLocalStorage<string[]>('candidate:saved-jobs', [])
+const skippedIds = computed(() => new Set(_skippedArr.value))
+const savedIds = computed(() => new Set(_savedArr.value))
 
 function skipJob(id: string) {
-  skippedIds.value = new Set([...skippedIds.value, id])
+  if (!_skippedArr.value.includes(id)) _skippedArr.value = [..._skippedArr.value, id]
 }
 
 function toggleSave(id: string) {
-  const next = new Set(savedIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  savedIds.value = next
+  if (_savedArr.value.includes(id)) {
+    _savedArr.value = _savedArr.value.filter((x) => x !== id)
+  } else {
+    _savedArr.value = [..._savedArr.value, id]
+  }
 }
 
 const workModeOptions = computed(() => [
@@ -449,6 +452,11 @@ function selectArea(area: HhAreaSuggest | null) {
   hhAreaSearchText.value = ''
 }
 
+const hhAreaPickerRef = ref<HTMLElement | null>(null)
+onClickOutside(hhAreaPickerRef, () => {
+  hhAreaOptions.value = []
+})
+
 watchDebounced(
   liveSearchText,
   () => {
@@ -607,12 +615,13 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
           @keydown.enter="runLiveSearch"
         />
         <!-- Area picker -->
-        <div class="relative">
+        <div ref="hhAreaPickerRef" class="relative">
           <UInput
             v-model="hhAreaSearchText"
             icon="i-heroicons-map-pin"
             :placeholder="hhAreaLabel"
             class="w-40"
+            @keydown.escape="hhAreaOptions = []"
           />
           <div
             v-if="hhAreaOptions.length"
@@ -711,8 +720,18 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                 class="text-xs mt-1"
                 style="color: var(--ink-subtle)"
               >
-                {{ job.salary?.from?.toLocaleString() }} – {{ job.salary?.to?.toLocaleString() }}
-                {{ job.salary?.currency }}
+                <template v-if="job.salary?.from && job.salary?.to">
+                  {{ job.salary.from.toLocaleString() }} – {{ job.salary.to.toLocaleString() }}
+                  {{ job.salary.currency }}
+                </template>
+                <template v-else-if="job.salary?.from">
+                  {{ t('candidate.jobs.from') }} {{ job.salary.from.toLocaleString() }}
+                  {{ job.salary.currency }}
+                </template>
+                <template v-else-if="job.salary?.to">
+                  {{ t('candidate.jobs.upTo') }} {{ job.salary.to.toLocaleString() }}
+                  {{ job.salary.currency }}
+                </template>
               </p>
             </div>
             <div class="flex gap-2 shrink-0">

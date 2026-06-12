@@ -28,44 +28,44 @@ const STEP_META = [
   {
     label: 'RESUME',
     title: 'Upload your CV',
-    desc: "CV yuklab, AI-ga profilingizni avtomatik to'ldirish imkonini bering.",
-    why: "AI CV-ni tahlil qilib, ko'nikmalar va tajribani chiqaradi — sizga kerakli ish o'rinlarini aniqroq topadi.",
+    desc: 'Let AI parse your CV and auto-fill your profile in seconds.',
+    why: 'AI extracts your skills and experience — helping us find the right roles faster.',
   },
   {
     label: 'LOCATION',
-    title: 'Qayerda yashaysiz?',
-    desc: "Joylashuvingizni kiriting — mahalliy va eng mos imkoniyatlarni birinchi ko'rsatamiz.",
-    why: "Ko'pgina ish beruvchilar kandidatlarni manzil bo'yicha filtrlaydi. Bu ma'lumot mos takliflarni aniqlashda yordam beradi.",
+    title: 'Where are you based?',
+    desc: 'Enter your location so we can prioritize local and most relevant opportunities.',
+    why: 'Most employers filter candidates by location. This helps us surface the right matches.',
   },
   {
     label: 'CONTACT',
-    title: "Siz bilan qanday bog'lanish mumkin?",
-    desc: "Ish beruvchilar qiziqsalar, to'g'ridan-to'g'ri siz bilan bog'lana olsin.",
-    why: "To'g'ridan-to'g'ri murojaat sekin ariza portallari orqali emas — javob tezroq keladi.",
+    title: 'How can employers reach you?',
+    desc: 'Let interested employers contact you directly.',
+    why: 'Direct outreach is faster than slow application portals — you get replies sooner.',
   },
   {
     label: 'SKILLS',
-    title: "Ko'nikmalar va tajriba",
-    desc: "Ko'nikmalaringizni tanlang va tajriba darajangizni belgilang.",
-    why: "Ko'nikmalar moslamasi — bizning asosiy algoritmimiz. Qanchalik to'g'ri bo'lsa, shunchalik yaxshi natija.",
+    title: 'Skills & experience level',
+    desc: 'Select your skills and set your experience level.',
+    why: 'Skill matching is our core algorithm. The more accurate, the better your matches.',
   },
   {
     label: 'JOB PREFS',
-    title: 'Nima qidirmoqdasiz?',
-    desc: 'Istagan lavozim, maosh kutishi va ish formatini belgilang.',
-    why: "Faqat mezon bo'yicha mos ish o'rinlarini yuboramiz — spam yo'q, mos kelmagan takliflar yo'q.",
+    title: 'What are you looking for?',
+    desc: 'Set your desired role, salary expectations, and work format.',
+    why: 'We only send roles that match your criteria — no spam, no off-target offers.',
   },
   {
     label: 'CHECKLIST',
-    title: 'Bir necha savol',
-    desc: "Ish beruvchilar ko'pincha bu savollarni oldindan so'raydi.",
-    why: 'Bularni oldindan hal qilish ariza jarayonini tezlashtiradi.',
+    title: 'A few quick questions',
+    desc: 'Employers often ask these upfront — answer once, never again.',
+    why: 'Answering these now speeds up the application process significantly.',
   },
   {
     label: 'SETTINGS',
-    title: 'Ariza sozlamalari',
-    desc: 'AI arizalaringizni qanday boshqarishini tanlang.',
-    why: "Bu sozlamalar avtomatlashtirishni qanchalik xohlashingizni nazorat qiladi. Istalgan vaqt o'zgartirish mumkin.",
+    title: 'Application settings',
+    desc: 'Choose how you want AI to manage your applications.',
+    why: 'These settings control your automation level. You can change them any time.',
   },
 ]
 
@@ -175,7 +175,7 @@ function handleKeydown(e: KeyboardEvent) {
   const tag = (e.target as HTMLElement).tagName
   if (e.key === 'Enter' && !e.shiftKey && tag !== 'TEXTAREA' && tag !== 'BUTTON') {
     e.preventDefault()
-    handleContinue()
+    if (!saving.value) handleContinue()
   }
   if (e.key === 'Tab' && e.shiftKey) {
     if (store.currentStep > 1) {
@@ -425,7 +425,9 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
   border: none;
   background: var(--line);
   cursor: pointer;
-  padding: 0;
+  padding: 10px;
+  box-sizing: content-box;
+  margin: -10px;
   transition: all 0.15s;
 }
 .dot-btn-active {

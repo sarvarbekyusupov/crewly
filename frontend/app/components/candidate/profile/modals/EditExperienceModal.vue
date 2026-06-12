@@ -14,6 +14,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const confirmingDelete = ref(false)
+
 const form = reactive<Position>({
   title: '',
   company: '',
@@ -35,6 +37,7 @@ watch(
     form.end = p?.end ?? ''
     form.bullets = p?.bullets ? [...p.bullets] : []
     newBullet.value = ''
+    confirmingDelete.value = false
   },
 )
 
@@ -51,7 +54,16 @@ function removeBullet(i: number) {
 }
 
 function submit() {
+  if (!form.title?.trim() || !form.company?.trim()) return
   emit('save', { ...form, bullets: form.bullets ?? [] }, props.index)
+}
+
+function requestDelete() {
+  confirmingDelete.value = true
+}
+
+function confirmDelete() {
+  if (props.index !== null) emit('delete', props.index)
 }
 </script>
 
@@ -106,6 +118,7 @@ function submit() {
             <div class="field-row">
               <label class="field-label">{{ t('candidate.modals.experience.end') }}</label>
               <input v-model="form.end" type="text" class="field-input" placeholder="Present" />
+              <span class="field-hint">{{ t('candidate.modals.experience.currentRoleHint') }}</span>
             </div>
           </div>
 
@@ -131,19 +144,30 @@ function submit() {
         </div>
 
         <div class="modal-footer">
-          <button
-            v-if="index !== null"
-            type="button"
-            class="btn-delete"
-            @click="index !== null && emit('delete', index)"
-          >
-            O'chirish
-          </button>
-          <div class="footer-right">
+          <div v-if="index !== null && !confirmingDelete">
+            <button type="button" class="btn-delete" @click="requestDelete">
+              {{ t('candidate.modals.delete') }}
+            </button>
+          </div>
+          <div v-if="confirmingDelete" class="confirm-delete-row">
+            <span class="confirm-text">{{ t('candidate.modals.deleteConfirm') }}</span>
+            <button type="button" class="btn-delete" @click="confirmDelete">
+              {{ t('candidate.modals.delete') }}
+            </button>
+            <button type="button" class="btn-cancel" @click="confirmingDelete = false">
+              {{ t('candidate.modals.cancel') }}
+            </button>
+          </div>
+          <div v-if="!confirmingDelete" class="footer-right">
             <button type="button" class="btn-cancel" @click="emit('close')">
               {{ t('candidate.modals.cancel') }}
             </button>
-            <button type="button" class="btn-save" @click="submit">
+            <button
+              type="button"
+              class="btn-save"
+              :disabled="!form.title?.trim() || !form.company?.trim()"
+              @click="submit"
+            >
               {{ t('candidate.modals.save') }}
             </button>
           </div>
@@ -337,5 +361,26 @@ function submit() {
 }
 .btn-save:hover {
   opacity: 0.85;
+}
+.btn-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.field-hint {
+  font-size: 11.5px;
+  color: var(--ink-subtle);
+  margin-top: 2px;
+}
+.confirm-delete-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.confirm-text {
+  font-size: 12px;
+  color: var(--ink-muted);
+  flex: 1;
 }
 </style>

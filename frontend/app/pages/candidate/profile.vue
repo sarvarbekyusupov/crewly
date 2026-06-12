@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { resumeParseStatus } from '~/composables/useCandidateEventStream'
+
 definePageMeta({ layout: 'candidate' })
 
 const store = useCandidateAuthStore()
@@ -64,70 +66,24 @@ const {
   refresh,
 } = useAsyncData('candidate-profile', () => api.get<Profile>('/api/v1/candidate-portal/profile'))
 
+let parsingTimeoutId: ReturnType<typeof setTimeout> | null = null
+
 const isAnalyzingManual = ref(false)
 const isParsing = computed(
   () =>
-    !!(isAnalyzingManual.value || (profile.value?.rawResumeText && !profile.value?.parsedResume)),
+    !!(
+      isAnalyzingManual.value ||
+      resumeParseStatus.value === 'parsing' ||
+      (profile.value?.rawResumeText && !profile.value?.parsedResume)
+    ),
 )
 
-let eventSource: EventSource | null = null
-let parsingTimeoutId: any = null
-
-function setupSSE() {
-  if (eventSource) return
-  const config = useRuntimeConfig()
-  const base = (config.public.apiBase as string).replace(/\/$/, '')
-  eventSource = new EventSource(`${base}/api/v1/candidate-portal/events`, { withCredentials: true })
-  eventSource.onmessage = async (event) => {
-    if (!event.data) return
-    try {
-      const data = JSON.parse(event.data)
-      if (data.type === 'resume_parse_progress') {
-        if (data.payload.status === 'parsing') {
-          isAnalyzingManual.value = true
-        } else if (data.payload.status === 'done') {
-          isAnalyzingManual.value = false
-          if (parsingTimeoutId) {
-            clearTimeout(parsingTimeoutId)
-            parsingTimeoutId = null
-          }
-          await refresh()
-          toast.add({
-            title: t('candidate.profile.resumeAnalysisComplete'),
-            description: t('candidate.profile.resumeAnalysisDesc'),
-            color: 'success',
-          })
-        } else if (data.payload.status === 'error') {
-          isAnalyzingManual.value = false
-          if (parsingTimeoutId) {
-            clearTimeout(parsingTimeoutId)
-            parsingTimeoutId = null
-          }
-          await refresh()
-          toast.add({
-            title: t('common.error'),
-            description: t('candidate.profile.resumeAnalysisTimeout'),
-            color: 'error',
-          })
-        }
-      }
-    } catch {
-      /* ignore keepalives */
-    }
-  }
-  eventSource.onerror = () => {
-    eventSource?.close()
-    eventSource = null
-  }
-}
-
-onMounted(() => setupSSE())
-onUnmounted(() => {
-  eventSource?.close()
-  eventSource = null
-  if (parsingTimeoutId) {
-    clearTimeout(parsingTimeoutId)
-    parsingTimeoutId = null
+watch(resumeParseStatus, async (status) => {
+  if (status === 'parsing') {
+    isAnalyzingManual.value = true
+  } else if (status === 'done' || status === 'error') {
+    isAnalyzingManual.value = false
+    await refresh()
   }
 })
 
@@ -241,15 +197,19 @@ const certModal = ref<{ open: boolean; index: number | null }>({ open: false, in
 const projModal = ref<{ open: boolean; index: number | null }>({ open: false, index: null })
 
 function openExpModal(index: number | null) {
+  if (saving.value) return
   expModal.value = { open: true, index }
 }
 function openEduModal(index: number | null) {
+  if (saving.value) return
   eduModal.value = { open: true, index }
 }
 function openCertModal(index: number | null) {
+  if (saving.value) return
   certModal.value = { open: true, index }
 }
 function openProjModal(index: number | null) {
+  if (saving.value) return
   projModal.value = { open: true, index }
 }
 
@@ -397,7 +357,7 @@ const NAV_SECTIONS = [
           :summary="profile?.parsedResume?.summary"
           :completeness="completeness"
           :missing="completenessMissing"
-          @edit="showHeaderModal = true"
+          @edit="!saving && (showHeaderModal = true)"
         />
 
         <!-- Documents -->
@@ -424,7 +384,7 @@ const NAV_SECTIONS = [
         <!-- Skills -->
         <CandidateProfileSectionsSkillsSection
           :skills="profile?.skills ?? []"
-          @edit="showSkillsModal = true"
+          @edit="!saving && (showSkillsModal = true)"
         />
 
         <!-- Certifications -->
@@ -448,13 +408,13 @@ const NAV_SECTIONS = [
           :has-transport="profile?.hasTransport"
           :notice-period-days="profile?.noticePeriodDays"
           :can-start-immediately="profile?.noticePeriodDays === 0"
-          @edit="showAppDefaultsModal = true"
+          @edit="!saving && (showAppDefaultsModal = true)"
         />
 
         <!-- Languages -->
         <CandidateProfileSectionsLanguagesSection
           :languages="languages"
-          @edit="showLangModal = true"
+          @edit="!saving && (showLangModal = true)"
         />
       </template>
     </div>

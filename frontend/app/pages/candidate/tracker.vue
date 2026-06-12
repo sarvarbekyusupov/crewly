@@ -66,7 +66,7 @@ interface HhMessage {
 const expandedNegId = ref<string | null>(null)
 const negMessages = ref<Record<string, HhMessage[]>>({})
 const negMessagesPending = ref<string | null>(null)
-const newMessage = ref('')
+const newMessages = ref<Record<string, string>>({})
 const sendingMessage = ref(false)
 const withdrawingId = ref<string | null>(null)
 
@@ -110,13 +110,13 @@ async function withdrawNegotiation(negId: string) {
 }
 
 async function sendNegMessage(negId: string) {
-  const msg = newMessage.value.trim()
+  const msg = (newMessages.value[negId] ?? '').trim()
   if (!msg) return
   sendingMessage.value = true
   try {
     await api.post(`/api/v1/candidate-portal/hh/negotiations/${negId}/messages`, { message: msg })
     toast.add({ title: t('candidate.preferences.hhMessageSent'), color: 'success' })
-    newMessage.value = ''
+    newMessages.value = { ...newMessages.value, [negId]: '' }
     // Refresh messages
     const resp = await api.get<{ items: HhMessage[] }>(
       `/api/v1/candidate-portal/hh/negotiations/${negId}/messages`,
@@ -441,7 +441,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               </div>
               <div class="flex gap-2 pt-1">
                 <UInput
-                  v-model="newMessage"
+                  v-model="newMessages[neg.id]"
                   :placeholder="t('candidate.preferences.hhSendMessage')"
                   class="flex-1"
                   size="sm"
@@ -451,7 +451,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                   size="sm"
                   icon="i-heroicons-paper-airplane"
                   :loading="sendingMessage"
-                  :disabled="!newMessage.trim()"
+                  :disabled="!(newMessages[neg.id] ?? '').trim()"
                   @click="sendNegMessage(neg.id)"
                 />
               </div>
@@ -563,6 +563,8 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               <div
                 v-for="app in columnApps(col.status)"
                 :key="app.id"
+                role="button"
+                tabindex="0"
                 class="rounded-md p-2.5 cursor-pointer transition-opacity"
                 :style="{
                   background: 'var(--surface)',
@@ -570,6 +572,8 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                   opacity: updatingId === app.id ? 0.5 : 1,
                 }"
                 @click="expandedId = expandedId === app.id ? null : app.id"
+                @keydown.enter.prevent="expandedId = expandedId === app.id ? null : app.id"
+                @keydown.space.prevent="expandedId = expandedId === app.id ? null : app.id"
               >
                 <p class="text-sm font-medium leading-snug" style="color: var(--ink)">
                   {{ app.discoveredJob?.title ?? '—' }}
