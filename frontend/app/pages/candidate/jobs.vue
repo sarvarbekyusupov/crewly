@@ -1044,7 +1044,7 @@ watchDebounced(
                 background: scoreBg(job.displayScore),
               }"
             >
-              {{ job.displayScore != null ? job.displayScore + '%' : '?' }}
+              {{ job.displayScore != null ? job.displayScore + '%' : '–' }}
             </div>
           </div>
 
@@ -1092,7 +1092,7 @@ watchDebounced(
                   {{ capitalizeStatus(job.application.status) }}
                 </UBadge>
               </template>
-              <template v-else-if="job.displayScore == null || job.displayScore > 0">
+              <template v-else>
                 <button
                   type="button"
                   class="act-btn act-skip"
@@ -1117,6 +1117,7 @@ watchDebounced(
                   />
                 </button>
                 <button
+                  v-if="job.displayScore == null || job.displayScore > 0"
                   type="button"
                   class="act-apply"
                   :disabled="applying.has(job.id)"
@@ -1142,7 +1143,7 @@ watchDebounced(
     </div>
 
     <!-- ── Job Detail Modal ── -->
-    <UModal v-model:open="showDetailModal">
+    <UModal v-model:open="showDetailModal" :ui="{ content: 'sm:max-w-2xl' }">
       <template #content>
         <div v-if="detailJob" class="detail-modal">
           <!-- Modal header -->
@@ -1211,8 +1212,9 @@ watchDebounced(
                   {{ capitalizeStatus(detailJob.application.status) }}
                 </UBadge>
               </template>
-              <template v-else-if="detailJob.displayScore == null || detailJob.displayScore > 0">
+              <template v-else>
                 <UButton
+                  v-if="detailJob.displayScore == null || detailJob.displayScore > 0"
                   size="sm"
                   icon="i-heroicons-paper-airplane"
                   :loading="applying.has(detailJob.id)"
@@ -1596,10 +1598,17 @@ watchDebounced(
   font-weight: 600;
   color: var(--ink);
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .card-company {
   font-size: 12.5px;
   color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .card-location {
   color: var(--ink-subtle);
@@ -1822,10 +1831,15 @@ watchDebounced(
   border-radius: 6px;
   transition: all 0.12s;
   flex-shrink: 0;
+  outline: none;
 }
 .dm-close:hover {
   color: var(--ink);
   background: var(--bg-elevated);
+}
+.dm-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .dm-body {
   padding: 18px 22px 24px;
