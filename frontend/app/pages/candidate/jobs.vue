@@ -1575,6 +1575,8 @@ watchDebounced(
     border-color 0.15s,
     transform 0.1s;
   position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 .job-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
