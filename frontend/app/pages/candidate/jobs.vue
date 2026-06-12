@@ -22,15 +22,6 @@ const minScore = ref(0)
 const sortBy = ref<'recent' | 'score'>('score')
 const page = ref(1)
 const limit = 20
-const filtersOpen = ref(false)
-const activeFilters = computed(() => {
-  let count = 0
-  if (search.value) count++
-  if (workMode.value !== 'all') count++
-  if (minScore.value > 0) count++
-  if (sortBy.value !== 'recent') count++
-  return count
-})
 
 const {
   data: result,
@@ -64,30 +55,16 @@ watch([workMode, minScore, sortBy], () => {
   page.value = 1
 })
 
-// Two-panel selected job
-const selectedJobId = ref<string | null>(null)
-const mobileJobView = ref<'list' | 'detail'>('list')
-
-const selectedJob = computed<DiscoveredJob | null>(() => {
-  const id = selectedJobId.value
-  if (!id) return jobs.value[0] ?? null
-  return jobs.value.find((j) => j.id === id) ?? jobs.value[0] ?? null
-})
-
-function selectJob(id: string) {
-  selectedJobId.value = id
-  mobileJobView.value = 'detail'
-}
-
-watch(
-  jobs,
-  (newJobs) => {
-    if (newJobs.length && !newJobs.find((j) => j.id === selectedJobId.value)) {
-      selectedJobId.value = newJobs[0]?.id ?? null
-    }
-  },
-  { immediate: true },
+// Detail modal
+const detailJobId = ref<string | null>(null)
+const showDetailModal = ref(false)
+const detailJob = computed<DiscoveredJob | null>(() =>
+  detailJobId.value ? (jobs.value.find((j) => j.id === detailJobId.value) ?? null) : null,
 )
+function openDetail(job: DiscoveredJob) {
+  detailJobId.value = job.id
+  showDetailModal.value = true
+}
 
 const _skippedArr = useLocalStorage<string[]>('candidate:skipped-jobs', [])
 const _savedArr = useLocalStorage<string[]>('candidate:saved-jobs', [])
@@ -97,7 +74,6 @@ const savedIds = computed(() => new Set(_savedArr.value))
 function skipJob(id: string) {
   if (!_skippedArr.value.includes(id)) _skippedArr.value = [..._skippedArr.value, id]
 }
-
 function toggleSave(id: string) {
   if (_savedArr.value.includes(id)) {
     _savedArr.value = _savedArr.value.filter((x) => x !== id)
@@ -114,8 +90,8 @@ const workModeOptions = computed(() => [
 ])
 
 const sortOptions = computed(() => [
-  { label: t('candidate.jobs.mostRecent'), value: 'recent' },
   { label: t('candidate.jobs.bestMatch'), value: 'score' },
+  { label: t('candidate.jobs.mostRecent'), value: 'recent' },
 ])
 
 const scoringInProgress = ref(false)
@@ -156,7 +132,6 @@ async function triggerDiscover() {
 useEventBus<undefined>('candidate:scoring-complete').on(() => refresh())
 
 const applying = ref(new Set<string>())
-
 const router = useRouter()
 
 async function applyToJob(job: DiscoveredJob) {
@@ -165,7 +140,7 @@ async function applyToJob(job: DiscoveredJob) {
   next.add(job.id)
   applying.value = next
   try {
-    const result = await api.post<{ id: string }>('/api/v1/candidate-portal/seeker-applications', {
+    const res = await api.post<{ id: string }>('/api/v1/candidate-portal/seeker-applications', {
       discoveredJobId: job.id,
     })
     toast.add({
@@ -176,7 +151,7 @@ async function applyToJob(job: DiscoveredJob) {
         {
           label: 'Track in Inbox →',
           onClick: () => {
-            void router.push(result?.id ? `/candidate/inbox?app=${result.id}` : '/candidate/inbox')
+            void router.push(res?.id ? `/candidate/inbox?app=${res.id}` : '/candidate/inbox')
           },
         },
       ],
@@ -198,11 +173,11 @@ function scoreBarColor(score: number | null | undefined): string {
   return 'var(--negative)'
 }
 
-function scoreColor(score: number | null | undefined): 'neutral' | 'success' | 'warning' | 'error' {
-  if (score == null) return 'neutral'
-  if (score >= 70) return 'success'
-  if (score >= 40) return 'warning'
-  return 'error'
+function scoreBg(score: number | null | undefined): string {
+  if (score == null) return 'var(--bg-elevated)'
+  if (score >= 70) return 'color-mix(in srgb, var(--positive) 12%, transparent)'
+  if (score >= 40) return 'color-mix(in srgb, var(--warning) 12%, transparent)'
+  return 'color-mix(in srgb, var(--negative) 12%, transparent)'
 }
 
 const appStatusColor = seekerAppStatusColor
@@ -229,7 +204,55 @@ function companyInitials(name: string): string {
     .toUpperCase()
 }
 
-// ── Live HH Search ────────────────────────────────────────────────────────
+function avatarColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i)) % AVATAR_COLORS.length
+  return AVATAR_COLORS[h] ?? AVATAR_COLORS[0]
+}
+
+function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string } {
+  if (job.application) {
+    const s = job.application.status
+    if (s === 'applied')
+      return {
+        label: 'Applied',
+        bg: 'color-mix(in srgb, var(--positive) 14%, transparent)',
+        fg: 'var(--positive)',
+      }
+    if (s === 'queued' || s === 'applying')
+      return {
+        label: 'In progress',
+        bg: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+        fg: 'var(--accent)',
+      }
+    if (s === 'failed')
+      return {
+        label: 'Failed',
+        bg: 'color-mix(in srgb, var(--negative) 14%, transparent)',
+        fg: 'var(--negative)',
+      }
+    return { label: capitalizeStatus(s), bg: 'var(--bg-elevated)', fg: 'var(--ink-muted)' }
+  }
+  if (skippedIds.value.has(job.id))
+    return {
+      label: 'Skipped',
+      bg: 'color-mix(in srgb, var(--warning) 14%, transparent)',
+      fg: 'var(--warning)',
+    }
+  if (savedIds.value.has(job.id))
+    return {
+      label: 'Saved',
+      bg: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+      fg: 'var(--accent)',
+    }
+  return {
+    label: 'New',
+    bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+    fg: 'var(--accent)',
+  }
+}
+
+// ── Live HH Search ──────────────────────────────────────────────────────────
 
 interface HhVacancyResult {
   id: string
@@ -254,7 +277,6 @@ const similarFor = ref<string | null>(null)
 const similarPending = ref(false)
 const applyingHh = ref(new Set<string>())
 
-// Matched vacancies (resume-based)
 const matchedResults = ref<HhVacancyResult[]>([])
 const matchedLoaded = ref(false)
 const matchedPending = ref(false)
@@ -262,12 +284,12 @@ const matchedTotal = ref(0)
 const matchedPage = ref(1)
 const MATCHED_PER_PAGE = 20
 
-async function loadMatchedVacancies(page = 1) {
+async function loadMatchedVacancies(p = 1) {
   matchedPending.value = true
   try {
     const resp = await api.get<{ items: HhVacancyResult[]; found: number }>(
       '/api/v1/candidate-portal/hh/resume/similar-vacancies',
-      { page: page - 1, per_page: MATCHED_PER_PAGE },
+      { page: p - 1, per_page: MATCHED_PER_PAGE },
     )
     matchedResults.value = resp.items ?? []
     matchedTotal.value = resp.found ?? 0
@@ -296,7 +318,6 @@ watch(activeMainTab, (tab) => {
   if (tab === 'match' && !matchedLoaded.value) loadMatchedVacancies(1)
 })
 
-// Vacancy detail expand
 interface HhVacancyDetailResult extends HhVacancyResult {
   description?: string
   key_skills?: { name: string }[]
@@ -324,7 +345,7 @@ async function toggleVacancyDetail(id: string) {
     )
     vacancyDetails.value = { ...vacancyDetails.value, [id]: detail }
   } catch {
-    // silently ignore — fall back to card info
+    // fall back to card info
   } finally {
     vacancyDetailPending.value = null
   }
@@ -393,7 +414,7 @@ async function runLiveSearch(resetPage = true) {
 }
 
 function onLiveSearchPageChange(p: number) {
-  liveSearchPage.value = p - 1 // UPagination is 1-based, HH is 0-based
+  liveSearchPage.value = p - 1
   runLiveSearch(false)
 }
 
@@ -416,7 +437,6 @@ async function loadSimilar(vacancyId: string) {
   }
 }
 
-// HH area picker
 interface HhAreaSuggest {
   id: string
   text: string
@@ -464,54 +484,6 @@ watchDebounced(
   },
   { debounce: 400 },
 )
-
-function avatarColor(name: string) {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i)) % AVATAR_COLORS.length
-  return AVATAR_COLORS[h] ?? AVATAR_COLORS[0]
-}
-
-function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string } {
-  if (job.application) {
-    const s = job.application.status
-    if (s === 'applied')
-      return {
-        label: 'Applied',
-        bg: 'color-mix(in srgb, var(--positive) 14%, transparent)',
-        fg: 'var(--positive)',
-      }
-    if (s === 'queued' || s === 'applying')
-      return {
-        label: 'In progress',
-        bg: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-        fg: 'var(--accent)',
-      }
-    if (s === 'failed')
-      return {
-        label: 'Failed',
-        bg: 'color-mix(in srgb, var(--negative) 14%, transparent)',
-        fg: 'var(--negative)',
-      }
-    return { label: capitalizeStatus(s), bg: 'var(--bg-elevated)', fg: 'var(--ink-muted)' }
-  }
-  if (skippedIds.value.has(job.id))
-    return {
-      label: 'Skipped',
-      bg: 'color-mix(in srgb, var(--warning) 14%, transparent)',
-      fg: 'var(--warning)',
-    }
-  if (savedIds.value.has(job.id))
-    return {
-      label: 'Saved',
-      bg: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-      fg: 'var(--accent)',
-    }
-  return {
-    label: 'New',
-    bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-    fg: 'var(--accent)',
-  }
-}
 </script>
 
 <template>
@@ -543,68 +515,37 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
       </div>
     </div>
 
-    <!-- Main tab toggle -->
-    <div
-      class="flex rounded-lg overflow-hidden"
-      style="border: 1px solid var(--line); width: fit-content"
-    >
+    <!-- Tab strip -->
+    <div class="tab-strip">
       <button
         type="button"
-        class="px-4 py-1.5 text-sm transition-colors"
-        :style="
-          activeMainTab === 'discovered'
-            ? 'background: var(--ink); color: var(--bg);'
-            : 'background: var(--surface); color: var(--ink-muted);'
-        "
+        class="tab-btn"
+        :class="{ active: activeMainTab === 'discovered' }"
         @click="activeMainTab = 'discovered'"
       >
         {{ t('candidate.jobs.title') }}
       </button>
       <button
         type="button"
-        class="px-4 py-1.5 text-sm transition-colors flex items-center gap-1.5"
-        :style="
-          activeMainTab === 'live'
-            ? 'background: var(--ink); color: var(--bg);'
-            : 'background: var(--surface); color: var(--ink-muted);'
-        "
+        class="tab-btn"
+        :class="{ active: activeMainTab === 'live' }"
         @click="activeMainTab = 'live'"
       >
-        <span
-          class="text-[9px] font-bold px-1 py-0.5 rounded"
-          :style="
-            activeMainTab === 'live'
-              ? 'background: rgba(255,255,255,0.2)'
-              : 'background: var(--accent-soft); color: var(--accent)'
-          "
-          >HH</span
-        >
+        <span class="hh-badge">HH</span>
         {{ t('candidate.preferences.hhLiveSearch') }}
       </button>
       <button
         type="button"
-        class="px-4 py-1.5 text-sm transition-colors flex items-center gap-1.5"
-        :style="
-          activeMainTab === 'match'
-            ? 'background: var(--ink); color: var(--bg);'
-            : 'background: var(--surface); color: var(--ink-muted);'
-        "
+        class="tab-btn"
+        :class="{ active: activeMainTab === 'match' }"
         @click="activeMainTab = 'match'"
       >
-        <span
-          class="text-[9px] font-bold px-1 py-0.5 rounded"
-          :style="
-            activeMainTab === 'match'
-              ? 'background: rgba(255,255,255,0.2)'
-              : 'background: var(--accent-soft); color: var(--accent)'
-          "
-          >HH</span
-        >
+        <span class="hh-badge">HH</span>
         {{ t('candidate.preferences.hhMatchedVacancies') }}
       </button>
     </div>
 
-    <!-- Live HH Search panel -->
+    <!-- ── Live HH Search ── -->
     <div v-if="activeMainTab === 'live'" class="space-y-4">
       <div class="flex gap-2 flex-wrap">
         <UInput
@@ -614,7 +555,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
           class="flex-1 min-w-0"
           @keydown.enter="runLiveSearch"
         />
-        <!-- Area picker -->
         <div ref="hhAreaPickerRef" class="relative">
           <UInput
             v-model="hhAreaSearchText"
@@ -766,7 +706,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
             </div>
           </div>
 
-          <!-- Vacancy detail inline -->
           <div
             v-if="selectedVacancyId === job.id && vacancyDetails[job.id]"
             class="px-4 pb-3 pt-3 space-y-2"
@@ -793,7 +732,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
             />
           </div>
 
-          <!-- Similar vacancies inline -->
           <div
             v-if="similarFor === job.id && !similarPending"
             class="mt-3 pt-3 space-y-2"
@@ -826,7 +764,7 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
           </div>
         </div>
       </div>
-      <!-- Live search pagination -->
+
       <div v-if="liveSearchTotal > LIVE_PER_PAGE" class="flex justify-center pt-2">
         <UPagination
           :model-value="liveSearchPage + 1"
@@ -838,7 +776,7 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
       </div>
     </div>
 
-    <!-- Matched to Resume panel -->
+    <!-- ── Matched to Resume ── -->
     <div v-if="activeMainTab === 'match'" class="space-y-4">
       <div v-if="matchedPending" class="flex justify-center py-12">
         <UIcon
@@ -927,7 +865,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                 />
               </div>
             </div>
-            <!-- Vacancy detail inline -->
             <div
               v-if="selectedVacancyId === job.id && vacancyDetails[job.id]"
               class="px-4 pb-4 pt-3 space-y-3"
@@ -958,12 +895,12 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                 rel="noopener noreferrer"
                 class="text-xs hover:underline"
                 style="color: var(--accent)"
-                >{{ t('candidate.preferences.hhVacancyDetail') }} →</a
               >
+                {{ t('candidate.preferences.hhVacancyDetail') }} →
+              </a>
             </div>
           </div>
         </div>
-        <!-- Matched pagination -->
         <div v-if="matchedTotal > MATCHED_PER_PAGE" class="flex justify-center pt-2">
           <UPagination
             v-model="matchedPage"
@@ -975,9 +912,9 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
       </template>
     </div>
 
-    <!-- Discovered jobs (existing content) -->
+    <!-- ── Discovered Jobs ── -->
     <div v-show="activeMainTab === 'discovered'">
-      <!-- AI activity banner -->
+      <!-- AI activity feed -->
       <Transition name="feed">
         <div v-if="scoringActive || scoringLog.length" class="activity-feed">
           <div class="feed-header">
@@ -985,9 +922,9 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
             <span class="feed-label">{{
               scoringActive ? 'AI scanning jobs…' : 'Scan complete'
             }}</span>
-            <span v-if="scoringProgress.total" class="feed-count"
-              >{{ scoringProgress.done }}/{{ scoringProgress.total }}</span
-            >
+            <span v-if="scoringProgress.total" class="feed-count">
+              {{ scoringProgress.done }}/{{ scoringProgress.total }}
+            </span>
           </div>
           <div v-for="entry in scoringLog.slice(-4)" :key="entry.ts" class="feed-entry">
             <span class="feed-icon">{{ entry.icon }}</span>
@@ -996,84 +933,80 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         </div>
       </Transition>
 
-      <!-- Filter bar toggle -->
-      <div class="filter-toggle-row">
-        <UButton
-          variant="soft"
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <UInput
+          v-model="search"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Search jobs..."
           size="sm"
-          icon="i-heroicons-adjustments-horizontal"
-          @click="filtersOpen = !filtersOpen"
-        >
-          Filters{{ activeFilters > 0 ? ` (${activeFilters})` : '' }}
-        </UButton>
-        <span class="filter-job-count">{{ total }} jobs</span>
+          class="filter-search"
+        />
+        <div class="mode-pills">
+          <button
+            v-for="opt in workModeOptions"
+            :key="opt.value"
+            type="button"
+            class="mode-pill"
+            :class="{ active: workMode === opt.value }"
+            @click="workMode = opt.value"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+        <div class="sort-toggle">
+          <button
+            v-for="opt in sortOptions"
+            :key="opt.value"
+            type="button"
+            class="sort-btn"
+            :class="{ active: sortBy === opt.value }"
+            @click="sortBy = opt.value"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+        <div class="score-range-wrap">
+          <span class="score-range-label">
+            Min: <strong>{{ minScore }}%</strong>
+          </span>
+          <input
+            v-model.number="minScore"
+            type="range"
+            min="0"
+            max="100"
+            step="10"
+            class="score-range"
+          />
+        </div>
+        <UButton
+          variant="ghost"
+          size="sm"
+          icon="i-heroicons-arrow-path"
+          :loading="pending"
+          aria-label="Refresh"
+          @click="() => refresh()"
+        />
         <span v-if="scoringActive" class="scanning-pill">
           <span class="scanning-dot-sm" />AI scoring…
         </span>
       </div>
 
-      <!-- Collapsible filters -->
-      <Transition name="slide-down">
-        <div v-if="filtersOpen" class="filters-row">
-          <UInput
-            v-model="search"
-            icon="i-heroicons-magnifying-glass"
-            placeholder="Search jobs..."
-            class="filter-search"
-            size="sm"
-          />
-          <USelect
-            v-model="workMode"
-            :items="workModeOptions"
-            size="sm"
-            class="w-36"
-            aria-label="Work mode"
-          />
-          <USelect
-            v-model="sortBy"
-            :items="sortOptions"
-            size="sm"
-            class="w-36"
-            aria-label="Sort by"
-          />
-          <div class="score-filter">
-            <span class="score-filter-label"
-              >Min: <strong>{{ minScore }}%</strong></span
-            >
-            <input
-              v-model.number="minScore"
-              type="range"
-              min="0"
-              max="100"
-              step="10"
-              class="score-slider"
-            />
+      <!-- Loading skeleton grid -->
+      <div v-if="pending" class="jobs-grid">
+        <div v-for="n in 6" :key="n" class="job-card-skeleton">
+          <div class="flex items-start justify-between gap-2">
+            <USkeleton class="w-10 h-10 rounded-[10px] shrink-0" />
+            <USkeleton class="w-14 h-6 rounded-full" />
           </div>
-          <UButton
-            variant="ghost"
-            size="sm"
-            icon="i-heroicons-arrow-path"
-            :loading="pending"
-            aria-label="Refresh"
-            @click="() => refresh()"
-          />
-        </div>
-      </Transition>
-
-      <!-- Loading skeleton -->
-      <div v-if="pending" class="space-y-2 py-2">
-        <div
-          v-for="n in 4"
-          :key="n"
-          class="rounded-lg p-3 flex gap-3"
-          style="background: var(--surface); border: 1px solid var(--line-soft)"
-        >
-          <USkeleton class="w-8 h-8 rounded-full shrink-0" />
-          <div class="flex-1 space-y-2">
-            <USkeleton class="h-4 w-2/3 rounded" />
-            <USkeleton class="h-3 w-1/2 rounded" />
-            <USkeleton class="h-1.5 w-full rounded-full mt-1" />
+          <USkeleton class="h-4 w-4/5 rounded mt-1" />
+          <USkeleton class="h-3 w-3/5 rounded" />
+          <div class="flex gap-2 mt-1">
+            <USkeleton class="h-5 w-16 rounded-full" />
+            <USkeleton class="h-5 w-16 rounded-full" />
           </div>
+          <USkeleton class="h-3 w-full rounded mt-1" />
+          <USkeleton class="h-3 w-5/6 rounded" />
         </div>
       </div>
 
@@ -1090,180 +1023,200 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
         </p>
       </div>
 
-      <!-- ── Two-panel Feed ── -->
-      <div v-else class="two-panel">
-        <!-- Left: compact job list -->
-        <div class="panel-left" :class="mobileJobView === 'detail' ? 'panel-left--hidden' : ''">
-          <div
-            v-for="job in jobs"
-            :key="job.id"
-            :class="['job-card-compact', job.id === selectedJob?.id && 'selected']"
-            @click="selectJob(job.id)"
-          >
-            <!-- Score ring replaces plain avatar -->
-            <div class="card-ring-wrap shrink-0">
-              <svg width="42" height="42">
-                <circle cx="21" cy="21" r="17" fill="none" stroke="var(--line)" stroke-width="3" />
-                <circle
-                  cx="21"
-                  cy="21"
-                  r="17"
-                  fill="none"
-                  :stroke="scoreBarColor(job.displayScore)"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  :stroke-dasharray="`${2 * Math.PI * 17}`"
-                  :stroke-dashoffset="`${2 * Math.PI * 17 * (1 - (job.displayScore ?? 0) / 100)}`"
-                  transform="rotate(-90 21 21)"
-                  style="transition: stroke-dashoffset 0.4s ease"
-                />
-                <text
-                  x="21"
-                  y="25"
-                  text-anchor="middle"
-                  font-size="9"
-                  font-weight="700"
-                  font-family="JetBrains Mono, monospace"
-                  :fill="
-                    job.displayScore != null ? scoreBarColor(job.displayScore) : 'var(--ink-subtle)'
-                  "
-                >
-                  {{ job.displayScore != null ? job.displayScore : '?' }}
-                </text>
-              </svg>
+      <!-- Card grid -->
+      <div v-else class="jobs-grid">
+        <div v-for="job in jobs" :key="job.id" class="job-card" @click="openDetail(job)">
+          <!-- Top: avatar + score -->
+          <div class="card-top">
+            <div
+              class="co-avatar"
+              :style="{
+                background: avatarColor(job.company).bg,
+                color: avatarColor(job.company).fg,
+              }"
+            >
+              {{ companyInitials(job.company) }}
             </div>
-            <div class="card-body">
-              <div class="card-title">{{ job.title }}</div>
-              <div class="card-company">{{ job.company }}</div>
-              <!-- Match explanation visible on card -->
-              <p v-if="job.matchExplanation" class="card-match-hint">
-                {{ job.matchExplanation }}
-              </p>
-              <!-- skillMatch + gap summary chips -->
-              <div v-if="job.skillMatch != null || job.matchGaps?.length" class="card-skill-row">
-                <span v-if="job.skillMatch != null" class="card-skill-chip card-skill-chip--match">
-                  {{ job.skillMatch }}% skills
-                </span>
-                <span v-if="job.matchGaps?.length" class="card-skill-chip card-skill-chip--gap">
-                  Missing {{ job.matchGaps.length }}
-                </span>
-              </div>
-              <div class="card-meta">
-                <span v-if="job.workMode" class="meta-item">
-                  <UIcon name="i-heroicons-building-office-2" class="w-3 h-3" />
-                  {{ job.workMode }}
-                </span>
-                <span v-if="formatPostedDate(job.postedAt)" class="meta-item">
-                  <UIcon name="i-heroicons-clock" class="w-3 h-3" />
-                  {{ formatPostedDate(job.postedAt) }}
-                </span>
-                <span
-                  class="status-dot"
-                  :style="{ background: jobStatus(job).bg, color: jobStatus(job).fg }"
-                  >{{ jobStatus(job).label }}</span
+            <div
+              class="score-badge"
+              :style="{
+                color: scoreBarColor(job.displayScore),
+                background: scoreBg(job.displayScore),
+              }"
+            >
+              {{ job.displayScore != null ? job.displayScore + '%' : '?' }}
+            </div>
+          </div>
+
+          <!-- Title + company -->
+          <h3 class="card-title">{{ job.title }}</h3>
+          <p class="card-company">
+            {{ job.company
+            }}<span v-if="job.location" class="card-location"> · {{ job.location }}</span>
+          </p>
+
+          <!-- Tags row -->
+          <div class="card-tags">
+            <span v-if="job.workMode" class="tag tag-mode">{{ job.workMode }}</span>
+            <span v-if="job.employmentType" class="tag tag-type">{{ job.employmentType }}</span>
+            <span
+              class="status-badge"
+              :style="{ background: jobStatus(job).bg, color: jobStatus(job).fg }"
+              >{{ jobStatus(job).label }}</span
+            >
+          </div>
+
+          <!-- Salary -->
+          <p v-if="job.salaryMinUzs || job.salaryMaxUzs" class="card-salary">
+            {{ formatSalary(job.salaryMinUzs)
+            }}<template v-if="job.salaryMaxUzs"> – {{ formatSalary(job.salaryMaxUzs) }}</template>
+          </p>
+
+          <!-- Match hint -->
+          <p v-if="job.matchExplanation" class="card-hint">{{ job.matchExplanation }}</p>
+
+          <!-- Skill chips -->
+          <div v-if="job.matchStrengths?.length || job.matchGaps?.length" class="card-skills">
+            <span v-for="s in job.matchStrengths?.slice(0, 3)" :key="s" class="skill-match">{{
+              s
+            }}</span>
+            <span v-for="g in job.matchGaps?.slice(0, 2)" :key="g" class="skill-gap">{{ g }}</span>
+          </div>
+
+          <!-- Footer -->
+          <div class="card-footer" @click.stop>
+            <span class="card-date">{{ formatPostedDate(job.postedAt) }}</span>
+            <div class="card-actions">
+              <template v-if="job.application">
+                <UBadge :color="appStatusColor(job.application.status)" variant="subtle" size="sm">
+                  {{ capitalizeStatus(job.application.status) }}
+                </UBadge>
+              </template>
+              <template v-else-if="job.displayScore == null || job.displayScore > 0">
+                <button
+                  type="button"
+                  class="act-btn act-skip"
+                  :class="{ active: skippedIds.has(job.id) }"
+                  title="Skip"
+                  @click="skipJob(job.id)"
                 >
-              </div>
-              <!-- Quick apply button on card -->
-              <div
-                v-if="!job.application && (job.displayScore == null || job.displayScore > 0)"
-                class="card-quick-apply"
-                @click.stop
-              >
-                <UButton
-                  size="xs"
-                  :loading="applying.has(job.id)"
-                  icon="i-heroicons-paper-airplane"
+                  <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  class="act-btn act-save"
+                  :class="{ active: savedIds.has(job.id) }"
+                  title="Save"
+                  @click="toggleSave(job.id)"
+                >
+                  <UIcon
+                    :name="
+                      savedIds.has(job.id) ? 'i-heroicons-bookmark-solid' : 'i-heroicons-bookmark'
+                    "
+                    class="w-3.5 h-3.5"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="act-apply"
+                  :disabled="applying.has(job.id)"
                   @click="applyToJob(job)"
                 >
-                  Apply
-                </UButton>
-              </div>
+                  <UIcon
+                    v-if="applying.has(job.id)"
+                    name="i-heroicons-arrow-path"
+                    class="w-3.5 h-3.5 animate-spin"
+                  />
+                  <template v-else>Apply →</template>
+                </button>
+              </template>
             </div>
-          </div>
-
-          <div v-if="total > limit" class="panel-pagination">
-            <UPagination v-model="page" :total="total" :page-size="limit" size="sm" />
           </div>
         </div>
+      </div>
 
-        <!-- Right: job detail -->
-        <div class="panel-right" :class="mobileJobView === 'list' ? 'panel-right--hidden' : ''">
-          <!-- Mobile back button -->
-          <button class="panel-back-btn" @click="mobileJobView = 'list'">
-            <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
-            All Jobs
-          </button>
-          <div v-if="selectedJob" class="detail-content">
-            <!-- Title + company -->
-            <div class="detail-header">
-              <div
-                class="company-avatar-lg"
-                :style="{
-                  background: avatarColor(selectedJob.company).bg,
-                  color: avatarColor(selectedJob.company).fg,
-                }"
-              >
-                {{ companyInitials(selectedJob.company) }}
-              </div>
-              <div class="detail-title-block">
-                <h2 class="detail-job-title">{{ selectedJob.title }}</h2>
-                <p class="detail-company">
-                  {{ selectedJob.company
-                  }}<span v-if="selectedJob.location" style="color: var(--ink-subtle)">
-                    · {{ selectedJob.location }}</span
-                  >
-                </p>
-              </div>
+      <!-- Pagination -->
+      <div v-if="total > limit" class="pagination-row">
+        <UPagination v-model="page" :total="total" :page-size="limit" size="sm" />
+      </div>
+    </div>
+
+    <!-- ── Job Detail Modal ── -->
+    <UModal v-model:open="showDetailModal">
+      <template #content>
+        <div v-if="detailJob" class="detail-modal">
+          <!-- Modal header -->
+          <div class="dm-head">
+            <div
+              class="co-avatar co-avatar--lg"
+              :style="{
+                background: avatarColor(detailJob.company).bg,
+                color: avatarColor(detailJob.company).fg,
+              }"
+            >
+              {{ companyInitials(detailJob.company) }}
             </div>
+            <div class="dm-title-block">
+              <h2 class="dm-job-title">{{ detailJob.title }}</h2>
+              <p class="dm-company">
+                {{ detailJob.company
+                }}<span v-if="detailJob.location" style="color: var(--ink-subtle)">
+                  · {{ detailJob.location }}</span
+                >
+              </p>
+            </div>
+            <button type="button" class="dm-close" @click="showDetailModal = false">
+              <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+            </button>
+          </div>
 
+          <div class="dm-body">
             <!-- Meta chips -->
-            <div class="detail-meta">
-              <span v-if="selectedJob.workMode" class="meta-chip">
+            <div class="dm-meta">
+              <span v-if="detailJob.workMode" class="meta-chip">
                 <UIcon name="i-heroicons-building-office-2" class="w-3.5 h-3.5" />
-                {{ selectedJob.workMode }}
+                {{ detailJob.workMode }}
               </span>
-              <span v-if="selectedJob.employmentType" class="meta-chip">
+              <span v-if="detailJob.employmentType" class="meta-chip">
                 <UIcon name="i-heroicons-briefcase" class="w-3.5 h-3.5" />
-                {{ selectedJob.employmentType }}
+                {{ detailJob.employmentType }}
               </span>
-              <span v-if="selectedJob.salaryMinUzs || selectedJob.salaryMaxUzs" class="meta-chip">
+              <span v-if="detailJob.salaryMinUzs || detailJob.salaryMaxUzs" class="meta-chip">
                 <UIcon name="i-heroicons-banknotes" class="w-3.5 h-3.5" />
-                {{ formatSalary(selectedJob.salaryMinUzs)
-                }}<template v-if="selectedJob.salaryMaxUzs">
-                  – {{ formatSalary(selectedJob.salaryMaxUzs) }}</template
+                {{ formatSalary(detailJob.salaryMinUzs)
+                }}<template v-if="detailJob.salaryMaxUzs">
+                  – {{ formatSalary(detailJob.salaryMaxUzs) }}</template
                 >
               </span>
               <a
-                v-if="selectedJob.sourceUrl"
-                :href="safeUrl(selectedJob.sourceUrl)"
+                v-if="detailJob.sourceUrl"
+                :href="safeUrl(detailJob.sourceUrl)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="meta-chip meta-link"
               >
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3.5 h-3.5" />
-                {{ selectedJob.source }}
+                {{ detailJob.source }}
               </a>
             </div>
 
-            <!-- Action buttons -->
-            <div class="action-row">
-              <template v-if="selectedJob.application">
+            <!-- Actions -->
+            <div class="dm-actions">
+              <template v-if="detailJob.application">
                 <UBadge
-                  :color="appStatusColor(selectedJob.application.status)"
+                  :color="appStatusColor(detailJob.application.status)"
                   variant="subtle"
                   size="md"
                 >
-                  {{ capitalizeStatus(selectedJob.application.status) }}
+                  {{ capitalizeStatus(detailJob.application.status) }}
                 </UBadge>
               </template>
-              <template
-                v-else-if="selectedJob.displayScore == null || selectedJob.displayScore > 0"
-              >
+              <template v-else-if="detailJob.displayScore == null || detailJob.displayScore > 0">
                 <UButton
                   size="sm"
                   icon="i-heroicons-paper-airplane"
-                  :loading="applying.has(selectedJob.id)"
-                  @click="applyToJob(selectedJob)"
+                  :loading="applying.has(detailJob.id)"
+                  @click="applyToJob(detailJob)"
                 >
                   Apply
                 </UButton>
@@ -1271,109 +1224,98 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
                   size="sm"
                   variant="outline"
                   :icon="
-                    savedIds.has(selectedJob.id)
+                    savedIds.has(detailJob.id)
                       ? 'i-heroicons-bookmark-solid'
                       : 'i-heroicons-bookmark'
                   "
-                  @click="toggleSave(selectedJob.id)"
+                  @click="toggleSave(detailJob.id)"
                 >
-                  {{ savedIds.has(selectedJob.id) ? 'Saved' : 'Save' }}
+                  {{ savedIds.has(detailJob.id) ? 'Saved' : 'Save' }}
                 </UButton>
                 <UButton
-                  v-if="!skippedIds.has(selectedJob.id)"
+                  v-if="!skippedIds.has(detailJob.id)"
                   size="sm"
                   variant="outline"
                   color="error"
                   icon="i-heroicons-x-mark"
-                  @click="skipJob(selectedJob.id)"
+                  @click="skipJob(detailJob.id)"
                 >
                   Skip
                 </UButton>
               </template>
             </div>
 
-            <!-- AI Match section -->
+            <!-- AI Match -->
             <div
-              v-if="
-                selectedJob.displayScore != null && selectedJob.application?.status !== 'failed'
-              "
+              v-if="detailJob.displayScore != null && detailJob.application?.status !== 'failed'"
               class="match-section"
             >
-              <div class="match-header">
+              <div class="match-head">
                 <span class="match-label">AI MATCH</span>
-                <span
-                  class="match-score"
-                  :style="{ color: scoreBarColor(selectedJob.displayScore) }"
-                >
-                  {{ selectedJob.displayScore }}%
+                <span class="match-score" :style="{ color: scoreBarColor(detailJob.displayScore) }">
+                  {{ detailJob.displayScore }}%
                 </span>
               </div>
-
               <div
-                v-if="selectedJob.matchStrengths?.length || selectedJob.matchGaps?.length"
+                v-if="detailJob.matchStrengths?.length || detailJob.matchGaps?.length"
                 class="skills-grid"
               >
-                <div v-if="selectedJob.matchStrengths?.length" class="skills-col">
+                <div v-if="detailJob.matchStrengths?.length" class="skills-col">
                   <p class="skills-label matched-label">Matched skills</p>
                   <div class="skills-tags">
                     <span
-                      v-for="s in selectedJob.matchStrengths"
+                      v-for="s in detailJob.matchStrengths"
                       :key="s"
                       class="skill-tag matched-tag"
                       >{{ s }}</span
                     >
                   </div>
                 </div>
-                <div v-if="selectedJob.matchGaps?.length" class="skills-col">
+                <div v-if="detailJob.matchGaps?.length" class="skills-col">
                   <p class="skills-label missing-label">Missing skills</p>
                   <div class="skills-tags">
-                    <span
-                      v-for="g in selectedJob.matchGaps"
-                      :key="g"
-                      class="skill-tag missing-tag"
-                      >{{ g }}</span
-                    >
+                    <span v-for="g in detailJob.matchGaps" :key="g" class="skill-tag missing-tag">{{
+                      g
+                    }}</span>
                   </div>
                 </div>
               </div>
-
-              <p v-if="selectedJob.matchExplanation" class="match-explanation">
-                {{ selectedJob.matchExplanation }}
+              <p v-if="detailJob.matchExplanation" class="match-explanation">
+                {{ detailJob.matchExplanation }}
               </p>
             </div>
 
-            <!-- Job description -->
-            <div v-if="selectedJob.description" class="description-section">
+            <!-- Description -->
+            <div v-if="detailJob.description" class="desc-section">
               <p class="section-eyebrow">JOB DESCRIPTION</p>
-              <p class="description-text">
-                {{ selectedJob.description.slice(0, 500)
-                }}{{ selectedJob.description.length > 500 ? '…' : '' }}
+              <p class="desc-text">
+                {{ detailJob.description.slice(0, 800)
+                }}{{ detailJob.description.length > 800 ? '…' : '' }}
               </p>
               <a
-                v-if="selectedJob.sourceUrl"
-                :href="safeUrl(selectedJob.sourceUrl)"
+                v-if="detailJob.sourceUrl"
+                :href="safeUrl(detailJob.sourceUrl)"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="view-full-link"
+                class="view-full"
               >
                 View full description →
               </a>
             </div>
 
-            <!-- Job skills (if available) -->
-            <div v-if="selectedJob.skills?.length" class="description-section">
+            <!-- Skills -->
+            <div v-if="detailJob.skills?.length" class="desc-section">
               <p class="section-eyebrow">SKILLS</p>
               <div class="skills-tags">
-                <span v-for="s in selectedJob.skills" :key="s" class="skill-tag neutral-tag">{{
+                <span v-for="s in detailJob.skills" :key="s" class="skill-tag neutral-tag">{{
                   s
                 }}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    <!-- end discovered tab wrapper -->
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -1382,7 +1324,7 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
 .jobs-layout {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 /* ── Header ── */
@@ -1391,11 +1333,10 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 16px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
   flex-wrap: wrap;
 }
-
 .eyebrow {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -1404,7 +1345,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   color: var(--ink-subtle);
   margin-bottom: 4px;
 }
-
 .page-title {
   font-family: 'Fraunces', serif;
   font-size: 26px;
@@ -1413,35 +1353,145 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   color: var(--ink);
   font-weight: 400;
 }
-
 .jobs-count {
   margin-top: 3px;
   font-size: 13px;
   color: var(--ink-muted);
 }
-
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-/* ── Filter toggle row ── */
-.filter-toggle-row {
+/* ── Tab strip ── */
+.tab-strip {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--line-soft);
+  width: fit-content;
+}
+.tab-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  background: none;
 }
-
-.filter-job-count {
-  font-size: 12px;
+.tab-btn.active {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.tab-btn:hover:not(.active) {
+  color: var(--ink);
+}
+.hh-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.tab-btn.active .hh-badge {
+  background: rgba(0, 0, 0, 0.08);
   color: var(--ink-muted);
 }
 
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filter-search {
+  max-width: 200px;
+}
+.mode-pills {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.mode-pill {
+  padding: 5px 11px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  border: none;
+  background: var(--bg);
+  white-space: nowrap;
+}
+.mode-pill + .mode-pill {
+  border-left: 1px solid var(--line);
+}
+.mode-pill:hover:not(.active) {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+.mode-pill.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.sort-toggle {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.sort-btn {
+  padding: 5px 11px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  border: none;
+  background: var(--bg);
+  white-space: nowrap;
+}
+.sort-btn + .sort-btn {
+  border-left: 1px solid var(--line);
+}
+.sort-btn:hover:not(.active) {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+.sort-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.score-range-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.score-range-label {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.score-range {
+  width: 80px;
+  accent-color: var(--accent, #5b6af5);
+  cursor: pointer;
+  height: 4px;
+}
 .scanning-pill {
   display: inline-flex;
   align-items: center;
@@ -1450,7 +1500,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   font-size: 10px;
   color: var(--accent);
 }
-
 .scanning-dot-sm {
   width: 5px;
   height: 5px;
@@ -1458,7 +1507,6 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   background: var(--accent);
   animation: scan-pulse 1.2s ease-in-out infinite;
 }
-
 @keyframes scan-pulse {
   0%,
   100% {
@@ -1469,39 +1517,246 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   }
 }
 
-/* ── Filters ── */
-.filters-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+/* ── Card grid ── */
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1280px) {
+  .jobs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .jobs-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.filter-search {
-  max-width: 220px;
-}
-
-.score-filter {
+/* ── Job card ── */
+.job-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 7px;
+  padding: 16px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+  position: relative;
+}
+.job-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.co-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.co-avatar--lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+.score-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.card-company {
+  font-size: 12.5px;
   color: var(--ink-muted);
 }
-
-.score-filter-label {
-  white-space: nowrap;
-  min-width: 108px;
+.card-location {
+  color: var(--ink-subtle);
 }
 
-.score-slider {
-  width: 90px;
-  accent-color: var(--accent, #5b6af5);
+.card-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tag {
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.tag-mode,
+.tag-type {
+  background: var(--bg-elevated);
+  color: var(--ink-muted);
+  border: 1px solid var(--line-soft);
+}
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.card-salary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.card-hint {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.skill-match {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--positive) 10%, transparent);
+  color: var(--positive);
+  border: 1px solid color-mix(in srgb, var(--positive) 22%, transparent);
+}
+.skill-gap {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 22%, transparent);
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.card-date {
+  font-size: 11.5px;
+  color: var(--ink-subtle);
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.act-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-muted);
   cursor: pointer;
-  height: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.act-skip:hover {
+  border-color: var(--negative);
+  color: var(--negative);
+  background: color-mix(in srgb, var(--negative) 8%, transparent);
+}
+.act-skip.active {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+.act-save:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.act-save.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.act-apply {
+  padding: 5px 12px;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  white-space: nowrap;
+}
+.act-apply:hover:not(:disabled) {
+  opacity: 0.82;
+}
+.act-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* ── Empty ── */
+/* ── Card skeleton ── */
+.job-card-skeleton {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Empty state ── */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -1509,288 +1764,81 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   padding: 60px 0;
   gap: 10px;
 }
-
 .empty-title {
   font-family: 'Fraunces', serif;
   font-size: 20px;
   color: var(--ink);
   font-weight: 400;
 }
-
 .empty-desc {
   font-size: 14px;
   color: var(--ink-muted);
+  text-align: center;
+  max-width: 300px;
 }
 
-/* ── Two-panel ── */
-.two-panel {
-  display: flex;
-  min-height: 580px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.panel-left {
-  width: 380px;
-  min-width: 300px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  border-right: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.panel-right {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--bg-elevated, var(--surface));
-}
-
-.panel-back-btn {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-muted);
-  border-bottom: 1px solid var(--line-soft);
-  background: var(--surface);
-  cursor: pointer;
-  width: 100%;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-}
-
-@media (max-width: 1023px) {
-  .two-panel {
-    min-height: unset;
-  }
-  .panel-left {
-    width: 100%;
-    min-width: unset;
-    border-right: none;
-  }
-  .panel-left--hidden {
-    display: none;
-  }
-  .panel-right--hidden {
-    display: none;
-  }
-  .panel-back-btn {
-    display: flex;
-  }
-}
-
-/* ── Compact job card ── */
-.job-card-compact {
-  display: flex;
-  gap: 10px;
-  padding: 12px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--line-soft);
-  transition: background 0.1s;
-  border-left: 3px solid transparent;
-}
-
-.job-card-compact:hover {
-  background: var(--bg-elevated);
-}
-
-.job-card-compact.selected {
-  background: var(--bg-elevated);
-  border-left-color: var(--accent, #5b6af5);
-}
-
-.company-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
-  letter-spacing: -0.02em;
-}
-
-.card-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-}
-
-.card-company {
-  font-size: 11.5px;
-  color: var(--ink-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 2px 0 6px;
-}
-
-.card-ring-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 2px;
-}
-
-/* ── Slide-down filter transition ── */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-.slide-down-enter-to,
-.slide-down-leave-from {
-  opacity: 1;
-  max-height: 200px;
-}
-
-.card-match-hint {
-  font-size: 11px;
-  color: var(--ink-subtle);
-  line-height: 1.5;
-  margin-top: 4px;
-  margin-bottom: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-skill-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.card-skill-chip {
-  font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.card-skill-chip--match {
-  background: color-mix(in srgb, var(--positive) 12%, transparent);
-  color: var(--positive);
-  border: 1px solid color-mix(in srgb, var(--positive) 25%, transparent);
-}
-
-.card-skill-chip--gap {
-  background: color-mix(in srgb, var(--warning) 12%, transparent);
-  color: var(--warning);
-  border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
-}
-
-.card-quick-apply {
-  margin-top: 6px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-  color: var(--ink-subtle);
-}
-
-.status-dot {
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.6;
-}
-
-.panel-pagination {
-  padding: 12px 14px;
+/* ── Pagination ── */
+.pagination-row {
   display: flex;
   justify-content: center;
+  padding-top: 8px;
 }
 
-/* ── Detail panel ── */
-.detail-content {
-  padding: 24px;
+/* ── Detail modal ── */
+.detail-modal {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  max-height: 88vh;
 }
-
-.detail-header {
+.dm-head {
   display: flex;
-  gap: 14px;
   align-items: flex-start;
+  gap: 14px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--line-soft);
 }
-
-.company-avatar-lg {
-  width: 52px;
-  height: 52px;
-  border-radius: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.detail-title-block {
+.dm-title-block {
   flex: 1;
   min-width: 0;
 }
-
-.detail-job-title {
+.dm-job-title {
   font-family: 'Fraunces', serif;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 400;
   color: var(--ink);
   line-height: 1.2;
 }
-
-.detail-company {
-  font-size: 14px;
+.dm-company {
+  font-size: 13.5px;
   color: var(--ink-muted);
   margin-top: 3px;
 }
-
-.detail-meta {
+.dm-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-subtle);
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.dm-close:hover {
+  color: var(--ink);
+  background: var(--bg-elevated);
+}
+.dm-body {
+  padding: 18px 22px 24px;
+  overflow-y: auto;
   display: flex;
-  gap: 7px;
+  flex-direction: column;
+  gap: 16px;
+}
+.dm-meta {
+  display: flex;
+  gap: 6px;
   flex-wrap: wrap;
 }
-
 .meta-chip {
   display: flex;
   align-items: center;
@@ -1803,24 +1851,21 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   border: 1px solid var(--line-soft);
   text-decoration: none;
 }
-
 .meta-link {
   color: var(--accent, #5b6af5);
 }
-
 .meta-link:hover {
   background: var(--accent-soft, #ede9fe);
 }
-
-.action-row {
+.dm-actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-/* ── Match section ── */
+/* ── Match section (modal) ── */
 .match-section {
-  padding: 16px;
+  padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--line-soft);
   border-radius: 10px;
@@ -1828,13 +1873,11 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   flex-direction: column;
   gap: 12px;
 }
-
-.match-header {
+.match-head {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .match-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -1842,53 +1885,45 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   letter-spacing: 0.1em;
   color: var(--ink-subtle);
 }
-
 .match-score {
   font-size: 20px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   line-height: 1;
 }
-
 .skills-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 12px;
 }
-
 .skills-col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
-
 .skills-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
 .matched-label {
   color: #15803d;
 }
 .missing-label {
   color: #b45309;
 }
-
 .skills-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
 }
-
 .skill-tag {
   padding: 3px 8px;
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
 }
-
 .matched-tag {
   background: #dcfce7;
   color: #15803d;
@@ -1902,20 +1937,18 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   color: var(--ink-muted);
   border: 1px solid var(--line-soft);
 }
-
 .match-explanation {
   font-size: 13px;
   color: var(--ink-muted);
   line-height: 1.55;
 }
 
-/* ── Description ── */
-.description-section {
+/* ── Description (modal) ── */
+.desc-section {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
-
 .section-eyebrow {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -1923,94 +1956,19 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   letter-spacing: 0.1em;
   color: var(--ink-subtle);
 }
-
-.description-text {
+.desc-text {
   font-size: 13.5px;
   line-height: 1.65;
   color: var(--ink-muted);
 }
-
-.view-full-link {
+.view-full {
   font-size: 13px;
   color: var(--accent, #5b6af5);
   text-decoration: none;
   align-self: flex-start;
 }
-
-.view-full-link:hover {
+.view-full:hover {
   text-decoration: underline;
-}
-
-/* ── List view ── */
-.list-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
-}
-
-.company-avatar-sm {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.list-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.list-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.list-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-decoration: none;
-}
-
-.list-title:hover {
-  text-decoration: underline;
-}
-
-.list-company {
-  font-size: 12.5px;
-  color: var(--ink-muted);
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.list-meta {
-  display: flex;
-  gap: 10px;
-  font-size: 11.5px;
-  color: var(--ink-subtle);
-  flex-wrap: wrap;
-}
-
-.list-actions {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
 }
 
 /* ── Activity feed ── */
@@ -2022,27 +1980,24 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin-bottom: 4px;
 }
-
 .feed-header {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .feed-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink);
   flex: 1;
 }
-
 .feed-count {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--ink-muted);
 }
-
 .feed-entry {
   display: flex;
   align-items: center;
@@ -2050,11 +2005,9 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   font-size: 12px;
   color: var(--ink-muted);
 }
-
 .feed-icon {
   font-size: 11px;
 }
-
 .pulse-dot {
   width: 7px;
   height: 7px;
@@ -2063,12 +2016,10 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
   flex-shrink: 0;
   transition: background 0.3s;
 }
-
 .pulse-dot.active {
   background: var(--accent);
   animation: pulse-ring 1.4s ease-out infinite;
 }
-
 @keyframes pulse-ring {
   0% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
@@ -2080,14 +2031,12 @@ function jobStatus(job: DiscoveredJob): { label: string; bg: string; fg: string 
     box-shadow: 0 0 0 0 transparent;
   }
 }
-
 .feed-enter-active,
 .feed-leave-active {
   transition:
     opacity 0.25s,
     transform 0.25s;
 }
-
 .feed-enter-from,
 .feed-leave-to {
   opacity: 0;
