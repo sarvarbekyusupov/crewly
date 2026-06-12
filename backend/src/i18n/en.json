@@ -35,6 +35,12 @@
     "reject_btn": "❌ Reject Candidate",
     "menu_btn": "🏠 Main Menu",
     "web_chat_btn": "🖥️ Web Chat (TMA)",
-    "selected_job": "You selected the *{title}* vacancy at *{companyName}*.\n\nPlease upload your CV in PDF format to start."
+    "selected_job": "You selected the *{title}* vacancy at *{companyName}*.\n\nPlease upload your CV in PDF format to start.",
+    "approved_for_screening": "✅ Approved: Candidate sent for AI interview.",
+    "rejected_candidate": "❌ Rejected: Candidate declined.",
+    "notify_interview": "🗓 You have been invited for an interview for *{job}* at *{company}*. Check your email for details.",
+    "notify_offer": "🎉 You received an offer for *{job}* at *{company}*! Further instructions will follow.",
+    "notify_rejected": "Unfortunately, your application for *{job}* at *{company}* was not selected. Thank you for your time.",
+    "notify_hired": "🎊 Congratulations! You have been hired at *{company}*. You will be contacted shortly with next steps."
   }
 }

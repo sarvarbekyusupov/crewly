@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { I18nService } from 'nestjs-i18n';
 import { Public } from '../common/decorators/public.decorator';
 import { IdempotencyService } from '../common/services/idempotency.service';
 import { ConversationsService } from '../modules/conversations/conversations.service';
@@ -36,6 +37,7 @@ export class WebhooksController implements OnModuleInit {
     private readonly idempotency: IdempotencyService,
     private readonly db: PrismaService,
     private readonly hhWebhook: HhWebhookService,
+    private readonly i18n: I18nService,
   ) {}
 
   onModuleInit() {
@@ -57,7 +59,7 @@ export class WebhooksController implements OnModuleInit {
       if (this.conversations.isWithdrawal(text)) {
         await this.telegram.sendMessage(
           chatId,
-          'Понял вас. Больше не будем беспокоить. Всего доброго!',
+          this.i18n.t('bot.withdrawal_confirmation', { lang: 'ru' }),
         );
       }
     });

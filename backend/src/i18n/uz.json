@@ -35,6 +35,12 @@
     "reject_btn": "❌ Nomzodni rad etish",
     "menu_btn": "🏠 Menyoga qaytish",
     "web_chat_btn": "🖥️ Veb-chat (TMA)",
-    "selected_job": "Siz *{companyName}* kompaniyasidagi *{title}* vakansiyasini tanladingiz.\n\nBoshlash uchun rezyumengizni PDF formatida yuboring."
+    "selected_job": "Siz *{companyName}* kompaniyasidagi *{title}* vakansiyasini tanladingiz.\n\nBoshlash uchun rezyumengizni PDF formatida yuboring.",
+    "approved_for_screening": "✅ Tasdiqlandi: Nomzod AI-suhbatga yuborildi.",
+    "rejected_candidate": "❌ Rad etildi: Nomzod rad etildi.",
+    "notify_interview": "🗓 *{company}* kompaniyasidagi *{job}* lavozimiga suhbat belgilandi. Tafsilotlar uchun elektron pochtangizni tekshiring.",
+    "notify_offer": "🎉 *{company}* kompaniyasidan *{job}* lavozimiga taklif oldingiz! Keyingi ko'rsatmalar yetkaziladi.",
+    "notify_rejected": "Afsuski, *{company}* kompaniyasidagi *{job}* bo'yicha arizangiz tanlanmadi. Vaqtingiz uchun rahmat.",
+    "notify_hired": "🎊 Tabriklaymiz! Siz *{company}* kompaniyasiga ishga qabul qilindingiz. Keyingi qadamlar haqida tez orada xabar beriladi."
   }
 }
