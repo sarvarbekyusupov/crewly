@@ -89,6 +89,7 @@ export class CandidatePortalService {
       githubUrl?: string;
       preferredWorkMode?: string;
       willingToRelocate?: boolean;
+      hasTransport?: boolean;
       skills?: string[];
       yearsExperience?: number | null;
       noticePeriodDays?: number | null;

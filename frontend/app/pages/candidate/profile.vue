@@ -334,6 +334,7 @@ async function onAppDefaultsSave(data: any) {
   await saveProfile({
     preferredWorkMode: data.preferredWorkMode,
     willingToRelocate: data.willingToRelocate,
+    hasTransport: data.hasTransport,
     noticePeriodDays: data.noticePeriodDays,
   })
 }
@@ -382,7 +383,7 @@ const NAV_SECTIONS = [
         />
 
         <!-- Header card -->
-        <CandidateProfileProfileHeader
+        <CandidateProfileHeader
           :full-name="profile?.fullName"
           :current-position="profile?.currentPosition"
           :current-company="profile?.currentCompany"
@@ -444,7 +445,9 @@ const NAV_SECTIONS = [
         <CandidateProfileSectionsAppDefaultsSection
           :preferred-work-mode="profile?.preferredWorkMode"
           :willing-to-relocate="profile?.willingToRelocate"
+          :has-transport="profile?.hasTransport"
           :notice-period-days="profile?.noticePeriodDays"
+          :can-start-immediately="profile?.noticePeriodDays === 0"
           @edit="showAppDefaultsModal = true"
         />
 
@@ -457,7 +460,7 @@ const NAV_SECTIONS = [
     </div>
 
     <!-- Right nav -->
-    <CandidateProfileProfileRightNav :sections="NAV_SECTIONS" />
+    <CandidateProfileRightNav :sections="NAV_SECTIONS" />
 
     <!-- Modals -->
     <CandidateProfileModalsEditHeaderModal
@@ -521,7 +524,9 @@ const NAV_SECTIONS = [
       :open="showAppDefaultsModal"
       :preferred-work-mode="profile?.preferredWorkMode"
       :willing-to-relocate="profile?.willingToRelocate"
+      :has-transport="profile?.hasTransport"
       :notice-period-days="profile?.noticePeriodDays"
+      :can-start-immediately="profile?.noticePeriodDays === 0"
       @close="showAppDefaultsModal = false"
       @save="onAppDefaultsSave"
     />

@@ -126,6 +126,7 @@ async function handleFinish() {
       telegramUsername: store.contact.telegram || undefined,
       preferredWorkMode: workMode,
       willingToRelocate: store.checklist.willingToRelocate,
+      hasTransport: store.checklist.hasTransport,
       skills: store.skills.tags.length ? store.skills.tags : undefined,
       yearsExperience: store.skills.experienceLevel
         ? yearsFromLevel(store.skills.experienceLevel)

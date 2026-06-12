@@ -54,7 +54,7 @@ const missingItems = computed(() => {
       <div class="header-right">
         <UDropdownMenu :items="missingItems" :content="{ side: 'bottom', align: 'end' }">
           <button type="button" class="completion-btn">
-            <CandidateProfileProfileCompletion :percentage="completeness" />
+            <CandidateProfileCompletion :percentage="completeness" />
             <span v-if="missing.length" class="missing-badge">{{ missing.length }} missing</span>
           </button>
         </UDropdownMenu>

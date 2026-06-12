@@ -5,6 +5,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ upload: [file: File] }>()
 
+const { t } = useI18n()
+
 const inputRef = ref<HTMLInputElement | null>(null)
 
 function onInput(e: Event) {
@@ -27,7 +29,7 @@ const fileName = computed(() => {
   <CandidateProfileUiSectionCard
     id="documents"
     icon="i-heroicons-document-text"
-    title="Hujjatlar"
+    :title="t('candidate.sections.documents.title')"
     @edit="inputRef?.click()"
   >
     <div class="docs-grid">
@@ -40,8 +42,8 @@ const fileName = computed(() => {
           />
         </div>
         <div class="doc-info">
-          <p class="doc-title">CV / Rezyume</p>
-          <p class="doc-sub">{{ fileName ?? 'Hali yuklanmagan' }}</p>
+          <p class="doc-title">{{ t('candidate.sections.documents.cvOnFile') }}</p>
+          <p class="doc-sub">{{ fileName ?? t('candidate.sections.documents.noCv') }}</p>
         </div>
         <div class="doc-actions">
           <template v-if="uploading">
@@ -54,13 +56,13 @@ const fileName = computed(() => {
             </a>
             <button type="button" class="doc-btn" @click="inputRef?.click()">
               <UIcon name="i-heroicons-arrow-up-tray" style="width: 13px; height: 13px" />
-              Almashtirish
+              {{ t('candidate.sections.documents.replace') }}
             </button>
           </template>
           <template v-else>
             <button type="button" class="doc-btn doc-btn--accent" @click="inputRef?.click()">
               <UIcon name="i-heroicons-arrow-up-tray" style="width: 13px; height: 13px" />
-              CV yuklash
+              {{ t('candidate.sections.documents.upload') }}
             </button>
           </template>
         </div>

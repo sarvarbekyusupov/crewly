@@ -12,6 +12,8 @@ const emit = defineEmits<{
   delete: [index: number]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive<Project>({ name: '', description: '', url: '', tags: [] })
 const tagInput = ref('')
 
@@ -28,13 +30,13 @@ watch(
 )
 
 function addTag() {
-  const t = tagInput.value.trim()
-  if (t && !(form.tags ?? []).includes(t)) form.tags = [...(form.tags ?? []), t]
+  const tag = tagInput.value.trim()
+  if (tag && !(form.tags ?? []).includes(tag)) form.tags = [...(form.tags ?? []), tag]
   tagInput.value = ''
 }
 
-function removeTag(t: string) {
-  form.tags = (form.tags ?? []).filter((x) => x !== t)
+function removeTag(tag: string) {
+  form.tags = (form.tags ?? []).filter((x) => x !== tag)
 }
 </script>
 
@@ -44,7 +46,11 @@ function removeTag(t: string) {
       <div class="modal-wrap">
         <div class="modal-head">
           <h3 class="modal-title">
-            {{ index === null ? "Loyiha qo'shish" : 'Loyihani tahrirlash' }}
+            {{
+              index === null
+                ? t('candidate.modals.project.addTitle')
+                : t('candidate.modals.project.editTitle')
+            }}
           </h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
@@ -53,7 +59,9 @@ function removeTag(t: string) {
 
         <div class="modal-body">
           <div class="field-row">
-            <label class="field-label">Loyiha nomi <span class="req">*</span></label>
+            <label class="field-label"
+              >{{ t('candidate.modals.project.name') }} <span class="req">*</span></label
+            >
             <input
               v-model="form.name"
               type="text"
@@ -62,16 +70,16 @@ function removeTag(t: string) {
             />
           </div>
           <div class="field-row">
-            <label class="field-label">Tavsif</label>
+            <label class="field-label">{{ t('candidate.modals.project.description') }}</label>
             <textarea
               v-model="form.description"
               class="field-textarea"
               rows="3"
-              placeholder="Loyiha haqida qisqacha…"
+              :placeholder="t('candidate.modals.project.description')"
             />
           </div>
           <div class="field-row">
-            <label class="field-label">URL (GitHub yoki live)</label>
+            <label class="field-label">{{ t('candidate.modals.project.url') }}</label>
             <input
               v-model="form.url"
               type="url"
@@ -80,7 +88,7 @@ function removeTag(t: string) {
             />
           </div>
           <div class="field-row">
-            <label class="field-label">Texnologiyalar</label>
+            <label class="field-label">{{ t('candidate.modals.project.tags') }}</label>
             <div class="tag-row">
               <input
                 v-model="tagInput"
@@ -92,9 +100,9 @@ function removeTag(t: string) {
               <button type="button" class="add-btn" @click="addTag">+</button>
             </div>
             <div v-if="form.tags?.length" class="chips-row">
-              <span v-for="t in form.tags" :key="t" class="chip">
-                {{ t }}
-                <button type="button" class="chip-rm" @click="removeTag(t)">×</button>
+              <span v-for="tag in form.tags" :key="tag" class="chip">
+                {{ tag }}
+                <button type="button" class="chip-rm" @click="removeTag(tag)">×</button>
               </span>
             </div>
           </div>
@@ -110,9 +118,11 @@ function removeTag(t: string) {
             O'chirish
           </button>
           <div class="footer-right">
-            <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
+            <button type="button" class="btn-cancel" @click="emit('close')">
+              {{ t('candidate.modals.cancel') }}
+            </button>
             <button type="button" class="btn-save" @click="emit('save', { ...form }, index)">
-              Saqlash
+              {{ t('candidate.modals.save') }}
             </button>
           </div>
         </div>

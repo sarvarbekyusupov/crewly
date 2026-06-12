@@ -52,6 +52,7 @@ const UpdateProfileSchema = z.object({
   githubUrl: z.string().url().optional().or(z.literal('')),
   preferredWorkMode: z.string().optional(),
   willingToRelocate: z.boolean().optional(),
+  hasTransport: z.boolean().optional(),
   skills: z.array(z.string()).optional(),
   yearsExperience: z.number().min(0).max(100).nullable().optional(),
   noticePeriodDays: z.number().int().min(0).max(365).nullable().optional(),

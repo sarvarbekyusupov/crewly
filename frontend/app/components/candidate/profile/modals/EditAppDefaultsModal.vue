@@ -20,6 +20,8 @@ const emit = defineEmits<{
   ]
 }>()
 
+const { t } = useI18n()
+
 const form = reactive({
   preferredWorkMode: '',
   willingToRelocate: false,
@@ -34,28 +36,29 @@ watch(
     if (!v) return
     form.preferredWorkMode = props.preferredWorkMode ?? ''
     form.willingToRelocate = props.willingToRelocate ?? false
-    form.noticePeriodDays =
+    const nd =
       props.noticePeriodDays !== undefined && props.noticePeriodDays !== null
         ? Number(props.noticePeriodDays)
         : null
+    form.noticePeriodDays = nd
+    form.canStartImmediately = nd === 0 || (props.canStartImmediately ?? false)
     form.hasTransport = props.hasTransport ?? false
-    form.canStartImmediately = props.canStartImmediately ?? false
   },
 )
 
-const WORK_MODES = [
+const WORK_MODES = computed(() => [
   { value: 'remote', label: 'Remote' },
-  { value: 'office', label: 'Ofis' },
+  { value: 'office', label: t('candidate.modals.appDefaults.workMode') },
   { value: 'hybrid', label: 'Gibrid' },
-]
+])
 
-const NOTICE_OPTIONS = [
-  { value: 0, label: 'Hoziroq' },
-  { value: 14, label: '2 hafta' },
-  { value: 30, label: '1 oy' },
-  { value: 60, label: '2 oy' },
-  { value: 90, label: '3 oy' },
-]
+const NOTICE_OPTIONS = computed(() => [
+  { value: 0, label: t('candidate.modals.appDefaults.immediately') },
+  { value: 14, label: t('candidate.modals.appDefaults.twoWeeks') },
+  { value: 30, label: t('candidate.modals.appDefaults.oneMonth') },
+  { value: 60, label: t('candidate.modals.appDefaults.twoMonths') },
+  { value: 90, label: t('candidate.modals.appDefaults.threeMonths') },
+])
 </script>
 
 <template>
@@ -63,7 +66,7 @@ const NOTICE_OPTIONS = [
     <template #content>
       <div class="modal-wrap">
         <div class="modal-head">
-          <h3 class="modal-title">Ish sozlamalari</h3>
+          <h3 class="modal-title">{{ t('candidate.modals.appDefaults.title') }}</h3>
           <button type="button" class="modal-close" @click="emit('close')">
             <UIcon name="i-heroicons-x-mark" style="width: 18px; height: 18px" />
           </button>
@@ -71,7 +74,7 @@ const NOTICE_OPTIONS = [
 
         <div class="modal-body">
           <div class="field-group">
-            <p class="group-label">Ish tartibi</p>
+            <p class="group-label">{{ t('candidate.modals.appDefaults.workMode') }}</p>
             <div class="btn-group">
               <button
                 v-for="m in WORK_MODES"
@@ -87,7 +90,7 @@ const NOTICE_OPTIONS = [
           </div>
 
           <div class="field-group">
-            <p class="group-label">Bildirishnoma muddati</p>
+            <p class="group-label">{{ t('candidate.modals.appDefaults.noticeLabel') }}</p>
             <div class="btn-group">
               <button
                 v-for="opt in NOTICE_OPTIONS"
@@ -120,23 +123,27 @@ const NOTICE_OPTIONS = [
           </div>
 
           <div class="field-group">
-            <p class="group-label">Qo'shimcha</p>
+            <p class="group-label">{{ t('candidate.modals.appDefaults.extra') }}</p>
             <div class="check-list">
               <label class="check-row">
                 <input v-model="form.willingToRelocate" type="checkbox" class="chk" />
-                <span>Ko'chirishga tayyor</span>
+                <span>{{ t('candidate.modals.appDefaults.relocate') }}</span>
               </label>
               <label class="check-row">
                 <input v-model="form.hasTransport" type="checkbox" class="chk" />
-                <span>Shaxsiy transport bor</span>
+                <span>{{ t('candidate.modals.appDefaults.transport') }}</span>
               </label>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="emit('close')">Bekor qilish</button>
-          <button type="button" class="btn-save" @click="emit('save', { ...form })">Saqlash</button>
+          <button type="button" class="btn-cancel" @click="emit('close')">
+            {{ t('candidate.modals.cancel') }}
+          </button>
+          <button type="button" class="btn-save" @click="emit('save', { ...form })">
+            {{ t('candidate.modals.save') }}
+          </button>
         </div>
       </div>
     </template>
