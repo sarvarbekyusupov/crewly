@@ -492,26 +492,38 @@ watchDebounced(
     <div class="jobs-header">
       <div>
         <p class="eyebrow">{{ t('candidate.jobs.eyebrow') }}</p>
-        <h1 class="page-title">{{ t('candidate.jobs.title') }}</h1>
-        <p class="jobs-count">{{ t('candidate.jobs.matchingJobs', { n: total }) }}</p>
+        <h1 class="page-title">
+          {{
+            activeMainTab === 'live'
+              ? t('candidate.preferences.hhLiveSearch')
+              : activeMainTab === 'match'
+                ? t('candidate.preferences.hhMatchedVacancies')
+                : t('candidate.jobs.title')
+          }}
+        </h1>
+        <p v-if="activeMainTab === 'discovered'" class="jobs-count">
+          {{ t('candidate.jobs.matchingJobs', { n: total }) }}
+        </p>
       </div>
-      <div class="header-actions">
+      <div v-if="activeMainTab === 'discovered'" class="header-actions">
         <UButton
-          variant="ghost"
+          variant="outline"
           size="sm"
           icon="i-heroicons-magnifying-glass"
           :loading="discoveringInProgress"
-          aria-label="Find Jobs"
           @click="triggerDiscover"
-        />
+        >
+          Find Jobs
+        </UButton>
         <UButton
-          variant="ghost"
+          variant="outline"
           size="sm"
           icon="i-heroicons-bolt"
           :loading="scoringInProgress"
-          aria-label="AI Score All"
           @click="triggerScoring"
-        />
+        >
+          AI Score
+        </UButton>
       </div>
     </div>
 
@@ -920,13 +932,17 @@ watchDebounced(
           <div class="feed-header">
             <span class="pulse-dot" :class="{ active: scoringActive }" />
             <span class="feed-label">{{
-              scoringActive ? 'AI scanning jobs…' : 'Scan complete'
+              scoringActive ? 'Analyzing your job matches…' : 'Analysis complete'
             }}</span>
             <span v-if="scoringProgress.total" class="feed-count">
               {{ scoringProgress.done }}/{{ scoringProgress.total }}
             </span>
           </div>
-          <div v-for="entry in scoringLog.slice(-4)" :key="entry.ts" class="feed-entry">
+          <div
+            v-for="entry in scoringLog.filter((e) => !e.text.startsWith('Batch'))"
+            :key="entry.ts"
+            class="feed-entry"
+          >
             <span class="feed-icon">{{ entry.icon }}</span>
             <span>{{ entry.text }}</span>
           </div>
@@ -954,6 +970,7 @@ watchDebounced(
             {{ opt.label }}
           </button>
         </div>
+        <div class="filter-sep" />
         <div class="sort-toggle">
           <button
             v-for="opt in sortOptions"
@@ -968,7 +985,7 @@ watchDebounced(
         </div>
         <div class="score-range-wrap">
           <span class="score-range-label">
-            Min: <strong>{{ minScore }}%</strong>
+            Score ≥ <strong>{{ minScore }}%</strong>
           </span>
           <input
             v-model.number="minScore"
@@ -1060,6 +1077,7 @@ watchDebounced(
             <span v-if="job.workMode" class="tag tag-mode">{{ job.workMode }}</span>
             <span v-if="job.employmentType" class="tag tag-type">{{ job.employmentType }}</span>
             <span
+              v-if="!job.application"
               class="status-badge"
               :style="{ background: jobStatus(job).bg, color: jobStatus(job).fg }"
               >{{ jobStatus(job).label }}</span
@@ -1088,7 +1106,16 @@ watchDebounced(
             <span class="card-date">{{ formatPostedDate(job.postedAt) }}</span>
             <div class="card-actions">
               <template v-if="job.application">
-                <UBadge :color="appStatusColor(job.application.status)" variant="subtle" size="sm">
+                <UBadge
+                  :color="appStatusColor(job.application.status)"
+                  variant="subtle"
+                  size="sm"
+                  :title="
+                    job.application.status === 'failed'
+                      ? 'Application sending failed. You can try applying again.'
+                      : undefined
+                  "
+                >
                   {{ capitalizeStatus(job.application.status) }}
                 </UBadge>
               </template>
@@ -1441,6 +1468,13 @@ watchDebounced(
 }
 .mode-pill + .mode-pill {
   border-left: 1px solid var(--line);
+}
+.filter-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+  flex-shrink: 0;
+  align-self: center;
 }
 .mode-pill:hover:not(.active) {
   background: var(--bg-elevated);
