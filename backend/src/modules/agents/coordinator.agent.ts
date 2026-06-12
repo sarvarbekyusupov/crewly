@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseAgent } from './base.agent';
+import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { coordinatorDecidePrompt } from '@crewly/prompts';
 
@@ -63,7 +63,7 @@ export class CoordinatorAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return CoordinatorDecisionSchema.parse(parsed);
     } catch {
       return { action: 'wait', reason: 'Coordinator failed to decide' };

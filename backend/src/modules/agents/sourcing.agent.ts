@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseAgent } from './base.agent';
+import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { SearchService } from '../../integrations/search/search.service';
 import {
@@ -82,7 +82,7 @@ export class SourcingAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return CandidateSearchQueriesSchema.parse(parsed);
     } catch (e: any) {
       throw new Error(
@@ -113,7 +113,7 @@ export class SourcingAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return JobSearchQueriesSchema.parse(parsed);
     } catch (e: any) {
       throw new Error(
@@ -162,7 +162,7 @@ export class SourcingAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return CandidateEnrichmentSchema.parse(parsed);
     } catch {
       return {
@@ -195,7 +195,7 @@ export class SourcingAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return SourcingStrategySchema.parse(parsed);
     } catch (e: any) {
       throw new Error(

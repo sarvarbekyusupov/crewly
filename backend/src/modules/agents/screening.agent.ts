@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseAgent } from './base.agent';
+import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { SCREENING_SYSTEM_PROMPT, screeningUserContext } from '@crewly/prompts';
 
@@ -88,7 +88,7 @@ export class ScreeningAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return ScreeningResponseSchema.parse(parsed);
     } catch {
       return { action: 'continue', message: output };

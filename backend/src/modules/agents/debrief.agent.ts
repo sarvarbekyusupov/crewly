@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseAgent } from './base.agent';
+import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import {
   debriefSynthesizeFeedbackPrompt,
@@ -111,7 +111,7 @@ export class DebriefAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return TranscriptAnalysisSchema.parse(parsed);
     } catch (e: any) {
       throw new Error(

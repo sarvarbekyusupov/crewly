@@ -173,17 +173,35 @@ export class CandidatePortalService {
     const signedUrl = publicUrl ? await this.s3.getSignedUrl(key, 3600) : '';
 
     let rawText = '';
-    if (mimetype === 'application/pdf') {
+    const isPdf =
+      mimetype === 'application/pdf' ||
+      originalname.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
       try {
         const parser = new PDFParse({ data: buffer });
         const parsed = await parser.getText();
-        rawText = parsed.text;
+        rawText = parsed.text?.trim() ?? '';
+        this.logger.log(
+          { candidateId, chars: rawText.length },
+          'PDF text extracted',
+        );
+        if (!rawText) {
+          this.logger.warn(
+            { candidateId },
+            'PDF extracted but no text found — likely a scanned/image PDF',
+          );
+        }
       } catch (err: any) {
         this.logger.warn(
           { candidateId, error: err.message },
           'Failed to parse PDF text',
         );
       }
+    } else {
+      this.logger.warn(
+        { candidateId, mimetype, originalname },
+        'Non-PDF upload — text extraction skipped',
+      );
     }
 
     await this.db.candidate.update({

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseAgent } from './base.agent';
+import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import {
   MATCHMAKER_PARSE_RESUME_SYSTEM,
@@ -148,7 +148,7 @@ export class MatchmakerAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return z.array(MatchmakerResultSchema).parse(parsed);
     } catch (e: any) {
       throw new Error(
@@ -172,7 +172,7 @@ export class MatchmakerAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return ParsedResumeSchema.parse(parsed);
     } catch (e: any) {
       throw new Error(
@@ -203,7 +203,7 @@ export class MatchmakerAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return ParsedJobSchema.parse(parsed);
     } catch (e: any) {
       throw new Error(`MatchmakerAgent failed to parse job JSON: ${e.message}`);
@@ -252,7 +252,7 @@ export class MatchmakerAgent extends BaseAgent {
     );
 
     try {
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(extractJson(output));
       return z.array(SeekerJobScoreSchema).parse(parsed);
     } catch (e: any) {
       throw new Error(
