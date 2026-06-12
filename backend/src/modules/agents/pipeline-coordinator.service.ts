@@ -34,27 +34,12 @@ export class PipelineCoordinator {
   @OnEvent('job.created')
   async handleJobCreated(payload: { jobId: string; companyId: string }) {
     try {
-      this.logger.log(
-        `Job created: ${payload.jobId} - Coordinator deciding...`,
+      await this.matchQueue.add(
+        'match',
+        { jobId: payload.jobId },
+        LLM_JOB_OPTIONS,
       );
-      const decision = await this.agent.decideNextSteps({
-        eventType: 'job.created',
-        entityType: 'job',
-        entityId: payload.jobId,
-        currentStatus: 'draft',
-      });
-
-      this.logger.log(
-        `Coordinator decision for job ${payload.jobId}: ${decision.action} (${decision.reason})`,
-      );
-
-      if (decision.action === 'trigger_matching') {
-        await this.matchQueue.add(
-          'match',
-          { jobId: payload.jobId },
-          LLM_JOB_OPTIONS,
-        );
-      }
+      this.logger.log({ jobId: payload.jobId }, 'Match queued on job.created');
     } catch (err: any) {
       this.logger.error(
         { jobId: payload.jobId, err: err.message },
@@ -148,23 +133,23 @@ export class PipelineCoordinator {
         const creator = (app.job as any).createdBy;
         if (creator?.telegramChatId) {
           const message =
-            `🎯 **Новый кандидат!**\n\n` +
-            `**${(app as any).candidate.fullName}** на роль **${(app as any).job.title}**\n` +
-            `**Совпадение:** ${app.matchScore}%\n\n` +
-            `**Matchmaker говорит:**\n${(app.matchReasons as any)?.notes || 'Без комментариев'}\n\n` +
-            `**Social Proof:**\n${(app as any).candidate.socialProof?.social_proof_summary || 'Нет данных'}\n\n` +
-            `**Координатор считает:** ${decision.reason}\n\n` +
-            `Что делаем?`;
+            `🎯 *New candidate match*\n\n` +
+            `*${(app as any).candidate.fullName}* for *${(app as any).job.title}*\n` +
+            `*Match score:* ${app.matchScore}%\n\n` +
+            `*Matchmaker notes:*\n${(app.matchReasons as any)?.notes || 'No notes'}\n\n` +
+            `*Social proof:*\n${(app as any).candidate.socialProof?.social_proof_summary || 'No data'}\n\n` +
+            `*Coordinator:* ${decision.reason}\n\n` +
+            `What do we do?`;
 
           await this.telegram.sendMessage(creator.telegramChatId, message, {
             parseMode: 'Markdown',
             buttons: [
               {
-                text: '✅ Одобрить (AI Screen)',
+                text: '✅ Approve (AI Screen)',
                 callbackData: JSON.stringify({ a: 'app_scr', i: app.id }),
               },
               {
-                text: '❌ Пропустить',
+                text: '❌ Skip',
                 callbackData: JSON.stringify({ a: 'rej_app', i: app.id }),
               },
             ],

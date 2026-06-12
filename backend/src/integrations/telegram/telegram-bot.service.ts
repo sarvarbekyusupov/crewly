@@ -144,7 +144,7 @@ export class TelegramBotService implements OnModuleInit {
     const readyCount = await this.db.application.count({
       where: {
         companyId: user.companyId,
-        status: { in: ['screened', 'interview_scheduled'] },
+        status: { in: ['screened_pass', 'interview_scheduled'] },
       },
     });
 
@@ -360,7 +360,10 @@ export class TelegramBotService implements OnModuleInit {
             .row();
         }
 
-        keyboard.text(this.i18n.t('bot.menu_btn', { lang }), 'back_to_dash');
+        keyboard.text(
+          this.i18n.t('bot.menu_btn', { lang }),
+          JSON.stringify({ a: 'dash' }),
+        );
 
         await ctx.reply(details, {
           reply_markup: keyboard,

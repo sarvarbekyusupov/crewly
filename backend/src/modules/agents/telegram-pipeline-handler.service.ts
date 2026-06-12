@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { I18nService } from 'nestjs-i18n';
 import { TelegramBotService } from '../../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUES } from '../../workers/queue-names';
@@ -13,6 +15,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
   constructor(
     private readonly telegram: TelegramBotService,
     private readonly db: PrismaService,
+    private readonly i18n: I18nService,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
 
@@ -42,7 +45,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
         await this.telegram.editMessage(
           chatId,
           messageId,
-          '✅ Одобрено: Кандидат отправлен на AI-интервью.',
+          this.i18n.t('bot.approved_for_screening', { lang: 'ru' }),
         );
       } else if (action === 'rej_app') {
         await this.db.application.update({
@@ -55,9 +58,81 @@ export class TelegramPipelineHandler implements OnModuleInit {
         await this.telegram.editMessage(
           chatId,
           messageId,
-          '❌ Пропущено: Кандидат отклонен.',
+          this.i18n.t('bot.rejected_candidate', { lang: 'ru' }),
         );
       }
     });
+  }
+
+  @OnEvent('candidate.notification')
+  async handleCandidateNotification(event: {
+    candidateId: string;
+    applicationId: string;
+    type: 'interview_scheduled' | 'offered' | 'rejected' | 'hired';
+  }) {
+    try {
+      const app = await this.db.application.findUnique({
+        where: { id: event.applicationId },
+        include: {
+          candidate: { select: { telegramUserId: true } },
+          job: {
+            select: {
+              title: true,
+              company: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      if (!app?.candidate?.telegramUserId) return;
+
+      const chatId = app.candidate.telegramUserId.toString();
+      const lang = 'ru';
+      const job = app.job.title;
+      const company = app.job.company.name;
+
+      let message: string;
+      switch (event.type) {
+        case 'interview_scheduled':
+          message = this.i18n.t('bot.notify_interview', {
+            lang,
+            args: { job, company },
+          });
+          break;
+        case 'offered':
+          message = this.i18n.t('bot.notify_offer', {
+            lang,
+            args: { job, company },
+          });
+          break;
+        case 'rejected':
+          message = this.i18n.t('bot.notify_rejected', {
+            lang,
+            args: { job, company },
+          });
+          break;
+        case 'hired':
+          message = this.i18n.t('bot.notify_hired', {
+            lang,
+            args: { company },
+          });
+          break;
+        default:
+          return;
+      }
+
+      await this.telegram.sendMessage(chatId, message, {
+        parseMode: 'Markdown',
+      });
+    } catch (err: any) {
+      this.logger.error(
+        {
+          applicationId: event.applicationId,
+          type: event.type,
+          error: err.message,
+        },
+        'Failed to send candidate Telegram notification',
+      );
+    }
   }
 }

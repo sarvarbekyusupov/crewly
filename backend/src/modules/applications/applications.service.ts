@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from '../../integrations/storage/s3.service';
 import { EmailService } from '../../integrations/email/email.service';
@@ -22,6 +23,7 @@ export class ApplicationsService {
     private readonly s3: S3Service,
     private readonly email: EmailService,
     private readonly debriefAgent: DebriefAgent,
+    private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
 
@@ -130,6 +132,11 @@ export class ApplicationsService {
           ),
         );
     }
+    this.emitter.emit('candidate.notification', {
+      candidateId: app.candidateId,
+      applicationId: id,
+      type: 'interview_scheduled',
+    });
     return updated;
   }
 
@@ -172,6 +179,11 @@ export class ApplicationsService {
           ),
         );
     }
+    this.emitter.emit('candidate.notification', {
+      candidateId: app.candidateId,
+      applicationId: id,
+      type: 'rejected',
+    });
     return updated;
   }
 
@@ -224,6 +236,11 @@ export class ApplicationsService {
         })
         .catch(() => {});
     }
+    this.emitter.emit('candidate.notification', {
+      candidateId: app.candidateId,
+      applicationId: id,
+      type: 'offered',
+    });
     return updated;
   }
 
@@ -339,6 +356,12 @@ export class ApplicationsService {
         })
         .catch(() => {});
     }
+
+    this.emitter.emit('candidate.notification', {
+      candidateId: app.candidateId,
+      applicationId: id,
+      type: 'hired',
+    });
 
     return placement.pl;
   }
