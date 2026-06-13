@@ -30,11 +30,8 @@ onMounted(() => {
         </div>
         <h1>Hire the right people,<br />without the search.</h1>
         <p class="hero-sub">
-          Tell us the role — seniority, skills, compensation, and what great looks like. Our AI
-          sources candidates from your internal network, our pre-screened pool, and the open web,
-          then handles outreach and screening in parallel. You get a ranked shortlist with match
-          scores and screening notes, typically within 3–5 business days. No recruiter retainers, no
-          job board subscriptions, no CV stacks to review.
+          Tell us the role. Our AI sources candidates, runs outreach, and screens them — you spend
+          time only with people worth meeting.
         </p>
         <form id="waitlist" class="hero-form" @submit.prevent>
           <LandingWaitlistForm audience="employer" />
@@ -51,11 +48,8 @@ onMounted(() => {
         </div>
         <h1>The right companies are already looking for you.</h1>
         <p class="hero-sub">
-          Tell us what you're looking for — role type, salary range, location preference, and what
-          the right company looks like to you. We match your profile against active openings at
-          companies across Uzbekistan, Central Asia, and remote-first teams worldwide, then reach
-          out only when there's a strong fit. No job board scrolling, no mass applications, no
-          ghosting from recruiters.
+          Tell us what you're looking for. We surface you to top companies hiring your exact profile
+          — no spam, no cold applications, no job boards.
         </p>
         <form id="waitlist" class="hero-form" @submit.prevent>
           <LandingWaitlistForm audience="candidate" />
