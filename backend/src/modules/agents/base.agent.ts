@@ -28,15 +28,18 @@ export abstract class BaseAgent {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     opts: RunOptions = {},
     ctx: PromptContext = {},
+    version = '1.0',
   ) {
     return this.llm.run(
-      this.metadata.name,
-      '1.0',
+      `${this.metadata.name}:${purpose}`,
+      version,
       purpose,
       messages,
       {
         ...opts,
-        system: this.constructSystemPrompt(opts.system),
+        system: opts.skipAgentIdentity
+          ? (opts.system ?? '')
+          : this.constructSystemPrompt(opts.system),
       },
       {
         ...ctx,
@@ -46,6 +49,10 @@ export abstract class BaseAgent {
   }
 
   protected constructSystemPrompt(extraSystem?: string): string {
-    return `You are ${this.metadata.name}, ${this.metadata.role}. ${this.metadata.goal}${extraSystem ? '\n' + extraSystem : ''}`;
+    const base = `You are ${this.metadata.name}, ${this.metadata.role}. ${this.metadata.goal}`;
+    const backstory = this.metadata.backstory
+      ? `\n${this.metadata.backstory}`
+      : '';
+    return `${base}${backstory}${extraSystem ? '\n' + extraSystem : ''}`;
   }
 }

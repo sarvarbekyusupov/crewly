@@ -50,6 +50,24 @@ Return ONLY valid JSON matching this structure:
   "soft_skills": ["..."]
 }`;
 
+function sanitizeField(text: string | undefined | null, max = 120): string {
+  if (!text) return '';
+  return text.replace(/[\n\r<>{}]/g, ' ').slice(0, max).trim();
+}
+
+function sanitizeBlock(text: string | undefined | null, max: number): string {
+  if (!text) return '';
+  return text.replace(/[<>{}]/g, ' ').slice(0, max);
+}
+
+export function matchmakerParseResumeContent(rawText: string): string {
+  return `Resume:\n${sanitizeBlock(rawText, 8000)}`;
+}
+
+export function matchmakerParseJobContent(title: string, description: string): string {
+  return `Job Title: ${sanitizeField(title, 200)}\n\nDescription:\n${sanitizeBlock(description, 5000)}`;
+}
+
 export function matchmakerRankCandidatesPrompt(
   job: {
     title: string;
@@ -68,16 +86,16 @@ export function matchmakerRankCandidatesPrompt(
 ): string {
   return `Rank these candidates for the job.
 
-Job: ${job.title}
-Required skills: ${job.requiredSkills.join(', ')}
+Job: ${sanitizeField(job.title)}
+Required skills: ${job.requiredSkills.slice(0, 15).map((s) => sanitizeField(s, 60)).join(', ')}
 Min experience: ${job.minExperienceYears ?? 'N/A'} years
 
-${job.hiringManagerFeedbackContext ? `IMPORTANT HIRING MANAGER PREFERENCES (Learn from these!):\n<preferences>\n${job.hiringManagerFeedbackContext}\n</preferences>\n` : ''}
+${job.hiringManagerFeedbackContext ? `IMPORTANT HIRING MANAGER PREFERENCES (Learn from these!):\n<preferences>\n${sanitizeBlock(job.hiringManagerFeedbackContext, 2000)}\n</preferences>\n` : ''}
 Candidates:
-${candidates.map((c, i) => `${i + 1}. [ID:${c.id}] ${c.fullName} | ${c.currentPosition} | ${c.yearsExperience}yr | Skills: ${c.skills.slice(0, 8).join(', ')}`).join('\n')}
+${candidates.map((c, i) => `${i + 1}. [ID:${c.id}] ${sanitizeField(c.fullName)} | ${sanitizeField(c.currentPosition)} | ${c.yearsExperience}yr | Skills: ${c.skills.slice(0, 8).map((s) => sanitizeField(s, 40)).join(', ')}`).join('\n')}
 
-Return a JSON array of the top ${targetCount} candidates. Use exactly this shape:
-[{"id": "...", "score": 85, "strengths": ["..."], "gaps": ["..."], "notes": "...", "recommendation": "strong fit"}]
+Return a JSON object with key "results" containing the top ${targetCount} candidates:
+{"results": [{"id": "...", "score": 85, "strengths": ["..."], "gaps": ["..."], "notes": "...", "recommendation": "strong fit"}]}
 
 recommendation must be one of: "strong fit", "good fit", "possible fit", "weak fit".`;
 }
@@ -101,12 +119,12 @@ export function matchmakerScoreSeekerJobsPrompt(
   }>,
 ): string {
   const candidateSummary = [
-    `Name: ${candidate.fullName ?? 'Unknown'}`,
-    `Role: ${candidate.currentPosition ?? 'Not specified'}`,
+    `Name: ${sanitizeField(candidate.fullName)}`,
+    `Role: ${sanitizeField(candidate.currentPosition)}`,
     `Experience: ${candidate.yearsExperience ?? '?'} years`,
-    `Location: ${candidate.city ?? 'Not specified'}`,
-    `Preferred mode: ${candidate.preferredWorkMode ?? 'any'}`,
-    `Skills: ${(candidate.skills ?? []).join(', ') || 'None listed'}`,
+    `Location: ${sanitizeField(candidate.city)}`,
+    `Preferred mode: ${sanitizeField(candidate.preferredWorkMode)}`,
+    `Skills: ${(candidate.skills ?? []).map((s) => sanitizeField(s, 40)).join(', ') || 'None listed'}`,
   ].join('\n');
 
   return `Score each job listing for this candidate (0-100) and explain why.
@@ -118,16 +136,16 @@ JOBS TO SCORE:
 ${jobs
   .map(
     (j, idx) => `
-[${idx}] ${j.title} at ${j.company}
-Location: ${j.location ?? 'unspecified'} | Mode: ${j.workMode ?? 'unspecified'}
-Required skills: ${j.skills.slice(0, 8).join(', ') || 'not specified'}
-${j.description ? `Description: ${j.description.slice(0, 300)}` : ''}
+[${idx}] ${sanitizeField(j.title)} at ${sanitizeField(j.company)}
+Location: ${sanitizeField(j.location ?? 'unspecified')} | Mode: ${sanitizeField(j.workMode ?? 'unspecified')}
+Required skills: ${j.skills.slice(0, 8).map((s) => sanitizeField(s, 40)).join(', ') || 'not specified'}
+${j.description ? `Description: ${sanitizeBlock(j.description, 300)}` : ''}
 `,
   )
   .join('\n')}
 
-Return a JSON array with exactly ${jobs.length} objects in the same order:
-[{"score": 85, "explanation": "one sentence why", "strengths": ["skill A matches", "..."], "gaps": ["missing X", "..."]}]
+Return a JSON object with key "results" containing exactly ${jobs.length} objects. Include the original index:
+{"results": [{"index": 0, "score": 85, "explanation": "one sentence why", "strengths": ["skill A matches", "..."], "gaps": ["missing X", "..."]}]}
 
-score: 0-100 integer. explanation: 1 sentence. strengths/gaps: max 3 items each.`;
+index: must match the [N] from the job list. score: 0-100 integer. explanation: 1 sentence. strengths/gaps: max 3 items each.`;
 }

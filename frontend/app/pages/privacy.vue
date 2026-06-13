@@ -22,6 +22,7 @@ useHead({
       content: 'Learn how Crewly collects, uses, and protects your personal data.',
     },
     { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:url', content: 'https://crewly.uz/privacy' },
     { name: 'twitter:title', content: 'Privacy Policy | Crewly' },
     {
       name: 'twitter:description',

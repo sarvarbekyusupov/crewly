@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { HH_BASE_URL } from './hh.constants';
 
 export interface HhSuggestItem {
   id: string;
@@ -11,7 +12,8 @@ export interface HhSuggestItem {
 
 @Injectable()
 export class HhSuggestsService {
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly logger = new Logger(HhSuggestsService.name);
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,

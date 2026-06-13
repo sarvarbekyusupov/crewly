@@ -13,7 +13,6 @@ useFadeIn()
 
 useHead({
   title: 'Hire the right people, faster',
-  link: [{ rel: 'canonical', href: 'https://crewly.uz/' }],
   meta: [
     {
       name: 'description',
@@ -22,7 +21,6 @@ useHead({
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://crewly.uz/' },
     { property: 'og:title', content: 'Hire the right people, faster | Crewly' },
     {
       property: 'og:description',
@@ -31,7 +29,6 @@ useHead({
     },
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:url', content: 'https://crewly.uz/' },
     { name: 'twitter:title', content: 'Hire the right people, faster | Crewly' },
     {
       name: 'twitter:description',
@@ -44,13 +41,37 @@ useHead({
       type: 'application/ld+json',
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        '@id': 'https://crewly.uz/#website',
+        url: 'https://crewly.uz/',
+        name: 'Crewly',
+        publisher: { '@id': 'https://crewly.uz/#organization' },
+      }),
+    },
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
         '@graph': [
           {
             '@type': 'Organization',
             '@id': 'https://crewly.uz/#organization',
             name: 'Crewly',
             url: 'https://crewly.uz/',
+            description:
+              'AI-native recruiting platform that sources, screens, and shortlists candidates. Pay 15% of first-year salary only on a successful hire.',
             logo: 'https://crewly.uz/app-icon-512.png',
+            email: 'hello@crewly.uz',
+            address: {
+              '@type': 'PostalAddress',
+              addressCountry: 'UZ',
+              addressLocality: 'Tashkent',
+            },
+            contactPoint: {
+              '@type': 'ContactPoint',
+              contactType: 'customer support',
+              email: 'hello@crewly.uz',
+            },
             sameAs: [
               'https://twitter.com/crewly_recruiter',
               'https://www.linkedin.com/company/crewly-recruiting',
@@ -141,6 +162,7 @@ onUnmounted(() => heroObs?.disconnect())
       <LandingHero audience="employer" />
     </div>
     <LandingHowItWorks audience="employer" />
+    <LandingWhy audience="employer" />
     <LandingFinalCta audience="employer" />
     <LandingFaq audience="employer" />
 

@@ -25,13 +25,20 @@ const schemaEmploymentTypeMap: Record<string, string> = {
   INTERN: 'INTERN',
 }
 
+function jobDescription() {
+  const raw = job.value.description ?? ''
+  const base = `${job.value.title} at ${job.value.company.name}${job.value.officeLocation ? ` · ${job.value.officeLocation}` : ''}. `
+  const body = raw.replace(/\s+/g, ' ').trim()
+  const combined = base + body
+  return combined.length > 155 ? combined.slice(0, 152) + '…' : combined
+}
+
 useSeoMeta({
   title: () => `${job.value.title} at ${job.value.company.name}`,
   ogTitle: () => `${job.value.title} at ${job.value.company.name} - Crewly`,
-  description: () =>
-    `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,
-  ogDescription: () =>
-    `Apply for the ${job.value.title} position at ${job.value.company.name}. Learn more about requirements, salary, and benefits.`,
+  description: jobDescription,
+  ogDescription: jobDescription,
+  ogType: 'website',
   twitterCard: 'summary_large_image',
 })
 
@@ -68,6 +75,11 @@ useHead(() => ({
         title: job.value.title,
         description: job.value.description,
         datePosted: job.value.createdAt,
+        validThrough:
+          job.value.closedAt ??
+          new Date(
+            new Date(job.value.createdAt).getTime() + 90 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         employmentType: schemaEmploymentTypeMap[job.value.employmentType] ?? undefined,
         directApply: true,
         url: `https://crewly.uz/jobs/${job.value.id}`,
@@ -75,7 +87,14 @@ useHead(() => ({
           '@type': 'Organization',
           name: job.value.company.name,
           ...(job.value.company.website ? { url: job.value.company.website } : {}),
+          ...(job.value.company.logo ? { logo: job.value.company.logo } : {}),
         },
+        ...(job.value.workMode === 'REMOTE'
+          ? {
+              jobLocationType: 'TELECOMMUTE',
+              applicantLocationRequirements: { '@type': 'Country', name: 'UZ' },
+            }
+          : {}),
         ...(job.value.officeLocation
           ? {
               jobLocation: {

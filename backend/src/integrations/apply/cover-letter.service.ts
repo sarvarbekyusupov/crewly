@@ -20,21 +20,35 @@ export class CoverLetterService {
 
   constructor(private readonly llm: PromptRunnerService) {}
 
+  private sanitize(text: string | undefined | null, max = 200): string {
+    if (!text) return '';
+    return text
+      .replace(/[\n\r<>{}]/g, ' ')
+      .slice(0, max)
+      .trim();
+  }
+
   async generate(input: CoverLetterInput): Promise<string> {
     const prompt = `Write a concise, professional cover letter (max 200 words) for this job application.
 
 Candidate:
-- Name: ${input.candidateName}
-- Current role: ${input.currentPosition ?? 'Not specified'}
-- Experience: ${input.yearsExperience ?? 'Not specified'} years
-- Location: ${input.city ?? 'Not specified'}
-- Skills: ${input.skills.slice(0, 10).join(', ')}
+- Name: ${this.sanitize(input.candidateName)}
+- Current role: ${this.sanitize(input.currentPosition) || 'Not specified'}
+- Experience: ${this.sanitize(input.yearsExperience) || 'Not specified'} years
+- Location: ${this.sanitize(input.city) || 'Not specified'}
+- Skills: ${input.skills
+      .slice(0, 10)
+      .map((s) => this.sanitize(s, 60))
+      .join(', ')}
 
 Job:
-- Title: ${input.jobTitle}
-- Company: ${input.company}
-- Required skills: ${input.jobSkills.slice(0, 8).join(', ')}
-${input.jobDescription ? `- Description excerpt: ${input.jobDescription.slice(0, 500)}` : ''}
+- Title: ${this.sanitize(input.jobTitle)}
+- Company: ${this.sanitize(input.company)}
+- Required skills: ${input.jobSkills
+      .slice(0, 8)
+      .map((s) => this.sanitize(s, 60))
+      .join(', ')}
+${input.jobDescription ? `- Description excerpt: ${this.sanitize(input.jobDescription, 500)}` : ''}
 
 Write the cover letter body only (no "Dear Hiring Manager" header, no date). Keep it natural, specific, and under 200 words. Mention 2-3 relevant skills. Do not invent experience not in the profile.`;
 

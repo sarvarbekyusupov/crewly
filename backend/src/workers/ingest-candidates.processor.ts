@@ -3,7 +3,6 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
-import { SourcingAgent } from '../modules/agents/sourcing.agent';
 import { HhAdapter } from '../integrations/hh/hh.adapter';
 import { LinkedInAdapter } from '../integrations/linkedin/linkedin-client.service';
 import { AdapterIngestService } from '../integrations/adapters/adapter-ingest.service';
@@ -25,7 +24,6 @@ export class IngestCandidatesProcessor {
 
   constructor(
     private readonly db: PrismaService,
-    private readonly agent: SourcingAgent,
     private readonly hhAdapter: HhAdapter,
     private readonly linkedinAdapter: LinkedInAdapter,
     private readonly adapterIngest: AdapterIngestService,
@@ -43,9 +41,6 @@ export class IngestCandidatesProcessor {
       job.data;
 
     const adapter = this.getAdapter(source);
-
-    // If it's a manual or job-linked run without queries, SourcingAgent could help (Future expansion)
-    // For now, we use the provided data
 
     const sourceRecord = await this.db.candidateSource.findUnique({
       where: { name: source },

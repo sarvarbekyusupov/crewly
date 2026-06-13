@@ -3,6 +3,16 @@ import { BaseAgent } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { outreachFallback, outreachPersonalizedPrompt } from '@crewly/prompts';
 
+function stripPreamble(text: string): string {
+  // Remove common LLM meta-commentary prefixes before the actual message
+  return text
+    .replace(
+      /^(here is|here's|below is|вот|вот сообщение|сообщение)[^\n]*\n+/i,
+      '',
+    )
+    .trim();
+}
+
 @Injectable()
 export class OutreachAgent extends BaseAgent {
   constructor(llm: PromptRunnerService) {
@@ -31,6 +41,8 @@ export class OutreachAgent extends BaseAgent {
     },
     matchAnalysis?: Record<string, unknown>,
     applicationId?: string,
+    companyId?: string,
+    jobId?: string,
   ): Promise<string> {
     const fallback = outreachFallback(candidate.name, job.title);
     const prompt = outreachPersonalizedPrompt(candidate, job, matchAnalysis);
@@ -40,15 +52,19 @@ export class OutreachAgent extends BaseAgent {
         'hyper_personalized_outreach',
         [{ role: 'user', content: prompt }],
         { maxTokens: 400, temperature: 0.7 },
-        applicationId
-          ? {
-              related_entity_type: 'application',
-              related_entity_id: applicationId,
-            }
-          : {},
+        {
+          ...(applicationId
+            ? {
+                related_entity_type: 'application',
+                related_entity_id: applicationId,
+              }
+            : {}),
+          ...(companyId ? { company_id: companyId } : {}),
+          ...(jobId ? { job_id: jobId } : {}),
+        },
       );
 
-      return output.trim() || fallback;
+      return stripPreamble(output) || fallback;
     } catch {
       return fallback;
     }

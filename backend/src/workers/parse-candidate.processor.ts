@@ -109,6 +109,7 @@ export class ParseCandidateProcessor {
         parsed.full_name || candidate.fullName || '',
         parsed.positions?.[0]?.company,
         skills,
+        candidateId,
       );
     } catch (err: any) {
       this.logger.warn(

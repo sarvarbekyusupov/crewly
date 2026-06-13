@@ -1,19 +1,6 @@
-export function sourcingCandidateSearchQueriesPrompt(job: {
-  title: string;
-  requiredSkills: string[];
-  minExperienceYears?: number;
-}): string {
-  return `Formulate search queries for finding candidates for this job.
-Job: ${job.title}
-Skills: ${job.requiredSkills.join(', ')}
-Min Exp: ${job.minExperienceYears ?? 'N/A'} years
-
-Return a JSON object:
-{
-  "hh_query": "search query for hh.ru Text search",
-  "linkedin_keywords": "keywords for LinkedIn profile search",
-  "specialization_hints": ["relevant HH specialization IDs or names"]
-}`;
+function sanitize(text: string | undefined | null, max = 120): string {
+  if (!text) return '';
+  return text.replace(/[\n\r<>{}]/g, ' ').slice(0, max).trim();
 }
 
 export function sourcingJobSearchQueriesPrompt(seeker: {
@@ -22,8 +9,8 @@ export function sourcingJobSearchQueriesPrompt(seeker: {
   yearsExperience: number;
 }): string {
   return `Formulate a job search query for this candidate.
-Position: ${seeker.currentPosition}
-Skills: ${seeker.skills.join(', ')}
+Position: ${sanitize(seeker.currentPosition)}
+Skills: ${seeker.skills.slice(0, 15).map((s) => sanitize(s, 60)).join(', ')}
 Exp: ${seeker.yearsExperience} years
 
 Return a JSON object:
@@ -31,6 +18,15 @@ Return a JSON object:
   "query": "concise search query for job boards",
   "location_hints": "optional location string"
 }`;
+}
+
+function sanitizeExternal(text: string, max: number): string {
+  return text.replace(/[\n\r<>{}]/g, ' ').slice(0, max).trim();
+}
+
+function sanitizeBlock(text: string | undefined | null, max: number): string {
+  if (!text) return '';
+  return text.replace(/[<>{}]/g, ' ').slice(0, max);
 }
 
 export function sourcingEnrichCandidatePrompt(
@@ -45,7 +41,7 @@ Company: ${currentCompany || 'N/A'}
 Skills: ${skills.join(', ')}
 
 Search Results:
-${searchResults.map((r, i) => `[${i}] ${r.title} (${r.url})\n${r.content.slice(0, 300)}`).join('\n\n')}
+${searchResults.map((r, i) => `[${i}] ${sanitizeExternal(r.title, 120)} (${sanitizeExternal(r.url, 200)})\n${sanitizeExternal(r.content, 300)}`).join('\n\n')}
 
 Return a JSON object:
 {
@@ -65,9 +61,9 @@ export function sourcingDraftStrategyPrompt(job: {
   requiredSkills: string[];
 }): string {
   return `Draft a high-level sourcing strategy for this job.
-Job: ${job.title}
-Skills: ${job.requiredSkills.join(', ')}
-Description: ${job.description.slice(0, 2000)}
+Job: ${sanitize(job.title)}
+Skills: ${job.requiredSkills.slice(0, 15).map((s) => sanitize(s, 60)).join(', ')}
+Description: ${sanitizeBlock(job.description, 2000)}
 
 GOAL:
 Provide a strategic memo on how to find the top 1% of talent for this role.

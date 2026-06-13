@@ -3,24 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
-import { HhClientService } from './hh-client.service';
-
-const HH_EMPLOYER_STATE_MAP: Record<string, string> = {
-  consideration: 'outreach_sent',
-  invitation: 'screening_passed',
-  interview: 'interviewed',
-  offer: 'offer_made',
-  hired: 'hired',
-  discard: 'rejected',
-};
-
-const HH_SEEKER_STATE_MAP: Record<string, string> = {
-  response: 'applied',
-  invitation: 'interview',
-  discard: 'rejected',
-  discard_after_interview: 'rejected',
-  offer: 'offer',
-};
+import { HhCandidateService } from './hh-candidate.service';
+import {
+  HH_BASE_URL,
+  HH_EMPLOYER_STATE_MAP,
+  HH_SEEKER_STATE_MAP,
+} from './hh.constants';
 
 export interface HhWebhookPayload {
   type: string;
@@ -37,13 +25,13 @@ const SUBSCRIBED_TYPES = ['NEW_NEGOTIATION', 'NEGOTIATION_STATE_CHANGE'];
 @Injectable()
 export class HhWebhookService implements OnModuleInit {
   private readonly logger = new Logger(HhWebhookService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
     private readonly db: PrismaService,
-    private readonly hhClient: HhClientService,
+    private readonly hhCandidate: HhCandidateService,
   ) {}
 
   async onModuleInit() {
@@ -87,15 +75,22 @@ export class HhWebhookService implements OnModuleInit {
     _token: string,
   ): Promise<void> {
     const existing = await firstValueFrom(
-      this.http.get<{ items: Array<{ id: string; url: string }> }>(
-        `${this.baseUrl}/webhook/subscriptions`,
-        { headers: this.authHeaders },
-      ),
+      this.http.get<{
+        items: Array<{ id: string; url: string; types?: string[] }>;
+      }>(`${this.baseUrl}/webhook/subscriptions`, {
+        headers: this.authHeaders,
+      }),
     );
 
-    const alreadySubscribed = existing.data.items?.some(
-      (s) => s.url === webhookUrl,
-    );
+    const subscribedSet = new Set(SUBSCRIBED_TYPES);
+    const alreadySubscribed = existing.data.items?.some((s) => {
+      if (s.url !== webhookUrl) return false;
+      const existing = new Set(s.types ?? []);
+      return (
+        subscribedSet.size === existing.size &&
+        [...subscribedSet].every((t) => existing.has(t))
+      );
+    });
 
     if (alreadySubscribed) {
       this.logger.log({ webhookUrl }, 'HH webhook subscription already active');
@@ -117,6 +112,16 @@ export class HhWebhookService implements OnModuleInit {
   }
 
   async handleEvent(payload: HhWebhookPayload): Promise<void> {
+    // Replay protection: reject events older than 1 hour
+    const ageMs = Date.now() - new Date(payload.created_at).getTime();
+    if (ageMs > 60 * 60 * 1000) {
+      this.logger.warn(
+        { type: payload.type, created_at: payload.created_at, ageMs },
+        'HH webhook event too old — possible replay, skipping',
+      );
+      return;
+    }
+
     switch (payload.type) {
       case 'NEW_NEGOTIATION':
         await this.handleNewNegotiation(payload);
@@ -154,36 +159,15 @@ export class HhWebhookService implements OnModuleInit {
       return;
     }
 
-    let candidate = await this.db.candidate.findFirst({
-      where: { externalId: resumeId },
-      select: { id: true },
-    });
-
-    if (!candidate) {
-      try {
-        const resume = await this.hhClient.getResume(resumeId);
-        const fullName =
-          [resume.first_name, resume.last_name].filter(Boolean).join(' ') ||
-          null;
-        candidate = await this.db.candidate.create({
-          data: {
-            externalId: resumeId,
-            fullName,
-            currentPosition: resume.title,
-            skills: resume.skill_set ?? [],
-            yearsExperience: resume.total_experience
-              ? Math.round(resume.total_experience.months / 12)
-              : undefined,
-          },
-          select: { id: true },
-        });
-      } catch (err: any) {
-        this.logger.warn(
-          { resumeId, err: err.message },
-          'Resume fetch failed — skipping NEW_NEGOTIATION',
-        );
-        return;
-      }
+    let candidate: { id: string };
+    try {
+      candidate = await this.hhCandidate.findOrCreate(resumeId);
+    } catch (err: any) {
+      this.logger.warn(
+        { resumeId, err: err.message },
+        'Resume fetch failed — skipping NEW_NEGOTIATION',
+      );
+      return;
     }
 
     await this.db.application.upsert({
@@ -197,7 +181,7 @@ export class HhWebhookService implements OnModuleInit {
         status: 'applied',
         hhNegotiationId: negotiationId,
       },
-      update: { hhNegotiationId: negotiationId },
+      update: {},
       select: { id: true },
     });
 

@@ -48,6 +48,8 @@ export class DebriefAgent extends BaseAgent {
       rawFeedback: string;
       decision: 'hired' | 'rejected_by_client' | 'interviewed';
     },
+    companyId?: string,
+    jobId?: string,
   ): Promise<string> {
     const prompt = debriefSynthesizeFeedbackPrompt(
       jobTitle,
@@ -59,6 +61,10 @@ export class DebriefAgent extends BaseAgent {
       'feedback_synthesis',
       [{ role: 'user', content: prompt }],
       { maxTokens: 700, temperature: 0.3 },
+      {
+        ...(companyId ? { company_id: companyId } : {}),
+        ...(jobId ? { job_id: jobId } : {}),
+      },
     );
 
     return output.trim().slice(0, 1000);
@@ -70,6 +76,8 @@ export class DebriefAgent extends BaseAgent {
     aiScreeningAssessment: any | null,
     transcript: string,
     applicationId?: string,
+    companyId?: string,
+    jobId?: string,
   ): Promise<{
     sentiment: 'positive' | 'neutral' | 'negative';
     summary: string;
@@ -102,12 +110,16 @@ export class DebriefAgent extends BaseAgent {
         temperature: 0.2,
         responseFormat: { type: 'json_object' },
       },
-      applicationId
-        ? {
-            related_entity_type: 'application',
-            related_entity_id: applicationId,
-          }
-        : {},
+      {
+        ...(applicationId
+          ? {
+              related_entity_type: 'application',
+              related_entity_id: applicationId,
+            }
+          : {}),
+        ...(companyId ? { company_id: companyId } : {}),
+        ...(jobId ? { job_id: jobId } : {}),
+      },
     );
 
     try {

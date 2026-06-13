@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Langfuse } from 'langfuse';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CostCalculatorService } from './cost-calculator.service';
+import { LlmProvider } from './providers/llm-provider.interface';
 import { GroqProvider } from './providers/groq.provider';
 import { AnthropicProvider } from './providers/anthropic.provider';
 import { BedrockProvider } from './providers/bedrock.provider';
@@ -24,28 +25,30 @@ export interface RunOptions {
   maxTokens?: number;
   temperature?: number;
   responseFormat?: { type: 'json_object' };
+  /** Skip prepending agent identity — use for structured extraction tasks */
+  skipAgentIdentity?: boolean;
 }
 
 const LLM_TIMEOUT_MS = 90_000;
 
-function withLlmTimeout<T>(promise: Promise<T>): Promise<T> {
+function withLlmTimeout<T>(
+  factory: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout>;
   return Promise.race([
-    promise,
+    factory(controller.signal),
     new Promise<T>((_, reject) => {
-      timer = setTimeout(
-        () =>
-          reject(
-            new Error(`LLM call timed out after ${LLM_TIMEOUT_MS / 1000}s`),
-          ),
-        LLM_TIMEOUT_MS,
-      );
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`LLM call timed out after ${LLM_TIMEOUT_MS / 1000}s`));
+      }, LLM_TIMEOUT_MS);
     }),
   ]).finally(() => clearTimeout(timer));
 }
 
 @Injectable()
-export class PromptRunnerService {
+export class PromptRunnerService implements OnModuleDestroy {
   private readonly logger = new Logger(PromptRunnerService.name);
   private readonly openai: OpenAI | null;
   private readonly groq: GroqProvider;
@@ -122,10 +125,13 @@ export class PromptRunnerService {
     let outputText: string | undefined;
     let error: string | undefined;
     let providerUsed = 'unknown';
+    let effectiveModel = modelName;
     let rawResponse: unknown;
     let inputTokens = 0;
     let outputTokens = 0;
     let totalTokens = 0;
+    let cacheReadTokens = 0;
+    let cacheCreationTokens = 0;
     let finishReason: string | null = null;
     let callId = 'unlogged';
 
@@ -136,10 +142,11 @@ export class PromptRunnerService {
     if (this.langfuse) {
       lfTrace = this.langfuse.trace({
         name: promptName,
-        userId: ctx.company_id || undefined,
+        sessionId: ctx.company_id || undefined,
         metadata: {
           purpose,
           promptVersion,
+          companyId: ctx.company_id,
           relatedEntityType: ctx.related_entity_type,
           relatedEntityId: ctx.related_entity_id,
           agentName: ctx.agent_name,
@@ -150,38 +157,21 @@ export class PromptRunnerService {
       lfGeneration = lfTrace.generation({
         name: purpose,
         model: modelName,
-        modelParameters: {
-          temperature,
-          maxTokens,
-        },
-        input: messages as any,
+        modelParameters: { temperature, maxTokens },
+        input: {
+          system: opts.system ? opts.system.slice(0, 1000) : undefined,
+          messages: messages.map((m) => ({
+            role: m.role,
+            content:
+              m.content.length > 2000
+                ? m.content.slice(0, 2000) + '…[truncated]'
+                : m.content,
+          })),
+        } as any,
       });
     }
 
     try {
-      // Select provider: explicit opt-in, or Groq first, Anthropic/Bedrock as fallback
-      const preferredProvider = opts.provider ?? 'groq';
-      const providerMap = {
-        groq: this.groq,
-        anthropic: this.anthropic,
-        bedrock: this.bedrock,
-      };
-      const primary = providerMap[preferredProvider] ?? this.groq;
-      const fallback =
-        preferredProvider === 'anthropic'
-          ? this.groq
-          : preferredProvider === 'bedrock'
-            ? this.groq
-            : this.anthropic.isAvailable()
-              ? this.anthropic
-              : this.bedrock;
-
-      if (!primary.isAvailable() && !fallback.isAvailable()) {
-        throw new Error(
-          'No LLM provider available — configure GROQ_API_KEY, ANTHROPIC_API_KEY, or AWS_BEARER_TOKEN_BEDROCK',
-        );
-      }
-
       const callOpts = {
         model: modelName,
         system: opts.system,
@@ -190,41 +180,82 @@ export class PromptRunnerService {
         responseFormat: opts.responseFormat,
       };
 
-      let result;
-      if (primary.isAvailable()) {
-        try {
-          result = await withLlmTimeout(primary.complete(messages, callOpts));
-          providerUsed = primary.name;
-        } catch (primaryErr: any) {
-          // Only fall back on retriable errors (rate limit, 5xx); rethrow non-retriable
-          if (
-            primaryErr.message?.includes('non-retriable') ||
-            primaryErr.name === 'NonRetryableError'
-          ) {
-            throw primaryErr;
-          }
-          this.logger.warn(
-            { promptName, provider: primary.name, err: primaryErr.message },
-            `${primary.name} failed, trying ${fallback.name}`,
-          );
-          if (!fallback.isAvailable()) throw primaryErr;
-          result = await withLlmTimeout(fallback.complete(messages, callOpts));
-          providerUsed = fallback.name;
-        }
-      } else {
-        result = await withLlmTimeout(fallback.complete(messages, callOpts));
-        providerUsed = fallback.name;
+      // Build ordered provider list: preferred first, then remaining in default order
+      const preferredName = opts.provider ?? 'groq';
+      const allProviders: LlmProvider[] = [
+        this.groq,
+        this.anthropic,
+        this.bedrock,
+      ];
+      const ordered = [
+        ...allProviders.filter((p) => p.name === preferredName),
+        ...allProviders.filter((p) => p.name !== preferredName),
+      ].filter((p) => p.isAvailable());
+
+      if (ordered.length === 0) {
+        throw new Error(
+          'No LLM provider available — configure GROQ_API_KEY, ANTHROPIC_API_KEY, or AWS_BEARER_TOKEN_BEDROCK',
+        );
       }
 
+      let result;
+      let lastErr: Error | undefined;
+      const qualityPinned =
+        opts.provider === 'anthropic' || opts.provider === 'bedrock';
+
+      for (let i = 0; i < ordered.length; i++) {
+        const provider = ordered[i];
+        try {
+          result = await withLlmTimeout((signal) =>
+            provider.complete(messages, { ...callOpts, signal }),
+          );
+          providerUsed = provider.name;
+          break;
+        } catch (err: any) {
+          if (
+            err.message?.includes('non-retriable') ||
+            err.name === 'NonRetryableError'
+          ) {
+            throw err;
+          }
+          lastErr = err;
+          const next = ordered[i + 1];
+          if (next) {
+            if (qualityPinned && i === 0) {
+              this.logger.error(
+                {
+                  promptName,
+                  provider: provider.name,
+                  next: next.name,
+                  err: err.message,
+                },
+                `Quality-pinned provider ${provider.name} failed — trying ${next.name}; output quality may be degraded`,
+              );
+            } else {
+              this.logger.warn(
+                { promptName, provider: provider.name, err: err.message },
+                `${provider.name} failed, trying ${next.name}`,
+              );
+            }
+          }
+        }
+      }
+
+      if (!result) throw lastErr!;
+
       outputText = result.output;
+      effectiveModel = result.actualModel;
       inputTokens = result.inputTokens;
       outputTokens = result.outputTokens;
       totalTokens = result.totalTokens;
+      cacheReadTokens = result.cacheReadTokens ?? 0;
+      cacheCreationTokens = result.cacheCreationTokens ?? 0;
       finishReason = result.finishReason;
       rawResponse = result.rawResponse;
 
       if (lfGeneration) {
         lfGeneration.update({
+          model: effectiveModel,
           output: outputText,
           usage: {
             promptTokens: inputTokens,
@@ -237,17 +268,16 @@ export class PromptRunnerService {
       error = e.message;
       this.logger.error({ promptName, error, providerUsed }, 'LLM call failed');
 
-      if (lfGeneration) {
-        lfGeneration.update({
-          statusMessage: error,
-        });
-      }
+      if (lfGeneration) lfGeneration.update({ statusMessage: error });
+      if (lfTrace) lfTrace.update({ level: 'ERROR', statusMessage: error });
 
       throw e;
     } finally {
-      const costUsd = this.costCalc.compute(modelName, {
+      const costUsd = this.costCalc.compute(effectiveModel, {
         input_tokens: inputTokens,
         output_tokens: outputTokens,
+        cache_read_tokens: cacheReadTokens,
+        cache_creation_tokens: cacheCreationTokens,
       });
 
       if (ctx.company_id && ctx.agent_name) {
@@ -277,12 +307,27 @@ export class PromptRunnerService {
             agentName: ctx.agent_name,
             promptName,
             promptVersion,
-            model: modelName,
+            model: effectiveModel,
             provider: providerUsed,
             temperature,
             maxTokens,
-            requestPayload: { system: opts.system, messages } as any,
-            responsePayload: rawResponse as any,
+            requestPayload: {
+              system: opts.system?.slice(0, 1000),
+              messages: messages.map((m) => ({
+                role: m.role,
+                content:
+                  m.content.length > 2000
+                    ? m.content.slice(0, 2000) + '…[truncated]'
+                    : m.content,
+              })),
+            } as any,
+            responsePayload: (() => {
+              if (!rawResponse) return null;
+              const s = JSON.stringify(rawResponse);
+              return s.length <= 8_000
+                ? rawResponse
+                : ({ _truncated: true, preview: s.slice(0, 8_000) } as any);
+            })(),
             outputText,
             finishReason,
             promptTokens: inputTokens,
@@ -300,24 +345,102 @@ export class PromptRunnerService {
           'Failed to persist LLM call log',
         );
       }
-
-      if (this.langfuse) {
-        this.langfuse.shutdownAsync().catch(() => {});
-      }
     }
 
     return { output: outputText!, callId };
   }
 
-  async embed(text: string): Promise<number[]> {
+  async embed(text: string, ctx: PromptContext = {}): Promise<number[]> {
     if (!this.openai)
       throw new Error(
         'OPENAI_API_KEY not configured — required for embeddings',
       );
-    const response = await this.openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text.slice(0, 8000),
-    });
-    return response.data[0].embedding;
+    const model = 'text-embedding-3-small';
+    const startedAt = Date.now();
+    let embedError: string | undefined;
+    let promptTokens = 0;
+    let totalTokens = 0;
+    let costUsd = 0;
+
+    let lfTrace: any = null;
+    let lfGeneration: any = null;
+    if (this.langfuse) {
+      lfTrace = this.langfuse.trace({
+        name: 'embed',
+        sessionId: ctx.company_id || undefined,
+        metadata: {
+          relatedEntityType: ctx.related_entity_type,
+          relatedEntityId: ctx.related_entity_id,
+          companyId: ctx.company_id,
+          jobId: ctx.job_id,
+        },
+      });
+      lfGeneration = lfTrace.generation({
+        name: 'embed',
+        model,
+        input: text.slice(0, 200),
+      });
+    }
+
+    try {
+      const response = await withLlmTimeout((signal) =>
+        this.openai!.embeddings.create(
+          { model, input: text.slice(0, 8000) },
+          { signal },
+        ),
+      );
+      const usage = response.usage;
+      promptTokens = usage.prompt_tokens;
+      totalTokens = usage.total_tokens;
+      costUsd = this.costCalc.compute(model, {
+        input_tokens: promptTokens,
+        output_tokens: 0,
+      });
+
+      if (lfGeneration) {
+        lfGeneration.update({
+          usage: { promptTokens, completionTokens: 0, totalTokens },
+        });
+      }
+
+      return response.data[0].embedding;
+    } catch (e: any) {
+      embedError = e.message;
+      if (lfGeneration) lfGeneration.update({ statusMessage: embedError });
+      if (lfTrace)
+        lfTrace.update({ level: 'ERROR', statusMessage: embedError });
+      throw e;
+    } finally {
+      this.db.llmCall
+        .create({
+          data: {
+            purpose: 'embed',
+            relatedEntityType: ctx.related_entity_type,
+            relatedEntityId: ctx.related_entity_id,
+            companyId: ctx.company_id,
+            jobId: ctx.job_id,
+            agentName: ctx.agent_name,
+            promptName: 'embed',
+            promptVersion: 'v1',
+            model,
+            provider: 'openai',
+            temperature: 0,
+            maxTokens: 0,
+            promptTokens,
+            completionTokens: 0,
+            totalTokens,
+            costUsd,
+            latencyMs: Date.now() - startedAt,
+            error: embedError,
+          },
+        })
+        .catch(() => {});
+    }
+  }
+
+  async onModuleDestroy() {
+    if (this.langfuse) {
+      await this.langfuse.shutdownAsync().catch(() => {});
+    }
   }
 }

@@ -546,6 +546,8 @@ export class ApplicationsService {
         rawFeedback,
         decision: app.status as any,
       },
+      companyId,
+      app.jobId,
     );
 
     await this.db.$transaction([
@@ -603,6 +605,8 @@ export class ApplicationsService {
       app.screenings[0]?.aiAssessment,
       transcript,
       applicationId,
+      companyId,
+      app.jobId,
     );
 
     const updated = await this.db.application.update({

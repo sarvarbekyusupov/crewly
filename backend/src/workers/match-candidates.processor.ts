@@ -126,6 +126,8 @@ export class MatchCandidatesProcessor {
           yearsExperience: Number(c.yearsExperience ?? 0),
         })),
         targetCount,
+        dbJob.companyId,
+        jobId,
       );
     } catch (err) {
       this.logger.error(

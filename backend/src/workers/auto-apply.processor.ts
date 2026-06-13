@@ -100,6 +100,7 @@ export class AutoApplyProcessor {
         skills: candidate.skills,
         experience: Number(candidate.yearsExperience ?? 0),
         settings: (candidate.agentSettings as any) || { auto_apply: true },
+        socialProof: candidate.socialProof as Record<string, unknown> | null,
       },
       {
         title: discoveredJob.title,

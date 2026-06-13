@@ -10,13 +10,14 @@ import type {
   HhVacancyDetail,
   HhVacancyListResponse,
 } from './hh.types';
+import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 
 export type { HhNegotiationsResponse, HhVacancyListResponse };
 
 @Injectable()
 export class HhApplicantService {
   private readonly logger = new Logger(HhApplicantService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
@@ -50,21 +51,23 @@ export class HhApplicantService {
 
   async searchVacancies(
     params: HhSearchParams,
+    accessToken?: string,
   ): Promise<HhVacancyListResponse> {
-    const employerToken = this.config.get<string>('HH_EMPLOYER_TOKEN');
+    const token = accessToken ?? this.config.get<string>('HH_EMPLOYER_TOKEN');
     const resp = await firstValueFrom(
       this.http.get<HhVacancyListResponse>(`${this.baseUrl}/vacancies`, {
         headers: {
-          ...(employerToken && { Authorization: `Bearer ${employerToken}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
           'User-Agent': this.ua,
           'HH-User-Agent': this.ua,
         },
         params: {
-          area: '97',
+          area: HH_UZBEKISTAN_AREA_ID,
           per_page: params.per_page ?? 20,
           page: params.page ?? 0,
           ...(params.text && { text: params.text }),
-          ...(params.area && { area: params.area }),
+          ...(params.area &&
+            /^\d+$/.test(params.area) && { area: params.area }),
           ...(params.experience && { experience: params.experience }),
           ...(params.salary && { salary: params.salary }),
           ...(params.order_by && { order_by: params.order_by }),

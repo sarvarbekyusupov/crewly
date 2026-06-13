@@ -1,5 +1,6 @@
 export interface LlmCompletionResult {
   output: string;
+  actualModel: string;
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -15,6 +16,7 @@ export interface LlmCompletionOpts {
   maxTokens?: number;
   temperature?: number;
   responseFormat?: { type: 'json_object' };
+  signal?: AbortSignal;
 }
 
 export interface LlmProvider {

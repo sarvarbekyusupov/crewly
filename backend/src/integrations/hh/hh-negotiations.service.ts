@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { HH_BASE_URL } from './hh.constants';
+import { runConcurrentCapped, withRetry } from '../../common/utils/async.utils';
 
 export interface HhNegotiationItem {
   id: string;
@@ -12,22 +14,32 @@ export interface HhNegotiationItem {
   updated_at: string;
 }
 
-export interface HhNegotiationMessage {
-  id: string;
-  text: string;
-  created_at: string;
-  author: { participant_type: string };
-}
-
 export interface HhEmployerState {
   id: string;
   name: string;
 }
 
+interface VacancyActionItem {
+  id: string;
+  negotiations_actions: Array<{
+    id: string;
+    enabled: boolean;
+    method: string;
+    url: string;
+    arguments: Array<{ id: string; required: boolean }>;
+  }>;
+}
+
+interface ActiveVacanciesResp {
+  items: VacancyActionItem[];
+  pages: number;
+  page: number;
+}
+
 @Injectable()
 export class HhNegotiationsService {
   private readonly logger = new Logger(HhNegotiationsService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
@@ -61,7 +73,7 @@ export class HhNegotiationsService {
   /**
    * Fetch all inbound negotiations for a vacancy by iterating every collection.
    * GET /negotiations?vacancy_id= returns {collections:[{url}]} not items.
-   * Items live at each collection.url — must be fetched individually.
+   * Items live at each collection.url — fetched with concurrency cap of 5.
    */
   async getVacancyResponses(
     vacancyId: string,
@@ -80,28 +92,45 @@ export class HhNegotiationsService {
     const collections = collectionsResp.data.collections ?? [];
     if (!collections.length) return { items: [] };
 
-    // Step 2: fetch items from every collection
+    // Step 2: fetch all pages from every collection, max 5 concurrent
     const allItems: HhNegotiationItem[] = [];
-    await Promise.all(
-      collections.map(async (col) => {
-        try {
-          const res = await firstValueFrom(
-            this.http.get<{ items?: HhNegotiationItem[] }>(col.url, {
-              params: { per_page: opts.perPage ?? 100 },
-              headers: this.headers,
-            }),
+    await runConcurrentCapped(collections, 5, async (col) => {
+      let page = 0;
+      try {
+        while (true) {
+          const res = await withRetry(() =>
+            firstValueFrom(
+              this.http.get<{
+                items?: HhNegotiationItem[];
+                pages?: number;
+                page?: number;
+              }>(col.url, {
+                params: { per_page: opts.perPage ?? 100, page },
+                headers: this.headers,
+              }),
+            ),
           );
           allItems.push(...(res.data.items ?? []));
-        } catch (err: any) {
-          this.logger.warn(
-            { collectionId: col.id, err: err.message },
-            'Failed to fetch HH negotiation collection',
-          );
+          if (page >= (res.data.pages ?? 1) - 1) break;
+          page++;
         }
-      }),
-    );
+      } catch (err: any) {
+        this.logger.warn(
+          { collectionId: col.id, err: err.message },
+          'Failed to fetch HH negotiation collection',
+        );
+      }
+    });
 
-    return { items: allItems };
+    // Deduplicate across collections — same negotiation can appear in multiple buckets
+    const seen = new Set<string>();
+    const unique = allItems.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+
+    return { items: unique };
   }
 
   /**
@@ -115,6 +144,9 @@ export class HhNegotiationsService {
     message: string;
   }): Promise<string> {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
+    if (!token) {
+      throw new Error('HH_EMPLOYER_TOKEN is not configured');
+    }
     const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
     const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const authHeaders = {
@@ -123,27 +155,27 @@ export class HhNegotiationsService {
       'HH-User-Agent': userAgent,
     };
 
-    // Step 1: fetch available invitation actions for this vacancy+resume combo
-    const actionsResp = await firstValueFrom(
-      this.http.get<{
-        items: Array<{
-          negotiations_actions: Array<{
-            id: string;
-            enabled: boolean;
-            method: string;
-            url: string;
-            arguments: Array<{ id: string; required: boolean }>;
-          }>;
-        }>;
-      }>(`${this.baseUrl}/employers/${employerId}/vacancies/active`, {
-        params: { resume_id: params.resumeId },
-        headers: authHeaders,
-      }),
-    );
+    // Step 1: paginate until the target vacancyId is found
+    let vacancyItem: VacancyActionItem | undefined;
+    let page = 0;
+    let totalPages = 1;
+    while (!vacancyItem && page < totalPages) {
+      const actionsResp = await firstValueFrom(
+        this.http.get<ActiveVacanciesResp>(
+          `${this.baseUrl}/employers/${employerId}/vacancies/active`,
+          {
+            params: { resume_id: params.resumeId, per_page: 100, page },
+            headers: authHeaders,
+          },
+        ),
+      );
+      vacancyItem = actionsResp.data.items?.find(
+        (v) => v.id === params.vacancyId,
+      );
+      totalPages = actionsResp.data.pages ?? 1;
+      page++;
+    }
 
-    const vacancyItem = actionsResp.data.items?.find(
-      (v: any) => v.id === params.vacancyId,
-    );
     const action = vacancyItem?.negotiations_actions?.find((a) => a.enabled);
 
     if (!action) {
@@ -152,24 +184,40 @@ export class HhNegotiationsService {
       );
     }
 
-    // Step 2: execute the action using its dynamic URL and method
-    const queryParams: Record<string, string> = {
+    // Guard against SSRF: action URL must point to the known HH API host
+    const allowedHost = new URL(this.baseUrl).host;
+    const actionHost = new URL(action.url).host;
+    if (actionHost !== allowedHost) {
+      throw new Error(
+        `HH action URL points to unexpected host: ${actionHost} (expected ${allowedHost})`,
+      );
+    }
+
+    const payload = {
       resume_id: params.resumeId,
       vacancy_id: params.vacancyId,
       message: params.message,
     };
+    const isGet = action.method.toUpperCase() === 'GET';
 
+    // Step 2: execute the action using its dynamic URL and method
     const response = await firstValueFrom(
       this.http.request({
         method: action.method,
         url: action.url,
-        params: queryParams,
+        ...(isGet ? { params: payload } : { data: payload }),
         headers: { ...authHeaders, 'Content-Type': 'application/json' },
       }),
     );
 
     const location: string = response.headers['location'] ?? '';
-    const negotiationId = location.split('/').pop() ?? 'unknown';
+    const negotiationId = location.split('/').pop();
+    if (!negotiationId) {
+      throw new Error(
+        `HH invitation succeeded but returned no Location header for vacancy ${params.vacancyId}`,
+      );
+    }
+
     this.logger.log(
       {
         vacancyId: params.vacancyId,
@@ -205,45 +253,17 @@ export class HhNegotiationsService {
   }
 
   /**
-   * Send a message in an existing negotiation thread.
-   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
-   * Migrate to HH Chats API when HH publishes the replacement REST spec.
-   */
-  async sendMessage(_negotiationId: string, _message: string): Promise<void> {
-    throw new Error(
-      'HH Negotiations messages API is deprecated. Use HH Chats API when available.',
-    );
-  }
-
-  /**
    * Get the current pipeline state of a single employer-side negotiation.
    */
   async getEmployerNegotiationState(
     negotiationId: string,
   ): Promise<string | null> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ state?: { id: string } }>(
-          `${this.baseUrl}/negotiations/${negotiationId}`,
-          { headers: this.headers },
-        ),
-      );
-      return response.data?.state?.id ?? null;
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 404 || status === 403) throw err;
-      throw err;
-    }
-  }
-
-  /**
-   * Fetch the full message thread for a negotiation.
-   * NOTE: HH deprecated this endpoint — new chat features won't appear here.
-   * Migrate to HH Chats API when HH publishes the replacement REST spec.
-   */
-  async getMessages(_negotiationId: string): Promise<HhNegotiationMessage[]> {
-    throw new Error(
-      'HH Negotiations messages API is deprecated. Use HH Chats API when available.',
+    const response = await firstValueFrom(
+      this.http.get<{ state?: { id: string } }>(
+        `${this.baseUrl}/negotiations/${negotiationId}`,
+        { headers: this.headers },
+      ),
     );
+    return response.data?.state?.id ?? null;
   }
 }

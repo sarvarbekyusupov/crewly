@@ -9,13 +9,14 @@ import {
   HhSearchParams,
   HhVacancyDetail,
   HhMeResponse,
-  HhResumeViewItem,
 } from './hh.types';
+import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
+import { HhQuotaError } from './hh-errors';
 
 @Injectable()
 export class HhClientService {
   private readonly logger = new Logger(HhClientService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
@@ -24,7 +25,7 @@ export class HhClientService {
 
   private get headers() {
     const token = this.config.get('HH_EMPLOYER_TOKEN');
-    const userAgent = this.config.get('HH_USER_AGENT');
+    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -36,7 +37,7 @@ export class HhClientService {
     const response = await firstValueFrom(
       this.http.get<HhResumeListResponse>(`${this.baseUrl}/resumes`, {
         params: {
-          area: '97', // Uzbekistan
+          area: HH_UZBEKISTAN_AREA_ID,
           per_page: 100,
           ...params,
         },
@@ -59,11 +60,7 @@ export class HhClientService {
       const errors: Array<{ type: string }> = err?.response?.data?.errors ?? [];
       const isQuota = errors.some((e) => e.type === 'api_access_payment');
       if (status === 403 && isQuota) {
-        const quotaErr = new Error(
-          `Resume ${id} requires paid contact reveal (HH quota). Use resume.actions to explicitly reveal.`,
-        );
-        (quotaErr as any).code = 'HH_QUOTA_EXCEEDED';
-        throw quotaErr;
+        throw new HhQuotaError(id);
       }
       throw err;
     }
@@ -102,12 +99,14 @@ export class HhClientService {
   }
 
   extractEmail(resume: HhResumeDetail): string | undefined {
-    return resume.contact?.find((c) => c.type.id === 'email')?.value;
+    const contact = resume.contact?.find((c) => c.type.id === 'email');
+    return typeof contact?.value === 'string' ? contact.value : undefined;
   }
 
   extractPhone(resume: HhResumeDetail): string | undefined {
-    const phone = resume.contact?.find((c) => c.type.id === 'cell');
-    return phone?.value?.formatted;
+    const contact = resume.contact?.find((c) => c.type.id === 'cell');
+    if (!contact?.value || typeof contact.value === 'string') return undefined;
+    return contact.value.formatted;
   }
 
   async getVacancyDetail(vacancyId: string): Promise<HhVacancyDetail> {
@@ -124,24 +123,6 @@ export class HhClientService {
       this.http.get<HhResumeListResponse>(
         `${this.baseUrl}/vacancies/${vacancyId}/potential_resumes`,
         { headers: this.headers, params: { per_page: 100 } },
-      ),
-    );
-    return response.data.items ?? [];
-  }
-
-  /** Resumes that were viewed by our employer account, optionally filtered by vacancy. */
-  async getResumeViews(vacancyId?: string): Promise<HhResumeViewItem[]> {
-    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
-    const response = await firstValueFrom(
-      this.http.get<{ items: HhResumeViewItem[] }>(
-        `${this.baseUrl}/employers/${employerId}/resumes/views`,
-        {
-          headers: this.headers,
-          params: {
-            per_page: 100,
-            ...(vacancyId && { vacancy_id: vacancyId }),
-          },
-        },
       ),
     );
     return response.data.items ?? [];

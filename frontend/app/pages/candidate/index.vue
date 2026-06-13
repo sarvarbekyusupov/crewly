@@ -13,7 +13,6 @@ useFadeIn()
 
 useHead({
   title: 'Find work and get hired',
-  link: [{ rel: 'canonical', href: 'https://crewly.uz/candidate' }],
   meta: [
     {
       name: 'description',
@@ -22,7 +21,6 @@ useHead({
     },
     // Open Graph / Facebook
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://crewly.uz/candidate' },
     { property: 'og:title', content: 'Find work and get hired | Crewly' },
     {
       property: 'og:description',
@@ -31,7 +29,6 @@ useHead({
     },
     // Twitter
     { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:url', content: 'https://crewly.uz/candidate' },
     { name: 'twitter:title', content: 'Find work and get hired | Crewly' },
     {
       name: 'twitter:description',
@@ -55,11 +52,7 @@ useHead({
           priceCurrency: 'USD',
           description: 'Free career companion and job search pilot.',
         },
-        publisher: {
-          '@type': 'Organization',
-          name: 'Crewly',
-          url: 'https://crewly.uz/',
-        },
+        publisher: { '@id': 'https://crewly.uz/#organization' },
       }),
     },
     {
@@ -111,6 +104,7 @@ useHead({
   <div>
     <LandingHero audience="candidate" />
     <LandingHowItWorks audience="candidate" />
+    <LandingWhy audience="candidate" />
     <LandingFinalCta audience="candidate" />
     <LandingFaq audience="candidate" />
   </div>

@@ -6,6 +6,7 @@ import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { PromptRunnerService } from '../integrations/llm/prompt-runner.service';
 import { S3Service } from '../integrations/storage/s3.service';
+import { generateDossierPrompt } from '@crewly/prompts';
 import { QUEUES } from './queue-names';
 
 interface GenerateDossierPayload {
@@ -48,28 +49,24 @@ export class GenerateDossierProcessor {
       [
         {
           role: 'user',
-          content: `Generate a professional candidate dossier for a hiring manager.
-
-Job: ${screening.application.job.title}
-Candidate: ${screening.application.candidate.fullName}
-Experience: ${screening.application.candidate.yearsExperience} years
-Skills: ${screening.application.candidate.skills.join(', ')}
-
-Screening Assessment:
-${JSON.stringify(screening.aiAssessment, null, 2)}
-
-Write a structured 3-section report:
-1. Candidate Overview (background, key strengths)
-2. Technical Assessment (skills depth, experience relevance)
-3. Recommendation (hire/maybe/reject with reasoning)`,
+          content: generateDossierPrompt({
+            jobTitle: screening.application.job.title,
+            candidateName: screening.application.candidate.fullName,
+            yearsExperience: Number(
+              screening.application.candidate.yearsExperience ?? 0,
+            ),
+            skills: screening.application.candidate.skills,
+            aiAssessment: screening.aiAssessment,
+          }),
         },
       ],
-      { maxTokens: 2000 },
+      { maxTokens: 2000, provider: 'anthropic' },
       {
         related_entity_type: 'screening',
         related_entity_id: screeningId,
         company_id: screening.application.job.companyId,
         job_id: screening.application.job.id,
+        agent_name: 'DossierWriter',
       },
     );
 

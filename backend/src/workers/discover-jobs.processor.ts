@@ -57,11 +57,14 @@ export class DiscoverJobsProcessor {
       });
       if (seeker) {
         try {
-          const agentQueries = await this.agent.generateJobSearchQueries({
-            currentPosition: seeker.currentPosition ?? '',
-            skills: seeker.skills,
-            yearsExperience: Number(seeker.yearsExperience ?? 0),
-          });
+          const agentQueries = await this.agent.generateJobSearchQueries(
+            {
+              currentPosition: seeker.currentPosition ?? '',
+              skills: seeker.skills,
+              yearsExperience: Number(seeker.yearsExperience ?? 0),
+            },
+            candidateId,
+          );
           query = agentQueries.query;
           location =
             location ?? agentQueries.location_hints ?? seeker.city ?? undefined;

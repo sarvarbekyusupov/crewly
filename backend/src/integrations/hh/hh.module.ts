@@ -12,6 +12,7 @@ import { HhSuggestsService } from './hh-suggests.service';
 import { HhOAuthService } from './hh-oauth.service';
 import { HhResumeService } from './hh-resume.service';
 import { HhApplicantService } from './hh-applicant.service';
+import { HhCandidateService } from './hh-candidate.service';
 
 const providers = [
   HhClientService,
@@ -25,6 +26,7 @@ const providers = [
   HhOAuthService,
   HhResumeService,
   HhApplicantService,
+  HhCandidateService,
 ];
 
 @Module({

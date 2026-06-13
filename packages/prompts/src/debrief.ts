@@ -1,9 +1,16 @@
 const MAX_CONTEXT_CHARS = 3_000;
 const MAX_FEEDBACK_CHARS = 10_000;
 const MAX_NAME_CHARS = 200;
+const MAX_TRANSCRIPT_CHARS = 15_000;
 
-function sanitizeUserText(text: string, maxChars: number): string {
-  return text.slice(0, maxChars).replace(/<\/?[a-zA-Z][^>]*>/g, '');
+function sanitize(text: string | undefined | null, max: number): string {
+  if (!text) return '';
+  return text.replace(/[\n\r<>{}]/g, ' ').slice(0, max).trim();
+}
+
+function sanitizeBlock(text: string, max: number): string {
+  // Preserves newlines for readability but strips injection chars <>{}
+  return text.replace(/[<>{}]/g, ' ').slice(0, max);
 }
 
 export function debriefSynthesizeFeedbackPrompt(
@@ -16,12 +23,12 @@ export function debriefSynthesizeFeedbackPrompt(
   },
 ): string {
   const safeContext = currentContext
-    ? sanitizeUserText(currentContext, MAX_CONTEXT_CHARS)
+    ? sanitizeBlock(currentContext, MAX_CONTEXT_CHARS)
     : null;
-  const safeFeedback = sanitizeUserText(newFeedback.rawFeedback, MAX_FEEDBACK_CHARS);
-  const safeName = sanitizeUserText(newFeedback.candidateName, MAX_NAME_CHARS);
+  const safeFeedback = sanitizeBlock(newFeedback.rawFeedback, MAX_FEEDBACK_CHARS);
+  const safeName = sanitize(newFeedback.candidateName, MAX_NAME_CHARS);
 
-  return `Synthesize new hiring manager feedback into the current "Ideal Candidate Profile" for the role: ${jobTitle}.
+  return `Synthesize new hiring manager feedback into the current "Ideal Candidate Profile" for the role: ${sanitize(jobTitle, 120)}.
 
 CURRENT IDEAL PROFILE CONTEXT (Learning from past decisions):
 <context>
@@ -30,7 +37,7 @@ ${safeContext || 'None yet. This is the first feedback.'}
 
 NEW FEEDBACK:
 Candidate: ${safeName}
-Decision: ${newFeedback.decision}
+Decision: ${sanitize(newFeedback.decision, 60)}
 Feedback: <user_feedback>
 ${safeFeedback}
 </user_feedback>
@@ -45,6 +52,18 @@ Update the "Ideal Profile" context to include new insights.
 Updated Ideal Candidate Profile:`;
 }
 
+function formatAssessment(assessment: unknown): string {
+  if (!assessment) return 'No prior AI screening.';
+  const a = assessment as Record<string, unknown>;
+  return [
+    `Score: ${a.overall_score ?? 'N/A'}`,
+    `Recommendation: ${sanitize(String(a.recommendation ?? ''), 40) || 'N/A'}`,
+    `Summary: ${sanitize(String(a.summary ?? ''), 400) || 'N/A'}`,
+    `Strengths: ${(Array.isArray(a.strengths) ? a.strengths : []).slice(0, 5).map((s) => sanitize(String(s), 80)).join('; ')}`,
+    `Concerns: ${(Array.isArray(a.concerns) ? a.concerns : []).slice(0, 5).map((s) => sanitize(String(s), 80)).join('; ')}`,
+  ].join('\n');
+}
+
 export function debriefAnalyzeTranscriptPrompt(
   candidate: { name: string; resumeSummary?: string },
   job: { title: string },
@@ -52,18 +71,18 @@ export function debriefAnalyzeTranscriptPrompt(
   transcript: string,
 ): string {
   return `Analyze this human-to-human interview transcript and provide a deep "Shadow Analysis".
-Candidate: ${candidate.name}
-Job: ${job.title}
+Candidate: ${sanitize(candidate.name, 200)}
+Job: ${sanitize(job.title, 120)}
 
 RESUME SUMMARY:
-${candidate.resumeSummary || 'Not provided'}
+${candidate.resumeSummary ? sanitizeBlock(candidate.resumeSummary, 2000) : 'Not provided'}
 
 AI SCREENING BOT ASSESSMENT:
-${JSON.stringify(aiScreeningAssessment || 'No prior AI screening.')}
+${formatAssessment(aiScreeningAssessment)}
 
 TRANSCRIPT:
 <transcript>
-${transcript.slice(0, 15000)}
+${sanitizeBlock(transcript, MAX_TRANSCRIPT_CHARS)}
 </transcript>
 
 GOAL:

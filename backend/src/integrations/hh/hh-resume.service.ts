@@ -7,11 +7,12 @@ import type {
   HhResumeUpdateBody,
   HhResumeViewItem,
 } from './hh.types';
+import { HH_BASE_URL } from './hh.constants';
 
 @Injectable()
 export class HhResumeService {
   private readonly logger = new Logger(HhResumeService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
@@ -80,30 +81,44 @@ export class HhResumeService {
     data: HhResumeUpdateBody,
   ): Promise<void> {
     const current = await this.getResume(accessToken, resumeId);
-    // Strip HH read-only fields — HH rejects PUT with these present
-    const {
-      id: _id,
-      url: _url,
-      alternate_url: _alt,
-      status: _status,
-      access: _access,
-      blocked_site: _bs,
-      can_publish_or_update: _cpu,
-      next_publish_at: _npa,
-      updated_at: _ua,
-      created_at: _ca,
-      views: _v,
-      download: _dl,
-      resume_locale: _rl,
-      progress: _p,
-      marked: _m,
-      title_suggestions: _ts,
-      moderation_note: _mn,
-      actions: _ac,
-      owner: _ow,
-      ...writable
-    } = current as any;
+
+    if (current.can_publish_or_update === false) {
+      throw new Error(
+        `Resume ${resumeId} cannot be updated right now (can_publish_or_update=false)`,
+      );
+    }
+
+    // Whitelist: strip known HH read-only fields before PUT
+    // HH rejects requests that include these server-generated fields
+    const READ_ONLY_FIELDS = new Set([
+      'id',
+      'url',
+      'alternate_url',
+      'status',
+      'access',
+      'blocked_site',
+      'can_publish_or_update',
+      'next_publish_at',
+      'updated_at',
+      'created_at',
+      'views',
+      'download',
+      'resume_locale',
+      'progress',
+      'marked',
+      'title_suggestions',
+      'moderation_note',
+      'actions',
+      'owner',
+    ]);
+
+    const writable = Object.fromEntries(
+      Object.entries(current as object).filter(
+        ([k]) => !READ_ONLY_FIELDS.has(k),
+      ),
+    );
     const merged = { ...writable, ...data };
+
     await firstValueFrom(
       this.http.put(`${this.baseUrl}/resumes/${resumeId}`, merged, {
         headers: {

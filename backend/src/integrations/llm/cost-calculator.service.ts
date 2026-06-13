@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 // Prices per 1M tokens in USD (as of 2026-05)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-opus-4-8': { input: 15, output: 75 },
   'claude-opus-4-7': { input: 15, output: 75 },
   'claude-sonnet-4-6': { input: 3, output: 15 },
   'claude-haiku-4-5': { input: 0.8, output: 4 },
+  'claude-haiku-4-5-20251001': { input: 0.8, output: 4 },
+  'us.anthropic.claude-haiku-4-5-20251001-v1:0': { input: 0.8, output: 4 },
   'gpt-4o': { input: 5, output: 15 },
   'text-embedding-3-small': { input: 0.02, output: 0 },
   'text-embedding-3-large': { input: 0.13, output: 0 },
@@ -27,6 +30,8 @@ export class CostCalculatorService {
           output_tokens?: number;
           prompt_tokens?: number;
           completion_tokens?: number;
+          cache_read_tokens?: number;
+          cache_creation_tokens?: number;
         }
       | undefined,
   ): number {
@@ -36,10 +41,14 @@ export class CostCalculatorService {
 
     const input = usage.input_tokens ?? usage.prompt_tokens ?? 0;
     const output = usage.output_tokens ?? usage.completion_tokens ?? 0;
+    const cacheRead = usage.cache_read_tokens ?? 0;
+    const cacheCreation = usage.cache_creation_tokens ?? 0;
 
     return (
       (input / 1_000_000) * pricing.input +
-      (output / 1_000_000) * pricing.output
+      (output / 1_000_000) * pricing.output +
+      (cacheRead / 1_000_000) * pricing.input * 0.1 +
+      (cacheCreation / 1_000_000) * pricing.input * 1.25
     );
   }
 }

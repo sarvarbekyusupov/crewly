@@ -3,6 +3,7 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { InjectQueue } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScreeningAgent } from '../modules/agents/screening.agent';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
@@ -55,7 +56,7 @@ export class AdvanceScreeningProcessor {
 
     if (!screening || screening.status !== 'in_progress') return;
 
-    if (screening.questionsAsked >= 8) {
+    if (screening.questionsAsked >= 7) {
       await this.db.screening.update({
         where: { id: screeningId },
         data: { status: 'failed', completedAt: new Date() },
@@ -79,11 +80,13 @@ export class AdvanceScreeningProcessor {
       },
       messages,
       screeningId,
+      screening.application.job.companyId,
+      screening.application.job.id,
     );
 
     if (parsed.action === 'complete' && parsed.assessment) {
       const recommendation: string =
-        parsed.assessment?.recommendation ?? 'advance';
+        parsed.assessment?.recommendation ?? 'maybe';
       const isReject = recommendation === 'reject';
       // 'maybe' → screened_pass but hiringManagerDecision stays null for manual review
       const appStatus = isReject ? 'screened_fail' : 'screened_pass';
@@ -195,6 +198,16 @@ export class AdvanceScreeningProcessor {
         where: { id: screeningId },
         data: { questionsAsked: { increment: 1 } },
       });
+    } else {
+      // LLM returned action:continue with no message — still increment to prevent stall
+      this.logger.warn(
+        { screeningId },
+        'Screening LLM returned continue with no message',
+      );
+      await this.db.screening.update({
+        where: { id: screeningId },
+        data: { questionsAsked: { increment: 1 } },
+      });
     }
   }
 
@@ -204,5 +217,6 @@ export class AdvanceScreeningProcessor {
       { screeningId: job.data.screeningId, error: err.message },
       'advance-screening failed',
     );
+    if (err instanceof NonRetryableError) job.discard().catch(() => {});
   }
 }

@@ -7,6 +7,8 @@ import {
   MATCHMAKER_PARSE_JOB_SYSTEM,
   matchmakerRankCandidatesPrompt,
   matchmakerScoreSeekerJobsPrompt,
+  matchmakerParseResumeContent,
+  matchmakerParseJobContent,
 } from '@crewly/prompts';
 
 export interface MatchmakerResult {
@@ -86,14 +88,18 @@ const ParsedResumeSchema = z.object({
 });
 
 const ParsedJobSchema = z.object({
-  title: z.string(),
-  required_skills: z.array(z.string()),
-  preferred_skills: z.array(z.string()),
+  required_skills: z.array(z.string()).default([]),
+  nice_to_have_skills: z.array(z.string()).default([]),
   min_experience_years: z.number().nullable().optional(),
-  description_summary: z.string(),
+  max_experience_years: z.number().nullable().optional(),
+  seniority: z.enum(['junior', 'mid', 'senior', 'lead']).optional(),
+  key_responsibilities: z.array(z.string()).default([]),
+  tech_stack: z.array(z.string()).default([]),
+  soft_skills: z.array(z.string()).default([]),
 });
 
 const SeekerJobScoreSchema = z.object({
+  index: z.number().optional(),
   score: z.number(),
   explanation: z.string(),
   strengths: z.array(z.string()),
@@ -130,6 +136,8 @@ export class MatchmakerAgent extends BaseAgent {
       skills: string[];
     }>,
     targetCount = 10,
+    companyId?: string,
+    jobId?: string,
   ): Promise<MatchmakerResult[]> {
     const rerankPrompt = matchmakerRankCandidatesPrompt(
       job,
@@ -140,16 +148,22 @@ export class MatchmakerAgent extends BaseAgent {
     const { output } = await this.runLlm(
       'match_rerank',
       [{ role: 'user', content: rerankPrompt }],
-      { maxTokens: 1024, responseFormat: { type: 'json_object' } },
+      {
+        maxTokens: 1024,
+        temperature: 0,
+        responseFormat: { type: 'json_object' },
+      },
       {
         related_entity_type: 'job',
-        // agentName is already handled by runLlm
+        ...(jobId ? { related_entity_id: jobId } : {}),
+        ...(companyId ? { company_id: companyId } : {}),
       },
     );
 
     try {
       const parsed = JSON.parse(extractJson(output));
-      return z.array(MatchmakerResultSchema).parse(parsed);
+      const arr = Array.isArray(parsed) ? parsed : (parsed.results ?? parsed);
+      return z.array(MatchmakerResultSchema).parse(arr);
     } catch (e: any) {
       throw new Error(
         `MatchmakerAgent failed to parse LLM output: ${e.message}`,
@@ -157,18 +171,23 @@ export class MatchmakerAgent extends BaseAgent {
     }
   }
 
-  async parseResume(rawText: string, candidateId?: string) {
+  async parseResume(rawText: string, candidateId?: string, companyId?: string) {
     const { output } = await this.runLlm(
       'parse_resume',
-      [{ role: 'user', content: `Resume:\n${rawText.slice(0, 8000)}` }],
+      [{ role: 'user', content: matchmakerParseResumeContent(rawText) }],
       {
         system: MATCHMAKER_PARSE_RESUME_SYSTEM,
         maxTokens: 1500,
+        temperature: 0,
         responseFormat: { type: 'json_object' },
+        skipAgentIdentity: true,
       },
-      candidateId
-        ? { related_entity_type: 'candidate', related_entity_id: candidateId }
-        : {},
+      {
+        ...(candidateId
+          ? { related_entity_type: 'candidate', related_entity_id: candidateId }
+          : {}),
+        ...(companyId ? { company_id: companyId } : {}),
+      },
     );
 
     try {
@@ -185,21 +204,29 @@ export class MatchmakerAgent extends BaseAgent {
     title: string,
     description: string,
     jobId?: string,
+    companyId?: string,
   ) {
     const { output } = await this.runLlm(
       'parse_job',
       [
         {
           role: 'user',
-          content: `Job Title: ${title}\n\nDescription:\n${description}`,
+          content: matchmakerParseJobContent(title, description),
         },
       ],
       {
         system: MATCHMAKER_PARSE_JOB_SYSTEM,
         maxTokens: 2048,
+        temperature: 0,
         responseFormat: { type: 'json_object' },
+        skipAgentIdentity: true,
       },
-      jobId ? { related_entity_type: 'job', related_entity_id: jobId } : {},
+      {
+        ...(jobId
+          ? { related_entity_type: 'job', related_entity_id: jobId }
+          : {}),
+        ...(companyId ? { company_id: companyId } : {}),
+      },
     );
 
     try {
@@ -253,7 +280,13 @@ export class MatchmakerAgent extends BaseAgent {
 
     try {
       const parsed = JSON.parse(extractJson(output));
-      return z.array(SeekerJobScoreSchema).parse(parsed);
+      const arr = Array.isArray(parsed) ? parsed : (parsed.results ?? parsed);
+      const validated = z.array(SeekerJobScoreSchema).parse(arr);
+      // Re-order by index if LLM included it, so scores map to the correct job
+      if (validated.every((r) => r.index !== undefined)) {
+        validated.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+      }
+      return validated;
     } catch (e: any) {
       throw new Error(
         `MatchmakerAgent failed to parse seeker job scores: ${e.message}`,

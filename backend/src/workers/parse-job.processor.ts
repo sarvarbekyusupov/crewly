@@ -37,6 +37,7 @@ export class ParseJobProcessor {
         dbJob.title,
         dbJob.description,
         jobId,
+        dbJob.companyId,
       );
     } catch (err: any) {
       this.logger.error(
@@ -54,7 +55,12 @@ export class ParseJobProcessor {
       dbJob.description,
     ].join(' ');
 
-    const embedding = await this.llm.embed(embeddingText);
+    const embedding = await this.llm.embed(embeddingText, {
+      related_entity_type: 'job',
+      related_entity_id: jobId,
+      company_id: dbJob.companyId,
+      job_id: jobId,
+    });
 
     const reqArr = `{${(parsed.required_skills ?? []).map((s: string) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`;
     const niceArr = `{${(parsed.nice_to_have_skills ?? []).map((s: string) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`;

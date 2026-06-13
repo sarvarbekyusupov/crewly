@@ -46,7 +46,10 @@ export class EmbedCandidateProcessor {
       .filter(Boolean)
       .join(' ');
 
-    const embedding = await this.llm.embed(text);
+    const embedding = await this.llm.embed(text, {
+      related_entity_type: 'candidate',
+      related_entity_id: candidateId,
+    });
 
     await this.db.$executeRaw`
       UPDATE candidates

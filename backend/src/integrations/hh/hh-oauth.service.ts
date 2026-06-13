@@ -7,8 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
+import { HH_BASE_URL, HH_AUTH_URL } from './hh.constants';
 
 interface HhTokenResponse {
   access_token: string;
@@ -28,7 +30,8 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // refresh 5 min before expiry
 @Injectable()
 export class HhOAuthService {
   private readonly logger = new Logger(HhOAuthService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
+  private readonly inflightRefreshes = new Map<string, Promise<string>>();
 
   constructor(
     private readonly config: ConfigService,
@@ -46,7 +49,7 @@ export class HhOAuthService {
     const redirectUri = this.config.get<string>('HH_REDIRECT_URI') ?? '';
 
     const state = this.jwt.sign(
-      { candidateId, nonce: Math.random().toString(36).slice(2) },
+      { candidateId, nonce: randomBytes(16).toString('hex') },
       {
         secret: this.config.get<string>('JWT_CANDIDATE_SECRET'),
         expiresIn: '10m',
@@ -60,7 +63,7 @@ export class HhOAuthService {
       state,
     });
 
-    return `https://hh.uz/oauth/authorize?${params.toString()}`;
+    return `${HH_AUTH_URL}?${params.toString()}`;
   }
 
   verifyCandidateState(state: string): string {
@@ -149,7 +152,16 @@ export class HhOAuthService {
       });
     }
 
-    return this.refreshToken(candidateId, candidate.hhRefreshToken);
+    // Deduplicate concurrent refresh calls for the same candidate
+    let promise = this.inflightRefreshes.get(candidateId);
+    if (!promise) {
+      promise = this.refreshToken(
+        candidateId,
+        candidate.hhRefreshToken,
+      ).finally(() => this.inflightRefreshes.delete(candidateId));
+      this.inflightRefreshes.set(candidateId, promise);
+    }
+    return promise;
   }
 
   private async refreshToken(
@@ -191,7 +203,25 @@ export class HhOAuthService {
 
       this.logger.log({ candidateId }, 'HH OAuth token refreshed');
       return tokenResp.access_token;
-    } catch {
+    } catch (err: any) {
+      const isInvalidGrant = err?.response?.data?.error === 'invalid_grant';
+      if (isInvalidGrant) {
+        await this.clearTokens(candidateId).catch((clearErr: any) => {
+          this.logger.warn(
+            { candidateId, err: clearErr.message },
+            'Failed to clear revoked HH tokens — stale tokens may remain',
+          );
+        });
+        this.logger.warn(
+          { candidateId },
+          'HH refresh token revoked — tokens cleared',
+        );
+      } else {
+        this.logger.warn(
+          { candidateId, err: err.message },
+          'HH token refresh failed',
+        );
+      }
       throw new UnprocessableEntityException({
         code: 'hh_not_connected',
         message: 'HH token refresh failed — please reconnect',
@@ -234,6 +264,20 @@ export class HhOAuthService {
     );
   }
 
+  /** Clears only OAuth token fields — preserves hhResumeId. Use on token revocation. */
+  async clearTokens(candidateId: string): Promise<void> {
+    await this.db.candidate.update({
+      where: { id: candidateId },
+      data: {
+        hhOauthToken: null,
+        hhRefreshToken: null,
+        hhTokenExpiresAt: null,
+      },
+    });
+    this.logger.log({ candidateId }, 'HH OAuth tokens cleared');
+  }
+
+  /** Clears OAuth tokens AND resume ID. Use when candidate explicitly disconnects. */
   async clearResumeId(candidateId: string): Promise<void> {
     await this.db.candidate.update({
       where: { id: candidateId },

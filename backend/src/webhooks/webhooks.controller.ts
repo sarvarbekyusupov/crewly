@@ -343,6 +343,9 @@ export class WebhooksController implements OnModuleInit {
   ) {
     const secret = this.config.get<string>('HH_WEBHOOK_SECRET');
     if (!secret) {
+      if (this.config.get<string>('NODE_ENV') === 'production') {
+        throw new ForbiddenException('HH webhook not configured');
+      }
       this.logger.warn(
         'HH_WEBHOOK_SECRET not set — skipping signature verification',
       );
@@ -356,15 +359,19 @@ export class WebhooksController implements OnModuleInit {
       if (!valid) throw new ForbiddenException('Invalid HH webhook secret');
     }
 
-    const eventId =
-      payload.object_id ??
-      payload.negotiation?.id ??
-      `${payload.type}:${payload.created_at}`;
-
-    await this.idempotency.execute(`hh:${eventId}`, 48, async () => {
+    const rawId = payload.object_id ?? payload.negotiation?.id;
+    if (rawId) {
+      await this.idempotency.execute(`hh:${rawId}`, 48, async () => {
+        await this.hhWebhook.handleEvent(payload);
+        return { ok: true as const };
+      });
+    } else {
+      this.logger.warn(
+        { type: payload.type },
+        'HH webhook event has no unique ID — processing without idempotency guard',
+      );
       await this.hhWebhook.handleEvent(payload);
-      return { ok: true as const };
-    });
+    }
 
     return { ok: true };
   }

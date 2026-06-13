@@ -6,11 +6,14 @@ useHead({ titleTemplate: '%s | Crewly' })
 useSeoMeta({
   title: 'Crewly',
   ogTitle: 'Crewly - AI-Native Recruiting Platform',
-  description: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
-  ogDescription: 'Automating the full recruitment lifecycle with smart, autonomous AI agents.',
+  description:
+    'AI-native recruiting platform — source, screen, and shortlist top candidates. Pay only on a successful hire.',
+  ogDescription:
+    'AI-native recruiting platform — source, screen, and shortlist top candidates. Pay only on a successful hire.',
   ogSiteName: 'Crewly',
   ogLocale: 'en_US',
   twitterCard: 'summary_large_image',
+  twitterSite: '@crewly_recruiter',
 })
 </script>
 

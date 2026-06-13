@@ -47,10 +47,10 @@ const candidateFaqs = [
   <section class="sec">
     <div class="wrap">
       <div class="sec-header">
-        <div class="sec-lbl fade">FAQ</div>
-        <div class="sec-h fade">
+        <p class="sec-lbl fade">FAQ</p>
+        <h2 class="sec-h fade">
           {{ audience === 'employer' ? 'Common questions' : 'Questions from candidates' }}
-        </div>
+        </h2>
       </div>
 
       <div class="faq-wrap">
@@ -98,6 +98,7 @@ const candidateFaqs = [
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--ld-t1);
+  margin: 0;
 }
 .faq-wrap {
   max-width: 640px;

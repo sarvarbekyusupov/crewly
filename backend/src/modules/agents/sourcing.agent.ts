@@ -4,17 +4,10 @@ import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { SearchService } from '../../integrations/search/search.service';
 import {
-  sourcingCandidateSearchQueriesPrompt,
   sourcingJobSearchQueriesPrompt,
   sourcingEnrichCandidatePrompt,
   sourcingDraftStrategyPrompt,
 } from '@crewly/prompts';
-
-const CandidateSearchQueriesSchema = z.object({
-  hh_query: z.string(),
-  linkedin_keywords: z.string(),
-  specialization_hints: z.array(z.string()),
-});
 
 const JobSearchQueriesSchema = z.object({
   query: z.string(),
@@ -59,43 +52,14 @@ export class SourcingAgent extends BaseAgent {
     );
   }
 
-  async generateCandidateSearchQueries(job: {
-    title: string;
-    requiredSkills: string[];
-    minExperienceYears?: number;
-  }): Promise<{
-    hh_query: string;
-    linkedin_keywords: string;
-    specialization_hints: string[];
-  }> {
-    const prompt = sourcingCandidateSearchQueriesPrompt(job);
-
-    const { output } = await this.runLlm(
-      'sourcing_queries',
-      [{ role: 'user', content: prompt }],
-      {
-        model: 'llama-3.1-8b-instant',
-        maxTokens: 256,
-        temperature: 0.5,
-        responseFormat: { type: 'json_object' },
-      },
-    );
-
-    try {
-      const parsed = JSON.parse(extractJson(output));
-      return CandidateSearchQueriesSchema.parse(parsed);
-    } catch (e: any) {
-      throw new Error(
-        `SourcingAgent failed to parse search queries: ${e.message}`,
-      );
-    }
-  }
-
-  async generateJobSearchQueries(seeker: {
-    currentPosition: string;
-    skills: string[];
-    yearsExperience: number;
-  }): Promise<{
+  async generateJobSearchQueries(
+    seeker: {
+      currentPosition: string;
+      skills: string[];
+      yearsExperience: number;
+    },
+    candidateId?: string,
+  ): Promise<{
     query: string;
     location_hints?: string;
   }> {
@@ -108,8 +72,10 @@ export class SourcingAgent extends BaseAgent {
         maxTokens: 256,
         temperature: 0.5,
         responseFormat: { type: 'json_object' },
-        provider: 'bedrock',
       },
+      candidateId
+        ? { related_entity_type: 'candidate', related_entity_id: candidateId }
+        : {},
     );
 
     try {
@@ -126,6 +92,7 @@ export class SourcingAgent extends BaseAgent {
     name: string,
     currentCompany?: string,
     skills: string[] = [],
+    candidateId?: string,
   ): Promise<{
     github_url?: string;
     linkedin_url?: string;
@@ -159,6 +126,9 @@ export class SourcingAgent extends BaseAgent {
         temperature: 0.3,
         responseFormat: { type: 'json_object' },
       },
+      candidateId
+        ? { related_entity_type: 'candidate', related_entity_id: candidateId }
+        : {},
     );
 
     try {
@@ -172,11 +142,14 @@ export class SourcingAgent extends BaseAgent {
     }
   }
 
-  async draftSourcingStrategy(job: {
-    title: string;
-    description: string;
-    requiredSkills: string[];
-  }): Promise<{
+  async draftSourcingStrategy(
+    job: {
+      title: string;
+      description: string;
+      requiredSkills: string[];
+    },
+    companyId?: string,
+  ): Promise<{
     approach_summary: string;
     target_companies: string[];
     alternative_titles: string[];
@@ -192,6 +165,7 @@ export class SourcingAgent extends BaseAgent {
         temperature: 0.4,
         responseFormat: { type: 'json_object' },
       },
+      companyId ? { company_id: companyId } : {},
     );
 
     try {

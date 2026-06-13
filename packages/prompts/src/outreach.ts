@@ -1,5 +1,5 @@
 export function outreachFallback(candidateName: string | undefined, jobTitle: string): string {
-  return `Здравствуйте, ${candidateName ?? 'кандидат'}!\n\nУ нас есть интересная позиция: ${jobTitle}.\n\nХотите узнать подробнее?`;
+  return `Здравствуйте, ${cap(candidateName ?? 'кандидат', 120)}!\n\nУ нас есть интересная позиция: ${cap(jobTitle, 120)}.\n\nХотите узнать подробнее?`;
 }
 
 const MAX_SOCIAL_PROOF_CHARS = 500;
@@ -8,7 +8,7 @@ const MAX_NOTES_CHARS = 500;
 
 function cap(text: string | undefined | null, max: number): string {
   if (!text) return '';
-  return text.slice(0, max);
+  return text.replace(/[\n\r<>{}]/g, ' ').slice(0, max).trim();
 }
 
 export function outreachPersonalizedPrompt(
@@ -34,13 +34,13 @@ export function outreachPersonalizedPrompt(
   return `Write a hyper-personalized outreach message in Russian to this candidate.
 
 JOB:
-Title: ${job.title}
-Key Skills: ${job.requiredSkills.join(', ')}
+Title: ${cap(job.title, 120)}
+Key Skills: ${job.requiredSkills.slice(0, 10).map((s) => cap(s, 60)).join(', ')}
 
 CANDIDATE:
-Name: ${candidate.name}
-Role: ${candidate.currentPosition ?? 'unknown'}
-Skills: ${candidate.skills.slice(0, 8).join(', ')}
+Name: ${cap(candidate.name, 120)}
+Role: ${cap(candidate.currentPosition, 120) || 'unknown'}
+Skills: ${candidate.skills.slice(0, 8).map((s) => cap(s, 60)).join(', ')}
 
 SOCIAL PROOF (Use this to personalize the hook!):
 ${safeSocialProof ? `Summary: ${safeSocialProof}` : 'None provided'}

@@ -39,21 +39,31 @@ export class AnthropicProvider implements LlmProvider {
     const groqModel = opts.model ?? 'llama-3.3-70b-versatile';
     const model = GROQ_TO_ANTHROPIC[groqModel] ?? 'claude-haiku-4-5-20251001';
 
+    const systemText =
+      opts.responseFormat?.type === 'json_object'
+        ? (opts.system ?? '') +
+          '\n\nRespond with valid JSON only. No prose, no markdown fences.'
+        : opts.system;
+
     try {
-      const response = await this.client.messages.create({
-        model,
-        max_tokens: opts.maxTokens ?? 4096,
-        ...(opts.system && {
-          system: [
-            {
-              type: 'text' as const,
-              text: opts.system,
-              cache_control: { type: 'ephemeral' as const },
-            },
-          ],
-        }),
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      });
+      const response = await this.client.messages.create(
+        {
+          model,
+          max_tokens: opts.maxTokens ?? 4096,
+          temperature: opts.temperature ?? 0.3,
+          ...(systemText && {
+            system: [
+              {
+                type: 'text' as const,
+                text: systemText,
+                cache_control: { type: 'ephemeral' as const },
+              },
+            ],
+          }),
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        },
+        opts.signal ? { signal: opts.signal } : {},
+      );
 
       const output = response.content
         .filter((b) => b.type === 'text')
@@ -63,6 +73,7 @@ export class AnthropicProvider implements LlmProvider {
       const usage = response.usage as any;
       return {
         output,
+        actualModel: model,
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,

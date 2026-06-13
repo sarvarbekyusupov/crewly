@@ -2,13 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { CoordinatorAgent } from './coordinator.agent';
 import { SourcingAgent } from './sourcing.agent';
 import { SchedulingService } from '../scheduling/scheduling.service';
 import { TelegramBotService } from '../../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
+
+function escapeMd(text: string | null | undefined): string {
+  if (!text) return '';
+  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+}
 
 const DEFAULT_INTERVIEW_START_HOUR = 10;
 const DEFAULT_INTERVIEW_DURATION_MINUTES = 60;
@@ -20,14 +24,10 @@ export class PipelineCoordinator {
 
   constructor(
     private readonly db: PrismaService,
-    private readonly agent: CoordinatorAgent,
     private readonly sourcingAgent: SourcingAgent,
     private readonly schedulingSvc: SchedulingService,
     private readonly telegram: TelegramBotService,
     @InjectQueue(QUEUES.MATCH_CANDIDATES) private readonly matchQueue: Queue,
-    @InjectQueue(QUEUES.ADVANCE_SCREENING)
-    private readonly screeningQueue: Queue,
-    @InjectQueue(QUEUES.INGEST_CANDIDATES) private readonly ingestQueue: Queue,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
 
@@ -60,11 +60,14 @@ export class PipelineCoordinator {
       });
 
       if (job) {
-        const strategy = await this.sourcingAgent.draftSourcingStrategy({
-          title: job.title,
-          description: job.description,
-          requiredSkills: job.requiredSkills,
-        });
+        const strategy = await this.sourcingAgent.draftSourcingStrategy(
+          {
+            title: job.title,
+            description: job.description,
+            requiredSkills: job.requiredSkills,
+          },
+          payload.companyId,
+        );
 
         await this.db.job.update({
           where: { id: payload.jobId },
@@ -103,42 +106,39 @@ export class PipelineCoordinator {
 
       if (!app) return;
 
-      const decision = await this.agent.decideNextSteps(
-        {
-          eventType: 'application.created',
-          entityType: 'application',
-          entityId: payload.applicationId,
-          currentStatus: payload.status,
-        },
-        {
-          matchScore: app.matchScore,
-          matchRecommendation: app.matchRecommendation,
-          socialProof: (app.candidate as any).socialProof?.social_proof_summary,
-          hiringManagerLearnings: (app.job as any).hiringManagerFeedbackContext,
-        },
-      );
+      const score = Number(app.matchScore ?? 0);
+      const recommendation = app.matchRecommendation as string | null;
+      const autoRoute =
+        recommendation === 'strong fit' ||
+        (recommendation === 'good fit' && score >= 75) ||
+        score >= 80;
+      const notifyHuman =
+        !autoRoute &&
+        (recommendation === 'good fit' ||
+          recommendation === 'possible fit' ||
+          score >= 55);
 
       this.logger.log(
-        `Coordinator decision for app ${payload.applicationId}: ${decision.action} (${decision.reason})`,
+        `Coordinator routing app ${payload.applicationId}: score=${score} rec=${recommendation} → ${autoRoute ? 'outreach' : notifyHuman ? 'notify_human' : 'wait'}`,
       );
 
-      if (decision.action === 'trigger_screening') {
+      if (autoRoute) {
         await this.outreachQueue.add(
           'send',
           { applicationId: app.id },
           LLM_JOB_OPTIONS,
         );
         this.logger.log(`Autonomous outreach triggered for app ${app.id}`);
-      } else if (decision.action === 'notify_human') {
+      } else if (notifyHuman) {
         const creator = (app.job as any).createdBy;
         if (creator?.telegramChatId) {
           const message =
             `🎯 *New candidate match*\n\n` +
-            `*${(app as any).candidate.fullName}* for *${(app as any).job.title}*\n` +
+            `*${escapeMd((app as any).candidate.fullName)}* for *${escapeMd((app as any).job.title)}*\n` +
             `*Match score:* ${app.matchScore}%\n\n` +
-            `*Matchmaker notes:*\n${(app.matchReasons as any)?.notes || 'No notes'}\n\n` +
-            `*Social proof:*\n${(app as any).candidate.socialProof?.social_proof_summary || 'No data'}\n\n` +
-            `*Coordinator:* ${decision.reason}\n\n` +
+            `*Matchmaker notes:*\n${escapeMd((app.matchReasons as any)?.notes) || 'No notes'}\n\n` +
+            `*Social proof:*\n${escapeMd((app as any).candidate.socialProof?.social_proof_summary) || 'No data'}\n\n` +
+            `*Routing:* Score ${score}% — needs review\n\n` +
             `What do we do?`;
 
           await this.telegram.sendMessage(creator.telegramChatId, message, {
@@ -178,21 +178,10 @@ export class PipelineCoordinator {
       if (event.type === 'screening_complete' && event.payload.passed) {
         const { applicationId } = event.payload;
         this.logger.log(
-          `Screening passed for ${applicationId} - Coordinator deciding...`,
+          `Screening passed for ${applicationId} - scheduling interview`,
         );
 
-        const decision = await this.agent.decideNextSteps({
-          eventType: 'screening_complete',
-          entityType: 'application',
-          entityId: applicationId,
-          currentStatus: 'screened_pass',
-        });
-
-        this.logger.log(
-          `Coordinator decision for passed screening ${applicationId}: ${decision.action} (${decision.reason})`,
-        );
-
-        if (decision.action === 'schedule_interview') {
+        {
           const app = await this.db.application.findUnique({
             where: { id: applicationId },
             include: { job: { include: { createdBy: true } } },

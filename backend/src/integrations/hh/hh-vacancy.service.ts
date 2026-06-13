@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { HhResumeViewItem } from './hh.types';
+import { HhResumeViewItem, HhVacancyStats } from './hh.types';
+import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 
 interface HhSalary {
   from?: number;
@@ -24,6 +25,14 @@ interface HhVacancyBody {
   key_skills?: { name: string }[];
 }
 
+export interface HhActiveVacancyItem {
+  id: string;
+  name: string;
+  alternate_url: string;
+  area?: { name: string };
+  published_at?: string;
+}
+
 export interface HhJobSnapshot {
   id: string;
   title: string;
@@ -40,7 +49,7 @@ export interface HhJobSnapshot {
 @Injectable()
 export class HhVacancyService {
   private readonly logger = new Logger(HhVacancyService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
+  private readonly baseUrl = HH_BASE_URL;
 
   constructor(
     private readonly http: HttpService,
@@ -63,7 +72,7 @@ export class HhVacancyService {
 
     const body: HhVacancyBody = {
       name: job.title,
-      area: { id: '97' }, // Uzbekistan
+      area: { id: HH_UZBEKISTAN_AREA_ID },
       employer: { id: employerId },
       description: job.description,
       type: { id: 'open' },
@@ -72,10 +81,10 @@ export class HhVacancyService {
       schedule: { id: this.mapSchedule(job.workMode) },
     };
 
-    if (job.salaryMin || job.salaryMax) {
+    if (job.salaryMin != null || job.salaryMax != null) {
       body.salary = {
-        ...(job.salaryMin && { from: Number(job.salaryMin) }),
-        ...(job.salaryMax && { to: Number(job.salaryMax) }),
+        ...(job.salaryMin != null && { from: Number(job.salaryMin) }),
+        ...(job.salaryMax != null && { to: Number(job.salaryMax) }),
         currency: job.salaryCurrency ?? 'UZS',
         gross: false,
       };
@@ -103,6 +112,11 @@ export class HhVacancyService {
     // HH returns 201 with Location: /vacancies/{id}
     const location: string = response.headers['location'] ?? '';
     const hhVacancyId = location.split('/').pop() ?? '';
+    if (!hhVacancyId) {
+      throw new Error(
+        `HH returned no Location header after vacancy creation (job ${job.id})`,
+      );
+    }
 
     this.logger.log({ jobId: job.id, hhVacancyId }, 'HH vacancy created');
     return hhVacancyId;
@@ -178,34 +192,40 @@ export class HhVacancyService {
     hhVacancyId: string,
   ): Promise<{ views: number; responses: number }> {
     const response = await firstValueFrom(
-      this.http.get<any>(`${this.baseUrl}/vacancies/${hhVacancyId}/stats`, {
-        headers: this.headers,
-      }),
+      this.http.get<HhVacancyStats>(
+        `${this.baseUrl}/vacancies/${hhVacancyId}/stats`,
+        { headers: this.headers },
+      ),
     );
     return {
-      views: response.data?.views?.total ?? 0,
-      responses: response.data?.responses?.total ?? 0,
+      views: response.data?.views?.value ?? 0,
+      responses: response.data?.responses?.value ?? 0,
     };
   }
 
-  /** List employer's active vacancies on HH. */
-  async listActiveVacancies(): Promise<
-    {
-      id: string;
-      name: string;
-      alternate_url: string;
-      area?: { name: string };
-      published_at?: string;
-    }[]
-  > {
+  /** List all employer's active vacancies on HH (paginates to exhaustion). */
+  async listActiveVacancies(): Promise<HhActiveVacancyItem[]> {
     const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
-    const response = await firstValueFrom(
-      this.http.get<{ items: unknown[] }>(
-        `${this.baseUrl}/employers/${employerId}/vacancies/active`,
-        { headers: this.headers, params: { per_page: 100 } },
-      ),
-    );
-    return (response.data.items ?? []) as any[];
+    const all: HhActiveVacancyItem[] = [];
+    let page = 0;
+
+    while (true) {
+      const response = await firstValueFrom(
+        this.http.get<{
+          items: HhActiveVacancyItem[];
+          pages: number;
+          page: number;
+        }>(`${this.baseUrl}/employers/${employerId}/vacancies/active`, {
+          headers: this.headers,
+          params: { per_page: 100, page },
+        }),
+      );
+      all.push(...(response.data.items ?? []));
+      if (page >= (response.data.pages ?? 1) - 1) break;
+      page++;
+    }
+
+    return all;
   }
 
   /** Extend the posting period of a vacancy. */

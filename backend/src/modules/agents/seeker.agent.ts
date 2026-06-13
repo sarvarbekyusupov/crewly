@@ -4,6 +4,8 @@ import { BaseAgent, extractJson } from './base.agent';
 import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { seekerDecideAndDraftPrompt } from '@crewly/prompts';
 
+const SEEKER_FALLBACK_APPLY_THRESHOLD = 85;
+
 const SeekerApplicationDecisionSchema = z.object({
   should_apply: z.boolean(),
   reason: z.string(),
@@ -35,6 +37,7 @@ export class SeekerAgent extends BaseAgent {
         min_salary_uzs?: string;
         preferred_modes?: string[];
       };
+      socialProof?: Record<string, unknown> | null;
     },
     job: {
       title: string;
@@ -68,7 +71,7 @@ export class SeekerAgent extends BaseAgent {
       return SeekerApplicationDecisionSchema.parse(parsed);
     } catch {
       return {
-        should_apply: job.matchScore >= 85, // Default to true for elite matches
+        should_apply: job.matchScore >= SEEKER_FALLBACK_APPLY_THRESHOLD,
         reason: 'Failed to parse agent decision, using match score fallback.',
       };
     }

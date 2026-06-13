@@ -5,6 +5,8 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       link: [
+        { rel: 'dns-prefetch', href: 'https://fonts.googleapis.com' },
+        { rel: 'dns-prefetch', href: 'https://fonts.gstatic.com' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
@@ -95,11 +97,8 @@ export default defineNuxtConfig({
   fonts: {
     families: [
       { name: 'Fraunces', provider: 'google', display: 'swap' },
-      { name: 'Inter', provider: 'google', display: 'swap' },
       { name: 'JetBrains Mono', provider: 'google', display: 'swap' },
-      { name: 'Source Serif 4', provider: 'google', display: 'swap' },
-      { name: 'DM Sans', provider: 'google', display: 'swap' },
-      { name: 'Manrope', provider: 'google', display: 'swap' },
+      { name: 'Manrope', provider: 'google', display: 'swap', preload: true },
     ],
   },
 
@@ -149,7 +148,7 @@ export default defineNuxtConfig({
 
   nitro: {
     prerender: {
-      routes: ['/', '/candidate', '/terms', '/jobs'],
+      routes: ['/', '/candidate', '/terms', '/privacy', '/jobs'],
     },
     routeRules: {
       '/api/v1/**': {
@@ -157,25 +156,29 @@ export default defineNuxtConfig({
       },
       '/candidate/messages': { redirect: { to: '/candidate/chat', statusCode: 301 } },
       '/candidate/job-discovery': { redirect: { to: '/candidate/jobs', statusCode: 301 } },
-      // Private app routes — no SSR needed
-      '/employer/**': { ssr: false },
-      '/staff/**': { ssr: false },
-      '/tma/**': { ssr: false },
-      '/candidate/dashboard': { ssr: false },
-      '/candidate/jobs': { ssr: false },
-      '/candidate/profile': { ssr: false },
-      '/candidate/offers': { ssr: false },
-      '/candidate/preferences': { ssr: false },
-      '/candidate/prep': { ssr: false },
-      '/candidate/tracker': { ssr: false },
-      '/candidate/analytics': { ssr: false },
-      '/candidate/inbox': { ssr: false },
-      '/candidate/chat/**': { ssr: false },
-      '/candidate/onboarding': { ssr: false },
-      '/candidate/login': { ssr: false },
-      '/candidate/forgot-password': { ssr: false },
-      '/candidate/reset-password': { ssr: false },
-      '/verify-email': { ssr: false },
+      // Private app routes — no SSR, no indexing
+      '/employer/**': { ssr: false, robots: false },
+      '/staff/**': { ssr: false, robots: false },
+      '/tma/**': { ssr: false, robots: false },
+      '/candidate/dashboard': { ssr: false, robots: false },
+      '/candidate/jobs': { ssr: false, robots: false },
+      '/candidate/profile': { ssr: false, robots: false },
+      '/candidate/offers': { ssr: false, robots: false },
+      '/candidate/preferences': { ssr: false, robots: false },
+      '/candidate/prep': { ssr: false, robots: false },
+      '/candidate/tracker': { ssr: false, robots: false },
+      '/candidate/analytics': { ssr: false, robots: false },
+      '/candidate/inbox': { ssr: false, robots: false },
+      '/candidate/chat': { ssr: false, robots: false },
+      '/candidate/chat/**': { ssr: false, robots: false },
+      '/candidate/onboarding': { ssr: false, robots: false },
+      '/candidate/login': { ssr: false, robots: false },
+      '/candidate/forgot-password': { ssr: false, robots: false },
+      '/candidate/reset-password': { ssr: false, robots: false },
+      '/verify-email': { ssr: false, robots: false },
+      // Locale variants of job pages serve identical English content — noindex
+      '/ru/jobs/**': { robots: false },
+      '/uz/jobs/**': { robots: false },
     },
   },
 })

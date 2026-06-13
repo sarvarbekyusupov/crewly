@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HhClientService } from './hh-client.service';
+import { HhQuotaError } from './hh-errors';
+import { runConcurrentCapped } from '../../common/utils/async.utils';
 import {
   CandidateSourceAdapter,
   AdapterSearchParams,
@@ -26,20 +28,24 @@ export class HhAdapter extends CandidateSourceAdapter {
 
     const profiles: NormalizedProfile[] = [];
 
-    for (const item of list.items) {
+    await runConcurrentCapped(list.items, 3, async (item) => {
       let detail: Awaited<ReturnType<HhClientService['getResume']>> | null =
         null;
       try {
         detail = await this.hh.getResume(item.id);
       } catch (err: any) {
-        this.logger.warn(
-          { resumeId: item.id, error: err.message },
-          'Failed to fetch resume detail from HH',
-        );
+        if (err instanceof HhQuotaError) {
+          // Quota exceeded — back off briefly before next slot
+          await new Promise((r) => setTimeout(r, 1000));
+        } else {
+          this.logger.warn(
+            { resumeId: item.id, error: err.message },
+            'Failed to fetch resume detail from HH',
+          );
+        }
+        return;
       }
-      // Respect hh.ru rate limit
-      await new Promise((r) => setTimeout(r, 300));
-      if (!detail) continue;
+      if (!detail) return;
 
       const fullName = [detail.first_name, detail.last_name]
         .filter(Boolean)
@@ -59,7 +65,7 @@ export class HhAdapter extends CandidateSourceAdapter {
             : undefined,
         rawPayload: detail,
       });
-    }
+    });
 
     return {
       profiles,

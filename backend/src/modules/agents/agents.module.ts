@@ -10,7 +10,6 @@ import { SourcingAgent } from './sourcing.agent';
 import { OutreachAgent } from './outreach.agent';
 import { DebriefAgent } from './debrief.agent';
 import { SeekerAgent } from './seeker.agent';
-import { CoordinatorAgent } from './coordinator.agent';
 import { PipelineCoordinator } from './pipeline-coordinator.service';
 import { TelegramPipelineHandler } from './telegram-pipeline-handler.service';
 import { QUEUES } from '../../workers/queue-names';
@@ -24,7 +23,6 @@ import { QUEUES } from '../../workers/queue-names';
     BullModule.registerQueue(
       { name: QUEUES.MATCH_CANDIDATES },
       { name: QUEUES.ADVANCE_SCREENING },
-      { name: QUEUES.INGEST_CANDIDATES },
       { name: QUEUES.SEND_OUTREACH },
     ),
   ],
@@ -35,7 +33,6 @@ import { QUEUES } from '../../workers/queue-names';
     OutreachAgent,
     DebriefAgent,
     SeekerAgent,
-    CoordinatorAgent,
     PipelineCoordinator,
     TelegramPipelineHandler,
   ],
@@ -46,7 +43,6 @@ import { QUEUES } from '../../workers/queue-names';
     OutreachAgent,
     DebriefAgent,
     SeekerAgent,
-    CoordinatorAgent,
     PipelineCoordinator,
   ],
 })

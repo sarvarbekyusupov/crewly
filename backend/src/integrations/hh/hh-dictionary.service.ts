@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { HhArea, HhDictionaries } from './hh.types';
+import { HH_BASE_URL } from './hh.constants';
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -14,8 +15,9 @@ interface CacheEntry<T> {
 @Injectable()
 export class HhDictionaryService {
   private readonly logger = new Logger(HhDictionaryService.name);
-  private readonly baseUrl = 'https://api.hh.uz';
-  private readonly cache = new Map<string, CacheEntry<any>>();
+  private readonly baseUrl = HH_BASE_URL;
+  private readonly cache = new Map<string, CacheEntry<unknown>>();
+  private readonly inflight = new Map<string, Promise<unknown>>();
 
   constructor(
     private readonly http: HttpService,
@@ -30,12 +32,26 @@ export class HhDictionaryService {
   private async fetchCached<T>(key: string, url: string): Promise<T> {
     const entry = this.cache.get(key);
     if (entry && Date.now() < entry.expiresAt) return entry.data as T;
-    const res = await firstValueFrom(
-      this.http.get<T>(url, { headers: this.headers }),
-    );
-    this.cache.set(key, { data: res.data, expiresAt: Date.now() + TTL_MS });
-    this.logger.debug({ key }, 'HH dictionary refreshed');
-    return res.data;
+
+    // Deduplicate concurrent cache misses — only one HTTP call per key at a time
+    let promise = this.inflight.get(key) as Promise<T> | undefined;
+    if (!promise) {
+      promise = firstValueFrom(this.http.get<T>(url, { headers: this.headers }))
+        .then((res) => {
+          this.cache.set(key, {
+            data: res.data,
+            expiresAt: Date.now() + TTL_MS,
+          });
+          this.logger.debug({ key }, 'HH dictionary refreshed');
+          return res.data;
+        })
+        .finally(() => {
+          this.inflight.delete(key);
+        });
+      this.inflight.set(key, promise);
+    }
+
+    return promise;
   }
 
   getAreas(): Promise<HhArea[]> {

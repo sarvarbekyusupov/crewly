@@ -103,6 +103,27 @@ export class SendOutreachProcessor {
         ? String(app.candidate.telegramUserId)
         : null;
 
+    // Generate message BEFORE creating conversation so a LLM failure doesn't
+    // leave an orphaned conversation that blocks all future retries via P2002.
+    const message = await this.agent.generatePersonalizedMessage(
+      {
+        name: app.candidate.fullName ?? 'кандидат',
+        currentPosition: app.candidate.currentPosition,
+        skills: app.candidate.skills,
+        socialProof: (app.candidate.socialProof ?? undefined) as
+          | Record<string, unknown>
+          | undefined,
+      },
+      {
+        title: app.job.title,
+        requiredSkills: app.job.requiredSkills,
+      },
+      (app.matchReasons ?? {}) as Record<string, unknown>,
+      applicationId,
+      app.job.companyId,
+      app.job.id,
+    );
+
     let conversation: Awaited<ReturnType<typeof this.db.conversation.create>>;
     try {
       conversation = await this.db.conversation.create({
@@ -125,23 +146,6 @@ export class SendOutreachProcessor {
       }
       throw err;
     }
-
-    const message = await this.agent.generatePersonalizedMessage(
-      {
-        name: app.candidate.fullName ?? 'кандидат',
-        currentPosition: app.candidate.currentPosition,
-        skills: app.candidate.skills,
-        socialProof: (app.candidate.socialProof ?? undefined) as
-          | Record<string, unknown>
-          | undefined,
-      },
-      {
-        title: app.job.title,
-        requiredSkills: app.job.requiredSkills,
-      },
-      (app.matchReasons ?? {}) as Record<string, unknown>,
-      applicationId,
-    );
 
     await this.db.message.create({
       data: {
@@ -190,10 +194,16 @@ export class SendOutreachProcessor {
         message,
       );
     } else if (channel === 'email' && app.candidate.email) {
+      const safeMessage = message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '<br>');
       resendEmailId = await this.email.send({
         to: app.candidate.email,
         subject: `Интересная вакансия: ${app.job.title}`,
-        html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
+        html: `<p>${safeMessage}</p>`,
       });
     } else if (channel === 'sms' && app.candidate.phone) {
       await this.eskiz.sendSms(app.candidate.phone, message);

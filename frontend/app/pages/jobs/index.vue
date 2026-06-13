@@ -9,28 +9,47 @@ const { data: jobs } = await useFetch<any[]>('/api/v1/public/jobs', {
 })
 
 useHead({
-  title: 'Open Jobs',
-  link: [{ rel: 'canonical', href: 'https://crewly.uz/jobs' }],
+  title: 'Tech & Product Jobs in Uzbekistan, Central Asia and Remote',
 })
 
 useSeoMeta({
   description:
-    'Browse open roles matched by Crewly AI. Apply for tech, product, design, and ops positions at top companies in Central Asia and beyond.',
-  ogTitle: 'Open Jobs | Crewly',
+    'Browse tech, product, design, and ops jobs in Uzbekistan, Central Asia, and remote-friendly companies. Roles matched and screened by Crewly AI — apply once, hear back fast.',
+  ogTitle: 'Tech & Product Jobs in Uzbekistan, Central Asia and Remote | Crewly',
   ogDescription:
-    'Browse open roles matched by Crewly AI. Tech, product, design, and ops at top companies in Central Asia.',
+    'Tech, product, design, and ops jobs in Uzbekistan and Central Asia. Matched by Crewly AI — apply once, skip the noise.',
   ogType: 'website',
-  ogUrl: 'https://crewly.uz/jobs',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Open Jobs | Crewly',
+  twitterTitle: 'Tech & Product Jobs in Uzbekistan, Central Asia and Remote | Crewly',
   twitterDescription:
-    'Browse open roles matched by Crewly AI. Tech, product, design, and ops at top companies in Central Asia.',
+    'Tech, product, design, and ops jobs in Uzbekistan and Central Asia. Matched by Crewly AI — apply once, skip the noise.',
 })
 
 defineOgImageComponent('Default', {
-  title: 'Open Jobs',
+  title: 'Tech & Product Jobs in Uzbekistan, Central Asia and Remote',
   description: 'Browse roles matched by Crewly AI across Central Asia and beyond.',
 })
+
+useHead(() => ({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Tech & Product Jobs in Uzbekistan, Central Asia and Remote',
+        url: 'https://crewly.uz/jobs',
+        numberOfItems: jobs.value?.length ?? 0,
+        itemListElement: (jobs.value ?? []).slice(0, 20).map((job: any, i: number) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          url: `https://crewly.uz/jobs/${job.id}`,
+          name: `${job.title} at ${job.company.name}`,
+        })),
+      }),
+    },
+  ],
+}))
 
 useHead({
   script: [
@@ -67,9 +86,16 @@ function formatSalary(amount: number, currency: string) {
         <UIcon name="i-heroicons-arrow-left" class="size-4" />
         Back to Home
       </NuxtLink>
-      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-3">Open Jobs</h1>
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-3">
+        Tech &amp; Product Jobs in Uzbekistan, Central Asia and Remote
+      </h1>
+      <p class="text-base text-gray-600 dark:text-gray-300 mb-2">
+        Crewly sources and screens candidates for tech, product, design, and ops roles at companies
+        across Uzbekistan, Central Asia, and remote-first teams worldwide. Every role below has been
+        reviewed by our team and is actively hiring.
+      </p>
       <p class="text-lg text-gray-500 dark:text-gray-400">
-        {{ jobs.length }} role{{ jobs.length === 1 ? '' : 's' }} matched by Crewly AI
+        {{ jobs.length }} role{{ jobs.length === 1 ? '' : 's' }} matched and screened by Crewly AI
       </p>
     </div>
 

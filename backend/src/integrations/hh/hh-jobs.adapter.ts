@@ -8,33 +8,13 @@ import {
   JobFetchResult,
   NormalizedJob,
 } from '../adapters/job-source.adapter';
-
-interface HhVacancyListResponse {
-  items: HhVacancyItem[];
-  found: number;
-  pages: number;
-  page: number;
-  per_page: number;
-}
-
-interface HhVacancyItem {
-  id: string;
-  name: string;
-  alternate_url: string;
-  employer: { name: string; alternate_url?: string };
-  area?: { name: string };
-  salary?: { from?: number; to?: number; currency?: string };
-  snippet?: { requirement?: string; responsibility?: string };
-  key_skills?: { name: string }[];
-  experience?: { name: string };
-  employment?: { name: string };
-  schedule?: { name: string };
-  published_at?: string;
-}
+import { HhVacancyItem, HhVacancyListResponse } from './hh.types';
+import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 
 @Injectable()
 export class HhJobsAdapter extends JobSourceAdapter {
   private readonly logger = new Logger(HhJobsAdapter.name);
+  private readonly baseUrl = HH_BASE_URL;
   readonly sourceName = 'hh.uz';
 
   constructor(
@@ -58,13 +38,14 @@ export class HhJobsAdapter extends JobSourceAdapter {
     let response: { data: HhVacancyListResponse };
     try {
       response = await firstValueFrom(
-        this.http.get<HhVacancyListResponse>('https://api.hh.uz/vacancies', {
+        this.http.get<HhVacancyListResponse>(`${this.baseUrl}/vacancies`, {
           params: {
-            area: '97', // Uzbekistan
+            area: HH_UZBEKISTAN_AREA_ID,
             per_page: 50,
             page: params.page,
             ...(params.query && { text: params.query }),
-            ...(params.location && { area: params.location }),
+            ...(params.location &&
+              /^\d+$/.test(params.location) && { area: params.location }),
           },
           headers: this.headers,
         }),
@@ -129,7 +110,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
     try {
       const response = await firstValueFrom(
         this.http.get<{ key_skills?: { name: string }[] }>(
-          `https://api.hh.uz/vacancies/${vacancyId}`,
+          `${this.baseUrl}/vacancies/${vacancyId}`,
           { headers: this.headers },
         ),
       );
@@ -147,7 +128,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
     try {
       const response = await firstValueFrom(
         this.http.get<HhVacancyListResponse>(
-          `https://api.hh.uz/vacancies/${vacancyId}/similar_vacancies`,
+          `${this.baseUrl}/vacancies/${vacancyId}/similar_vacancies`,
           { headers: this.headers, params: { per_page: 20 } },
         ),
       );

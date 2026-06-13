@@ -40,18 +40,22 @@ export class GroqProvider implements LlmProvider {
     ];
 
     try {
-      const completion = await this.client.chat.completions.create({
-        model,
-        messages: groqMessages,
-        max_tokens: opts.maxTokens ?? 4096,
-        temperature: opts.temperature ?? 0.3,
-        ...(opts.responseFormat
-          ? { response_format: opts.responseFormat }
-          : {}),
-      });
+      const completion = await this.client.chat.completions.create(
+        {
+          model,
+          messages: groqMessages,
+          max_tokens: opts.maxTokens ?? 4096,
+          temperature: opts.temperature ?? 0.3,
+          ...(opts.responseFormat
+            ? { response_format: opts.responseFormat }
+            : {}),
+        },
+        opts.signal ? { signal: opts.signal } : {},
+      );
 
       return {
         output: completion.choices[0]?.message?.content ?? '',
+        actualModel: completion.model ?? model,
         inputTokens: completion.usage?.prompt_tokens ?? 0,
         outputTokens: completion.usage?.completion_tokens ?? 0,
         totalTokens: completion.usage?.total_tokens ?? 0,

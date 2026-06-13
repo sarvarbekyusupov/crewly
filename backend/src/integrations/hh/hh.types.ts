@@ -21,8 +21,20 @@ export interface HhResumeSummary {
   updated_at: string;
 }
 
+export interface HhContactPhone {
+  formatted?: string;
+  country?: string;
+  city?: string;
+  number?: string;
+}
+
 export interface HhResumeDetail extends HhResumeSummary {
-  contact?: Array<{ type: { id: string }; value: any; preferred?: boolean }>;
+  can_publish_or_update?: boolean;
+  contact?: Array<{
+    type: { id: string };
+    value: string | HhContactPhone;
+    preferred?: boolean;
+  }>;
   experience?: Array<{
     company: string;
     position: string;
