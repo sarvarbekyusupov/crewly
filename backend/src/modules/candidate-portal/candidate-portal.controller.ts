@@ -166,6 +166,7 @@ export class CandidatePortalController {
       expectedSalaryUzs:
         p.expectedSalaryUzs != null ? String(p.expectedSalaryUzs) : null,
       hhResumeId: p.hhResumeId,
+      hhOauthTokenSet: !!p.hhOauthToken,
       resumeFileUrl: p.resumeFileUrl,
     }));
   }
@@ -321,14 +322,40 @@ export class CandidatePortalController {
   @Get('hh/oauth-url')
   getHhOAuthUrl(@CurrentCandidate() candidate: { id: string }) {
     const url = this.hhOAuth.getAuthorizationUrl(candidate.id);
+    console.log(
+      '[HH oauth-url] generated for candidate:',
+      candidate.id,
+      '→',
+      url,
+    );
     return { url };
   }
 
   @Post('hh/disconnect')
   @HttpCode(HttpStatus.OK)
   async disconnectHh(@CurrentCandidate() candidate: { id: string }) {
-    await this.hhOAuth.clearResumeId(candidate.id);
+    await this.hhOAuth.disconnectHh(candidate.id);
     return { disconnected: true };
+  }
+
+  /** Manually save an HH resume URL/ID when auto-detection was blocked (403 on /resumes/mine). */
+  @Post('hh/resume-url')
+  @HttpCode(HttpStatus.OK)
+  async saveHhResumeUrl(
+    @CurrentCandidate() candidate: { id: string },
+    @Body() body: { resumeUrl: string },
+  ) {
+    const { resumeUrl } = body;
+    if (!resumeUrl) throw new BadRequestException('resumeUrl is required');
+
+    // Accept both a full URL (https://hh.uz/resume/abc123) and a bare ID
+    const match = resumeUrl.match(/\/resume\/([a-zA-Z0-9]+)/);
+    const resumeId = match ? match[1] : resumeUrl.trim();
+    if (!resumeId)
+      throw new BadRequestException('Could not extract resume ID from URL');
+
+    await this.hhOAuth.saveResumeId(candidate.id, resumeId);
+    return { ok: true, resumeId };
   }
 
   // ── HH Resume ─────────────────────────────────────────────────────────────

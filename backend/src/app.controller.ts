@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { AppService } from './app.service';
 import { Public } from './common/decorators/public.decorator';
+import { HhClientService } from './integrations/hh/hh-client.service';
 import { HhOAuthService } from './integrations/hh/hh-oauth.service';
 import { HhResumeService } from './integrations/hh/hh-resume.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -14,6 +15,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly config: ConfigService,
+    private readonly hhClient: HhClientService,
     private readonly hhOAuth: HhOAuthService,
     private readonly hhResume: HhResumeService,
     private readonly db: PrismaService,
@@ -35,16 +37,43 @@ export class AppController {
     const frontendBase = this.config.get<string>('FRONTEND_URL') ?? '';
     const base = `${frontendBase}/candidate/preferences`;
 
+    console.log('[HH callback hit]', { code: !!code, state: !!state, error });
+
     if (error || !code || !state) {
+      console.log('[HH callback] denied — missing code/state or error param');
       return res.redirect(`${base}?hh=denied`);
     }
 
     try {
       const candidateId = this.hhOAuth.verifyCandidateState(state);
+      console.log('[HH callback] state verified, candidateId:', candidateId);
       const tokenResp = await this.hhOAuth.exchangeCode(code, candidateId);
-      const resumes = await this.hhOAuth.getResumesForToken(
-        tokenResp.access_token,
+      console.log(
+        '[HH callback] token exchange SUCCESS, checking account type...',
       );
+
+      const meData = await this.hhClient.getMe(tokenResp.access_token);
+      console.log('[HH /me]', JSON.stringify(meData));
+
+      if (meData.auth_type === 'employer') {
+        await this.hhOAuth.clearTokens(candidateId);
+        return res.redirect(`${base}?hh=employer_account`);
+      }
+
+      let resumes: Awaited<ReturnType<typeof this.hhOAuth.getResumesForToken>>;
+      try {
+        resumes = await this.hhOAuth.getResumesForToken(tokenResp.access_token);
+      } catch (resumeErr: any) {
+        const isForbidden =
+          resumeErr?.response?.status === 403 ||
+          resumeErr?.response?.data?.errors?.[0]?.type === 'forbidden';
+        if (isForbidden) {
+          // Token is already stored — keep it so the user can manually enter their resume URL.
+          // Redirect to a partial-connection state rather than failing entirely.
+          return res.redirect(`${base}?hh=connected_no_resume`);
+        }
+        throw resumeErr;
+      }
 
       if (!resumes.length) {
         return res.redirect(`${base}?hh=no_resume`);
@@ -75,8 +104,24 @@ export class AppController {
       }
       return res.redirect(`${base}?hh=connected`);
     } catch (err: any) {
-      this.logger.error({ err: err.message }, 'HH OAuth callback failed');
-      return res.redirect(`${base}?hh=error`);
+      console.error('[HH OAuth callback failed]', {
+        message: err.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      this.logger.error(
+        {
+          message: err.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        },
+        'HH OAuth callback failed',
+      );
+      const detail = err?.response?.data
+        ? JSON.stringify(err.response.data)
+        : (err.message ?? 'unknown');
+      const reason = encodeURIComponent(detail);
+      return res.redirect(`${base}?hh=error&reason=${reason}`);
     }
   }
 }

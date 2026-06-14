@@ -138,7 +138,7 @@ export class SyncHhStatusProcessor {
           const newItems = items.filter((n) => !knownNegIds.has(n.id));
           if (!newItems.length) return;
 
-          for (const neg of newItems) {
+          await runConcurrentCapped(newItems, 5, async (neg) => {
             let candidate: { id: string };
             try {
               candidate = await this.hhCandidate.findOrCreate(neg.resume.id);
@@ -147,7 +147,7 @@ export class SyncHhStatusProcessor {
                 { resumeId: neg.resume.id, err: err.message },
                 'Resume fetch failed — skipping inbound response',
               );
-              continue;
+              return;
             }
 
             await this.db.application.upsert({
@@ -161,11 +161,11 @@ export class SyncHhStatusProcessor {
                 status: 'applied',
                 hhNegotiationId: neg.id,
               },
-              update: { hhNegotiationId: neg.id },
+              update: {},
               select: { id: true },
             });
             created++;
-          }
+          });
         } catch (err: any) {
           this.logger.warn(
             { jobId: job.id, err: err.message },
@@ -221,55 +221,60 @@ export class SyncHhStatusProcessor {
       }
 
       let updated = 0;
-      for (const [candidateId, candidateApps] of byCandidateId) {
-        let token: string;
-        try {
-          token = await this.hhOAuth.getCandidateToken(candidateId);
-        } catch {
-          continue;
-        }
-
-        // Fetch all candidate negotiations, paginating until exhausted
-        const negotiations: HhApplicantNegotiation[] = [];
-        try {
-          let page = 0;
-          while (true) {
-            const resp = await withRetry(() =>
-              this.hhApplicant.getNegotiations(token, { per_page: 50, page }),
-            );
-            negotiations.push(...(resp.items ?? []));
-            if (page >= (resp.pages ?? 1) - 1) break;
-            page++;
-          }
-        } catch (err: any) {
-          this.logger.warn(
-            { candidateId, err: err.message },
-            'HH negotiations fetch failed during candidate sync',
-          );
-          continue;
-        }
-
-        const negById = new Map(negotiations.map((n) => [n.id, n]));
-
-        for (const app of candidateApps) {
-          const neg = negById.get(app.hhNegotiationId!);
-          if (!neg) continue;
-          const newStatus = HH_CANDIDATE_STATE_MAP[neg.state.id];
-          if (!newStatus || newStatus === app.status) continue;
+      const candidateEntries = Array.from(byCandidateId.entries());
+      await runConcurrentCapped(
+        candidateEntries,
+        5,
+        async ([candidateId, candidateApps]) => {
+          let token: string;
           try {
-            await this.db.seekerApplication.update({
-              where: { id: app.id },
-              data: { status: newStatus },
-            });
-            updated++;
+            token = await this.hhOAuth.getCandidateToken(candidateId);
+          } catch {
+            return;
+          }
+
+          // Fetch all candidate negotiations, paginating until exhausted
+          const negotiations: HhApplicantNegotiation[] = [];
+          try {
+            let page = 0;
+            while (true) {
+              const resp = await withRetry(() =>
+                this.hhApplicant.getNegotiations(token, { per_page: 50, page }),
+              );
+              negotiations.push(...(resp.items ?? []));
+              if (page >= (resp.pages ?? 1) - 1) break;
+              page++;
+            }
           } catch (err: any) {
             this.logger.warn(
-              { appId: app.id, err: err.message },
-              'Failed to update seeker application status',
+              { candidateId, err: err.message },
+              'HH negotiations fetch failed during candidate sync',
             );
+            return;
           }
-        }
-      }
+
+          const negById = new Map(negotiations.map((n) => [n.id, n]));
+
+          for (const app of candidateApps) {
+            const neg = negById.get(app.hhNegotiationId!);
+            if (!neg) continue;
+            const newStatus = HH_CANDIDATE_STATE_MAP[neg.state.id];
+            if (!newStatus || newStatus === app.status) continue;
+            try {
+              await this.db.seekerApplication.update({
+                where: { id: app.id },
+                data: { status: newStatus },
+              });
+              updated++;
+            } catch (err: any) {
+              this.logger.warn(
+                { appId: app.id, err: err.message },
+                'Failed to update seeker application status',
+              );
+            }
+          }
+        },
+      );
 
       totalUpdated += updated;
       cursor = apps[apps.length - 1].id;

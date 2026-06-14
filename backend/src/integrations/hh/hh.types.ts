@@ -10,8 +10,8 @@ export interface HhResumeSummary {
   id: string;
   title: string;
   url: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   middle_name?: string;
   age?: number;
   area?: { id: string; name: string };
@@ -95,6 +95,7 @@ export interface HhArea {
 
 export interface HhMeResponse {
   id: string;
+  auth_type: 'applicant' | 'employer' | 'application';
   is_employer: boolean;
   is_applicant: boolean;
   email?: string;

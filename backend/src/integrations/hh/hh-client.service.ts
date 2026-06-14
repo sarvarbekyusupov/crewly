@@ -10,8 +10,9 @@ import {
   HhVacancyDetail,
   HhMeResponse,
 } from './hh.types';
-import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
+import { HH_BASE_URL, HH_HOST, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 import { HhQuotaError } from './hh-errors';
+import { withRetry } from '../../common/utils/async.utils';
 
 @Injectable()
 export class HhClientService {
@@ -34,12 +35,16 @@ export class HhClientService {
   }
 
   async searchResumes(params: HhSearchParams): Promise<HhResumeListResponse> {
+    const { area, ...restParams } = params;
+    const resolvedArea =
+      area && /^\d+$/.test(area) ? area : HH_UZBEKISTAN_AREA_ID;
     const response = await firstValueFrom(
       this.http.get<HhResumeListResponse>(`${this.baseUrl}/resumes`, {
         params: {
-          area: HH_UZBEKISTAN_AREA_ID,
+          host: HH_HOST,
+          area: resolvedArea,
           per_page: 100,
-          ...params,
+          ...restParams,
         },
         headers: this.headers,
       }),
@@ -51,6 +56,7 @@ export class HhClientService {
     try {
       const response = await firstValueFrom(
         this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${id}`, {
+          params: { host: HH_HOST },
           headers: this.headers,
         }),
       );
@@ -112,6 +118,7 @@ export class HhClientService {
   async getVacancyDetail(vacancyId: string): Promise<HhVacancyDetail> {
     const response = await firstValueFrom(
       this.http.get<HhVacancyDetail>(`${this.baseUrl}/vacancies/${vacancyId}`, {
+        params: { host: HH_HOST },
         headers: this.headers,
       }),
     );
@@ -119,13 +126,25 @@ export class HhClientService {
   }
 
   async getPotentialResumes(vacancyId: string): Promise<HhResumeSummary[]> {
-    const response = await firstValueFrom(
-      this.http.get<HhResumeListResponse>(
-        `${this.baseUrl}/vacancies/${vacancyId}/potential_resumes`,
-        { headers: this.headers, params: { per_page: 100 } },
-      ),
-    );
-    return response.data.items ?? [];
+    const all: HhResumeSummary[] = [];
+    let page = 0;
+    while (true) {
+      const response = await withRetry(() =>
+        firstValueFrom(
+          this.http.get<HhResumeListResponse>(
+            `${this.baseUrl}/vacancies/${vacancyId}/potential_resumes`,
+            {
+              headers: this.headers,
+              params: { host: HH_HOST, per_page: 100, page },
+            },
+          ),
+        ),
+      );
+      all.push(...(response.data.items ?? []));
+      if (page >= (response.data.pages ?? 1) - 1) break;
+      page++;
+    }
+    return all;
   }
 
   /** Returns true if the resume is suitable for the vacancy per HH's algorithm. */
@@ -137,7 +156,10 @@ export class HhClientService {
       await firstValueFrom(
         this.http.get(
           `${this.baseUrl}/vacancies/${vacancyId}/check_suitable_resume`,
-          { headers: this.headers, params: { resume_id: resumeId } },
+          {
+            headers: this.headers,
+            params: { host: HH_HOST, resume_id: resumeId },
+          },
         ),
       );
       return true;
@@ -148,11 +170,12 @@ export class HhClientService {
     }
   }
 
-  /** Returns info about the authenticated user (employer). */
+  /** Returns info about the authenticated user. */
   async getMe(token: string): Promise<HhMeResponse> {
     const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const response = await firstValueFrom(
       this.http.get<HhMeResponse>(`${this.baseUrl}/me`, {
+        params: { host: HH_HOST },
         headers: {
           Authorization: `Bearer ${token}`,
           'User-Agent': userAgent,

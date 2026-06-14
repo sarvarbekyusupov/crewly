@@ -52,7 +52,7 @@ export class HhWebhookService implements OnModuleInit {
     const webhookUrl = `${publicUrl}/api/v1/webhooks/hh`;
 
     try {
-      await this.ensureSubscription(webhookUrl, secret, token);
+      await this.ensureSubscription(webhookUrl, secret);
     } catch (err: any) {
       this.logger.error({ err: err.message }, 'HH webhook subscription failed');
     }
@@ -62,7 +62,7 @@ export class HhWebhookService implements OnModuleInit {
     const token = this.config.get<string>('HH_EMPLOYER_TOKEN');
     const ua = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     return {
-      Authorization: `Bearer ${token}`,
+      ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': ua,
       'HH-User-Agent': ua,
       'Content-Type': 'application/json',
@@ -72,7 +72,6 @@ export class HhWebhookService implements OnModuleInit {
   private async ensureSubscription(
     webhookUrl: string,
     secret: string,
-    _token: string,
   ): Promise<void> {
     const existing = await firstValueFrom(
       this.http.get<{
@@ -83,18 +82,33 @@ export class HhWebhookService implements OnModuleInit {
     );
 
     const subscribedSet = new Set(SUBSCRIBED_TYPES);
-    const alreadySubscribed = existing.data.items?.some((s) => {
-      if (s.url !== webhookUrl) return false;
-      const existing = new Set(s.types ?? []);
+    const forOurUrl =
+      existing.data.items?.filter((s) => s.url === webhookUrl) ?? [];
+
+    const exactMatch = forOurUrl.find((s) => {
+      const current = new Set(s.types ?? []);
       return (
-        subscribedSet.size === existing.size &&
-        [...subscribedSet].every((t) => existing.has(t))
+        subscribedSet.size === current.size &&
+        [...subscribedSet].every((t) => current.has(t))
       );
     });
 
-    if (alreadySubscribed) {
+    if (exactMatch) {
       this.logger.log({ webhookUrl }, 'HH webhook subscription already active');
       return;
+    }
+
+    // Delete stale subscriptions for this URL (wrong type set) to avoid duplicates
+    for (const stale of forOurUrl) {
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/webhook/subscriptions/${stale.id}`, {
+          headers: this.authHeaders,
+        }),
+      );
+      this.logger.log(
+        { subscriptionId: stale.id },
+        'HH stale webhook subscription deleted',
+      );
     }
 
     await firstValueFrom(
@@ -112,12 +126,21 @@ export class HhWebhookService implements OnModuleInit {
   }
 
   async handleEvent(payload: HhWebhookPayload): Promise<void> {
-    // Replay protection: reject events older than 1 hour
-    const ageMs = Date.now() - new Date(payload.created_at).getTime();
-    if (ageMs > 60 * 60 * 1000) {
-      this.logger.warn(
+    // Replay protection: reject events from the future (clock skew) or older than 24h.
+    // 1h was too tight — HH retries delayed deliveries and legitimate events were dropped.
+    const ts = new Date(payload.created_at).getTime();
+    if (!Number.isFinite(ts)) {
+      this.logger.error(
+        { type: payload.type, created_at: payload.created_at },
+        'HH webhook event has unparseable created_at — rejecting',
+      );
+      return;
+    }
+    const ageMs = Date.now() - ts;
+    if (ageMs < 0 || ageMs > 24 * 60 * 60 * 1000) {
+      this.logger.error(
         { type: payload.type, created_at: payload.created_at, ageMs },
-        'HH webhook event too old — possible replay, skipping',
+        'HH webhook event outside replay window — possible replay attack or extreme delay, skipping',
       );
       return;
     }
@@ -181,7 +204,9 @@ export class HhWebhookService implements OnModuleInit {
         status: 'applied',
         hhNegotiationId: negotiationId,
       },
-      update: {},
+      // Patch hhNegotiationId if the application already exists without one
+      // (e.g. candidate applied via another channel first)
+      update: { hhNegotiationId: negotiationId },
       select: { id: true },
     });
 
@@ -239,6 +264,12 @@ export class HhWebhookService implements OnModuleInit {
           'HH seeker application status updated via webhook',
         );
       }
+      return;
     }
+
+    this.logger.warn(
+      { negotiationId, stateId },
+      'NEGOTIATION_STATE_CHANGE — no matching application found for negotiation ID',
+    );
   }
 }

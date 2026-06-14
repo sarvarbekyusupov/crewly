@@ -61,10 +61,12 @@ export class HhNegotiationsService {
    * GET /negotiations?vacancy_id= returns {collections, states} — extract states.
    */
   async getVacancyCollections(vacancyId: string): Promise<HhEmployerState[]> {
-    const response = await firstValueFrom(
-      this.http.get<{ states?: HhEmployerState[]; collections?: unknown[] }>(
-        `${this.baseUrl}/negotiations`,
-        { params: { vacancy_id: vacancyId }, headers: this.headers },
+    const response = await withRetry(() =>
+      firstValueFrom(
+        this.http.get<{ states?: HhEmployerState[]; collections?: unknown[] }>(
+          `${this.baseUrl}/negotiations`,
+          { params: { vacancy_id: vacancyId }, headers: this.headers },
+        ),
       ),
     );
     return response.data.states ?? [];
@@ -80,13 +82,15 @@ export class HhNegotiationsService {
     opts: { perPage?: number } = {},
   ): Promise<{ items: HhNegotiationItem[] }> {
     // Step 1: get collection URLs for this vacancy
-    const collectionsResp = await firstValueFrom(
-      this.http.get<{
-        collections?: Array<{ id: string; url: string }>;
-      }>(`${this.baseUrl}/negotiations`, {
-        params: { vacancy_id: vacancyId },
-        headers: this.headers,
-      }),
+    const collectionsResp = await withRetry(() =>
+      firstValueFrom(
+        this.http.get<{
+          collections?: Array<{ id: string; url: string }>;
+        }>(`${this.baseUrl}/negotiations`, {
+          params: { vacancy_id: vacancyId },
+          headers: this.headers,
+        }),
+      ),
     );
 
     const collections = collectionsResp.data.collections ?? [];
@@ -147,7 +151,8 @@ export class HhNegotiationsService {
     if (!token) {
       throw new Error('HH_EMPLOYER_TOKEN is not configured');
     }
-    const employerId = this.config.get<string>('HH_EMPLOYER_ID') ?? '';
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
     const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
     const authHeaders = {
       Authorization: `Bearer ${token}`,
@@ -160,13 +165,15 @@ export class HhNegotiationsService {
     let page = 0;
     let totalPages = 1;
     while (!vacancyItem && page < totalPages) {
-      const actionsResp = await firstValueFrom(
-        this.http.get<ActiveVacanciesResp>(
-          `${this.baseUrl}/employers/${employerId}/vacancies/active`,
-          {
-            params: { resume_id: params.resumeId, per_page: 100, page },
-            headers: authHeaders,
-          },
+      const actionsResp = await withRetry(() =>
+        firstValueFrom(
+          this.http.get<ActiveVacanciesResp>(
+            `${this.baseUrl}/employers/${employerId}/vacancies/active`,
+            {
+              params: { resume_id: params.resumeId, per_page: 100, page },
+              headers: authHeaders,
+            },
+          ),
         ),
       );
       vacancyItem = actionsResp.data.items?.find(
@@ -200,15 +207,22 @@ export class HhNegotiationsService {
     };
     const isGet = action.method.toUpperCase() === 'GET';
 
-    // Step 2: execute the action using its dynamic URL and method
-    const response = await firstValueFrom(
-      this.http.request({
-        method: action.method,
-        url: action.url,
-        ...(isGet ? { params: payload } : { data: payload }),
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-      }),
+    // Step 2: execute the action using its dynamic URL and method.
+    // Only retry idempotent methods — POST creates a negotiation and must not be retried
+    // (HH may succeed then return 5xx, causing a duplicate negotiation on retry).
+    const isSafe = ['GET', 'PUT', 'DELETE'].includes(
+      action.method.toUpperCase(),
     );
+    const request = () =>
+      firstValueFrom(
+        this.http.request({
+          method: action.method,
+          url: action.url,
+          ...(isGet ? { params: payload } : { data: payload }),
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        }),
+      );
+    const response = isSafe ? await withRetry(request) : await request();
 
     const location: string = response.headers['location'] ?? '';
     const negotiationId = location.split('/').pop();
@@ -239,11 +253,13 @@ export class HhNegotiationsService {
     negotiationId: string,
     message?: string,
   ): Promise<void> {
-    await firstValueFrom(
-      this.http.put(
-        `${this.baseUrl}/negotiations/${collection}/${negotiationId}`,
-        { ...(message && { message }) },
-        { headers: this.headers },
+    await withRetry(() =>
+      firstValueFrom(
+        this.http.put(
+          `${this.baseUrl}/negotiations/${collection}/${negotiationId}`,
+          { ...(message && { message }) },
+          { headers: { ...this.headers, 'Content-Type': 'application/json' } },
+        ),
       ),
     );
     this.logger.log(

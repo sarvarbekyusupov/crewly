@@ -8,6 +8,29 @@ import type {
   HhResumeViewItem,
 } from './hh.types';
 import { HH_BASE_URL } from './hh.constants';
+import { withRetry } from '../../common/utils/async.utils';
+
+const READ_ONLY_FIELDS = new Set([
+  'id',
+  'url',
+  'alternate_url',
+  'status',
+  'access',
+  'blocked_site',
+  'can_publish_or_update',
+  'next_publish_at',
+  'updated_at',
+  'created_at',
+  'views',
+  'download',
+  'resume_locale',
+  'progress',
+  'marked',
+  'title_suggestions',
+  'moderation_note',
+  'actions',
+  'owner',
+]);
 
 @Injectable()
 export class HhResumeService {
@@ -65,13 +88,28 @@ export class HhResumeService {
     accessToken: string,
     resumeId: string,
   ): Promise<{ items: HhResumeViewItem[]; found: number }> {
-    const resp = await firstValueFrom(
-      this.http.get<{ items: HhResumeViewItem[]; found: number }>(
-        `${this.baseUrl}/resumes/${resumeId}/views`,
-        { headers: this.headers(accessToken) },
-      ),
-    );
-    return resp.data;
+    const all: HhResumeViewItem[] = [];
+    let found = 0;
+    let page = 0;
+    while (true) {
+      const resp = await withRetry(() =>
+        firstValueFrom(
+          this.http.get<{
+            items: HhResumeViewItem[];
+            found: number;
+            pages?: number;
+          }>(`${this.baseUrl}/resumes/${resumeId}/views`, {
+            headers: this.headers(accessToken),
+            params: { per_page: 100, page },
+          }),
+        ),
+      );
+      if (page === 0) found = resp.data.found ?? 0;
+      all.push(...(resp.data.items ?? []));
+      if (page >= (resp.data.pages ?? 1) - 1) break;
+      page++;
+    }
+    return { items: all, found };
   }
 
   /** PUT /resumes/{id} — update specific fields on HH resume (GET-merge-PUT) */
@@ -87,30 +125,6 @@ export class HhResumeService {
         `Resume ${resumeId} cannot be updated right now (can_publish_or_update=false)`,
       );
     }
-
-    // Whitelist: strip known HH read-only fields before PUT
-    // HH rejects requests that include these server-generated fields
-    const READ_ONLY_FIELDS = new Set([
-      'id',
-      'url',
-      'alternate_url',
-      'status',
-      'access',
-      'blocked_site',
-      'can_publish_or_update',
-      'next_publish_at',
-      'updated_at',
-      'created_at',
-      'views',
-      'download',
-      'resume_locale',
-      'progress',
-      'marked',
-      'title_suggestions',
-      'moderation_note',
-      'actions',
-      'owner',
-    ]);
 
     const writable = Object.fromEntries(
       Object.entries(current as object).filter(

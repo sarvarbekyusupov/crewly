@@ -1,5 +1,7 @@
-export const HH_BASE_URL = 'https://api.hh.uz';
+export const HH_BASE_URL = 'https://api.hh.ru';
+export const HH_HOST = 'hh.uz';
 export const HH_AUTH_URL = 'https://hh.uz/oauth/authorize';
+export const HH_TOKEN_URL = 'https://api.hh.ru/token?host=hh.uz';
 export const HH_UZBEKISTAN_AREA_ID = '97';
 
 export const HH_EMPLOYER_STATE_MAP: Record<string, string> = {
@@ -22,6 +24,7 @@ export const HH_CANDIDATE_STATE_MAP: Record<string, string> = {
 export const HH_SEEKER_STATE_MAP: Record<string, string> = {
   response: 'applied',
   invitation: 'interview',
+  phone_interview: 'interview',
   discard: 'rejected',
   discard_after_interview: 'rejected',
   offer: 'offer',

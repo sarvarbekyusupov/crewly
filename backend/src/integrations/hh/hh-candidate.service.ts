@@ -13,8 +13,13 @@ export class HhCandidateService {
   ) {}
 
   async findOrCreate(resumeId: string): Promise<{ id: string }> {
+    // Scope to sourceId=null — HH-sourced candidates created here have no sourceId.
+    // Note: @@unique([sourceId, externalId]) treats NULL!=NULL in Postgres, so P2002
+    // won't fire on concurrent creates with null sourceId. The findFirst guard below is
+    // the only dedup; a schema-level partial unique index on (externalId) WHERE sourceId
+    // IS NULL would fully solve this.
     const existing = await this.db.candidate.findFirst({
-      where: { externalId: resumeId },
+      where: { externalId: resumeId, sourceId: null },
       select: { id: true },
     });
     if (existing) return existing;
@@ -53,9 +58,8 @@ export class HhCandidateService {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2002'
       ) {
-        // Race: another request created this candidate between our findFirst and create
         const raced = await this.db.candidate.findFirst({
-          where: { externalId: resumeId },
+          where: { externalId: resumeId, sourceId: null },
           select: { id: true },
         });
         if (raced) return raced;

@@ -361,10 +361,14 @@ export class WebhooksController implements OnModuleInit {
 
     const rawId = payload.object_id ?? payload.negotiation?.id;
     if (rawId) {
-      await this.idempotency.execute(`hh:${rawId}`, 48, async () => {
-        await this.hhWebhook.handleEvent(payload);
-        return { ok: true as const };
-      });
+      await this.idempotency.execute(
+        `hh:${payload.type}:${rawId}`,
+        48,
+        async () => {
+          await this.hhWebhook.handleEvent(payload);
+          return { ok: true as const };
+        },
+      );
     } else {
       this.logger.warn(
         { type: payload.type },

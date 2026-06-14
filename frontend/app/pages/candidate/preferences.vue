@@ -33,14 +33,40 @@ onMounted(() => {
     refresh()
   } else if (hhParam === 'denied') {
     toast.add({ title: t('candidate.preferences.hhAccessDenied'), color: 'warning' })
+  } else if (hhParam === 'employer_account') {
+    toast.add({
+      title: t('candidate.preferences.hhConnectFailed'),
+      description:
+        'You connected an employer HH account. Please log in to HH as a job seeker (соискатель) and try again.',
+      color: 'error',
+    })
   } else if (hhParam === 'no_resume') {
     toast.add({
       title: t('candidate.preferences.hhConnectFailed'),
-      description: 'No resumes found on your HH account',
+      description: 'No resumes found on your HH account. Please create a resume on hh.uz first.',
+      color: 'error',
+    })
+  } else if (hhParam === 'connected_no_resume') {
+    toast.add({
+      title: 'HH account connected',
+      description: 'Paste your HH resume URL below to complete setup.',
+      color: 'warning',
+    })
+    refresh()
+  } else if (hhParam === 'resume_forbidden') {
+    toast.add({
+      title: t('candidate.preferences.hhConnectFailed'),
+      description:
+        'Access to your HH resumes was denied. The HH application needs applicant (соискатель) API access enabled on dev.hh.uz.',
       color: 'error',
     })
   } else if (hhParam === 'error') {
-    toast.add({ title: t('candidate.preferences.hhConnectFailed'), color: 'error' })
+    const reason = route.query.reason as string | undefined
+    toast.add({
+      title: t('candidate.preferences.hhConnectFailed'),
+      description: reason ? decodeURIComponent(reason) : undefined,
+      color: 'error',
+    })
   }
 })
 
@@ -75,6 +101,29 @@ async function disconnectHh() {
     })
   } finally {
     disconnecting.value = false
+  }
+}
+
+const resumeUrlInput = ref('')
+const savingResumeUrl = ref(false)
+
+async function saveResumeUrl() {
+  const url = resumeUrlInput.value.trim()
+  if (!url) return
+  savingResumeUrl.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/hh/resume-url', { resumeUrl: url })
+    toast.add({ title: 'HH resume linked!', color: 'success' })
+    resumeUrlInput.value = ''
+    refresh()
+  } catch (e) {
+    toast.add({
+      title: 'Failed to save resume URL',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+  } finally {
+    savingResumeUrl.value = false
   }
 }
 
@@ -466,6 +515,43 @@ const save = handleSubmit(async (values) => {
               <span>Disconnect</span>
             </button>
           </div>
+        </div>
+
+        <!-- Partial connection state: token stored but no resume ID yet -->
+        <div v-else-if="prefs?.hhOauthTokenSet" class="prefs-hh-partial">
+          <p class="prefs-hint" style="margin-bottom: 10px">
+            HH account connected — paste your resume URL from hh.uz to finish setup.
+            <br />
+            <span style="opacity: 0.6; font-size: 0.85em">
+              Example: https://hh.uz/resume/abc123def456
+            </span>
+          </p>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <UInput
+              v-model="resumeUrlInput"
+              placeholder="https://hh.uz/resume/..."
+              style="flex: 1"
+              @keydown.enter.prevent="saveResumeUrl"
+            />
+            <UButton
+              type="button"
+              :loading="savingResumeUrl"
+              icon="i-heroicons-check"
+              @click="saveResumeUrl"
+            >
+              Save
+            </UButton>
+          </div>
+          <button
+            type="button"
+            class="prefs-hh-action-btn prefs-hh-action-btn--danger"
+            style="margin-top: 10px"
+            :disabled="disconnecting"
+            @click="disconnectHh"
+          >
+            <UIcon name="i-heroicons-x-mark" />
+            <span>Disconnect</span>
+          </button>
         </div>
 
         <!-- Not connected state -->
