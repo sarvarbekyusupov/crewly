@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HhClientService } from './hh-client.service';
 import { HhQuotaError } from './hh-errors';
-import { runConcurrentCapped } from '../../common/utils/async.utils';
+import { runConcurrentCapped, withRetry } from '../../common/utils/async.utils';
 import {
   CandidateSourceAdapter,
   AdapterSearchParams,
@@ -11,7 +11,7 @@ import {
 
 @Injectable()
 export class HhAdapter extends CandidateSourceAdapter {
-  readonly sourceName = 'hh.uz';
+  readonly sourceName = 'hh.ru'; // must match processors and DB queries which use 'hh.ru'
   private readonly logger = new Logger(HhAdapter.name);
 
   constructor(private readonly hh: HhClientService) {
@@ -22,21 +22,27 @@ export class HhAdapter extends CandidateSourceAdapter {
     const list = await this.hh.searchResumes({
       text: params.query,
       specialization: params.specialization,
-      area: params.location,
+      ...(params.location &&
+        /^\d+$/.test(params.location) && { area: params.location }),
       page: params.page,
     });
 
     const profiles: NormalizedProfile[] = [];
 
+    let quotaHit = false;
     await runConcurrentCapped(list.items, 3, async (item) => {
+      if (quotaHit) return;
       let detail: Awaited<ReturnType<HhClientService['getResume']>> | null =
         null;
       try {
-        detail = await this.hh.getResume(item.id);
+        detail = await withRetry(() => this.hh.getResume(item.id));
       } catch (err: any) {
         if (err instanceof HhQuotaError) {
-          // Quota exceeded — back off briefly before next slot
-          await new Promise((r) => setTimeout(r, 1000));
+          quotaHit = true;
+          this.logger.warn(
+            { resumeId: item.id },
+            'HH quota hit — stopping page fetch',
+          );
         } else {
           this.logger.warn(
             { resumeId: item.id, error: err.message },

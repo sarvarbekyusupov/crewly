@@ -118,6 +118,7 @@ export class HhApplicantService {
     return resp.data;
   }
 
+  // TODO: HH deprecated this endpoint. Migrate to new chat API when available.
   /** GET /negotiations/{id}/messages — message thread for applicant */
   async getNegotiationMessages(
     accessToken: string,
@@ -132,6 +133,7 @@ export class HhApplicantService {
     return resp.data;
   }
 
+  // TODO: HH deprecated this endpoint. Migrate to new chat API when available.
   /** POST /negotiations/{id}/messages — send message as applicant */
   async postNegotiationMessage(
     accessToken: string,

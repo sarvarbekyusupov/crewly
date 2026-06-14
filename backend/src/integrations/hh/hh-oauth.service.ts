@@ -10,7 +10,12 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../../prisma/prisma.service';
-import { HH_BASE_URL, HH_AUTH_URL } from './hh.constants';
+import {
+  HH_BASE_URL,
+  HH_AUTH_URL,
+  HH_HOST,
+  HH_TOKEN_URL,
+} from './hh.constants';
 
 interface HhTokenResponse {
   access_token: string;
@@ -25,7 +30,8 @@ interface HhResumeMine {
   alternate_url: string;
 }
 
-const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // refresh 5 min before expiry
+// HH only allows refresh AFTER token expires: "token not expired" = 400 invalid_grant.
+// No buffer — refresh only when Date.now() >= expiresAt.
 
 @Injectable()
 export class HhOAuthService {
@@ -45,13 +51,20 @@ export class HhOAuthService {
   }
 
   getAuthorizationUrl(candidateId: string): string {
-    const clientId = this.config.get<string>('HH_CLIENT_ID') ?? '';
-    const redirectUri = this.config.get<string>('HH_REDIRECT_URI') ?? '';
+    const clientId = this.config.get<string>('HH_CLIENT_ID');
+    const redirectUri = this.config.get<string>('HH_REDIRECT_URI');
+    const jwtSecret = this.config.get<string>('JWT_CANDIDATE_SECRET');
+    if (!clientId || !redirectUri) {
+      throw new Error('HH_CLIENT_ID and HH_REDIRECT_URI must be configured');
+    }
+    if (!jwtSecret) {
+      throw new Error('JWT_CANDIDATE_SECRET must be configured');
+    }
 
     const state = this.jwt.sign(
       { candidateId, nonce: randomBytes(16).toString('hex') },
       {
-        secret: this.config.get<string>('JWT_CANDIDATE_SECRET'),
+        secret: jwtSecret,
         expiresIn: '10m',
       },
     );
@@ -67,14 +80,17 @@ export class HhOAuthService {
   }
 
   verifyCandidateState(state: string): string {
+    const jwtSecret = this.config.get<string>('JWT_CANDIDATE_SECRET');
+    if (!jwtSecret) throw new Error('JWT_CANDIDATE_SECRET must be configured');
     try {
       const payload = this.jwt.verify<{ candidateId: string }>(state, {
-        secret: this.config.get<string>('JWT_CANDIDATE_SECRET'),
+        secret: jwtSecret,
       });
       if (!payload?.candidateId)
         throw new BadRequestException('Invalid state payload');
       return payload.candidateId;
-    } catch {
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
       throw new BadRequestException('Invalid or expired OAuth state');
     }
   }
@@ -83,37 +99,63 @@ export class HhOAuthService {
     code: string,
     candidateId: string,
   ): Promise<HhTokenResponse> {
-    const clientId = this.config.get<string>('HH_CLIENT_ID') ?? '';
-    const clientSecret = this.config.get<string>('HH_CLIENT_SECRET') ?? '';
-    const redirectUri = this.config.get<string>('HH_REDIRECT_URI') ?? '';
+    const clientId = this.config.get<string>('HH_CLIENT_ID');
+    const clientSecret = this.config.get<string>('HH_CLIENT_SECRET');
+    const redirectUri = this.config.get<string>('HH_REDIRECT_URI');
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error(
+        'HH_CLIENT_ID, HH_CLIENT_SECRET and HH_REDIRECT_URI must be configured',
+      );
+    }
 
-    const response = await firstValueFrom(
-      this.http.post<HhTokenResponse>(
-        `${this.baseUrl}/token`,
-        new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: clientId,
-          client_secret: clientSecret,
-          code,
-          redirect_uri: redirectUri,
-        }).toString(),
-        {
+    const body = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
+    }).toString();
+    this.logger.debug({ body, url: HH_TOKEN_URL }, 'HH token exchange request');
+
+    let response: Awaited<
+      ReturnType<
+        typeof firstValueFrom<import('axios').AxiosResponse<HhTokenResponse>>
+      >
+    >;
+    try {
+      response = await firstValueFrom(
+        this.http.post<HhTokenResponse>(HH_TOKEN_URL, body, {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': this.ua,
             'HH-User-Agent': this.ua,
           },
-        },
-      ),
-    );
+        }),
+      );
+    } catch (err: any) {
+      console.error('[HH token exchange failed]', {
+        status: err?.response?.status,
+        data: err?.response?.data,
+        body,
+      });
+      this.logger.error(
+        { status: err?.response?.status, data: err?.response?.data, body },
+        'HH token exchange failed',
+      );
+      throw err;
+    }
 
     const tokenResp = response.data;
+    const expiresInMs =
+      tokenResp.expires_in && tokenResp.expires_in > 0
+        ? tokenResp.expires_in * 1000
+        : 60 * 60 * 1000; // default 1h if HH omits or sends 0
     await this.db.candidate.update({
       where: { id: candidateId },
       data: {
         hhOauthToken: tokenResp.access_token,
         hhRefreshToken: tokenResp.refresh_token,
-        hhTokenExpiresAt: new Date(Date.now() + tokenResp.expires_in * 1000),
+        hhTokenExpiresAt: new Date(Date.now() + expiresInMs),
       },
     });
 
@@ -140,8 +182,7 @@ export class HhOAuthService {
     }
 
     const expiresAt = candidate.hhTokenExpiresAt;
-    const needsRefresh =
-      !expiresAt || expiresAt.getTime() - Date.now() < TOKEN_REFRESH_BUFFER_MS;
+    const needsRefresh = !expiresAt || Date.now() >= expiresAt.getTime();
 
     if (!needsRefresh) return candidate.hhOauthToken;
 
@@ -168,13 +209,19 @@ export class HhOAuthService {
     candidateId: string,
     refreshToken: string,
   ): Promise<string> {
-    const clientId = this.config.get<string>('HH_CLIENT_ID') ?? '';
-    const clientSecret = this.config.get<string>('HH_CLIENT_SECRET') ?? '';
+    const clientId = this.config.get<string>('HH_CLIENT_ID');
+    const clientSecret = this.config.get<string>('HH_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      throw new UnprocessableEntityException({
+        code: 'hh_not_connected',
+        message: 'HH OAuth credentials not configured — please reconnect',
+      });
+    }
 
     try {
       const response = await firstValueFrom(
         this.http.post<HhTokenResponse>(
-          `${this.baseUrl}/token`,
+          HH_TOKEN_URL,
           new URLSearchParams({
             grant_type: 'refresh_token',
             refresh_token: refreshToken,
@@ -192,12 +239,16 @@ export class HhOAuthService {
       );
 
       const tokenResp = response.data;
+      const expiresInMs =
+        tokenResp.expires_in && tokenResp.expires_in > 0
+          ? tokenResp.expires_in * 1000
+          : 60 * 60 * 1000; // default 1h if HH omits or sends 0
       await this.db.candidate.update({
         where: { id: candidateId },
         data: {
           hhOauthToken: tokenResp.access_token,
           hhRefreshToken: tokenResp.refresh_token,
-          hhTokenExpiresAt: new Date(Date.now() + tokenResp.expires_in * 1000),
+          hhTokenExpiresAt: new Date(Date.now() + expiresInMs),
         },
       });
 
@@ -230,26 +281,37 @@ export class HhOAuthService {
   }
 
   async getResumesForToken(accessToken: string): Promise<HhResumeMine[]> {
+    const url = `${this.baseUrl}/resumes/mine`;
+    console.log(
+      '[HH getResumesForToken] calling',
+      url,
+      'token:',
+      accessToken.slice(0, 15) + '...',
+    );
     try {
       const response = await firstValueFrom(
-        this.http.get<{ items: HhResumeMine[] }>(
-          `${this.baseUrl}/resumes/mine`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'User-Agent': this.ua,
-              'HH-User-Agent': this.ua,
-            },
+        this.http.get<{ items: HhResumeMine[] }>(url, {
+          params: { host: HH_HOST },
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'User-Agent': this.ua,
+            'HH-User-Agent': this.ua,
           },
-        ),
+        }),
+      );
+      console.log(
+        '[HH getResumesForToken] SUCCESS, items:',
+        response.data.items?.length ?? 0,
       );
       return response.data.items ?? [];
     } catch (err: any) {
-      this.logger.warn(
-        { err: err.message },
-        'Failed to fetch candidate resumes from HH',
-      );
-      return [];
+      console.error('[HH getResumesForToken] FAILED', {
+        status: err?.response?.status,
+        headers: err?.response?.headers,
+        data: JSON.stringify(err?.response?.data),
+        token: accessToken.slice(0, 15) + '...',
+      });
+      throw err;
     }
   }
 
@@ -278,7 +340,16 @@ export class HhOAuthService {
   }
 
   /** Clears OAuth tokens AND resume ID. Use when candidate explicitly disconnects. */
-  async clearResumeId(candidateId: string): Promise<void> {
+  async disconnectHh(candidateId: string): Promise<void> {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhOauthToken: true },
+    });
+
+    if (candidate?.hhOauthToken) {
+      await this.revokeToken(candidate.hhOauthToken);
+    }
+
     await this.db.candidate.update({
       where: { id: candidateId },
       data: {
@@ -289,5 +360,26 @@ export class HhOAuthService {
       },
     });
     this.logger.log({ candidateId }, 'HH OAuth tokens and resume ID cleared');
+  }
+
+  private async revokeToken(accessToken: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`${this.baseUrl}/oauth/token`, {
+          params: { access_token: accessToken },
+          headers: {
+            'User-Agent': this.ua,
+            'HH-User-Agent': this.ua,
+          },
+        }),
+      );
+      this.logger.log('HH access token revoked');
+    } catch (err: any) {
+      // Best-effort: revocation failure must not block disconnect
+      this.logger.warn(
+        { status: err?.response?.status },
+        'HH token revocation failed — token may remain valid until expiry',
+      );
+    }
   }
 }

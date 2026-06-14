@@ -15,7 +15,7 @@ import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 export class HhJobsAdapter extends JobSourceAdapter {
   private readonly logger = new Logger(HhJobsAdapter.name);
   private readonly baseUrl = HH_BASE_URL;
-  readonly sourceName = 'hh.uz';
+  readonly sourceName = 'hh.ru'; // must match processors and DB queries which use 'hh.ru'
 
   constructor(
     private readonly http: HttpService,
