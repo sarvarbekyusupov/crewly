@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -22,7 +23,9 @@ import { HhCommentsService } from '../../integrations/hh/hh-comments.service';
 import { HhSalaryService } from '../../integrations/hh/hh-salary.service';
 import { HhVacancyService } from '../../integrations/hh/hh-vacancy.service';
 import { HhNegotiationsService } from '../../integrations/hh/hh-negotiations.service';
+import { HhResumeService } from '../../integrations/hh/hh-resume.service';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Controller('api/v1/hh')
 @UseGuards(AuthGuard, CompanyRoleGuard)
@@ -35,7 +38,9 @@ export class HhEmployerController {
     private readonly hhSalary: HhSalaryService,
     private readonly hhVacancy: HhVacancyService,
     private readonly hhNegotiations: HhNegotiationsService,
+    private readonly hhResume: HhResumeService,
     private readonly config: ConfigService,
+    private readonly db: PrismaService,
   ) {}
 
   private get employerToken(): string {
@@ -286,5 +291,101 @@ export class HhEmployerController {
   @Get('resumes/:resumeId/negotiation-history')
   getResumeNegotiationHistory(@Param('resumeId') resumeId: string) {
     return this.hhNegotiations.getResumeNegotiationHistory(resumeId);
+  }
+
+  // ── Resume Comments (employer notes on applicant by candidateId) ──────────
+
+  @Get('candidates/:candidateId/comments')
+  async getCandidateComments(
+    @Param('candidateId') candidateId: string,
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhResumeId: true },
+    });
+    if (!candidate?.hhResumeId)
+      throw new NotFoundException('No HH resume linked to this candidate');
+    const resume = await this.hhResume.getResume(
+      this.employerToken,
+      candidate.hhResumeId,
+    );
+    const applicantId = (resume as any).owner?.id;
+    if (!applicantId)
+      throw new NotFoundException(
+        'Could not resolve HH applicant ID from resume',
+      );
+    return this.hhComments.listComments(applicantId, {
+      page: page ? Number(page) : 0,
+      per_page: perPage ? Number(perPage) : 50,
+    });
+  }
+
+  @Post('candidates/:candidateId/comments')
+  @HttpCode(HttpStatus.CREATED)
+  @RequireRole('hiring_manager')
+  async addCandidateComment(
+    @Param('candidateId') candidateId: string,
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          text: z.string().min(1).max(5000),
+          access_type: z.enum(['manager', 'company']).default('manager'),
+        }),
+      ),
+    )
+    body: { text: string; access_type: 'manager' | 'company' },
+  ) {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhResumeId: true },
+    });
+    if (!candidate?.hhResumeId)
+      throw new NotFoundException('No HH resume linked to this candidate');
+    const resume = await this.hhResume.getResume(
+      this.employerToken,
+      candidate.hhResumeId,
+    );
+    const applicantId = (resume as any).owner?.id;
+    if (!applicantId)
+      throw new NotFoundException(
+        'Could not resolve HH applicant ID from resume',
+      );
+    return this.hhComments.addComment(applicantId, body.text, body.access_type);
+  }
+
+  @Delete('candidates/:candidateId/comments/:commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequireRole('hiring_manager')
+  async deleteCandidateComment(
+    @Param('candidateId') candidateId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhResumeId: true },
+    });
+    if (!candidate?.hhResumeId)
+      throw new NotFoundException('No HH resume linked to this candidate');
+    const resume = await this.hhResume.getResume(
+      this.employerToken,
+      candidate.hhResumeId,
+    );
+    const applicantId = (resume as any).owner?.id;
+    if (!applicantId)
+      throw new NotFoundException(
+        'Could not resolve HH applicant ID from resume',
+      );
+    return this.hhComments.deleteComment(applicantId, commentId);
+  }
+
+  // ── Hidden Vacancy Restore ────────────────────────────────────────────────
+
+  @Delete('vacancies/hidden/:hhVacancyId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequireRole('hiring_manager')
+  restoreHiddenVacancy(@Param('hhVacancyId') hhVacancyId: string) {
+    return this.hhVacancy.restoreVacancy(hhVacancyId);
   }
 }

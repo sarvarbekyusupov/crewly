@@ -71,6 +71,11 @@ const navGroups = computed(() => [
         to: '/employer/hh-chats',
         icon: 'i-heroicons-chat-bubble-oval-left-ellipsis',
       },
+      {
+        label: 'HH Hidden',
+        to: '/employer/hh-hidden',
+        icon: 'i-heroicons-archive-box',
+      },
     ],
   },
   {
@@ -99,6 +104,16 @@ const navGroups = computed(() => [
             },
           ]
         : []),
+    ],
+  },
+  {
+    label: 'HH Config',
+    items: [
+      {
+        label: 'Mail Templates',
+        to: '/employer/settings/hh-templates',
+        icon: 'i-heroicons-envelope-open',
+      },
     ],
   },
 ])

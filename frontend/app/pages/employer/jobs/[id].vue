@@ -126,6 +126,51 @@ const { data: hhDetailStats } = await useAsyncData(`job-${jobId}-hh-stats`, () =
     : Promise.resolve(null),
 )
 
+// HH prolongation info
+interface HhProlongationInfo {
+  id: string
+  expires_at: string
+  actions: Array<{ id: string }>
+}
+const hhProlongInfo = ref<HhProlongationInfo | null>(null)
+const hhProlongPending = ref(false)
+const hhProlongCooldown = ref(false)
+
+async function loadProlongInfo() {
+  if (!job.value?.hhVacancyId) return
+  hhProlongPending.value = true
+  try {
+    hhProlongInfo.value = await api.get<HhProlongationInfo>(
+      `/api/v1/hh/vacancies/${job.value.hhVacancyId}/prolongation`,
+    )
+  } catch {
+    // not available or already prolonged recently
+    hhProlongInfo.value = null
+  } finally {
+    hhProlongPending.value = false
+  }
+}
+
+async function prolongNow() {
+  if (hhProlongCooldown.value) return
+  try {
+    await api.post(`/api/v1/hh/vacancies/${job.value!.hhVacancyId}/prolongate`, {})
+    toast.add({ title: 'Vacancy prolonged on HH', color: 'success' })
+    hhProlongCooldown.value = true
+    setTimeout(() => loadProlongInfo(), 2000)
+  } catch (e) {
+    toast.add({ title: extractApiErrorMessage(e, 'Prolongation failed'), color: 'error' })
+  }
+}
+
+watch(
+  () => job.value?.hhVacancyId,
+  (id) => {
+    if (id) loadProlongInfo()
+  },
+  { immediate: true },
+)
+
 const hhPublishing = ref(false)
 async function publishToHh() {
   hhPublishing.value = true
@@ -833,6 +878,50 @@ const appColumns: any[] = [
           >
             No viewers yet
           </p>
+
+          <!-- Prolongation info -->
+          <div
+            class="mt-3 rounded-lg p-2.5 text-xs"
+            style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+          >
+            <p
+              class="font-mono uppercase tracking-wider mb-1"
+              style="font-size: 9px; color: var(--ink-subtle)"
+            >
+              Prolongation
+            </p>
+            <div v-if="hhProlongPending" class="flex items-center gap-2">
+              <UIcon
+                name="i-heroicons-arrow-path"
+                class="w-3 h-3 animate-spin"
+                style="color: var(--ink-subtle)"
+              />
+              <span style="color: var(--ink-subtle)">Checking…</span>
+            </div>
+            <div v-else-if="hhProlongInfo" class="flex items-center justify-between gap-2">
+              <div>
+                <p style="color: var(--ink)">
+                  Expires
+                  {{ new Date(hhProlongInfo.expires_at).toLocaleDateString() }}
+                </p>
+                <p v-if="hhProlongInfo.actions?.length" style="color: var(--positive)">
+                  Eligible for prolongation
+                </p>
+                <p v-else style="color: var(--ink-muted)">Not available yet</p>
+              </div>
+              <UButton
+                v-if="hhProlongInfo.actions?.length"
+                size="xs"
+                variant="outline"
+                icon="i-heroicons-clock"
+                :disabled="hhProlongCooldown"
+                @click="prolongNow"
+              >
+                Prolong
+              </UButton>
+            </div>
+            <p v-else style="color: var(--ink-muted)">Prolongation info unavailable</p>
+          </div>
         </UCard>
       </div>
     </div>

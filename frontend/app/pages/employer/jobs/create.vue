@@ -43,6 +43,53 @@ const formExtras = reactive({
 
 const fromJobId = route.query.from as string | undefined
 
+// HH salary estimate
+const salaryEstimate = ref<{ p25: number; median: number; p75: number; currency: string } | null>(
+  null,
+)
+const salaryEstimating = ref(false)
+
+async function fetchSalaryEstimate() {
+  if (!title.value?.trim()) {
+    toast.add({ title: 'Enter a job title first', color: 'warning' })
+    return
+  }
+  salaryEstimating.value = true
+  salaryEstimate.value = null
+  try {
+    const res = await api.get<{
+      market_salary: {
+        gross: { percentile25: number; median: number; percentile75: number; currency: string }
+      }
+    }>('/api/v1/hh/salary-estimate', { position: title.value })
+    const g = res?.market_salary?.gross
+    if (g) {
+      salaryEstimate.value = {
+        p25: g.percentile25,
+        median: g.median,
+        p75: g.percentile75,
+        currency: g.currency,
+      }
+    } else {
+      toast.add({ title: 'No salary data returned from HH', color: 'warning' })
+    }
+  } catch {
+    toast.add({
+      title: 'HH salary estimate unavailable (requires paid subscription)',
+      color: 'warning',
+    })
+  } finally {
+    salaryEstimating.value = false
+  }
+}
+
+function applySalaryEstimate() {
+  if (!salaryEstimate.value) return
+  formExtras.salaryMinUzs = String(salaryEstimate.value.p25)
+  formExtras.salaryMaxUzs = String(salaryEstimate.value.p75)
+  salaryEstimate.value = null
+}
+
 const showOptimizeModal = ref(false)
 
 function optimizeSpec() {
@@ -295,6 +342,51 @@ const onSubmit = handleSubmit(async (values) => {
           <UFormField :label="t('jobs.fields.salaryMax')">
             <UInput v-model="formExtras.salaryMaxUzs" type="number" min="0" class="w-full" />
           </UFormField>
+        </div>
+        <!-- HH Salary Estimate -->
+        <div class="mt-3">
+          <UButton
+            type="button"
+            size="xs"
+            variant="outline"
+            icon="i-heroicons-chart-bar"
+            :loading="salaryEstimating"
+            @click="fetchSalaryEstimate"
+          >
+            Suggest salary from HH
+          </UButton>
+          <div
+            v-if="salaryEstimate"
+            class="mt-2 rounded-xl p-3 flex items-center justify-between gap-3"
+            style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+          >
+            <div class="flex gap-4 text-xs">
+              <div class="text-center">
+                <p class="font-mono font-bold" style="color: var(--ink)">
+                  {{ salaryEstimate.p25.toLocaleString() }}
+                </p>
+                <p style="color: var(--ink-subtle)">25th %ile</p>
+              </div>
+              <div class="text-center">
+                <p class="font-mono font-bold" style="color: var(--accent)">
+                  {{ salaryEstimate.median.toLocaleString() }}
+                </p>
+                <p style="color: var(--ink-subtle)">Median</p>
+              </div>
+              <div class="text-center">
+                <p class="font-mono font-bold" style="color: var(--ink)">
+                  {{ salaryEstimate.p75.toLocaleString() }}
+                </p>
+                <p style="color: var(--ink-subtle)">75th %ile</p>
+              </div>
+              <div class="text-center self-center">
+                <p class="font-mono text-[10px]" style="color: var(--ink-subtle)">
+                  {{ salaryEstimate.currency }}
+                </p>
+              </div>
+            </div>
+            <UButton size="xs" variant="solid" @click="applySalaryEstimate">Apply</UButton>
+          </div>
         </div>
       </UCard>
 

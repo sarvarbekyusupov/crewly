@@ -125,6 +125,78 @@ function outreachStatusColor(status: string) {
   if (status === 'failed' || status === 'rejected') return 'error'
   return 'neutral'
 }
+
+// HH Notes — only available if candidate has hhResumeId
+const hhResumeId = computed(() => (candidate.value as any)?.hhResumeId as string | undefined)
+
+interface HhComment {
+  id: string
+  text: string
+  author: { id: string; name: string }
+  created_at: string
+  access_type: { id: string; name: string }
+  is_mine: boolean
+}
+
+const hhComments = ref<HhComment[]>([])
+const hhCommentsPending = ref(false)
+const hhCommentsForbidden = ref(false)
+const hhCommentText = ref('')
+const hhCommentSending = ref(false)
+
+async function loadHhComments() {
+  if (!hhResumeId.value) return
+  hhCommentsPending.value = true
+  try {
+    const res = await api.get<{ items: HhComment[] }>(
+      `/api/v1/hh/candidates/${candidateId}/comments`,
+    )
+    hhComments.value = res?.items ?? []
+  } catch (e: any) {
+    if (e?.response?.status === 403 || e?.data?.statusCode === 403) {
+      hhCommentsForbidden.value = true
+    }
+  } finally {
+    hhCommentsPending.value = false
+  }
+}
+
+async function addHhComment() {
+  const text = hhCommentText.value.trim()
+  if (!text || hhCommentSending.value) return
+  hhCommentSending.value = true
+  try {
+    await api.post(`/api/v1/hh/candidates/${candidateId}/comments`, {
+      text,
+      access_type: 'manager',
+    })
+    hhCommentText.value = ''
+    await loadHhComments()
+    toast.add({ title: 'HH note added', color: 'success' })
+  } catch (e) {
+    toast.add({ title: extractApiErrorMessage(e, 'Failed to add note'), color: 'error' })
+  } finally {
+    hhCommentSending.value = false
+  }
+}
+
+async function deleteHhComment(commentId: string) {
+  try {
+    await api.del(`/api/v1/hh/candidates/${candidateId}/comments/${commentId}`)
+    hhComments.value = hhComments.value.filter((c) => c.id !== commentId)
+    toast.add({ title: 'Note deleted', color: 'success' })
+  } catch (e) {
+    toast.add({ title: extractApiErrorMessage(e, 'Failed to delete note'), color: 'error' })
+  }
+}
+
+onMounted(() => {
+  if (hhResumeId.value) loadHhComments()
+})
+
+watch(hhResumeId, (id) => {
+  if (id) loadHhComments()
+})
 </script>
 
 <template>
@@ -507,6 +579,84 @@ function outreachStatusColor(status: string) {
 
       <!-- Applications + scores sidebar -->
       <div class="space-y-4">
+        <!-- HH Notes (applicant comments) -->
+        <UCard v-if="hhResumeId">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="section-label">HH Notes</h3>
+            <span
+              class="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded"
+              style="background: var(--bg-elevated); color: var(--ink-subtle)"
+              >hh.uz</span
+            >
+          </div>
+
+          <div v-if="hhCommentsForbidden" class="flex flex-col items-center py-6 gap-2 text-center">
+            <UIcon
+              name="i-heroicons-lock-closed"
+              class="w-6 h-6 opacity-40"
+              style="color: var(--ink-subtle)"
+            />
+            <p class="text-xs" style="color: var(--ink-muted)">Requires paid HH subscription</p>
+          </div>
+
+          <div v-else>
+            <div v-if="hhCommentsPending" class="flex justify-center py-4">
+              <UIcon
+                name="i-heroicons-arrow-path"
+                class="w-4 h-4 animate-spin"
+                style="color: var(--ink-subtle)"
+              />
+            </div>
+            <ul v-else-if="hhComments.length" class="space-y-2 mb-3">
+              <li
+                v-for="c in hhComments"
+                :key="c.id"
+                class="rounded-lg p-2.5 text-xs"
+                style="background: var(--bg-elevated); border: 1px solid var(--line-soft)"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <p style="color: var(--ink)" class="whitespace-pre-wrap">{{ c.text }}</p>
+                  <UButton
+                    v-if="c.is_mine"
+                    icon="i-heroicons-trash"
+                    variant="ghost"
+                    size="xs"
+                    color="error"
+                    class="shrink-0"
+                    @click="deleteHhComment(c.id)"
+                  />
+                </div>
+                <p class="mt-1" style="color: var(--ink-subtle)">
+                  {{ c.author.name }} · {{ new Date(c.created_at).toLocaleDateString() }}
+                </p>
+              </li>
+            </ul>
+            <p
+              v-else-if="!hhCommentsPending"
+              class="text-xs text-center py-3 mb-2"
+              style="color: var(--ink-subtle)"
+            >
+              No notes yet
+            </p>
+            <div class="flex gap-2 mt-1">
+              <UInput
+                v-model="hhCommentText"
+                placeholder="Add HH note…"
+                class="flex-1"
+                :maxlength="5000"
+                size="sm"
+              />
+              <UButton
+                size="sm"
+                icon="i-heroicons-plus"
+                :loading="hhCommentSending"
+                :disabled="!hhCommentText.trim()"
+                @click="addHhComment"
+              />
+            </div>
+          </div>
+        </UCard>
+
         <UCard>
           <h3 class="section-label mb-3">{{ t('candidates.applications') }}</h3>
           <div v-if="!applications?.length" class="flex flex-col items-center py-6 gap-2">
