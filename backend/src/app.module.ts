@@ -19,6 +19,7 @@ import { StorageModule } from './integrations/storage/storage.module';
 import { GoogleCalendarModule } from './integrations/google-calendar/google-calendar.module';
 import { TelegramModule } from './integrations/telegram/telegram.module';
 import { HhModule } from './integrations/hh/hh.module';
+import { LinkedInModule } from './integrations/linkedin/linkedin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { StaffAuthModule } from './modules/staff-auth/staff-auth.module';
 import { CandidateAuthModule } from './modules/candidate-auth/candidate-auth.module';
@@ -44,6 +45,7 @@ import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { HhEmployerModule } from './modules/hh-employer/hh-employer.module';
 import { WorkersModule } from './workers/workers.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { TmaModule } from './modules/tma/tma.module';
 import { HealthController } from './common/health.controller';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -67,6 +69,7 @@ import { QUEUES } from './workers/queue-names';
     GoogleCalendarModule,
     TelegramModule,
     HhModule,
+    LinkedInModule,
 
     I18nModule.forRoot({
       fallbackLanguage: 'ru',
@@ -114,6 +117,7 @@ import { QUEUES } from './workers/queue-names';
     SourcingModule,
     WaitlistModule,
     HhEmployerModule,
+    TmaModule,
     WorkersModule,
     WebhooksModule,
   ],

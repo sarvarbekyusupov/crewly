@@ -24,6 +24,7 @@ import {
   HhWebhookService,
   HhWebhookPayload,
 } from '../integrations/hh/hh-webhook.service';
+import { LinkedInOAuthService } from '../integrations/linkedin/linkedin-oauth.service';
 
 @Controller('api/v1/webhooks')
 export class WebhooksController implements OnModuleInit {
@@ -38,6 +39,7 @@ export class WebhooksController implements OnModuleInit {
     private readonly db: PrismaService,
     private readonly hhWebhook: HhWebhookService,
     private readonly i18n: I18nService,
+    private readonly linkedInOAuth: LinkedInOAuthService,
   ) {}
 
   onModuleInit() {
@@ -378,5 +380,17 @@ export class WebhooksController implements OnModuleInit {
     }
 
     return { ok: true };
+  }
+
+  // LinkedIn OAuth exchange — public, state JWT is self-verifying
+  @Post('linkedin/exchange')
+  @Public()
+  @HttpCode(200)
+  async exchangeLinkedIn(@Body() body: { code: string; state: string }) {
+    if (!body.code || !body.state)
+      throw new BadRequestException('code and state required');
+    const candidateId = this.linkedInOAuth.verifyCandidateState(body.state);
+    await this.linkedInOAuth.exchangeCode(body.code, candidateId);
+    return { connected: true };
   }
 }

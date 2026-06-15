@@ -153,6 +153,68 @@ export class HhEmployerController {
     return this.hhChat.getChatParticipants(this.employerToken, chatId);
   }
 
+  @Put('chats/:chatId/leave')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequireRole('hiring_manager')
+  leaveChat(@Param('chatId') chatId: string) {
+    return this.hhChat.leaveChat(chatId);
+  }
+
+  @Put('chats/:chatId/messages/:messageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequireRole('hiring_manager')
+  editChatMessage(
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+    @Body(
+      new ZodValidationPipe(z.object({ text: z.string().min(1).max(4000) })),
+    )
+    body: { text: string },
+  ) {
+    return this.hhChat.editChatMessage(
+      this.employerToken,
+      chatId,
+      messageId,
+      body.text,
+    );
+  }
+
+  @Delete('chats/:chatId/messages/:messageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequireRole('hiring_manager')
+  deleteChatMessage(
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.hhChat.deleteChatMessage(this.employerToken, chatId, messageId);
+  }
+
+  @Post('chats/files/upload-links')
+  @HttpCode(HttpStatus.OK)
+  @RequireRole('hiring_manager')
+  getFileUploadLinks(
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          files: z
+            .array(
+              z.object({
+                name: z.string().min(1),
+                size: z.number().int().positive(),
+                content_type: z.string().min(1),
+              }),
+            )
+            .min(1),
+        }),
+      ),
+    )
+    body: {
+      files: Array<{ name: string; size: number; content_type: string }>;
+    },
+  ) {
+    return this.hhChat.getFileUploadLinks(this.employerToken, body.files);
+  }
+
   // ── Applicant Comments ────────────────────────────────────────────────────
 
   @Get('applicant-comments/:applicantId')
@@ -259,6 +321,26 @@ export class HhEmployerController {
     });
   }
 
+  @Get('salary/directories/areas')
+  getSalaryAreas() {
+    return this.hhSalary.getSalaryAreas();
+  }
+
+  @Get('salary/directories/industries')
+  getSalaryIndustries() {
+    return this.hhSalary.getSalaryIndustries();
+  }
+
+  @Get('salary/directories/professional-areas')
+  getSalaryProfessionalAreas() {
+    return this.hhSalary.getSalaryProfessionalAreas();
+  }
+
+  @Get('salary/directories/employee-levels')
+  getSalaryEmployeeLevels() {
+    return this.hhSalary.getSalaryEmployeeLevels();
+  }
+
   // ── Vacancies ─────────────────────────────────────────────────────────────
 
   @Get('vacancies/hidden')
@@ -295,27 +377,45 @@ export class HhEmployerController {
 
   // ── Resume Comments (employer notes on applicant by candidateId) ──────────
 
+  /**
+   * Resolve HH applicant ID for a candidate.
+   * Reads from hhApplicantId if present; otherwise fetches resume, extracts owner.id,
+   * and writes it back so subsequent calls are free.
+   */
+  private async resolveApplicantId(candidateId: string): Promise<string> {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { hhResumeId: true, hhApplicantId: true },
+    });
+    if (!candidate?.hhResumeId) {
+      throw new NotFoundException('No HH resume linked to this candidate');
+    }
+    if (candidate.hhApplicantId) return candidate.hhApplicantId;
+
+    const resume = await this.hhResume.getResume(
+      this.employerToken,
+      candidate.hhResumeId,
+    );
+    const applicantId: string | undefined = (resume as any).owner?.id;
+    if (!applicantId) {
+      throw new NotFoundException(
+        'Could not resolve HH applicant ID from resume',
+      );
+    }
+    await this.db.candidate.update({
+      where: { id: candidateId },
+      data: { hhApplicantId: applicantId },
+    });
+    return applicantId;
+  }
+
   @Get('candidates/:candidateId/comments')
   async getCandidateComments(
     @Param('candidateId') candidateId: string,
     @Query('page') page?: string,
     @Query('per_page') perPage?: string,
   ) {
-    const candidate = await this.db.candidate.findUnique({
-      where: { id: candidateId },
-      select: { hhResumeId: true },
-    });
-    if (!candidate?.hhResumeId)
-      throw new NotFoundException('No HH resume linked to this candidate');
-    const resume = await this.hhResume.getResume(
-      this.employerToken,
-      candidate.hhResumeId,
-    );
-    const applicantId = (resume as any).owner?.id;
-    if (!applicantId)
-      throw new NotFoundException(
-        'Could not resolve HH applicant ID from resume',
-      );
+    const applicantId = await this.resolveApplicantId(candidateId);
     return this.hhComments.listComments(applicantId, {
       page: page ? Number(page) : 0,
       per_page: perPage ? Number(perPage) : 50,
@@ -337,21 +437,7 @@ export class HhEmployerController {
     )
     body: { text: string; access_type: 'manager' | 'company' },
   ) {
-    const candidate = await this.db.candidate.findUnique({
-      where: { id: candidateId },
-      select: { hhResumeId: true },
-    });
-    if (!candidate?.hhResumeId)
-      throw new NotFoundException('No HH resume linked to this candidate');
-    const resume = await this.hhResume.getResume(
-      this.employerToken,
-      candidate.hhResumeId,
-    );
-    const applicantId = (resume as any).owner?.id;
-    if (!applicantId)
-      throw new NotFoundException(
-        'Could not resolve HH applicant ID from resume',
-      );
+    const applicantId = await this.resolveApplicantId(candidateId);
     return this.hhComments.addComment(applicantId, body.text, body.access_type);
   }
 
@@ -362,21 +448,7 @@ export class HhEmployerController {
     @Param('candidateId') candidateId: string,
     @Param('commentId') commentId: string,
   ) {
-    const candidate = await this.db.candidate.findUnique({
-      where: { id: candidateId },
-      select: { hhResumeId: true },
-    });
-    if (!candidate?.hhResumeId)
-      throw new NotFoundException('No HH resume linked to this candidate');
-    const resume = await this.hhResume.getResume(
-      this.employerToken,
-      candidate.hhResumeId,
-    );
-    const applicantId = (resume as any).owner?.id;
-    if (!applicantId)
-      throw new NotFoundException(
-        'Could not resolve HH applicant ID from resume',
-      );
+    const applicantId = await this.resolveApplicantId(candidateId);
     return this.hhComments.deleteComment(applicantId, commentId);
   }
 

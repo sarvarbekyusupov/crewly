@@ -25,6 +25,25 @@ const hhConnecting = ref(false)
 onMounted(() => {
   hhConnecting.value = false
   const hhParam = route.query.hh as string | undefined
+  const liParam = route.query.linkedin as string | undefined
+
+  if (liParam) {
+    router.replace({ query: { ...route.query, linkedin: undefined, reason: undefined } })
+    if (liParam === 'connected') {
+      toast.add({ title: 'LinkedIn connected!', color: 'success' })
+      refresh()
+    } else if (liParam === 'denied') {
+      toast.add({ title: 'LinkedIn access denied', color: 'warning' })
+    } else if (liParam === 'error') {
+      const reason = route.query.reason as string | undefined
+      toast.add({
+        title: 'LinkedIn connection failed',
+        description: reason ? decodeURIComponent(reason) : undefined,
+        color: 'error',
+      })
+    }
+  }
+
   if (!hhParam) return
   router.replace({ query: { ...route.query, hh: undefined } })
 
@@ -230,6 +249,77 @@ async function syncSkillsToHh() {
     }
   } finally {
     syncingSkills.value = false
+  }
+}
+
+// ── LinkedIn ──────────────────────────────────────────────────────────────────
+
+const linkedInConnecting = ref(false)
+const linkedInDisconnecting = ref(false)
+const linkedInSyncing = ref(false)
+const linkedInSyncResult = ref<{
+  name?: string | null
+  email?: string | null
+  picture?: string | null
+} | null>(null)
+
+async function connectLinkedIn() {
+  linkedInConnecting.value = true
+  try {
+    const { url } = await api.get<{ url: string }>('/api/v1/candidate-portal/linkedin/oauth-url')
+    window.location.href = url
+  } catch (e) {
+    toast.add({
+      title: 'LinkedIn connection failed',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+    linkedInConnecting.value = false
+  }
+}
+
+async function disconnectLinkedIn() {
+  linkedInDisconnecting.value = true
+  try {
+    await api.post('/api/v1/candidate-portal/linkedin/disconnect', {})
+    toast.add({ title: 'LinkedIn disconnected', color: 'success' })
+    linkedInSyncResult.value = null
+    refresh()
+  } catch (e) {
+    toast.add({
+      title: 'LinkedIn disconnect failed',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+  } finally {
+    linkedInDisconnecting.value = false
+  }
+}
+
+async function syncLinkedInProfile() {
+  linkedInSyncing.value = true
+  try {
+    const result = await api.post<{
+      synced: boolean
+      name?: string | null
+      email?: string | null
+      picture?: string | null
+    }>('/api/v1/candidate-portal/linkedin/sync', {})
+    linkedInSyncResult.value = result
+    toast.add({
+      title: 'LinkedIn profile synced!',
+      description: result.name ?? undefined,
+      color: 'success',
+    })
+    refresh()
+  } catch (e) {
+    toast.add({
+      title: 'LinkedIn sync failed',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+  } finally {
+    linkedInSyncing.value = false
   }
 }
 
@@ -619,6 +709,66 @@ const save = handleSubmit(async (values) => {
           <UIcon v-if="hhConnecting" name="i-heroicons-arrow-path" class="animate-spin" />
           <UIcon v-else name="i-heroicons-link" />
           <span>{{ t('candidate.preferences.hhConnect') }}</span>
+        </button>
+      </section>
+
+      <!-- Section: LinkedIn Integration -->
+      <section class="prefs-section">
+        <div class="prefs-section-head">
+          <span class="prefs-li-badge">in</span>
+          <h2 class="prefs-section-title">LinkedIn</h2>
+        </div>
+        <p class="prefs-section-desc">
+          Connect LinkedIn to import your profile name and sync identity.
+        </p>
+
+        <!-- Connected state -->
+        <div v-if="prefs?.linkedinOauthTokenSet" class="prefs-li-connected">
+          <div class="prefs-hh-identity">
+            <div class="prefs-li-avatar">
+              {{ (linkedInSyncResult?.name ?? 'L').charAt(0).toUpperCase() }}
+            </div>
+            <div class="prefs-hh-info">
+              <p class="prefs-hh-name">{{ linkedInSyncResult?.name ?? 'LinkedIn connected' }}</p>
+              <p class="prefs-hh-meta">
+                {{ linkedInSyncResult?.email ?? 'Sync to load profile info' }}
+              </p>
+            </div>
+            <span class="prefs-hh-status-dot" />
+          </div>
+          <div class="prefs-hh-actions">
+            <button
+              type="button"
+              class="prefs-hh-action-btn"
+              :disabled="linkedInSyncing"
+              @click="syncLinkedInProfile"
+            >
+              <UIcon name="i-heroicons-arrow-path" :class="{ 'animate-spin': linkedInSyncing }" />
+              <span>Sync profile</span>
+            </button>
+            <button
+              type="button"
+              class="prefs-hh-action-btn prefs-hh-action-btn--danger"
+              :disabled="linkedInDisconnecting"
+              @click="disconnectLinkedIn"
+            >
+              <UIcon name="i-heroicons-x-mark" />
+              <span>Disconnect</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Not connected state -->
+        <button
+          v-else
+          type="button"
+          class="prefs-li-connect-btn"
+          :disabled="linkedInConnecting"
+          @click="connectLinkedIn"
+        >
+          <UIcon v-if="linkedInConnecting" name="i-heroicons-arrow-path" class="animate-spin" />
+          <UIcon v-else name="i-heroicons-link" />
+          <span>Connect LinkedIn</span>
         </button>
       </section>
 
@@ -1031,5 +1181,69 @@ const save = handleSubmit(async (values) => {
   padding-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* LinkedIn Integration */
+.prefs-li-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #0a66c2;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+.prefs-li-connected {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+}
+
+.prefs-li-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0a66c2;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prefs-li-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.prefs-li-connect-btn:hover:not(:disabled) {
+  border-color: #0a66c2;
+  color: #0a66c2;
+  background: color-mix(in srgb, #0a66c2 6%, transparent);
+}
+
+.prefs-li-connect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

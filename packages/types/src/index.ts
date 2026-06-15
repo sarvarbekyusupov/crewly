@@ -382,6 +382,7 @@ export interface CandidatePreferences {
   expectedSalaryUzs?: string | null
   hhResumeId?: string | null
   hhOauthTokenSet: boolean
+  linkedinOauthTokenSet: boolean
   resumeFileUrl?: string | null
 }
 

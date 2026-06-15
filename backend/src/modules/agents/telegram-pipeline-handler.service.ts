@@ -3,10 +3,15 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { I18nService } from 'nestjs-i18n';
+import { InlineKeyboard } from 'grammy';
+import { ConfigService } from '@nestjs/config';
 import { TelegramBotService } from '../../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
+
+const MIN_ALERT_SCORE = 65;
+const MAX_ALERTS_PER_BATCH = 3;
 
 @Injectable()
 export class TelegramPipelineHandler implements OnModuleInit {
@@ -16,6 +21,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
     private readonly telegram: TelegramBotService,
     private readonly db: PrismaService,
     private readonly i18n: I18nService,
+    private readonly config: ConfigService,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
 
@@ -132,6 +138,163 @@ export class TelegramPipelineHandler implements OnModuleInit {
           error: err.message,
         },
         'Failed to send candidate Telegram notification',
+      );
+    }
+  }
+
+  @OnEvent('candidate.event')
+  async handleScoringComplete(event: {
+    candidateId: string;
+    type: string;
+    payload: any;
+  }) {
+    if (event.type !== 'scoring_complete') return;
+
+    try {
+      const candidate = await this.db.candidate.findUnique({
+        where: { id: event.candidateId },
+        select: {
+          telegramUserId: true,
+          minMatchScore: true,
+        },
+      });
+
+      if (!candidate?.telegramUserId) return;
+      // Only alert if candidate opted in (minMatchScore set)
+      if (candidate.minMatchScore == null) return;
+
+      const threshold = Math.max(candidate.minMatchScore, MIN_ALERT_SCORE);
+
+      // Find top unnotified matches above threshold
+      const matches = await this.db.seekerJobMatch.findMany({
+        where: {
+          candidateId: event.candidateId,
+          score: { gte: threshold },
+          notifiedAt: null,
+        },
+        include: {
+          discoveredJob: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+              location: true,
+              salaryMinUzs: true,
+              salaryMaxUzs: true,
+            },
+          },
+        },
+        orderBy: { score: 'desc' },
+        take: MAX_ALERTS_PER_BATCH,
+      });
+
+      if (!matches.length) return;
+
+      const chatId = candidate.telegramUserId.toString();
+      const keyboard = new InlineKeyboard();
+      let text = `🎯 *Новые подходящие вакансии для вас:*\n\n`;
+
+      matches.forEach((m, i) => {
+        const j = m.discoveredJob;
+        const salaryStr = j.salaryMinUzs
+          ? `  💰 ${Number(j.salaryMinUzs).toLocaleString()} UZS${j.salaryMaxUzs ? ` – ${Number(j.salaryMaxUzs).toLocaleString()}` : ''}`
+          : '';
+        text += `${i + 1}. *${j.title}*\n   🏢 ${j.company}${j.location ? `  📍 ${j.location}` : ''}${salaryStr}\n   Совпадение: *${m.score}%*\n\n`;
+        keyboard
+          .text(
+            `${i + 1}. Откликнуться`,
+            JSON.stringify({ a: 'tg_apply', i: j.id }),
+          )
+          .row();
+      });
+
+      text += `_/mymatches — посмотреть все совпадения_`;
+
+      await this.telegram.sendMessage(chatId, text, { parseMode: 'Markdown' });
+
+      // Mark as notified
+      await this.db.seekerJobMatch.updateMany({
+        where: { id: { in: matches.map((m) => m.id) } },
+        data: { notifiedVia: 'telegram', notifiedAt: new Date() },
+      });
+
+      this.logger.log(
+        { candidateId: event.candidateId, count: matches.length },
+        'Sent job alerts to candidate',
+      );
+    } catch (err: any) {
+      this.logger.error(
+        { candidateId: event.candidateId, error: err.message },
+        'Failed to send scoring_complete job alerts',
+      );
+    }
+  }
+
+  @OnEvent('job.activated')
+  async handleJobActivated(event: { jobId: string; companyId: string }) {
+    try {
+      const channels = await this.db.telegramChannel.findMany({
+        where: { isActive: true },
+        select: { channelId: true },
+      });
+      if (!channels.length) return;
+
+      const job = await this.db.job.findUnique({
+        where: { id: event.jobId },
+        include: { company: true },
+      });
+      if (!job) return;
+
+      const botUsername = await this.telegram.getBotUsername();
+      const publicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      const applyLink = botUsername
+        ? `https://t.me/${botUsername}?start=job_${job.id}`
+        : `${publicUrl}/jobs/${job.id}`;
+
+      const salary = job.salaryMinUzs
+        ? `\n💰 ${Number(job.salaryMinUzs).toLocaleString()} ${job.salaryCurrency ?? 'UZS'}${job.salaryMaxUzs ? ` — ${Number(job.salaryMaxUzs).toLocaleString()}` : ''}`
+        : '';
+      const location = job.officeLocation ? `\n📍 ${job.officeLocation}` : '';
+      const workMode = job.workMode ? `\n🏠 ${job.workMode}` : '';
+      const empType = job.employmentType ? ` · ${job.employmentType}` : '';
+      const skills = job.requiredSkills?.length
+        ? `\n🔧 *Навыки:* ${job.requiredSkills.slice(0, 6).join(', ')}`
+        : '';
+      const desc = job.description
+        ? `\n\n${job.description.slice(0, 280)}${job.description.length > 280 ? '…' : ''}`
+        : '';
+
+      const text =
+        `🚀 *${job.title}*\n` +
+        `🏢 ${job.company.name}` +
+        location +
+        salary +
+        workMode +
+        empType +
+        skills +
+        desc +
+        `\n\n👇 [Откликнуться](${applyLink})`;
+
+      for (const { channelId } of channels) {
+        await this.telegram
+          .sendMessage(channelId.toString(), text, { parseMode: 'Markdown' })
+          .catch((err) => {
+            this.logger.warn(
+              { channelId: channelId.toString(), error: err.message },
+              'Failed to post job to channel',
+            );
+          });
+      }
+
+      this.logger.log(
+        { jobId: event.jobId, channels: channels.length },
+        'Job posted to Telegram channels',
+      );
+    } catch (err: any) {
+      this.logger.error(
+        { jobId: event.jobId, error: err.message },
+        'handleJobActivated failed',
       );
     }
   }

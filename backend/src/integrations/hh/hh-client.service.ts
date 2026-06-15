@@ -26,7 +26,8 @@ export class HhClientService {
 
   private get headers() {
     const token = this.config.get('HH_EMPLOYER_TOKEN');
-    const userAgent = this.config.get('HH_USER_AGENT') ?? 'crewly/1.0';
+    const userAgent =
+      this.config.get('HH_USER_AGENT') ?? 'Crewly/1.0 (contact@crewly.uz)';
     return {
       ...(token && { Authorization: `Bearer ${token}` }),
       'User-Agent': userAgent,
@@ -172,7 +173,9 @@ export class HhClientService {
 
   /** Returns info about the authenticated user. */
   async getMe(token: string): Promise<HhMeResponse> {
-    const userAgent = this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
+    const userAgent =
+      this.config.get<string>('HH_USER_AGENT') ??
+      'Crewly/1.0 (contact@crewly.uz)';
     const response = await firstValueFrom(
       this.http.get<HhMeResponse>(`${this.baseUrl}/me`, {
         params: { host: HH_HOST },

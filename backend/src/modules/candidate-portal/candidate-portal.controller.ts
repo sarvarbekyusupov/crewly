@@ -35,6 +35,7 @@ import type { HhResumeDetail } from '../../integrations/hh/hh.types';
 import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
 import { HhChatService } from '../../integrations/hh/hh-chat.service';
 import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
+import { LinkedInOAuthService } from '../../integrations/linkedin/linkedin-oauth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
@@ -98,6 +99,7 @@ export class CandidatePortalController {
     private readonly hhApplicant: HhApplicantService,
     private readonly hhChat: HhChatService,
     private readonly hhJobs: HhJobsAdapter,
+    private readonly linkedInOAuth: LinkedInOAuthService,
     private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
@@ -180,6 +182,7 @@ export class CandidatePortalController {
         p.expectedSalaryUzs != null ? String(p.expectedSalaryUzs) : null,
       hhResumeId: p.hhResumeId,
       hhOauthTokenSet: !!p.hhOauthToken,
+      linkedinOauthTokenSet: !!p.linkedinOauthToken,
       resumeFileUrl: p.resumeFileUrl,
     }));
   }
@@ -654,21 +657,22 @@ export class CandidatePortalController {
     return this.hhApplicant.getMe(token);
   }
 
-  /**
-   * @deprecated HH deprecated GET/POST /negotiations/{id}/messages.
-   * Use GET/POST hh/chats/{chatId}/messages via the /common/chats API instead.
-   * Kept for backward compatibility; may stop working when HH removes the endpoint.
-   */
   @Get('hh/negotiations/:id/messages')
   async getHhNegotiationMessages(
     @CurrentCandidate() candidate: { id: string },
     @Param('id') negotiationId: string,
   ) {
     const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const chatId = await this.hhChat.findChatIdByNegotiationId(
+      token,
+      negotiationId,
+    );
+    if (chatId) {
+      return this.hhChat.getChatMessages(token, chatId);
+    }
     return this.hhApplicant.getNegotiationMessages(token, negotiationId);
   }
 
-  /** @deprecated Use POST hh/chats/{chatId}/messages instead. */
   @Post('hh/negotiations/:id/messages')
   @HttpCode(HttpStatus.OK)
   async postHhNegotiationMessage(
@@ -680,11 +684,24 @@ export class CandidatePortalController {
     body: { message: string },
   ) {
     const token = await this.hhOAuth.getCandidateToken(candidate.id);
-    await this.hhApplicant.postNegotiationMessage(
+    const chatId = await this.hhChat.findChatIdByNegotiationId(
       token,
       negotiationId,
-      body.message,
     );
+    if (chatId) {
+      await this.hhChat.sendChatMessage(
+        token,
+        chatId,
+        body.message,
+        crypto.randomUUID(),
+      );
+    } else {
+      await this.hhApplicant.postNegotiationMessage(
+        token,
+        negotiationId,
+        body.message,
+      );
+    }
     return { sent: true };
   }
 
@@ -788,6 +805,31 @@ export class CandidatePortalController {
   @Get('hh/suggests/universities')
   suggestUniversities(@Query('text') text: string) {
     return this.hhSuggests.universities(text ?? '');
+  }
+
+  @Get('hh/suggests/positions')
+  suggestPositions(@Query('text') text: string) {
+    return this.hhSuggests.positions(text ?? '');
+  }
+
+  @Get('hh/suggests/area-leaves')
+  suggestAreaLeaves(@Query('text') text: string) {
+    return this.hhSuggests.areaLeaves(text ?? '');
+  }
+
+  @Get('hh/suggests/fields-of-study')
+  suggestFieldsOfStudy(@Query('text') text: string) {
+    return this.hhSuggests.fieldsOfStudy(text ?? '');
+  }
+
+  @Get('hh/suggests/professional-roles')
+  suggestProfessionalRoles(@Query('text') text: string) {
+    return this.hhSuggests.professionalRoles(text ?? '');
+  }
+
+  @Get('hh/suggests/vacancy-positions')
+  suggestVacancyPositions(@Query('text') text: string) {
+    return this.hhSuggests.vacancyPositions(text ?? '');
   }
 
   // ── HH Chats (new API, replaces deprecated /negotiations/{id}/messages) ───
@@ -920,6 +962,50 @@ export class CandidatePortalController {
         topSources.map((s) => [s.source, s._count]),
       ),
       dailyActivity: dailyMap,
+    };
+  }
+
+  // ── LinkedIn OAuth ──────────────────────────────────────────────────────────
+
+  @Get('linkedin/oauth-url')
+  getLinkedInOAuthUrl(@CurrentCandidate() candidate: { id: string }) {
+    const url = this.linkedInOAuth.getAuthorizationUrl(candidate.id);
+    return { url };
+  }
+
+  @Post('linkedin/disconnect')
+  @HttpCode(HttpStatus.OK)
+  async disconnectLinkedIn(@CurrentCandidate() candidate: { id: string }) {
+    await this.linkedInOAuth.disconnectLinkedIn(candidate.id);
+    return { disconnected: true };
+  }
+
+  @Post('linkedin/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncLinkedInProfile(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.linkedInOAuth.getCandidateToken(candidate.id);
+    const userInfo = await this.linkedInOAuth.getUserInfo(token);
+
+    const updates: Record<string, unknown> = {};
+    const fullName =
+      userInfo.given_name || userInfo.family_name
+        ? [userInfo.given_name, userInfo.family_name].filter(Boolean).join(' ')
+        : userInfo.name;
+
+    if (fullName) updates['fullName'] = fullName;
+
+    if (Object.keys(updates).length) {
+      await this.db.candidate.update({
+        where: { id: candidate.id },
+        data: updates,
+      });
+    }
+
+    return {
+      synced: true,
+      name: fullName ?? null,
+      email: userInfo.email ?? null,
+      picture: userInfo.picture ?? null,
     };
   }
 }

@@ -128,7 +128,6 @@ export class CandidatePortalService {
       maxApplicationsPerDay?: number;
       preferredWorkMode?: string | null;
       expectedSalaryUzs?: bigint | null;
-      hhResumeId?: string | null;
     },
   ) {
     return this.db.candidate.update({
@@ -149,7 +148,6 @@ export class CandidatePortalService {
         ...(prefs.expectedSalaryUzs !== undefined && {
           expectedSalaryUzs: prefs.expectedSalaryUzs,
         }),
-        ...(prefs.hhResumeId !== undefined && { hhResumeId: prefs.hhResumeId }),
       },
       select: {
         minMatchScore: true,

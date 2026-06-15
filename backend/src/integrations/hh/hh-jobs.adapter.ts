@@ -9,7 +9,7 @@ import {
   NormalizedJob,
 } from '../adapters/job-source.adapter';
 import { HhVacancyItem, HhVacancyListResponse } from './hh.types';
-import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
+import { HH_BASE_URL, HH_HOST, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 
 @Injectable()
 export class HhJobsAdapter extends JobSourceAdapter {
@@ -40,6 +40,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
       response = await firstValueFrom(
         this.http.get<HhVacancyListResponse>(`${this.baseUrl}/vacancies`, {
           params: {
+            host: HH_HOST,
             area: HH_UZBEKISTAN_AREA_ID,
             per_page: 50,
             page: params.page,
@@ -111,15 +112,23 @@ export class HhJobsAdapter extends JobSourceAdapter {
       const response = await firstValueFrom(
         this.http.get<{ key_skills?: { name: string }[] }>(
           `${this.baseUrl}/vacancies/${vacancyId}`,
-          { headers: this.headers },
+          { headers: this.headers, params: { host: HH_HOST } },
         ),
       );
       return (response.data.key_skills ?? []).map((s) => s.name);
     } catch (err: any) {
-      this.logger.warn(
-        { vacancyId, error: err.message },
-        'Vacancy detail fetch failed',
-      );
+      const status: number | undefined = err?.response?.status;
+      if (status === 401 || status === 403) {
+        this.logger.error(
+          { vacancyId, status },
+          'HH vacancy detail fetch denied — check employer token and paid API access',
+        );
+      } else {
+        this.logger.warn(
+          { vacancyId, status, error: err.message },
+          'Vacancy detail fetch failed',
+        );
+      }
       return [];
     }
   }
@@ -129,7 +138,7 @@ export class HhJobsAdapter extends JobSourceAdapter {
       const response = await firstValueFrom(
         this.http.get<HhVacancyListResponse>(
           `${this.baseUrl}/vacancies/${vacancyId}/similar_vacancies`,
-          { headers: this.headers, params: { per_page: 20 } },
+          { headers: this.headers, params: { host: HH_HOST, per_page: 20 } },
         ),
       );
       return response.data.items.map((item) => this.normalize(item));

@@ -19,8 +19,8 @@ const { data, pending, refresh, error } = await useAsyncData('hh-hidden-vacancie
       per_page: 100,
     })
     .catch((e) => {
-      if (e?.response?.status === 403 || e?.data?.statusCode === 403)
-        return { items: [], found: 0, _forbidden: true }
+      const status = e?.response?.status ?? e?.data?.statusCode
+      if (status === 403 || status === 404) return { items: [], found: 0, _forbidden: true }
       throw e
     }),
 )

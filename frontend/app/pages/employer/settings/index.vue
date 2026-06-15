@@ -141,6 +141,42 @@ const userColumns: any[] = [
   { accessorKey: 'lastLoginAt', header: t('settings.fields.lastLogin') },
   { accessorKey: 'actions', header: '' },
 ]
+
+// --- Telegram linking ---
+const { data: meData, refresh: refreshMe } = await useAsyncData('me', () =>
+  api.get<{ telegramChatId: string | null }>('/api/v1/auth/me'),
+)
+
+const telegramConnected = computed(() => !!meData.value?.telegramChatId)
+const telegramLinkLoading = ref(false)
+const telegramBotUrl = ref<string | null>(null)
+
+async function getTelegramLinkCode() {
+  telegramLinkLoading.value = true
+  telegramBotUrl.value = null
+  try {
+    const res = await api.get<{ code: string; botUrl: string }>(
+      '/api/v1/auth/me/telegram-link-code',
+    )
+    telegramBotUrl.value = res.botUrl
+    // Poll for 2 min to detect when user completes linking
+    const start = Date.now()
+    const poll = setInterval(async () => {
+      await refreshMe()
+      if (telegramConnected.value || Date.now() - start > 120_000) {
+        clearInterval(poll)
+        if (telegramConnected.value) {
+          telegramBotUrl.value = null
+          toast.add({ title: 'Telegram привязан!', color: 'success' })
+        }
+      }
+    }, 3000)
+  } catch (e) {
+    toast.add({ title: extractApiErrorMessage(e), color: 'error' })
+  } finally {
+    telegramLinkLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -247,6 +283,52 @@ const userColumns: any[] = [
           />
         </template>
       </UTable>
+    </UCard>
+
+    <!-- Telegram -->
+    <UCard>
+      <template #header>
+        <h2 class="section-label">Telegram</h2>
+      </template>
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium">Уведомления в Telegram</p>
+          <p class="text-sm" style="color: var(--ink-muted)">
+            Привяжите аккаунт, чтобы получать алерты о кандидатах и одобрять заявки прямо в
+            Telegram.
+          </p>
+        </div>
+        <div class="shrink-0">
+          <UBadge v-if="telegramConnected" color="success" variant="subtle"> ✓ Подключён </UBadge>
+          <UBadge v-else color="neutral" variant="subtle">Не подключён</UBadge>
+        </div>
+      </div>
+
+      <div v-if="telegramBotUrl" class="mt-4 p-4 rounded-lg" style="background: var(--ui-bg-muted)">
+        <p class="text-sm mb-3" style="color: var(--ink-muted)">
+          Нажмите кнопку ниже, чтобы открыть Telegram бота. Ссылка действует 15 минут.
+        </p>
+        <UButton
+          :to="telegramBotUrl"
+          target="_blank"
+          icon="i-heroicons-paper-airplane"
+          color="primary"
+        >
+          Открыть в Telegram
+        </UButton>
+      </div>
+
+      <div class="mt-4">
+        <UButton
+          v-if="!telegramConnected"
+          :loading="telegramLinkLoading"
+          icon="i-heroicons-link"
+          variant="outline"
+          @click="getTelegramLinkCode"
+        >
+          {{ telegramBotUrl ? 'Обновить ссылку' : 'Привязать Telegram' }}
+        </UButton>
+      </div>
     </UCard>
 
     <!-- Invite modal -->

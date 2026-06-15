@@ -102,7 +102,20 @@ const sortOptions = [
                 {{ row.fullName?.[0] ?? '?' }}
               </div>
               <div>
-                <p class="font-medium text-ink">{{ row.fullName ?? '—' }}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="font-medium text-ink">{{ row.fullName ?? '—' }}</p>
+                  <a
+                    v-if="row.linkedinUrl"
+                    :href="row.linkedinUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-[#0a66c2] hover:opacity-80 transition-opacity"
+                    title="LinkedIn profile"
+                    @click.stop
+                  >
+                    <UIcon name="i-simple-icons-linkedin" class="w-3.5 h-3.5" />
+                  </a>
+                </div>
                 <p class="text-xs text-ink-subtle">
                   {{ [row.currentCompany, row.city].filter(Boolean).join(' · ') || '—' }}
                 </p>

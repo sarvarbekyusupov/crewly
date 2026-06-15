@@ -9,6 +9,7 @@ const props = defineProps<{
   phone?: string
   telegramUsername?: string
   linkedinUrl?: string
+  linkedinOauthTokenSet?: boolean
   githubUrl?: string
   summary?: string
   completeness: number
@@ -79,8 +80,22 @@ const missingItems = computed(() => {
         {{ email }}
       </a>
       <a v-if="linkedinUrl" :href="linkedinUrl" target="_blank" class="link-pill">
-        <UIcon name="i-heroicons-link" style="width: 12px; height: 12px" />
+        <UIcon name="i-simple-icons-linkedin" style="width: 12px; height: 12px; color: #0a66c2" />
         LinkedIn
+        <span
+          v-if="linkedinOauthTokenSet"
+          style="
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: #0a66c2;
+            color: #fff;
+            letter-spacing: 0.04em;
+            margin-left: 2px;
+          "
+          >✓</span
+        >
       </a>
       <a v-if="githubUrl" :href="githubUrl" target="_blank" class="link-pill">
         <UIcon name="i-heroicons-code-bracket" style="width: 12px; height: 12px" />

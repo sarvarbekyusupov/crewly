@@ -86,8 +86,9 @@ export class HhCommentsService {
     updates: { text?: string; access_type?: string },
   ): Promise<void> {
     const body = new URLSearchParams();
-    if (updates.text) body.set('text', updates.text);
-    if (updates.access_type) body.set('access_type', updates.access_type);
+    if (updates.text !== undefined) body.set('text', updates.text);
+    if (updates.access_type !== undefined)
+      body.set('access_type', updates.access_type);
     await firstValueFrom(
       this.http.put(
         `${this.baseUrl}/applicant_comments/${applicantId}/${commentId}`,

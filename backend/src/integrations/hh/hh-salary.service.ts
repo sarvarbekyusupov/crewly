@@ -7,10 +7,21 @@ import type { HhSalaryEstimate } from './hh.types';
 
 export type { HhSalaryEstimate };
 
+export interface HhSalaryDictItem {
+  id: string;
+  name: string;
+}
+
+const SALARY_DIR_TTL_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class HhSalaryService {
   private readonly logger = new Logger(HhSalaryService.name);
   private readonly baseUrl = HH_BASE_URL;
+  private readonly dirCache = new Map<
+    string,
+    { data: HhSalaryDictItem[]; expiresAt: number }
+  >();
 
   constructor(
     private readonly http: HttpService,
@@ -66,5 +77,42 @@ export class HhSalaryService {
       'HH salary estimate fetched',
     );
     return resp.data;
+  }
+
+  private async fetchSalaryDir(
+    key: string,
+    path: string,
+  ): Promise<HhSalaryDictItem[]> {
+    const cached = this.dirCache.get(key);
+    if (cached && Date.now() < cached.expiresAt) return cached.data;
+    const resp = await firstValueFrom(
+      this.http.get<HhSalaryDictItem[]>(
+        `${this.baseUrl}/salary_statistics/paid/dictionaries/${path}`,
+        { headers: this.headers, params: { host: HH_HOST } },
+      ),
+    );
+    const data = resp.data ?? [];
+    this.dirCache.set(key, { data, expiresAt: Date.now() + SALARY_DIR_TTL_MS });
+    return data;
+  }
+
+  /** GET /salary_statistics/paid/dictionaries/salary_areas — regions available for salary estimates */
+  getSalaryAreas(): Promise<HhSalaryDictItem[]> {
+    return this.fetchSalaryDir('salary_areas', 'salary_areas');
+  }
+
+  /** GET /salary_statistics/paid/dictionaries/industries — industries for salary form */
+  getSalaryIndustries(): Promise<HhSalaryDictItem[]> {
+    return this.fetchSalaryDir('salary_industries', 'industries');
+  }
+
+  /** GET /salary_statistics/paid/dictionaries/professional_areas — professional areas for salary form */
+  getSalaryProfessionalAreas(): Promise<HhSalaryDictItem[]> {
+    return this.fetchSalaryDir('salary_prof_areas', 'professional_areas');
+  }
+
+  /** GET /salary_statistics/paid/dictionaries/employee_levels — seniority levels for salary form */
+  getSalaryEmployeeLevels(): Promise<HhSalaryDictItem[]> {
+    return this.fetchSalaryDir('salary_emp_levels', 'employee_levels');
   }
 }

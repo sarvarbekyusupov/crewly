@@ -174,4 +174,10 @@ export class AuthController {
     await this.authService.resendVerification(body.email);
     return { ok: true };
   }
+
+  @Get('me/telegram-link-code')
+  @SkipThrottle()
+  getTelegramLinkCode(@CurrentUser() user: AuthUser) {
+    return this.authService.getTelegramLinkCode(user.id);
+  }
 }

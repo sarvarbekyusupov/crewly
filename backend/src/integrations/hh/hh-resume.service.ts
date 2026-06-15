@@ -7,7 +7,7 @@ import type {
   HhResumeUpdateBody,
   HhResumeViewItem,
 } from './hh.types';
-import { HH_BASE_URL } from './hh.constants';
+import { HH_BASE_URL, HH_HOST } from './hh.constants';
 import { withRetry } from '../../common/utils/async.utils';
 
 const READ_ONLY_FIELDS = new Set([
@@ -43,7 +43,10 @@ export class HhResumeService {
   ) {}
 
   private get ua(): string {
-    return this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
+    return (
+      this.config.get<string>('HH_USER_AGENT') ??
+      'Crewly/1.0 (contact@crewly.uz)'
+    );
   }
 
   private headers(accessToken: string) {
@@ -61,6 +64,7 @@ export class HhResumeService {
     const resp = await firstValueFrom(
       this.http.get<HhResumeDetail>(`${this.baseUrl}/resumes/${resumeId}`, {
         headers: this.headers(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     return resp.data;
@@ -68,8 +72,9 @@ export class HhResumeService {
 
   async publishResume(accessToken: string, resumeId: string): Promise<void> {
     await firstValueFrom(
-      this.http.put(`${this.baseUrl}/resumes/${resumeId}/publish`, null, {
+      this.http.post(`${this.baseUrl}/resumes/${resumeId}/publish`, null, {
         headers: this.headers(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     this.logger.log({ resumeId }, 'HH resume published');
@@ -77,8 +82,9 @@ export class HhResumeService {
 
   async hideResume(accessToken: string, resumeId: string): Promise<void> {
     await firstValueFrom(
-      this.http.put(`${this.baseUrl}/resumes/${resumeId}/hide`, null, {
+      this.http.post(`${this.baseUrl}/resumes/${resumeId}/hide`, null, {
         headers: this.headers(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     this.logger.log({ resumeId }, 'HH resume hidden');
@@ -88,10 +94,11 @@ export class HhResumeService {
     accessToken: string,
     resumeId: string,
   ): Promise<{ items: HhResumeViewItem[]; found: number }> {
+    const MAX_PAGES = 20;
     const all: HhResumeViewItem[] = [];
     let found = 0;
     let page = 0;
-    while (true) {
+    while (page < MAX_PAGES) {
       const resp = await withRetry(() =>
         firstValueFrom(
           this.http.get<{
@@ -100,7 +107,7 @@ export class HhResumeService {
             pages?: number;
           }>(`${this.baseUrl}/resumes/${resumeId}/views`, {
             headers: this.headers(accessToken),
-            params: { per_page: 100, page },
+            params: { host: HH_HOST, per_page: 100, page },
           }),
         ),
       );
@@ -139,6 +146,7 @@ export class HhResumeService {
           ...this.headers(accessToken),
           'Content-Type': 'application/json',
         },
+        params: { host: HH_HOST },
       }),
     );
     this.logger.log({ resumeId }, 'HH resume updated');

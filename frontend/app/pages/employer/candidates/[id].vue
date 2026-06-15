@@ -153,7 +153,8 @@ async function loadHhComments() {
     )
     hhComments.value = res?.items ?? []
   } catch (e: any) {
-    if (e?.response?.status === 403 || e?.data?.statusCode === 403) {
+    const status = e?.response?.status ?? e?.data?.statusCode
+    if (status === 403 || status === 404) {
       hhCommentsForbidden.value = true
     }
   } finally {
@@ -465,11 +466,11 @@ watch(hhResumeId, (id) => {
                   GitHub Profile
                 </a>
                 <a
-                  v-if="candidate.socialProof.linkedin_url"
-                  :href="safeUrl(candidate.socialProof.linkedin_url)"
+                  v-if="candidate.linkedinUrl || candidate.socialProof.linkedin_url"
+                  :href="safeUrl(candidate.linkedinUrl || candidate.socialProof.linkedin_url)"
                   target="_blank"
                   class="flex items-center gap-2 text-xs hover:underline"
-                  style="color: var(--accent)"
+                  style="color: #0a66c2"
                 >
                   <UIcon name="i-simple-icons-linkedin" class="w-3.5 h-3.5" />
                   LinkedIn Profile

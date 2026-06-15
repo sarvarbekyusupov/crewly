@@ -149,21 +149,6 @@ export class HhVacancyService {
     this.logger.log({ hhVacancyId }, 'HH vacancy updated');
   }
 
-  // TODO: POST /vacancies/{id}/publish does not exist in HH public API.
-  // Draft workflow: POST /vacancy-drafts → POST /vacancy-drafts/{id}/vacancies.
-  // Replace this method with draft-based publish when employer draft flow is implemented.
-  /** Activate a draft vacancy (make it visible to job seekers). */
-  async publishVacancy(hhVacancyId: string): Promise<void> {
-    await firstValueFrom(
-      this.http.post(
-        `${this.baseUrl}/vacancies/${hhVacancyId}/publish`,
-        {},
-        { headers: this.jsonHeaders, params: { host: HH_HOST } },
-      ),
-    );
-    this.logger.log({ hhVacancyId }, 'HH vacancy published');
-  }
-
   /** Archive (close) a vacancy on HH. */
   async archiveVacancy(hhVacancyId: string): Promise<void> {
     const employerId = this.config.get<string>('HH_EMPLOYER_ID');

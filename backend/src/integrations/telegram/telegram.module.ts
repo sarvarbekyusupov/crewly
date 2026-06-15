@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { QUEUES } from '../../workers/queue-names';
 import { TelegramBotService } from './telegram-bot.service';
+import { TelegramChannelMonitorService } from './telegram-channel-monitor.service';
 
 @Global()
 @Module({
@@ -9,9 +10,11 @@ import { TelegramBotService } from './telegram-bot.service';
     BullModule.registerQueue(
       { name: QUEUES.PARSE_CANDIDATE },
       { name: QUEUES.ADVANCE_SCREENING },
+      { name: QUEUES.SCORE_SEEKER_JOBS },
+      { name: QUEUES.AUTO_APPLY },
     ),
   ],
-  providers: [TelegramBotService],
-  exports: [TelegramBotService],
+  providers: [TelegramBotService, TelegramChannelMonitorService],
+  exports: [TelegramBotService, TelegramChannelMonitorService],
 })
 export class TelegramModule {}

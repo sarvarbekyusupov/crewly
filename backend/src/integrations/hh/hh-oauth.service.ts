@@ -28,6 +28,7 @@ interface HhResumeMine {
   id: string;
   title: string;
   alternate_url: string;
+  updated_at?: string;
 }
 
 // HH only allows refresh AFTER token expires: "token not expired" = 400 invalid_grant.
@@ -47,7 +48,10 @@ export class HhOAuthService {
   ) {}
 
   private get ua(): string {
-    return this.config.get<string>('HH_USER_AGENT') ?? 'crewly/1.0';
+    return (
+      this.config.get<string>('HH_USER_AGENT') ??
+      'Crewly/1.0 (contact@crewly.uz)'
+    );
   }
 
   getAuthorizationUrl(candidateId: string): string {
@@ -74,6 +78,7 @@ export class HhOAuthService {
       client_id: clientId,
       redirect_uri: redirectUri,
       state,
+      scope: 'resumes negotiations',
     });
 
     return `${HH_AUTH_URL}?${params.toString()}`;
@@ -115,7 +120,10 @@ export class HhOAuthService {
       code,
       redirect_uri: redirectUri,
     }).toString();
-    this.logger.debug({ body, url: HH_TOKEN_URL }, 'HH token exchange request');
+    this.logger.debug(
+      { grant_type: 'authorization_code', url: HH_TOKEN_URL },
+      'HH token exchange request',
+    );
 
     let response: Awaited<
       ReturnType<
@@ -133,13 +141,8 @@ export class HhOAuthService {
         }),
       );
     } catch (err: any) {
-      console.error('[HH token exchange failed]', {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        body,
-      });
       this.logger.error(
-        { status: err?.response?.status, data: err?.response?.data, body },
+        { status: err?.response?.status, data: err?.response?.data },
         'HH token exchange failed',
       );
       throw err;
@@ -281,36 +284,29 @@ export class HhOAuthService {
   }
 
   async getResumesForToken(accessToken: string): Promise<HhResumeMine[]> {
-    const url = `${this.baseUrl}/resumes/mine`;
-    console.log(
-      '[HH getResumesForToken] calling',
-      url,
-      'token:',
-      accessToken.slice(0, 15) + '...',
-    );
     try {
       const response = await firstValueFrom(
-        this.http.get<{ items: HhResumeMine[] }>(url, {
-          params: { host: HH_HOST },
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'User-Agent': this.ua,
-            'HH-User-Agent': this.ua,
+        this.http.get<{ items: HhResumeMine[] }>(
+          `${this.baseUrl}/resumes/mine`,
+          {
+            params: { host: HH_HOST },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'User-Agent': this.ua,
+              'HH-User-Agent': this.ua,
+            },
           },
-        }),
-      );
-      console.log(
-        '[HH getResumesForToken] SUCCESS, items:',
-        response.data.items?.length ?? 0,
+        ),
       );
       return response.data.items ?? [];
     } catch (err: any) {
-      console.error('[HH getResumesForToken] FAILED', {
-        status: err?.response?.status,
-        headers: err?.response?.headers,
-        data: JSON.stringify(err?.response?.data),
-        token: accessToken.slice(0, 15) + '...',
-      });
+      this.logger.error(
+        {
+          status: err?.response?.status,
+          data: err?.response?.data,
+        },
+        'HH getResumesForToken failed',
+      );
       throw err;
     }
   }
@@ -365,9 +361,10 @@ export class HhOAuthService {
   private async revokeToken(accessToken: string): Promise<void> {
     try {
       await firstValueFrom(
-        this.http.delete(`${this.baseUrl}/oauth/token`, {
-          params: { access_token: accessToken },
+        this.http.delete(`${this.baseUrl}/token`, {
+          params: { host: HH_HOST },
           headers: {
+            Authorization: `Bearer ${accessToken}`,
             'User-Agent': this.ua,
             'HH-User-Agent': this.ua,
           },

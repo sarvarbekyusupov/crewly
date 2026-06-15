@@ -219,11 +219,14 @@ export class JobsService {
     return deleted;
   }
 
-  /** Create + publish job on HH. Stores hhVacancyId on the Job. */
+  /** Create a vacancy on HH (vacancy is live immediately after POST /vacancies). */
   async publishToHh(companyId: string, id: string) {
     const job = await this.findOne(companyId, id);
     if (job.status === 'draft') {
       throw new BadRequestException('Activate the job before publishing to HH');
+    }
+    if (job.hhVacancyId) {
+      throw new BadRequestException('Job is already published on HH');
     }
 
     const hhVacancyId = await this.hhVacancy.createVacancy({
@@ -238,8 +241,6 @@ export class JobsService {
       employmentType: job.employmentType,
       workMode: job.workMode,
     });
-
-    await this.hhVacancy.publishVacancy(hhVacancyId);
 
     return this.db.job.update({
       where: { id },
@@ -329,7 +330,18 @@ export class JobsService {
     collection: string,
     message?: string,
   ) {
-    await this.findOne(companyId, jobId);
+    const job = await this.findOne(companyId, jobId);
+    if (job.hhVacancyId) {
+      const validStates = await this.hhNegotiations.getVacancyCollections(
+        job.hhVacancyId,
+      );
+      const validIds = validStates.map((s) => s.id);
+      if (validIds.length && !validIds.includes(collection)) {
+        throw new BadRequestException(
+          `Invalid HH collection '${collection}'. Valid: ${validIds.join(', ')}`,
+        );
+      }
+    }
     await this.hhNegotiations.moveNegotiation(
       collection,
       negotiationId,

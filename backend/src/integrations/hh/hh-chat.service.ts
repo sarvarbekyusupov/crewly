@@ -153,6 +153,33 @@ export class HhChatService {
     return Number(resp.data.unread_chats_count ?? 0);
   }
 
+  /**
+   * Find the chatId for a given HH negotiation.
+   * Paginates /common/chats and matches chat.negotiation.id.
+   * Returns null if not found (caller should fall back to deprecated endpoint).
+   */
+  async findChatIdByNegotiationId(
+    token: string,
+    negotiationId: string,
+  ): Promise<string | null> {
+    let page = 0;
+    while (true) {
+      const resp = await firstValueFrom(
+        this.http.get<HhChatsResponse>(`${this.baseUrl}/common/chats`, {
+          headers: this.authHeaders(token),
+          params: { host: HH_HOST, per_page: 50, page },
+        }),
+      );
+      const match = resp.data.items?.find(
+        (c) => c.negotiation?.id === negotiationId,
+      );
+      if (match) return match.id;
+      if (page >= (resp.data.pages ?? 1) - 1) break;
+      page++;
+    }
+    return null;
+  }
+
   /** POST /common/chats/without_vacancy — employer direct outreach linked to a resume hash */
   async createChatWithoutVacancy(
     resumeHash: string,
@@ -205,5 +232,83 @@ export class HhChatService {
       ),
     );
     this.logger.log({ chatId, allowed }, 'HH chat write_possibility updated');
+  }
+
+  /** PUT /common/chats/{id}/leave — employer leaves the chat */
+  async leaveChat(chatId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.put(
+        `${this.baseUrl}/common/chats/${chatId}/leave`,
+        {},
+        {
+          headers: this.authHeaders(this.employerToken),
+          params: { host: HH_HOST },
+        },
+      ),
+    );
+    this.logger.log({ chatId }, 'HH chat left');
+  }
+
+  /** PUT /common/chats/{id}/messages/{messageId} — edit an existing message */
+  async editChatMessage(
+    token: string,
+    chatId: string,
+    messageId: string,
+    text: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put(
+        `${this.baseUrl}/common/chats/${chatId}/messages/${messageId}`,
+        { text },
+        {
+          headers: {
+            ...this.authHeaders(token),
+            'Content-Type': 'application/json',
+          },
+          params: { host: HH_HOST },
+        },
+      ),
+    );
+    this.logger.log({ chatId, messageId }, 'HH chat message edited');
+  }
+
+  /** DELETE /common/chats/{id}/messages/{messageId} — delete a message */
+  async deleteChatMessage(
+    token: string,
+    chatId: string,
+    messageId: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(
+        `${this.baseUrl}/common/chats/${chatId}/messages/${messageId}`,
+        { headers: this.authHeaders(token), params: { host: HH_HOST } },
+      ),
+    );
+    this.logger.log({ chatId, messageId }, 'HH chat message deleted');
+  }
+
+  /**
+   * POST /common/chats/files/upload_links — request presigned upload URLs for file attachments.
+   * files: array of { name, size, content_type } objects.
+   * Returns array of upload link objects.
+   */
+  async getFileUploadLinks(
+    token: string,
+    files: Array<{ name: string; size: number; content_type: string }>,
+  ): Promise<unknown[]> {
+    const resp = await firstValueFrom(
+      this.http.post<{ upload_links: unknown[] }>(
+        `${this.baseUrl}/common/chats/files/upload_links`,
+        { files },
+        {
+          headers: {
+            ...this.authHeaders(token),
+            'Content-Type': 'application/json',
+          },
+          params: { host: HH_HOST },
+        },
+      ),
+    );
+    return resp.data.upload_links ?? [];
   }
 }

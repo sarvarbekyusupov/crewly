@@ -10,7 +10,7 @@ import type {
   HhVacancyDetail,
   HhVacancyListResponse,
 } from './hh.types';
-import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
+import { HH_BASE_URL, HH_HOST, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 
 export type { HhNegotiationsResponse, HhVacancyListResponse };
 
@@ -43,7 +43,7 @@ export class HhApplicantService {
     const resp = await firstValueFrom(
       this.http.get<HhNegotiationsResponse>(`${this.baseUrl}/negotiations`, {
         headers: this.authHeaders(accessToken),
-        params: { per_page: 20, page: 0, ...params },
+        params: { host: HH_HOST, per_page: 20, page: 0, ...params },
       }),
     );
     return resp.data;
@@ -62,6 +62,7 @@ export class HhApplicantService {
           'HH-User-Agent': this.ua,
         },
         params: {
+          host: HH_HOST,
           area: HH_UZBEKISTAN_AREA_ID,
           per_page: params.per_page ?? 20,
           page: params.page ?? 0,
@@ -84,18 +85,19 @@ export class HhApplicantService {
     resumeId: string,
     message?: string,
   ): Promise<string | null> {
-    const body: Record<string, unknown> = {
+    const params = new URLSearchParams({
       vacancy_id: vacancyId,
       resume_id: resumeId,
-    };
-    if (message) body['message'] = message;
+    });
+    if (message) params.set('message', message);
 
     const resp = await firstValueFrom(
-      this.http.post(`${this.baseUrl}/negotiations`, body, {
+      this.http.post(`${this.baseUrl}/negotiations`, params.toString(), {
         headers: {
           ...this.authHeaders(accessToken),
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
+        params: { host: HH_HOST },
       }),
     );
     // HH returns Location: /negotiations/{id} on 201
@@ -113,6 +115,7 @@ export class HhApplicantService {
     const resp = await firstValueFrom(
       this.http.get<HhMeResponse>(`${this.baseUrl}/me`, {
         headers: this.authHeaders(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     return resp.data;
@@ -127,7 +130,7 @@ export class HhApplicantService {
     const resp = await firstValueFrom(
       this.http.get<HhNegotiationMessagesResponse>(
         `${this.baseUrl}/negotiations/${negotiationId}/messages`,
-        { headers: this.authHeaders(accessToken) },
+        { headers: this.authHeaders(accessToken), params: { host: HH_HOST } },
       ),
     );
     return resp.data;
@@ -143,12 +146,13 @@ export class HhApplicantService {
     await firstValueFrom(
       this.http.post(
         `${this.baseUrl}/negotiations/${negotiationId}/messages`,
-        { message },
+        new URLSearchParams({ message }).toString(),
         {
           headers: {
             ...this.authHeaders(accessToken),
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
+          params: { host: HH_HOST },
         },
       ),
     );
@@ -163,6 +167,7 @@ export class HhApplicantService {
     const resp = await firstValueFrom(
       this.http.get<HhVacancyDetail>(`${this.baseUrl}/vacancies/${vacancyId}`, {
         headers: this.authHeaders(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     return resp.data;
@@ -179,7 +184,7 @@ export class HhApplicantService {
         `${this.baseUrl}/resumes/${resumeId}/similar_vacancies`,
         {
           headers: this.authHeaders(accessToken),
-          params: { per_page: 20, page: 0, ...params },
+          params: { host: HH_HOST, per_page: 20, page: 0, ...params },
         },
       ),
     );
@@ -194,6 +199,7 @@ export class HhApplicantService {
     await firstValueFrom(
       this.http.delete(`${this.baseUrl}/negotiations/${negotiationId}`, {
         headers: this.authHeaders(accessToken),
+        params: { host: HH_HOST },
       }),
     );
     this.logger.log({ negotiationId }, 'Candidate withdrew HH negotiation');

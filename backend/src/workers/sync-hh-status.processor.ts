@@ -120,9 +120,11 @@ export class SyncHhStatusProcessor {
       let created = 0;
       await runConcurrentCapped(jobs, 3, async (job) => {
         try {
+          // Fetch only the 'response' collection — new applicants land here.
+          // Fetching all collections fans out to O(collections) HH calls per vacancy.
           const { items } = await this.hhNegotiations.getVacancyResponses(
             job.hhVacancyId!,
-            { perPage: 100 },
+            { perPage: 100, collectionIds: ['response'] },
           );
 
           if (!items.length) return;
@@ -195,7 +197,7 @@ export class SyncHhStatusProcessor {
     while (true) {
       const apps = await this.db.seekerApplication.findMany({
         where: {
-          source: 'hh.uz',
+          source: 'hh.ru',
           hhNegotiationId: { not: null },
           status: { notIn: [...TERMINAL] },
         },

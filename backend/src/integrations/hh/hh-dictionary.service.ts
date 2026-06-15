@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { HhArea, HhDictionaries } from './hh.types';
-import { HH_BASE_URL } from './hh.constants';
+import { HH_BASE_URL, HH_HOST } from './hh.constants';
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -36,7 +36,12 @@ export class HhDictionaryService {
     // Deduplicate concurrent cache misses — only one HTTP call per key at a time
     let promise = this.inflight.get(key) as Promise<T> | undefined;
     if (!promise) {
-      promise = firstValueFrom(this.http.get<T>(url, { headers: this.headers }))
+      promise = firstValueFrom(
+        this.http.get<T>(url, {
+          headers: this.headers,
+          params: { host: HH_HOST },
+        }),
+      )
         .then((res) => {
           this.cache.set(key, {
             data: res.data,

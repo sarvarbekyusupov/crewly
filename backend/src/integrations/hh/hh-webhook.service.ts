@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { HhCandidateService } from './hh-candidate.service';
 import {
   HH_BASE_URL,
+  HH_HOST,
   HH_EMPLOYER_STATE_MAP,
   HH_SEEKER_STATE_MAP,
 } from './hh.constants';
@@ -75,9 +76,15 @@ export class HhWebhookService implements OnModuleInit {
   ): Promise<void> {
     const existing = await firstValueFrom(
       this.http.get<{
-        items: Array<{ id: string; url: string; types?: string[] }>;
+        items: Array<{
+          id: string;
+          url: string;
+          types?: string[];
+          actions?: string[];
+        }>;
       }>(`${this.baseUrl}/webhook/subscriptions`, {
         headers: this.authHeaders,
+        params: { host: HH_HOST },
       }),
     );
 
@@ -86,7 +93,8 @@ export class HhWebhookService implements OnModuleInit {
       existing.data.items?.filter((s) => s.url === webhookUrl) ?? [];
 
     const exactMatch = forOurUrl.find((s) => {
-      const current = new Set(s.types ?? []);
+      // HH API may return event list as 'types' or 'actions' — check both
+      const current = new Set(s.types ?? s.actions ?? []);
       return (
         subscribedSet.size === current.size &&
         [...subscribedSet].every((t) => current.has(t))
@@ -103,6 +111,7 @@ export class HhWebhookService implements OnModuleInit {
       await firstValueFrom(
         this.http.delete(`${this.baseUrl}/webhook/subscriptions/${stale.id}`, {
           headers: this.authHeaders,
+          params: { host: HH_HOST },
         }),
       );
       this.logger.log(
@@ -113,9 +122,9 @@ export class HhWebhookService implements OnModuleInit {
 
     await firstValueFrom(
       this.http.post(
-        `${this.baseUrl}/webhook/subscribe`,
-        { url: webhookUrl, types: SUBSCRIBED_TYPES, secret },
-        { headers: this.authHeaders },
+        `${this.baseUrl}/webhook/subscriptions`,
+        { url: webhookUrl, actions: SUBSCRIBED_TYPES, secret },
+        { headers: this.authHeaders, params: { host: HH_HOST } },
       ),
     );
 

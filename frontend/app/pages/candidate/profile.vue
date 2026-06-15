@@ -29,6 +29,7 @@ interface Profile {
   currentPosition?: string
   currentCompany?: string
   linkedinUrl?: string
+  linkedinOauthToken?: string
   githubUrl?: string
   preferredWorkMode?: string
   willingToRelocate?: boolean
@@ -353,6 +354,7 @@ const NAV_SECTIONS = [
           :phone="profile?.phone"
           :telegram-username="profile?.telegramUsername"
           :linkedin-url="profile?.linkedinUrl"
+          :linkedin-oauth-token-set="!!profile?.linkedinOauthToken"
           :github-url="profile?.githubUrl"
           :summary="profile?.parsedResume?.summary"
           :completeness="completeness"

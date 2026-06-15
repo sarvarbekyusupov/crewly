@@ -37,10 +37,16 @@ interface ActiveVacanciesResp {
   page: number;
 }
 
+interface InviteActionCache {
+  action: VacancyActionItem['negotiations_actions'][number];
+  expiresAt: number;
+}
+
 @Injectable()
 export class HhNegotiationsService {
   private readonly logger = new Logger(HhNegotiationsService.name);
   private readonly baseUrl = HH_BASE_URL;
+  private readonly inviteActionCache = new Map<string, InviteActionCache>();
 
   constructor(
     private readonly http: HttpService,
@@ -83,7 +89,7 @@ export class HhNegotiationsService {
    */
   async getVacancyResponses(
     vacancyId: string,
-    opts: { perPage?: number } = {},
+    opts: { perPage?: number; collectionIds?: string[] } = {},
   ): Promise<{ items: HhNegotiationItem[] }> {
     // Step 1: get collection URLs for this vacancy
     const collectionsResp = await withRetry(() =>
@@ -97,7 +103,11 @@ export class HhNegotiationsService {
       ),
     );
 
-    const collections = collectionsResp.data.collections ?? [];
+    const allCollections = collectionsResp.data.collections ?? [];
+    if (!allCollections.length) return { items: [] };
+    const collections = opts.collectionIds?.length
+      ? allCollections.filter((c) => opts.collectionIds!.includes(c.id))
+      : allCollections;
     if (!collections.length) return { items: [] };
 
     // Step 2: fetch all pages from every collection, max 5 concurrent.
@@ -165,35 +175,49 @@ export class HhNegotiationsService {
       'HH-User-Agent': userAgent,
     };
 
-    // Step 1: paginate until the target vacancyId is found
-    let vacancyItem: VacancyActionItem | undefined;
-    let page = 0;
-    let totalPages = 1;
-    while (!vacancyItem && page < totalPages) {
-      const actionsResp = await withRetry(() =>
-        firstValueFrom(
-          this.http.get<ActiveVacanciesResp>(
-            `${this.baseUrl}/employers/${employerId}/vacancies/active`,
-            {
-              params: {
-                host: HH_HOST,
-                resume_id: params.resumeId,
-                per_page: 100,
-                page,
-              },
-              headers: authHeaders,
-            },
-          ),
-        ),
-      );
-      vacancyItem = actionsResp.data.items?.find(
-        (v) => v.id === params.vacancyId,
-      );
-      totalPages = actionsResp.data.pages ?? 1;
-      page++;
-    }
+    // Step 1: resolve the enabled action URL for this vacancy+resume pair.
+    // Cache for 5 minutes to avoid O(pages) HH calls per invite.
+    const cacheKey = `${params.vacancyId}:${params.resumeId}`;
+    const cached = this.inviteActionCache.get(cacheKey);
+    let action: VacancyActionItem['negotiations_actions'][number] | undefined =
+      cached && Date.now() < cached.expiresAt ? cached.action : undefined;
 
-    const action = vacancyItem?.negotiations_actions?.find((a) => a.enabled);
+    if (!action) {
+      let vacancyItem: VacancyActionItem | undefined;
+      let page = 0;
+      let totalPages = 1;
+      while (!vacancyItem && page < totalPages) {
+        const actionsResp = await withRetry(() =>
+          firstValueFrom(
+            this.http.get<ActiveVacanciesResp>(
+              `${this.baseUrl}/employers/${employerId}/vacancies/active`,
+              {
+                params: {
+                  host: HH_HOST,
+                  resume_id: params.resumeId,
+                  per_page: 100,
+                  page,
+                },
+                headers: authHeaders,
+              },
+            ),
+          ),
+        );
+        vacancyItem = actionsResp.data.items?.find(
+          (v) => v.id === params.vacancyId,
+        );
+        totalPages = actionsResp.data.pages ?? 1;
+        page++;
+      }
+
+      action = vacancyItem?.negotiations_actions?.find((a) => a.enabled);
+      if (action) {
+        this.inviteActionCache.set(cacheKey, {
+          action,
+          expiresAt: Date.now() + 5 * 60 * 1000,
+        });
+      }
+    }
 
     if (!action) {
       throw new Error(

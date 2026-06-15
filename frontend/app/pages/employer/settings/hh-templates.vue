@@ -13,8 +13,8 @@ interface HhMailTemplate {
 
 const { data, pending, refresh, error } = await useAsyncData('hh-mail-templates', () =>
   api.get<{ items: HhMailTemplate[] }>('/api/v1/hh/mail-templates').catch((e) => {
-    if (e?.response?.status === 403 || e?.data?.statusCode === 403)
-      return { items: [], _forbidden: true }
+    const status = e?.response?.status ?? e?.data?.statusCode
+    if (status === 403 || status === 404) return { items: [], _forbidden: true }
     throw e
   }),
 )

@@ -229,6 +229,7 @@ export interface HhChat {
   id: string;
   vacancy?: { id: string; name: string };
   resume?: { id: string; title: string };
+  negotiation?: { id: string };
   last_message?: HhChatMessage;
   unread_count: number;
 }

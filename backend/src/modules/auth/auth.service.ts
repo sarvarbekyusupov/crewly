@@ -317,4 +317,39 @@ export class AuthService {
         this.logger.error({ err: e.message }, 'Background task error'),
       );
   }
+
+  getTelegramLinkCode(userId: string): { code: string; botUrl: string } {
+    const secret = this.config.get<string>('JWT_ACCESS_SECRET');
+    if (!secret) throw new Error('JWT_ACCESS_SECRET not set');
+
+    const code = this.jwt.sign(
+      { sub: userId, type: 'tg_link' },
+      { secret, expiresIn: '15m' },
+    );
+
+    const botUsername =
+      this.config.get<string>('TELEGRAM_BOT_USERNAME') ?? 'crewly_bot';
+    return { code, botUrl: `https://t.me/${botUsername}?start=link_${code}` };
+  }
+
+  async verifyTelegramLinkCode(
+    code: string,
+    telegramChatId: string,
+  ): Promise<string | null> {
+    const secret = this.config.get<string>('JWT_ACCESS_SECRET');
+    if (!secret) return null;
+    try {
+      const payload = this.jwt.verify<{ sub: string; type: string }>(code, {
+        secret,
+      });
+      if (payload.type !== 'tg_link') return null;
+      await this.db.user.update({
+        where: { id: payload.sub },
+        data: { telegramChatId },
+      });
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
 }

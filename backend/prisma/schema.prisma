@@ -241,6 +241,10 @@ model Candidate {
   hhRefreshToken         String?   @map("hh_refresh_token")
   hhTokenExpiresAt       DateTime? @map("hh_token_expires_at") @db.Timestamptz
   hhResumeId             String?   @map("hh_resume_id")
+  hhApplicantId          String?   @map("hh_applicant_id")
+  linkedinOauthToken     String?   @map("linkedin_oauth_token")
+  linkedinRefreshToken   String?   @map("linkedin_refresh_token")
+  linkedinTokenExpiresAt DateTime? @map("linkedin_token_expires_at") @db.Timestamptz
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt              DateTime? @map("deleted_at") @db.Timestamptz
@@ -451,6 +455,7 @@ model Screening {
   questionsAsked Int      @default(0) @map("questions_asked")
   aiAssessment  Json?     @map("ai_assessment")
   fullTranscript Json?    @map("full_transcript")
+  telegramStatusMessageId String? @map("telegram_status_message_id")
   startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
   completedAt   DateTime? @map("completed_at") @db.Timestamptz
   escalatedAt   DateTime? @map("escalated_at") @db.Timestamptz
@@ -665,6 +670,8 @@ model SeekerJobMatch {
   strengths       String[]
   gaps            String[]
   scoredAt        DateTime  @default(now()) @map("scored_at") @db.Timestamptz
+  notifiedVia     String?   @map("notified_via")
+  notifiedAt      DateTime? @map("notified_at") @db.Timestamptz
 
   candidate     Candidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   discoveredJob DiscoveredJob @relation(fields: [discoveredJobId], references: [id], onDelete: Cascade)
@@ -740,6 +747,25 @@ model JobDiscoveryRun {
 
   @@index([source, startedAt(sort: Desc)], map: "idx_job_discovery_runs_source")
   @@map("job_discovery_runs")
+}
+
+model TelegramPendingJob {
+  chatId    String   @id @map("chat_id")
+  jobId     String   @map("job_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("telegram_pending_jobs")
+}
+
+model TelegramChannel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId   BigInt   @unique @map("channel_id")
+  channelName String?  @map("channel_name")
+  isActive    Boolean  @default(true) @map("is_active")
+  addedAt     DateTime @default(now()) @map("added_at") @db.Timestamptz
+
+  @@index([isActive], map: "idx_telegram_channels_active")
+  @@map("telegram_channels")
 }
 
 model WaitlistEntry {

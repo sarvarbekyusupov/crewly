@@ -9,6 +9,7 @@ import { HhClientService } from '../integrations/hh/hh-client.service';
 import { HhApplicantService } from '../integrations/hh/hh-applicant.service';
 import { HhOAuthService } from '../integrations/hh/hh-oauth.service';
 import { LinkedInApplyService } from '../integrations/apply/linkedin-apply.service';
+import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { QUEUES } from './queue-names';
 import { ConfigService } from '@nestjs/config';
 
@@ -40,6 +41,7 @@ export class AutoApplyProcessor {
     private readonly hhApplicant: HhApplicantService,
     private readonly hhOAuth: HhOAuthService,
     private readonly linkedinApply: LinkedInApplyService,
+    private readonly telegram: TelegramBotService,
     private readonly config: ConfigService,
   ) {}
 
@@ -92,6 +94,12 @@ export class AutoApplyProcessor {
         },
       },
     });
+
+    // Telegram alert applies are explicit user actions — skip agent decision
+    if (seekerApp.source === 'telegram_alert') {
+      await this.applyTelegram(seekerApplicationId, candidate, discoveredJob);
+      return;
+    }
 
     // Seeker Agent decision and drafting
     const agentResult = await this.agent.decideAndDraftApplication(
@@ -266,6 +274,45 @@ export class AutoApplyProcessor {
     });
 
     this.logger.log({ seekerApplicationId }, 'LinkedIn application complete');
+  }
+
+  private async applyTelegram(
+    seekerApplicationId: string,
+    candidate: AutoApplyCandidate,
+    discoveredJob: DiscoveredJob,
+  ) {
+    await this.db.seekerApplication.update({
+      where: { id: seekerApplicationId },
+      data: { status: 'applied', appliedAt: new Date(), error: null },
+    });
+
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { telegramUserId: true },
+    });
+
+    if (cand?.telegramUserId) {
+      const text =
+        `✅ *Отклик принят!*\n\n` +
+        `Вакансия: *${discoveredJob.title}* — ${discoveredJob.company}\n\n` +
+        `Работодатель увидит ваш профиль. Ожидайте обратной связи 👍`;
+
+      await this.telegram
+        .sendMessage(cand.telegramUserId.toString(), text, {
+          parseMode: 'Markdown',
+        })
+        .catch((err) => {
+          this.logger.warn(
+            { seekerApplicationId, error: err.message },
+            'Failed to send telegram apply confirmation',
+          );
+        });
+    }
+
+    this.logger.log(
+      { seekerApplicationId },
+      'Telegram alert application applied',
+    );
   }
 
   @OnQueueFailed()

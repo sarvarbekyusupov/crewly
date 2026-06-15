@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { HH_BASE_URL } from './hh.constants';
+import { HH_BASE_URL, HH_HOST } from './hh.constants';
 
 export interface HhSuggestItem {
   id: string;
@@ -30,7 +30,7 @@ export class HhSuggestsService {
     const res = await firstValueFrom(
       this.http.get<{ items: HhSuggestItem[] }>(
         `${this.baseUrl}/suggests/areas`,
-        { params: { text }, headers: this.headers },
+        { params: { host: HH_HOST, text }, headers: this.headers },
       ),
     );
     return res.data.items ?? [];
@@ -41,7 +41,7 @@ export class HhSuggestsService {
     const res = await firstValueFrom(
       this.http.get<{ items: HhSuggestItem[] }>(
         `${this.baseUrl}/suggests/skill_set`,
-        { params: { text }, headers: this.headers },
+        { params: { host: HH_HOST, text }, headers: this.headers },
       ),
     );
     return res.data.items ?? [];
@@ -52,7 +52,62 @@ export class HhSuggestsService {
     const res = await firstValueFrom(
       this.http.get<{ items: HhSuggestItem[] }>(
         `${this.baseUrl}/suggests/educational_institutions`,
-        { params: { text }, headers: this.headers },
+        { params: { host: HH_HOST, text }, headers: this.headers },
+      ),
+    );
+    return res.data.items ?? [];
+  }
+
+  async positions(text: string): Promise<HhSuggestItem[]> {
+    if (!text?.trim()) return [];
+    const res = await firstValueFrom(
+      this.http.get<{ items: HhSuggestItem[] }>(
+        `${this.baseUrl}/suggests/positions`,
+        { params: { host: HH_HOST, text }, headers: this.headers },
+      ),
+    );
+    return res.data.items ?? [];
+  }
+
+  async areaLeaves(text: string): Promise<HhSuggestItem[]> {
+    if (!text?.trim()) return [];
+    const res = await firstValueFrom(
+      this.http.get<{ items: HhSuggestItem[] }>(
+        `${this.baseUrl}/suggests/area_leaves`,
+        { params: { host: HH_HOST, text }, headers: this.headers },
+      ),
+    );
+    return res.data.items ?? [];
+  }
+
+  async fieldsOfStudy(text: string): Promise<HhSuggestItem[]> {
+    if (!text?.trim()) return [];
+    const res = await firstValueFrom(
+      this.http.get<{ items: HhSuggestItem[] }>(
+        `${this.baseUrl}/suggests/fields_of_study`,
+        { params: { host: HH_HOST, text }, headers: this.headers },
+      ),
+    );
+    return res.data.items ?? [];
+  }
+
+  async professionalRoles(text: string): Promise<HhSuggestItem[]> {
+    if (!text?.trim()) return [];
+    const res = await firstValueFrom(
+      this.http.get<{ items: HhSuggestItem[] }>(
+        `${this.baseUrl}/suggests/professional_roles`,
+        { params: { host: HH_HOST, text }, headers: this.headers },
+      ),
+    );
+    return res.data.items ?? [];
+  }
+
+  async vacancyPositions(text: string): Promise<HhSuggestItem[]> {
+    if (!text?.trim()) return [];
+    const res = await firstValueFrom(
+      this.http.get<{ items: HhSuggestItem[] }>(
+        `${this.baseUrl}/suggests/vacancy_positions`,
+        { params: { host: HH_HOST, text }, headers: this.headers },
       ),
     );
     return res.data.items ?? [];

@@ -14,10 +14,11 @@ export class HhCandidateService {
 
   async findOrCreate(resumeId: string): Promise<{ id: string }> {
     // Scope to sourceId=null — HH-sourced candidates created here have no sourceId.
-    // Note: @@unique([sourceId, externalId]) treats NULL!=NULL in Postgres, so P2002
-    // won't fire on concurrent creates with null sourceId. The findFirst guard below is
-    // the only dedup; a schema-level partial unique index on (externalId) WHERE sourceId
-    // IS NULL would fully solve this.
+    // @@unique([sourceId, externalId]) treats NULL!=NULL in Postgres, so the composite
+    // constraint alone would not prevent duplicates. A partial unique index
+    // candidate_hh_external_id_unique ON candidates(external_id) WHERE source_id IS NULL
+    // (migration 20260613000000_candidate_hh_partial_unique) enforces uniqueness here,
+    // so P2002 WILL fire on concurrent creates — the catch block below is live.
     const existing = await this.db.candidate.findFirst({
       where: { externalId: resumeId, sourceId: null },
       select: { id: true },

@@ -4,6 +4,7 @@ import { CandidatePortalController } from './candidate-portal.controller';
 import { CandidatePortalService } from './candidate-portal.service';
 import { CandidateAuthModule } from '../candidate-auth/candidate-auth.module';
 import { HhModule } from '../../integrations/hh/hh.module';
+import { LinkedInModule } from '../../integrations/linkedin/linkedin.module';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { QUEUES } from '../../workers/queue-names';
 
@@ -11,6 +12,7 @@ import { QUEUES } from '../../workers/queue-names';
   imports: [
     CandidateAuthModule,
     HhModule,
+    LinkedInModule,
     ConversationsModule,
     BullModule.registerQueue({ name: QUEUES.SCORE_SEEKER_JOBS }),
     BullModule.registerQueue({ name: QUEUES.AUTO_APPLY }),
