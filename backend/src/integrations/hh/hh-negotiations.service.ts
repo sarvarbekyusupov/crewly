@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { HH_BASE_URL } from './hh.constants';
+import { HH_BASE_URL, HH_HOST } from './hh.constants';
+import type { HhMailTemplate, HhNegotiationHistoryVacancy } from './hh.types';
 import { runConcurrentCapped, withRetry } from '../../common/utils/async.utils';
 
 export interface HhNegotiationItem {
@@ -65,7 +66,10 @@ export class HhNegotiationsService {
       firstValueFrom(
         this.http.get<{ states?: HhEmployerState[]; collections?: unknown[] }>(
           `${this.baseUrl}/negotiations`,
-          { params: { vacancy_id: vacancyId }, headers: this.headers },
+          {
+            params: { host: HH_HOST, vacancy_id: vacancyId },
+            headers: this.headers,
+          },
         ),
       ),
     );
@@ -87,7 +91,7 @@ export class HhNegotiationsService {
         this.http.get<{
           collections?: Array<{ id: string; url: string }>;
         }>(`${this.baseUrl}/negotiations`, {
-          params: { vacancy_id: vacancyId },
+          params: { host: HH_HOST, vacancy_id: vacancyId },
           headers: this.headers,
         }),
       ),
@@ -96,7 +100,8 @@ export class HhNegotiationsService {
     const collections = collectionsResp.data.collections ?? [];
     if (!collections.length) return { items: [] };
 
-    // Step 2: fetch all pages from every collection, max 5 concurrent
+    // Step 2: fetch all pages from every collection, max 5 concurrent.
+    // Add host explicitly — HH does not guarantee it is embedded in returned collection URLs.
     const allItems: HhNegotiationItem[] = [];
     await runConcurrentCapped(collections, 5, async (col) => {
       let page = 0;
@@ -109,7 +114,7 @@ export class HhNegotiationsService {
                 pages?: number;
                 page?: number;
               }>(col.url, {
-                params: { per_page: opts.perPage ?? 100, page },
+                params: { host: HH_HOST, per_page: opts.perPage ?? 100, page },
                 headers: this.headers,
               }),
             ),
@@ -170,7 +175,12 @@ export class HhNegotiationsService {
           this.http.get<ActiveVacanciesResp>(
             `${this.baseUrl}/employers/${employerId}/vacancies/active`,
             {
-              params: { resume_id: params.resumeId, per_page: 100, page },
+              params: {
+                host: HH_HOST,
+                resume_id: params.resumeId,
+                per_page: 100,
+                page,
+              },
               headers: authHeaders,
             },
           ),
@@ -218,7 +228,9 @@ export class HhNegotiationsService {
         this.http.request({
           method: action.method,
           url: action.url,
-          ...(isGet ? { params: payload } : { data: payload }),
+          // Always include host for hh.uz scoping; merge with payload for GET requests
+          params: isGet ? { host: HH_HOST, ...payload } : { host: HH_HOST },
+          ...(isGet ? {} : { data: payload }),
           headers: { ...authHeaders, 'Content-Type': 'application/json' },
         }),
       );
@@ -253,12 +265,20 @@ export class HhNegotiationsService {
     negotiationId: string,
     message?: string,
   ): Promise<void> {
+    const body = new URLSearchParams();
+    if (message) body.set('message', message);
     await withRetry(() =>
       firstValueFrom(
         this.http.put(
           `${this.baseUrl}/negotiations/${collection}/${negotiationId}`,
-          { ...(message && { message }) },
-          { headers: { ...this.headers, 'Content-Type': 'application/json' } },
+          body.toString(),
+          {
+            headers: {
+              ...this.headers,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            params: { host: HH_HOST },
+          },
         ),
       ),
     );
@@ -266,6 +286,52 @@ export class HhNegotiationsService {
       { negotiationId, collection },
       'HH negotiation stage moved',
     );
+  }
+
+  /** GET /employers/{id}/mail_templates — list canned response templates */
+  async getMailTemplates(): Promise<HhMailTemplate[]> {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
+    const resp = await firstValueFrom(
+      this.http.get<HhMailTemplate[]>(
+        `${this.baseUrl}/employers/${employerId}/mail_templates`,
+        { headers: this.headers, params: { host: HH_HOST } },
+      ),
+    );
+    return resp.data ?? [];
+  }
+
+  /** PUT /employers/{id}/mail_templates/{template_id} — update a response template text */
+  async updateMailTemplate(templateId: string, text: string): Promise<void> {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
+    await firstValueFrom(
+      this.http.put(
+        `${this.baseUrl}/employers/${employerId}/mail_templates/${templateId}`,
+        { text },
+        {
+          headers: { ...this.headers, 'Content-Type': 'application/json' },
+          params: { host: HH_HOST },
+        },
+      ),
+    );
+    this.logger.log({ templateId }, 'HH mail template updated');
+  }
+
+  /**
+   * GET /resumes/{resume_id}/negotiations_history
+   * Requires paid access. Returns up to 30 vacancies with their negotiation state history.
+   */
+  async getResumeNegotiationHistory(
+    resumeId: string,
+  ): Promise<HhNegotiationHistoryVacancy[]> {
+    const resp = await firstValueFrom(
+      this.http.get<{ vacancies: HhNegotiationHistoryVacancy[] }>(
+        `${this.baseUrl}/resumes/${resumeId}/negotiations_history`,
+        { headers: this.headers, params: { host: HH_HOST } },
+      ),
+    );
+    return resp.data.vacancies ?? [];
   }
 
   /**
@@ -277,7 +343,7 @@ export class HhNegotiationsService {
     const response = await firstValueFrom(
       this.http.get<{ state?: { id: string } }>(
         `${this.baseUrl}/negotiations/${negotiationId}`,
-        { headers: this.headers },
+        { headers: this.headers, params: { host: HH_HOST } },
       ),
     );
     return response.data?.state?.id ?? null;

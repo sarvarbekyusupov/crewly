@@ -110,6 +110,20 @@ export interface HhResumeViewItem {
   viewed_at: string;
 }
 
+/** Resume summary of a job seeker who viewed a vacancy (GET /vacancies/{id}/visitors). */
+export interface HhVacancyVisitorItem {
+  id: string;
+  title?: string;
+  url: string;
+  first_name?: string;
+  last_name?: string;
+  area?: { id: string; name: string };
+  salary?: { amount: number; currency: string };
+  total_experience?: { months: number };
+  skill_set?: string[];
+  updated_at?: string;
+}
+
 export interface HhDictionaries {
   employment: Array<{ id: string; name: string }>;
   schedule: Array<{ id: string; name: string }>;
@@ -179,11 +193,14 @@ export interface HhNegotiationMessagesResponse {
   found: number;
 }
 
+export interface HhVacancyStatItem {
+  date: string;
+  views: number | null;
+  responses: number | null;
+}
+
 export interface HhVacancyStats {
-  views: { value: number };
-  responses: { value: number };
-  invitations: { value: number };
-  discard: { value: number };
+  items: HhVacancyStatItem[];
 }
 
 export interface HhResumeUpdateBody {
@@ -191,4 +208,116 @@ export interface HhResumeUpdateBody {
   skill_set?: string[];
   skills?: string;
   salary?: { amount: number; currency: string };
+}
+
+// ── Chat API ──────────────────────────────────────────────────────────────────
+
+export interface HhChatMessage {
+  id: string;
+  text?: string;
+  created_at: string;
+  author: { participant_type: 'applicant' | 'employer'; name: string };
+}
+
+export interface HhChatParticipant {
+  id: string;
+  participant_type: 'applicant' | 'employer';
+  name: string;
+}
+
+export interface HhChat {
+  id: string;
+  vacancy?: { id: string; name: string };
+  resume?: { id: string; title: string };
+  last_message?: HhChatMessage;
+  unread_count: number;
+}
+
+export interface HhChatsResponse {
+  items: HhChat[];
+  found: number;
+  pages: number;
+  page: number;
+  per_page: number;
+}
+
+export interface HhChatMessagesResponse {
+  items: HhChatMessage[];
+  limit: number;
+}
+
+// ── Applicant comments ────────────────────────────────────────────────────────
+
+export interface HhApplicantComment {
+  id: string;
+  text: string;
+  author: { id: string; name: string };
+  created_at: string;
+  access_type: { id: string; name: string };
+  is_mine: boolean;
+}
+
+export interface HhApplicantCommentsResponse {
+  items: HhApplicantComment[];
+  found: number;
+  pages: number;
+  page: number;
+  per_page: number;
+}
+
+// ── Vacancy prolongation & hidden list ────────────────────────────────────────
+
+export interface HhProlongationInfo {
+  id: string;
+  expires_at: string;
+  actions: Array<{ id: string }>;
+}
+
+export interface HhHiddenVacancy {
+  id: string;
+  name: string;
+  alternate_url: string;
+  area?: { name: string };
+  archived_at?: string;
+}
+
+// ── Mail templates ────────────────────────────────────────────────────────────
+
+export interface HhMailTemplate {
+  id: string;
+  text: string;
+  name?: string;
+}
+
+// ── Negotiation history ───────────────────────────────────────────────────────
+
+export interface HhNegotiationHistoryVacancy {
+  id: string;
+  name: string;
+  items: Array<{
+    employer_state: { id: string; name: string };
+    created_at: string;
+  }>;
+}
+
+// ── Salary statistics ─────────────────────────────────────────────────────────
+
+export interface HhSalaryMarket {
+  percentile25: number;
+  median: number;
+  percentile75: number;
+  currency: string;
+}
+
+export interface HhSalaryEstimate {
+  market_salary: {
+    gross: HhSalaryMarket;
+    net: HhSalaryMarket;
+  };
+  resulting_parameters: {
+    area?: { id: string; name: string };
+    professional_area?: { id: string; name: string };
+    specialisation?: { id: string; name: string };
+    employee_level?: { id: string; name: string };
+  };
 }

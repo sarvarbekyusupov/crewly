@@ -2,8 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { HhResumeViewItem, HhVacancyStats } from './hh.types';
-import { HH_BASE_URL, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
+import {
+  HhVacancyStats,
+  HhVacancyStatItem,
+  HhVacancyVisitorItem,
+  HhProlongationInfo,
+  HhHiddenVacancy,
+} from './hh.types';
+import { HH_BASE_URL, HH_HOST, HH_UZBEKISTAN_AREA_ID } from './hh.constants';
 import { withRetry } from '../../common/utils/async.utils';
 
 interface HhSalary {
@@ -18,7 +24,7 @@ interface HhVacancyBody {
   area: { id: string };
   employer: { id: string };
   description: string;
-  type: { id: string };
+  closed_for_applicants: boolean;
   experience: { id: string };
   employment: { id: string };
   schedule: { id: string };
@@ -80,7 +86,7 @@ export class HhVacancyService {
       area: { id: HH_UZBEKISTAN_AREA_ID },
       employer: { id: employerId },
       description: job.description,
-      type: { id: 'open' },
+      closed_for_applicants: false,
       experience: { id: this.mapExperience(job.minExperienceYears) },
       employment: { id: this.mapEmployment(job.employmentType) },
       schedule: { id: this.mapSchedule(job.workMode) },
@@ -109,17 +115,19 @@ export class HhVacancyService {
     const body = this.buildBody(job);
 
     const response = await firstValueFrom(
-      this.http.post(`${this.baseUrl}/vacancies`, body, {
+      this.http.post<{ id: string }>(`${this.baseUrl}/vacancies`, body, {
         headers: this.jsonHeaders,
+        params: { host: HH_HOST },
       }),
     );
 
-    // HH returns 201 with Location: /vacancies/{id}
-    const location: string = response.headers['location'] ?? '';
-    const hhVacancyId = location.split('/').pop() ?? '';
+    // Prefer response body id; fall back to Location header
+    const hhVacancyId =
+      response.data?.id ??
+      (response.headers['location'] as string | undefined)?.split('/').pop();
     if (!hhVacancyId) {
       throw new Error(
-        `HH returned no Location header after vacancy creation (job ${job.id})`,
+        `HH returned no vacancy ID after creation (job ${job.id})`,
       );
     }
 
@@ -134,6 +142,7 @@ export class HhVacancyService {
     await firstValueFrom(
       this.http.put(`${this.baseUrl}/vacancies/${hhVacancyId}`, body, {
         headers: this.jsonHeaders,
+        params: { host: HH_HOST },
       }),
     );
 
@@ -149,7 +158,7 @@ export class HhVacancyService {
       this.http.post(
         `${this.baseUrl}/vacancies/${hhVacancyId}/publish`,
         {},
-        { headers: this.jsonHeaders },
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
       ),
     );
     this.logger.log({ hhVacancyId }, 'HH vacancy published');
@@ -157,48 +166,61 @@ export class HhVacancyService {
 
   /** Archive (close) a vacancy on HH. */
   async archiveVacancy(hhVacancyId: string): Promise<void> {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
     await firstValueFrom(
       this.http.put(
-        `${this.baseUrl}/vacancies/${hhVacancyId}/archive`,
+        `${this.baseUrl}/employers/${employerId}/vacancies/archived/${hhVacancyId}`,
         {},
-        { headers: this.jsonHeaders },
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
       ),
     );
     this.logger.log({ hhVacancyId }, 'HH vacancy archived');
   }
 
-  /** Move a vacancy to hidden (HH "delete" = add to hidden list). */
+  /**
+   * Permanently remove a vacancy from HH.
+   * HH requires two steps: archive first (active → archived), then move to hidden (archived → deleted).
+   * PUT /employers/{id}/vacancies/hidden/{vid} returns 403 if the vacancy is not yet archived.
+   */
   async deleteVacancy(hhVacancyId: string): Promise<void> {
     const employerId = this.config.get<string>('HH_EMPLOYER_ID');
     if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
-    // HH operation: add-vacancy-to-hidden — vacancy ID goes in path, not body.
+    // Step 1: archive (no-op if already archived — HH returns 204 idempotently)
+    await firstValueFrom(
+      this.http.put(
+        `${this.baseUrl}/employers/${employerId}/vacancies/archived/${hhVacancyId}`,
+        {},
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
+      ),
+    );
+    // Step 2: move to hidden (permanent delete from archive)
     await firstValueFrom(
       this.http.put(
         `${this.baseUrl}/employers/${employerId}/vacancies/hidden/${hhVacancyId}`,
         {},
-        { headers: this.jsonHeaders },
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
       ),
     );
-    this.logger.log({ hhVacancyId }, 'HH vacancy moved to hidden');
+    this.logger.log({ hhVacancyId }, 'HH vacancy archived and moved to hidden');
   }
 
-  /** Resumes viewed by candidates on this vacancy (warm outreach leads). */
-  async getResumeViews(hhVacancyId: string): Promise<HhResumeViewItem[]> {
-    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
-    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
+  /** Applicants who viewed this vacancy in the last week (GET /vacancies/{id}/visitors). */
+  async getResumeViews(hhVacancyId: string): Promise<HhVacancyVisitorItem[]> {
     const MAX_PAGES = 50;
-    const all: HhResumeViewItem[] = [];
+    const all: HhVacancyVisitorItem[] = [];
     let page = 0;
     while (page < MAX_PAGES) {
       const response = await withRetry(() =>
         firstValueFrom(
-          this.http.get<{ items: HhResumeViewItem[]; pages?: number }>(
-            `${this.baseUrl}/employers/${employerId}/resumes/views`,
-            {
-              headers: this.headers,
-              params: { vacancy_id: hhVacancyId, per_page: 100, page },
-            },
-          ),
+          this.http.get<{
+            items: HhVacancyVisitorItem[];
+            pages?: number;
+            hidden_on_page?: number;
+          }>(`${this.baseUrl}/vacancies/${hhVacancyId}/visitors`, {
+            headers: this.headers,
+            params: { host: HH_HOST, per_page: 100, page },
+          }),
         ),
       );
       all.push(...(response.data.items ?? []));
@@ -208,19 +230,20 @@ export class HhVacancyService {
     return all;
   }
 
-  /** Fetch view and response counts for a vacancy. */
+  /** Fetch cumulative view and response counts for a vacancy (last 5 days). */
   async getVacancyStats(
     hhVacancyId: string,
   ): Promise<{ views: number; responses: number }> {
     const response = await firstValueFrom(
       this.http.get<HhVacancyStats>(
         `${this.baseUrl}/vacancies/${hhVacancyId}/stats`,
-        { headers: this.headers },
+        { headers: this.headers, params: { host: HH_HOST } },
       ),
     );
+    const items: HhVacancyStatItem[] = response.data?.items ?? [];
     return {
-      views: response.data?.views?.value ?? 0,
-      responses: response.data?.responses?.value ?? 0,
+      views: items.reduce((sum, d) => sum + (d.views ?? 0), 0),
+      responses: items.reduce((sum, d) => sum + (d.responses ?? 0), 0),
     };
   }
 
@@ -240,7 +263,7 @@ export class HhVacancyService {
             page: number;
           }>(`${this.baseUrl}/employers/${employerId}/vacancies/active`, {
             headers: this.headers,
-            params: { per_page: 100, page },
+            params: { host: HH_HOST, per_page: 100, page },
           }),
         ),
       );
@@ -252,17 +275,49 @@ export class HhVacancyService {
     return all;
   }
 
-  /** Restore a vacancy from the hidden list (HH operation: restore-vacancy-from-hidden). */
+  /** Restore a vacancy from the hidden list (HH: DELETE /employers/{id}/vacancies/hidden/{vid}). */
   async restoreVacancy(hhVacancyId: string): Promise<void> {
-    // HH OpenAPI names this operation "restore-vacancy-from-hidden", not archive.
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
     await firstValueFrom(
-      this.http.put(
-        `${this.baseUrl}/vacancies/${hhVacancyId}/restore_from_hidden`,
-        {},
-        { headers: this.jsonHeaders },
+      this.http.delete(
+        `${this.baseUrl}/employers/${employerId}/vacancies/hidden/${hhVacancyId}`,
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
       ),
     );
     this.logger.log({ hhVacancyId }, 'HH vacancy restored from hidden');
+  }
+
+  /** GET /vacancies/{id}/prolongate — check prolongation availability and cost */
+  async checkProlongation(hhVacancyId: string): Promise<HhProlongationInfo> {
+    const resp = await firstValueFrom(
+      this.http.get<HhProlongationInfo>(
+        `${this.baseUrl}/vacancies/${hhVacancyId}/prolongate`,
+        { headers: this.headers, params: { host: HH_HOST } },
+      ),
+    );
+    return resp.data;
+  }
+
+  /** GET /employers/{id}/vacancies/hidden — list archived/deleted vacancies */
+  async listHiddenVacancies(params?: {
+    manager_id?: string;
+    per_page?: number;
+    page?: number;
+    order_by?: string;
+  }): Promise<{ items: HhHiddenVacancy[]; found: number; pages: number }> {
+    const employerId = this.config.get<string>('HH_EMPLOYER_ID');
+    if (!employerId) throw new Error('HH_EMPLOYER_ID must be configured');
+    const resp = await firstValueFrom(
+      this.http.get<{ items: HhHiddenVacancy[]; found: number; pages: number }>(
+        `${this.baseUrl}/employers/${employerId}/vacancies/hidden`,
+        {
+          headers: this.headers,
+          params: { host: HH_HOST, per_page: 100, page: 0, ...params },
+        },
+      ),
+    );
+    return resp.data;
   }
 
   /** Extend the posting period of a vacancy. */
@@ -271,7 +326,7 @@ export class HhVacancyService {
       this.http.post(
         `${this.baseUrl}/vacancies/${hhVacancyId}/prolongate`,
         {},
-        { headers: this.jsonHeaders },
+        { headers: this.jsonHeaders, params: { host: HH_HOST } },
       ),
     );
     this.logger.log({ hhVacancyId }, 'HH vacancy prolonged');

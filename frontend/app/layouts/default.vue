@@ -66,6 +66,11 @@ const navGroups = computed(() => [
         icon: 'i-heroicons-chat-bubble-left-right',
         count: counts.value?.conversations,
       },
+      {
+        label: 'HH Chats',
+        to: '/employer/hh-chats',
+        icon: 'i-heroicons-chat-bubble-oval-left-ellipsis',
+      },
     ],
   },
   {

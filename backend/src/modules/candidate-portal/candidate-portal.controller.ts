@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Body,
   Controller,
@@ -30,7 +31,9 @@ import { CandidatePortalService } from './candidate-portal.service';
 import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
 import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
 import { HhResumeService } from '../../integrations/hh/hh-resume.service';
+import type { HhResumeDetail } from '../../integrations/hh/hh.types';
 import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
+import { HhChatService } from '../../integrations/hh/hh-chat.service';
 import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
@@ -40,6 +43,15 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { Public } from '../../common/decorators/public.decorator';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
+
+function rethrowHhError(err: any): never {
+  const status: number | undefined = err?.response?.status;
+  const hhMsg =
+    err?.response?.data?.description ??
+    err?.response?.data?.errors?.[0]?.value ??
+    err.message;
+  throw new BadGatewayException(`HH API ${status ?? '?'}: ${hhMsg}`);
+}
 
 const UpdateProfileSchema = z.object({
   fullName: z.string().min(1).max(200).optional(),
@@ -66,7 +78,7 @@ const UpdatePreferencesSchema = z.object({
   maxApplicationsPerDay: z.number().int().min(1).max(50).optional(),
   preferredWorkMode: z.string().nullable().optional(),
   expectedSalaryUzs: z.number().nullable().optional(),
-  hhResumeId: z.string().max(100).nullable().optional(),
+  // hhResumeId intentionally excluded — use POST hh/resume-url to change it with proper extraction
 });
 
 type UpdateProfileDto = z.infer<typeof UpdateProfileSchema>;
@@ -84,6 +96,7 @@ export class CandidatePortalController {
     private readonly hhOAuth: HhOAuthService,
     private readonly hhResume: HhResumeService,
     private readonly hhApplicant: HhApplicantService,
+    private readonly hhChat: HhChatService,
     private readonly hhJobs: HhJobsAdapter,
     private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
@@ -322,12 +335,6 @@ export class CandidatePortalController {
   @Get('hh/oauth-url')
   getHhOAuthUrl(@CurrentCandidate() candidate: { id: string }) {
     const url = this.hhOAuth.getAuthorizationUrl(candidate.id);
-    console.log(
-      '[HH oauth-url] generated for candidate:',
-      candidate.id,
-      '→',
-      url,
-    );
     return { url };
   }
 
@@ -338,15 +345,63 @@ export class CandidatePortalController {
     return { disconnected: true };
   }
 
+  /**
+   * Retry auto-detection of HH resume using the stored token.
+   * Useful when the OAuth callback completed but /resumes/mine failed (403 or empty array).
+   */
+  @Post('hh/resume/detect')
+  @HttpCode(HttpStatus.OK)
+  async detectHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+
+    let resumes: Awaited<ReturnType<typeof this.hhOAuth.getResumesForToken>>;
+    try {
+      resumes = await this.hhOAuth.getResumesForToken(token);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 403) {
+        throw new UnprocessableEntityException({
+          code: 'resume_access_denied',
+          message:
+            'HH denied access to resume list (403). Use POST hh/resume-url to enter the URL manually.',
+          details: err?.response?.data,
+        });
+      }
+      rethrowHhError(err);
+    }
+
+    if (!resumes!.length) {
+      return { found: false, message: 'No resumes found on HH account' };
+    }
+
+    const primary = [...resumes!].sort(
+      (a, b) =>
+        new Date(b.updated_at ?? 0).getTime() -
+        new Date(a.updated_at ?? 0).getTime(),
+    )[0];
+
+    await this.hhOAuth.saveResumeId(candidate.id, primary.id);
+    return {
+      found: true,
+      resumeId: primary.id,
+      title: primary.title,
+      total: resumes!.length,
+    };
+  }
+
   /** Manually save an HH resume URL/ID when auto-detection was blocked (403 on /resumes/mine). */
   @Post('hh/resume-url')
   @HttpCode(HttpStatus.OK)
   async saveHhResumeUrl(
     @CurrentCandidate() candidate: { id: string },
-    @Body() body: { resumeUrl: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({ resumeUrl: z.string().min(1).max(500) }),
+      ),
+    )
+    body: { resumeUrl: string },
   ) {
     const { resumeUrl } = body;
-    if (!resumeUrl) throw new BadRequestException('resumeUrl is required');
 
     // Accept both a full URL (https://hh.uz/resume/abc123) and a bare ID
     const match = resumeUrl.match(/\/resume\/([a-zA-Z0-9]+)/);
@@ -370,7 +425,11 @@ export class CandidatePortalController {
       }),
     ]);
     if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
-    return this.hhResume.getResume(token, cand.hhResumeId);
+    try {
+      return await this.hhResume.getResume(token, cand.hhResumeId);
+    } catch (err: any) {
+      rethrowHhError(err);
+    }
   }
 
   @Post('hh/resume/sync')
@@ -385,18 +444,49 @@ export class CandidatePortalController {
     ]);
     if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
 
-    const resume = await this.hhResume.getResume(token, cand.hhResumeId);
-    const skills = resume.skill_set ?? [];
-    const position = resume.title ?? undefined;
-    const updates: Record<string, unknown> = {};
-    if (skills.length) updates['skills'] = skills;
-    if (position) updates['currentPosition'] = position;
-
-    if (Object.keys(updates).length) {
-      await this.portalService.updateProfile(candidate.id, updates);
+    let resume!: HhResumeDetail;
+    try {
+      resume = await this.hhResume.getResume(token, cand.hhResumeId);
+    } catch (err: any) {
+      rethrowHhError(err);
     }
 
-    return { synced: true, skills, position };
+    const profileUpdates: Record<string, unknown> = {};
+    if (resume.skill_set?.length) profileUpdates['skills'] = resume.skill_set;
+    if (resume.title) profileUpdates['currentPosition'] = resume.title;
+    if (resume.area?.name) profileUpdates['city'] = resume.area.name;
+    if (resume.total_experience?.months != null) {
+      profileUpdates['yearsExperience'] = Math.round(
+        resume.total_experience.months / 12,
+      );
+    }
+    const emailContact = resume.contact?.find((c) => c.type?.id === 'email');
+    if (typeof emailContact?.value === 'string' && emailContact.value) {
+      profileUpdates['email'] = emailContact.value;
+    }
+    const phoneContact = resume.contact?.find((c) => c.type?.id === 'cell');
+    if (phoneContact?.value && typeof phoneContact.value !== 'string') {
+      const formatted = (phoneContact.value as { formatted?: string })
+        .formatted;
+      if (formatted) profileUpdates['phone'] = formatted;
+    }
+
+    const dbUpdates: Record<string, unknown> = { ...profileUpdates };
+    if (resume.salary?.currency === 'UZS' && resume.salary.amount != null) {
+      dbUpdates['expectedSalaryUzs'] = BigInt(resume.salary.amount);
+    }
+
+    if (Object.keys(dbUpdates).length) {
+      await this.db.candidate.update({
+        where: { id: candidate.id },
+        data: dbUpdates,
+      });
+    }
+
+    return {
+      synced: true,
+      imported: Object.keys(dbUpdates),
+    };
   }
 
   @Post('hh/resume/publish')
@@ -410,7 +500,11 @@ export class CandidatePortalController {
       }),
     ]);
     if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
-    await this.hhResume.publishResume(token, cand.hhResumeId);
+    try {
+      await this.hhResume.publishResume(token, cand.hhResumeId);
+    } catch (err: any) {
+      rethrowHhError(err);
+    }
     return { published: true };
   }
 
@@ -425,7 +519,11 @@ export class CandidatePortalController {
       }),
     ]);
     if (!cand?.hhResumeId) return { error: 'No HH resume linked' };
-    await this.hhResume.hideResume(token, cand.hhResumeId);
+    try {
+      await this.hhResume.hideResume(token, cand.hhResumeId);
+    } catch (err: any) {
+      rethrowHhError(err);
+    }
     return { hidden: true };
   }
 
@@ -439,7 +537,15 @@ export class CandidatePortalController {
       }),
     ]);
     if (!cand?.hhResumeId) return { items: [], found: 0 };
-    return this.hhResume.getResumeViews(token, cand.hhResumeId);
+    try {
+      return await this.hhResume.getResumeViews(token, cand.hhResumeId);
+    } catch (err: any) {
+      this.logger.warn(
+        { status: err?.response?.status, data: err?.response?.data },
+        'HH resume/views failed — returning empty',
+      );
+      return { items: [], found: 0 };
+    }
   }
 
   // ── HH Negotiations + Vacancy Search ──────────────────────────────────────
@@ -502,12 +608,43 @@ export class CandidatePortalController {
     ]);
     if (!cand?.hhResumeId)
       return { error: 'No HH resume linked — connect HH account first' };
-    await this.hhApplicant.applyToVacancy(
+    const negotiationId = await this.hhApplicant.applyToVacancy(
       token,
       vacancyId,
       cand.hhResumeId,
       body.message,
     );
+    // Link negotiation to seekerApplication so webhooks can update status later.
+    // Best-effort — skip if the HH vacancy hasn't been scraped into DiscoveredJob yet.
+    if (negotiationId) {
+      const discovered = await this.db.discoveredJob.findFirst({
+        where: { externalId: vacancyId, source: 'hh.ru' },
+        select: { id: true, source: true },
+      });
+      if (discovered) {
+        await this.db.seekerApplication.upsert({
+          where: {
+            candidateId_discoveredJobId: {
+              candidateId: candidate.id,
+              discoveredJobId: discovered.id,
+            },
+          },
+          create: {
+            candidateId: candidate.id,
+            discoveredJobId: discovered.id,
+            source: discovered.source,
+            status: 'applied',
+            hhNegotiationId: negotiationId,
+            appliedAt: new Date(),
+          },
+          update: {
+            hhNegotiationId: negotiationId,
+            status: 'applied',
+            appliedAt: new Date(),
+          },
+        });
+      }
+    }
     return { applied: true };
   }
 
@@ -517,6 +654,11 @@ export class CandidatePortalController {
     return this.hhApplicant.getMe(token);
   }
 
+  /**
+   * @deprecated HH deprecated GET/POST /negotiations/{id}/messages.
+   * Use GET/POST hh/chats/{chatId}/messages via the /common/chats API instead.
+   * Kept for backward compatibility; may stop working when HH removes the endpoint.
+   */
   @Get('hh/negotiations/:id/messages')
   async getHhNegotiationMessages(
     @CurrentCandidate() candidate: { id: string },
@@ -526,6 +668,7 @@ export class CandidatePortalController {
     return this.hhApplicant.getNegotiationMessages(token, negotiationId);
   }
 
+  /** @deprecated Use POST hh/chats/{chatId}/messages instead. */
   @Post('hh/negotiations/:id/messages')
   @HttpCode(HttpStatus.OK)
   async postHhNegotiationMessage(
@@ -645,6 +788,75 @@ export class CandidatePortalController {
   @Get('hh/suggests/universities')
   suggestUniversities(@Query('text') text: string) {
     return this.hhSuggests.universities(text ?? '');
+  }
+
+  // ── HH Chats (new API, replaces deprecated /negotiations/{id}/messages) ───
+
+  @Get('hh/chats')
+  async listHhChats(
+    @CurrentCandidate() candidate: { id: string },
+    @Query('page') page?: string,
+    @Query('filter_unread') filterUnread?: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhChat.listApplicantChats(token, {
+      page: page ? Number(page) : 0,
+      filter_unread: filterUnread === 'true',
+    });
+  }
+
+  @Get('hh/chats/unread')
+  async getHhChatsUnreadCount(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const count = await this.hhChat.getUnreadCount(token);
+    return { count };
+  }
+
+  @Get('hh/chats/:chatId/messages')
+  async getHhChatMessages(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('chatId') chatId: string,
+    @Query('limit') limit?: string,
+    @Query('order') order?: string,
+    @Query('start_message_id') startMessageId?: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhChat.getChatMessages(token, chatId, {
+      limit: limit ? Number(limit) : 50,
+      order: order === 'next' ? 'next' : 'prev',
+      ...(startMessageId && { start_message_id: startMessageId }),
+    });
+  }
+
+  @Post('hh/chats/:chatId/messages')
+  @HttpCode(HttpStatus.CREATED)
+  async sendHhChatMessage(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('chatId') chatId: string,
+    @Body(
+      new ZodValidationPipe(z.object({ text: z.string().min(1).max(4000) })),
+    )
+    body: { text: string },
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const idempotencyKey = crypto.randomUUID();
+    return this.hhChat.sendChatMessage(
+      token,
+      chatId,
+      body.text,
+      idempotencyKey,
+    );
+  }
+
+  @Put('hh/chats/:chatId/messages/:messageId/read')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async markHhChatMessageRead(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhChat.markMessageRead(token, chatId, messageId);
   }
 
   // ── Candidate Analytics ────────────────────────────────────────────────────

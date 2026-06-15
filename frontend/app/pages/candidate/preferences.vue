@@ -127,6 +127,51 @@ async function saveResumeUrl() {
   }
 }
 
+const detecting = ref(false)
+
+async function detectHhResume() {
+  detecting.value = true
+  try {
+    const result = await api.post<{
+      found: boolean
+      resumeId?: string
+      title?: string
+      total?: number
+    }>('/api/v1/candidate-portal/hh/resume/detect', {})
+    if (result.found) {
+      toast.add({
+        title: 'Resume detected!',
+        description: result.title ?? result.resumeId,
+        color: 'success',
+      })
+      refresh()
+    } else {
+      toast.add({
+        title: 'No resumes found',
+        description: 'No resumes on HH account. Create one at hh.uz first.',
+        color: 'warning',
+      })
+    }
+  } catch (e: any) {
+    const code = e?.data?.code ?? e?.response?.data?.code
+    if (code === 'resume_access_denied') {
+      toast.add({
+        title: 'HH denied resume access',
+        description: 'Paste your resume URL manually below.',
+        color: 'error',
+      })
+    } else {
+      toast.add({
+        title: 'Detection failed',
+        description: extractApiErrorMessage(e),
+        color: 'error',
+      })
+    }
+  } finally {
+    detecting.value = false
+  }
+}
+
 const syncing = ref(false)
 const publishing = ref(false)
 const hiding = ref(false)
@@ -520,12 +565,21 @@ const save = handleSubmit(async (values) => {
         <!-- Partial connection state: token stored but no resume ID yet -->
         <div v-else-if="prefs?.hhOauthTokenSet" class="prefs-hh-partial">
           <p class="prefs-hint" style="margin-bottom: 10px">
-            HH account connected — paste your resume URL from hh.uz to finish setup.
+            HH account connected — auto-detect your resume or paste the URL manually.
             <br />
             <span style="opacity: 0.6; font-size: 0.85em">
               Example: https://hh.uz/resume/abc123def456
             </span>
           </p>
+          <UButton
+            type="button"
+            :loading="detecting"
+            icon="i-heroicons-magnifying-glass"
+            style="margin-bottom: 10px; width: 100%; justify-content: center"
+            @click="detectHhResume"
+          >
+            Auto-detect resume
+          </UButton>
           <div style="display: flex; gap: 8px; align-items: center">
             <UInput
               v-model="resumeUrlInput"

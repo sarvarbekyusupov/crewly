@@ -42,6 +42,7 @@ const nav = computed(() => [
   { label: t('nav.dashboard'), to: '/candidate/dashboard', icon: 'i-heroicons-squares-2x2' },
   { label: t('nav.jobs'), to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   { label: t('nav.conversations'), to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
+  { label: 'HH Messages', to: '/candidate/hh-chats', icon: 'i-heroicons-chat-bubble-left-right' },
   {
     label: t('candidate.tracker.title'),
     to: '/candidate/tracker',
@@ -58,6 +59,7 @@ const mobileNav = computed(() => [
   { label: t('nav.dashboard'), to: '/candidate/dashboard', icon: 'i-heroicons-squares-2x2' },
   { label: t('nav.jobs'), to: '/candidate/jobs', icon: 'i-heroicons-magnifying-glass' },
   { label: t('nav.conversations'), to: '/candidate/inbox', icon: 'i-heroicons-inbox' },
+  { label: 'HH Messages', to: '/candidate/hh-chats', icon: 'i-heroicons-chat-bubble-left-right' },
   {
     label: t('candidate.tracker.title'),
     to: '/candidate/tracker',

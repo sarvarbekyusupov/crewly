@@ -13,6 +13,9 @@ import { HhOAuthService } from './hh-oauth.service';
 import { HhResumeService } from './hh-resume.service';
 import { HhApplicantService } from './hh-applicant.service';
 import { HhCandidateService } from './hh-candidate.service';
+import { HhChatService } from './hh-chat.service';
+import { HhCommentsService } from './hh-comments.service';
+import { HhSalaryService } from './hh-salary.service';
 
 const providers = [
   HhClientService,
@@ -27,6 +30,9 @@ const providers = [
   HhResumeService,
   HhApplicantService,
   HhCandidateService,
+  HhChatService,
+  HhCommentsService,
+  HhSalaryService,
 ];
 
 @Module({
