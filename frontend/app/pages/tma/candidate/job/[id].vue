@@ -59,14 +59,12 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
+definePageMeta({ layout: 'tma', auth: false, robots: 'noindex, nofollow', middleware: ['tma-auth'] })
 
 const route = useRoute()
 const router = useRouter()
 const tmaStore = useTmaStore()
 const { hapticSuccess, hapticError } = useTma()
-
-if (!tmaStore.isAuthenticated) router.replace('/tma')
 
 const jobId = route.params.id as string
 const job = ref<any>(null)

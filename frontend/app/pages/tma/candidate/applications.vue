@@ -33,12 +33,10 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
+definePageMeta({ layout: 'tma', auth: false, robots: 'noindex, nofollow', middleware: ['tma-auth'] })
 
 const router = useRouter()
 const tmaStore = useTmaStore()
-
-if (!tmaStore.isAuthenticated) router.replace('/tma')
 
 const apps = ref<any[]>([])
 const loading = ref(true)

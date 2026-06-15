@@ -11,7 +11,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { QUEUES } from '../../workers/queue-names';
+import { QUEUES, JOB_NAMES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 
 @Injectable()
@@ -53,7 +53,18 @@ export class TmaService {
       .update(dataCheckString)
       .digest('hex');
 
-    if (expectedHash !== hash) return { valid: false };
+    try {
+      const expectedBuf = Buffer.from(expectedHash, 'hex');
+      const hashBuf = Buffer.from(hash, 'hex');
+      if (
+        expectedBuf.length !== hashBuf.length ||
+        !crypto.timingSafeEqual(expectedBuf, hashBuf)
+      ) {
+        return { valid: false };
+      }
+    } catch {
+      return { valid: false };
+    }
 
     const authDate = Number(params.get('auth_date') ?? 0);
     const ageSeconds = Math.floor(Date.now() / 1000) - authDate;
@@ -380,7 +391,7 @@ export class TmaService {
   async approveApplication(appId: string, userId: string) {
     await this.assertHrOwnsApp(appId, userId);
     await this.outreachQueue.add(
-      'send',
+      JOB_NAMES.SEND_OUTREACH,
       { applicationId: appId },
       LLM_JOB_OPTIONS,
     );

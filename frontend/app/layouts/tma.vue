@@ -4,6 +4,13 @@
   </div>
 </template>
 
+<script setup lang="ts">
+useHead({
+  meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1, user-scalable=no' }],
+  script: [{ src: 'https://telegram.org/js/telegram-web-app.js', tagPosition: 'head' }],
+})
+</script>
+
 <style>
 :root {
   --tg-theme-bg-color: #ffffff;

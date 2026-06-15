@@ -1,6 +1,9 @@
 const WAITLIST_ALLOWED = ['/', '/candidate', '/terms']
 
 export default defineNuxtRouteMiddleware(async (to) => {
+  // TMA routes use their own auth middleware
+  if (to.path.startsWith('/tma')) return
+
   const { waitlistMode } = useRuntimeConfig().public
   if (waitlistMode && !WAITLIST_ALLOWED.includes(to.path)) {
     return navigateTo('/')

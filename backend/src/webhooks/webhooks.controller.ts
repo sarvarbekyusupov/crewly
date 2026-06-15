@@ -8,8 +8,6 @@ import {
   Logger,
   OnModuleInit,
   Post,
-  Get,
-  Query,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -77,55 +75,6 @@ export class WebhooksController implements OnModuleInit {
           this.logger.error(err, 'Failed to set Telegram webhook'),
         );
     }
-  }
-
-  @Get('tma/pipeline')
-  @Public()
-  async getTmaPipeline(@Query('telegramId') telegramId: string) {
-    if (!telegramId) {
-      throw new BadRequestException('telegramId is required');
-    }
-
-    const user = await this.db.user.findFirst({
-      where: { telegramChatId: telegramId, deletedAt: null },
-      include: { company: true },
-    });
-
-    if (!user) {
-      throw new ForbiddenException('Manager not registered or bound in My-HR');
-    }
-
-    const jobs = await this.db.job.findMany({
-      where: { companyId: user.companyId, status: 'active', deletedAt: null },
-      select: {
-        id: true,
-        title: true,
-        applications: {
-          select: {
-            id: true,
-            status: true,
-            matchScore: true,
-            matchRecommendation: true,
-            candidate: {
-              select: {
-                id: true,
-                fullName: true,
-                yearsExperience: true,
-                city: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      manager: {
-        fullName: user.fullName,
-        companyName: user.company.name,
-      },
-      jobs,
-    };
   }
 
   @Post('telegram')

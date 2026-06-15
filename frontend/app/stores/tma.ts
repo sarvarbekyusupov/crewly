@@ -10,10 +10,21 @@ interface TmaProfile {
   role?: string
 }
 
+function readSession<T>(key: string, parse = false): T | null {
+  if (!import.meta.client) return null
+  try {
+    const v = sessionStorage.getItem(key)
+    if (v === null) return null
+    return parse ? (JSON.parse(v) as T) : (v as unknown as T)
+  } catch {
+    return null
+  }
+}
+
 export const useTmaStore = defineStore('tma', () => {
-  const token = ref<string | null>(null)
-  const role = ref<'candidate' | 'hr' | null>(null)
-  const profile = ref<TmaProfile | null>(null)
+  const token = ref<string | null>(readSession('tma_token'))
+  const role = ref<'candidate' | 'hr' | null>(readSession('tma_role'))
+  const profile = ref<TmaProfile | null>(readSession<TmaProfile>('tma_profile', true))
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -39,6 +50,11 @@ export const useTmaStore = defineStore('tma', () => {
       token.value = res.token
       role.value = res.role
       profile.value = res.profile
+      if (import.meta.client) {
+        sessionStorage.setItem('tma_token', res.token)
+        sessionStorage.setItem('tma_role', res.role)
+        sessionStorage.setItem('tma_profile', JSON.stringify(res.profile))
+      }
     } catch (err: any) {
       error.value = err?.data?.message ?? 'Auth failed'
       throw err
@@ -69,6 +85,11 @@ export const useTmaStore = defineStore('tma', () => {
     token.value = null
     role.value = null
     profile.value = null
+    if (import.meta.client) {
+      sessionStorage.removeItem('tma_token')
+      sessionStorage.removeItem('tma_role')
+      sessionStorage.removeItem('tma_profile')
+    }
   }
 
   return {

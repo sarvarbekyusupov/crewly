@@ -61,13 +61,11 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
+definePageMeta({ layout: 'tma', auth: false, robots: 'noindex, nofollow', middleware: ['tma-hr'] })
 
 const router = useRouter()
 const tmaStore = useTmaStore()
 const { hapticSuccess, hapticError, hapticImpact } = useTma()
-
-if (!tmaStore.isAuthenticated || !tmaStore.isHr) router.replace('/tma')
 
 const profile = tmaStore.profile
 const apps = ref<any[]>([])

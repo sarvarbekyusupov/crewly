@@ -83,14 +83,12 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
+definePageMeta({ layout: 'tma', auth: false, robots: 'noindex, nofollow', middleware: ['tma-hr'] })
 
 const route = useRoute()
 const router = useRouter()
 const tmaStore = useTmaStore()
 const { hapticSuccess, hapticError } = useTma()
-
-if (!tmaStore.isAuthenticated || !tmaStore.isHr) router.replace('/tma')
 
 const appId = route.params.id as string
 const data = ref<any>(null)

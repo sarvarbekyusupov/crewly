@@ -15,4 +15,8 @@ export const QUEUES = {
   ENRICH_JOB: 'enrich-job',
 } as const;
 
+export const JOB_NAMES = {
+  SEND_OUTREACH: 'send',
+} as const;
+
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

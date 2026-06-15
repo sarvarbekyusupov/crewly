@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  SetMetadata,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -10,11 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
 export const TMA_ROLE_KEY = 'tma_role';
-export const TmaRole =
-  (role: 'candidate' | 'hr') =>
-  (target: object, key?: string | symbol, descriptor?: PropertyDescriptor) => {
-    Reflect.defineMetadata(TMA_ROLE_KEY, role, descriptor?.value ?? target);
-  };
+export const TmaRole = (role: 'candidate' | 'hr') =>
+  SetMetadata(TMA_ROLE_KEY, role);
 
 @Injectable()
 export class TmaAuthGuard implements CanActivate {

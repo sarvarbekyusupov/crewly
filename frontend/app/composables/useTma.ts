@@ -13,24 +13,44 @@ declare global {
             last_name?: string
             username?: string
             language_code?: string
+            is_premium?: boolean
           }
+          chat?: { id: number; type: string; title?: string }
           auth_date?: number
           hash?: string
+          start_param?: string
         }
+        version: string
+        platform: string
         colorScheme: 'light' | 'dark'
         themeParams: Record<string, string>
+        isExpanded: boolean
+        viewportHeight: number
+        viewportStableHeight: number
+        isClosingConfirmationEnabled: boolean
         MainButton: {
           text: string
+          color: string
+          textColor: string
           isVisible: boolean
           isActive: boolean
+          isProgressVisible: boolean
           show(): void
           hide(): void
           enable(): void
           disable(): void
-          onClick(fn: () => void): void
-          offClick(fn: () => void): void
           showProgress(leaveActive?: boolean): void
           hideProgress(): void
+          onClick(fn: () => void): void
+          offClick(fn: () => void): void
+          setText(text: string): void
+          setParams(params: {
+            text?: string
+            color?: string
+            text_color?: string
+            is_active?: boolean
+            is_visible?: boolean
+          }): void
         }
         BackButton: {
           isVisible: boolean
@@ -44,10 +64,52 @@ declare global {
           notificationOccurred(type: 'error' | 'success' | 'warning'): void
           selectionChanged(): void
         }
-        openLink(url: string): void
+        CloudStorage: {
+          setItem(key: string, value: string, callback?: (err: Error | null, stored: boolean) => void): void
+          getItem(key: string, callback: (err: Error | null, value: string) => void): void
+          getItems(keys: string[], callback: (err: Error | null, values: Record<string, string>) => void): void
+          removeItem(key: string, callback?: (err: Error | null, removed: boolean) => void): void
+          removeItems(keys: string[], callback?: (err: Error | null, removed: boolean) => void): void
+          getKeys(callback: (err: Error | null, keys: string[]) => void): void
+        }
+        openLink(url: string, options?: { try_instant_view?: boolean }): void
+        openTelegramLink(url: string): void
+        openInvoice(url: string, callback?: (status: string) => void): void
+        showPopup(params: {
+          title?: string
+          message: string
+          buttons?: Array<{ id?: string; type?: 'default' | 'ok' | 'close' | 'cancel' | 'destructive'; text?: string }>
+        }, callback?: (buttonId: string) => void): void
+        showAlert(message: string, callback?: () => void): void
+        showConfirm(message: string, callback?: (confirmed: boolean) => void): void
+        enableClosingConfirmation(): void
+        disableClosingConfirmation(): void
+        sendData(data: string): void
+        switchInlineQuery(query: string, choose_chat_types?: string[]): void
+        isVersionAtLeast(version: string): boolean
+        onEvent(eventType: string, callback: () => void): void
+        offEvent(eventType: string, callback: () => void): void
+        setHeaderColor(color: string): void
+        setBackgroundColor(color: string): void
+        requestWriteAccess(callback?: (granted: boolean) => void): void
+        requestContact(callback?: (shared: boolean) => void): void
       }
     }
   }
+}
+
+export function waitForTelegramSdk(timeoutMs = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') { resolve(); return }
+    if (window.Telegram?.WebApp) { resolve(); return }
+    const el = document.querySelector<HTMLScriptElement>(
+      'script[src="https://telegram.org/js/telegram-web-app.js"]',
+    )
+    if (!el) { resolve(); return }
+    const timer = setTimeout(resolve, timeoutMs)
+    el.addEventListener('load', () => { clearTimeout(timer); resolve() }, { once: true })
+    el.addEventListener('error', () => { clearTimeout(timer); resolve() }, { once: true })
+  })
 }
 
 export function useTma() {
