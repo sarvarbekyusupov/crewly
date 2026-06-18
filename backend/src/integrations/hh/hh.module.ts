@@ -10,7 +10,6 @@ import { HhDictionaryService } from './hh-dictionary.service';
 import { HhWebhookService } from './hh-webhook.service';
 import { HhSuggestsService } from './hh-suggests.service';
 import { HhOAuthService } from './hh-oauth.service';
-import { HhResumeService } from './hh-resume.service';
 import { HhApplicantService } from './hh-applicant.service';
 import { HhCandidateService } from './hh-candidate.service';
 import { HhChatService } from './hh-chat.service';
@@ -27,7 +26,6 @@ const providers = [
   HhWebhookService,
   HhSuggestsService,
   HhOAuthService,
-  HhResumeService,
   HhApplicantService,
   HhCandidateService,
   HhChatService,

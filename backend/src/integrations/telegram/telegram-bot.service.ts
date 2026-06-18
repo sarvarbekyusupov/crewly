@@ -23,10 +23,15 @@ import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 import { TelegramChannelMonitorService } from './telegram-channel-monitor.service';
 import { PromptRunnerService } from '../llm/prompt-runner.service';
 
+type OutgoingButton =
+  | { text: string; callbackData: string; url?: never }
+  | { text: string; url: string; callbackData?: never };
+
 type OutgoingMessage = {
   text?: string;
   parseMode?: 'HTML' | 'Markdown';
-  buttons?: Array<{ text: string; callbackData: string }>;
+  buttons?: Array<OutgoingButton>;
+  buttonRows?: Array<Array<OutgoingButton>>;
 };
 
 // Keep bot instance outside class so it survives HMR in dev
@@ -512,6 +517,72 @@ export class TelegramBotService implements OnModuleInit {
         await ctx.editMessageReplyMarkup({
           reply_markup: new InlineKeyboard(),
         });
+        return;
+      }
+
+      // Self-report: candidate confirms they applied or got a reply
+      if (action === 'self_applied' || action === 'self_reply') {
+        const seekerApplicationId = parsed.i as string;
+        const newStatus =
+          action === 'self_applied'
+            ? 'self_reported_applied'
+            : 'self_reported_reply';
+
+        try {
+          const app = await this.db.seekerApplication.findUnique({
+            where: { id: seekerApplicationId },
+            select: { candidateId: true, status: true },
+          });
+
+          if (!app) {
+            await ctx.answerCallbackQuery('Заявка не найдена.');
+            return;
+          }
+
+          // Only allow if candidate owns this application (match by telegramUserId)
+          const candidate = await this.db.candidate.findFirst({
+            where: {
+              telegramUserId: BigInt(chatId),
+              id: app.candidateId,
+              deletedAt: null,
+            },
+            select: { id: true },
+          });
+
+          if (!candidate) {
+            await ctx.answerCallbackQuery('Доступ запрещен.');
+            return;
+          }
+
+          const alreadyReported = [
+            'self_reported_applied',
+            'self_reported_reply',
+          ].includes(app.status);
+          if (!alreadyReported) {
+            await this.db.seekerApplication.update({
+              where: { id: seekerApplicationId },
+              data: {
+                status: newStatus,
+                ...(action === 'self_applied' && { appliedAt: new Date() }),
+              },
+            });
+          }
+
+          const ack =
+            action === 'self_applied'
+              ? '✅ Записано — вы откликнулись!'
+              : '💬 Записано — вы получили ответ!';
+          await ctx.answerCallbackQuery(ack);
+          await ctx.editMessageReplyMarkup({
+            reply_markup: new InlineKeyboard(),
+          });
+        } catch (err: any) {
+          this.logger.error(
+            { seekerApplicationId, err: err.message },
+            'Self-report update failed',
+          );
+          await ctx.answerCallbackQuery('Ошибка. Попробуйте позже.');
+        }
         return;
       }
 
@@ -1933,10 +2004,21 @@ Provide:
       throw new ServiceUnavailableException('Telegram bot not configured');
 
     let reply_markup: InlineKeyboard | undefined;
-    if (opts?.buttons?.length) {
+
+    if (opts?.buttonRows?.length) {
+      reply_markup = new InlineKeyboard();
+      for (const row of opts.buttonRows) {
+        for (const b of row) {
+          if (b.url) reply_markup.url(b.text, b.url);
+          else reply_markup.text(b.text, b.callbackData!);
+        }
+        reply_markup.row();
+      }
+    } else if (opts?.buttons?.length) {
       reply_markup = new InlineKeyboard();
       opts.buttons.forEach((b) => {
-        reply_markup!.text(b.text, b.callbackData);
+        if (b.url) reply_markup!.url(b.text, b.url);
+        else reply_markup!.text(b.text, b.callbackData!);
       });
     }
 

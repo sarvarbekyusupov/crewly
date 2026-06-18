@@ -5,10 +5,8 @@ import { Prisma, DiscoveredJob } from '@prisma/client';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
-import { HhClientService } from '../integrations/hh/hh-client.service';
-import { HhApplicantService } from '../integrations/hh/hh-applicant.service';
-import { HhOAuthService } from '../integrations/hh/hh-oauth.service';
 import { LinkedInApplyService } from '../integrations/apply/linkedin-apply.service';
+import { ApplyKitService } from '../integrations/apply/apply-kit.service';
 import { TelegramBotService } from '../integrations/telegram/telegram-bot.service';
 import { QUEUES } from './queue-names';
 import { ConfigService } from '@nestjs/config';
@@ -37,10 +35,8 @@ export class AutoApplyProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly agent: SeekerAgent,
-    private readonly hhClient: HhClientService,
-    private readonly hhApplicant: HhApplicantService,
-    private readonly hhOAuth: HhOAuthService,
     private readonly linkedinApply: LinkedInApplyService,
+    private readonly applyKit: ApplyKitService,
     private readonly telegram: TelegramBotService,
     private readonly config: ConfigService,
   ) {}
@@ -167,13 +163,16 @@ export class AutoApplyProcessor {
     });
 
     try {
-      if (seekerApp.source === 'hh.ru') {
-        await this.applyHh(
+      if (
+        seekerApp.source === 'hh.ru' ||
+        seekerApp.source === 'telegram_channel'
+      ) {
+        await this.buildAndNotifyKit(
           seekerApplicationId,
-          candidate.id,
+          candidate,
           discoveredJob,
-          coverLetter,
         );
+        return;
       } else if (seekerApp.source === 'linkedin') {
         await this.applyLinkedIn(
           seekerApplicationId,
@@ -202,43 +201,81 @@ export class AutoApplyProcessor {
     }
   }
 
-  private async applyHh(
+  private async buildAndNotifyKit(
     seekerApplicationId: string,
-    candidateId: string,
+    candidate: AutoApplyCandidate,
     discoveredJob: DiscoveredJob,
-    coverLetter: string,
   ) {
-    const hhCand = await this.db.candidate.findUnique({
-      where: { id: candidateId },
-      select: { hhResumeId: true },
-    });
-    if (!hhCand?.hhResumeId) {
-      throw new NonRetryableError(
-        'Candidate has no HH resume linked — cannot auto-apply',
+    let kit;
+    try {
+      kit = await this.applyKit.build(candidate.id, discoveredJob.id);
+    } catch (err: any) {
+      this.logger.error(
+        { seekerApplicationId, error: err.message },
+        'ApplyKit build failed',
       );
+      await this.db.seekerApplication.update({
+        where: { id: seekerApplicationId },
+        data: { status: 'assisted_required', error: err.message },
+      });
+      return;
     }
-    if (!discoveredJob.externalId) {
-      throw new NonRetryableError(
-        'HH vacancy has no externalId — cannot apply',
-      );
-    }
-    const token = await this.hhOAuth.getCandidateToken(candidateId);
-    const negotiationId = await this.hhApplicant.applyToVacancy(
-      token,
-      discoveredJob.externalId,
-      hhCand.hhResumeId,
-      coverLetter || undefined,
-    );
+
     await this.db.seekerApplication.update({
       where: { id: seekerApplicationId },
       data: {
-        status: 'applied',
-        appliedAt: new Date(),
-        error: null,
-        ...(negotiationId && { hhNegotiationId: negotiationId }),
+        status: 'assisted_ready',
+        applyUrl: kit.applyUrl,
+        applyKit: kit as any,
       },
     });
-    this.logger.log({ seekerApplicationId }, 'HH application complete');
+
+    this.logger.log({ seekerApplicationId }, 'Assisted apply kit ready');
+
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { telegramUserId: true },
+    });
+
+    if (cand?.telegramUserId) {
+      const text =
+        `📝 *Ваш комплект для отклика готов!*\n\n` +
+        `*${discoveredJob.title}* — ${discoveredJob.company}\n\n` +
+        `${kit.instructions}\n\n` +
+        `*Сопроводительное письмо:*\n\`\`\`\n${kit.coverLetter}\n\`\`\``;
+
+      await this.telegram
+        .sendMessage(cand.telegramUserId.toString(), text, {
+          parseMode: 'Markdown',
+          buttonRows: [
+            [
+              { text: '🔗 Открыть вакансию', url: kit.applyUrl },
+              {
+                text: '✅ Откликнулся',
+                callbackData: JSON.stringify({
+                  a: 'self_applied',
+                  i: seekerApplicationId,
+                }),
+              },
+            ],
+            [
+              {
+                text: '💬 Получил ответ',
+                callbackData: JSON.stringify({
+                  a: 'self_reply',
+                  i: seekerApplicationId,
+                }),
+              },
+            ],
+          ],
+        })
+        .catch((err) => {
+          this.logger.warn(
+            { seekerApplicationId, error: err.message },
+            'Failed to send assisted-apply kit via Telegram',
+          );
+        });
+    }
   }
 
   private async applyLinkedIn(

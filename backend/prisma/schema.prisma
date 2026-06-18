@@ -158,6 +158,7 @@ model Job {
   closedAt            DateTime? @map("closed_at") @db.Timestamptz
   filledAt            DateTime? @map("filled_at") @db.Timestamptz
   targetCandidatesCount Int     @default(5) @map("target_candidates_count")
+  jobSource           String    @default("hh") @map("job_source")
   hhVacancyId         String?   @map("hh_vacancy_id")
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
@@ -689,6 +690,9 @@ model SeekerApplication {
   source          String
   coverLetter     String?   @map("cover_letter")
   hhNegotiationId String?   @map("hh_negotiation_id")
+  applyMethod     String    @default("assisted") @map("apply_method")
+  applyUrl        String?   @map("apply_url")
+  applyKit        Json?     @map("apply_kit")
   error           String?
   appliedAt       DateTime? @map("applied_at") @db.Timestamptz
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz

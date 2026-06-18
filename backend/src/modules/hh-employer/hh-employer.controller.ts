@@ -23,7 +23,7 @@ import { HhCommentsService } from '../../integrations/hh/hh-comments.service';
 import { HhSalaryService } from '../../integrations/hh/hh-salary.service';
 import { HhVacancyService } from '../../integrations/hh/hh-vacancy.service';
 import { HhNegotiationsService } from '../../integrations/hh/hh-negotiations.service';
-import { HhResumeService } from '../../integrations/hh/hh-resume.service';
+import { HhClientService } from '../../integrations/hh/hh-client.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -38,7 +38,7 @@ export class HhEmployerController {
     private readonly hhSalary: HhSalaryService,
     private readonly hhVacancy: HhVacancyService,
     private readonly hhNegotiations: HhNegotiationsService,
-    private readonly hhResume: HhResumeService,
+    private readonly hhClient: HhClientService,
     private readonly config: ConfigService,
     private readonly db: PrismaService,
   ) {}
@@ -392,10 +392,7 @@ export class HhEmployerController {
     }
     if (candidate.hhApplicantId) return candidate.hhApplicantId;
 
-    const resume = await this.hhResume.getResume(
-      this.employerToken,
-      candidate.hhResumeId,
-    );
+    const resume = await this.hhClient.getResume(candidate.hhResumeId);
     const applicantId: string | undefined = (resume as any).owner?.id;
     if (!applicantId) {
       throw new NotFoundException(

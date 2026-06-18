@@ -12,121 +12,43 @@ const toast = useToast()
 
 useHead({ title: t('candidate.tracker.title') })
 
-// ── HH Negotiations ────────────────────────────────────────────────────────
+const activeTab = ref<'platform' | 'external'>('platform')
 
-interface HhNegotiation {
-  id: string
-  state: { id: string; name: string }
-  vacancy: {
-    id: string
-    name: string
-    alternate_url: string
-    employer: { name: string }
-    area?: { name: string }
-  }
-  created_at: string
-  updated_at: string
-}
+// ── Self-report actions ────────────────────────────────────────────────────
 
-const activeTab = ref<'platform' | 'hh'>('platform')
+const selfReportingId = ref<string | null>(null)
 
-const {
-  data: negotiations,
-  pending: negPending,
-  refresh: refreshNeg,
-} = await useAsyncData(
-  'hh-negotiations',
-  () =>
-    api
-      .get<{ items: HhNegotiation[]; found: number }>('/api/v1/candidate-portal/hh/negotiations')
-      .catch(() => ({ items: [] as HhNegotiation[], found: 0 })),
-  { immediate: false },
-)
-
-watch(activeTab, (tab) => {
-  if (tab === 'hh' && !negotiations.value) refreshNeg()
-})
-
-function negStateColor(stateId: string): 'success' | 'primary' | 'error' | 'warning' | 'neutral' {
-  if (['invitation', 'response'].includes(stateId)) return 'primary'
-  if (stateId === 'discard') return 'error'
-  if (stateId === 'active') return 'success'
-  return 'neutral'
-}
-
-// ── Negotiation messages ───────────────────────────────────────────────────
-
-interface HhMessage {
-  id: string
-  author: { participant_type: 'applicant' | 'employer'; name: string }
-  text: string
-  created_at: string
-}
-
-const expandedNegId = ref<string | null>(null)
-const negMessages = ref<Record<string, HhMessage[]>>({})
-const negMessagesPending = ref<string | null>(null)
-const newMessages = ref<Record<string, string>>({})
-const sendingMessage = ref(false)
-const withdrawingId = ref<string | null>(null)
-
-async function toggleNegMessages(negId: string) {
-  if (expandedNegId.value === negId) {
-    expandedNegId.value = null
-    return
-  }
-  expandedNegId.value = negId
-  if (negMessages.value[negId]) return
-  negMessagesPending.value = negId
+async function selfReport(
+  appId: string,
+  newStatus: 'self_reported_applied' | 'self_reported_reply',
+) {
+  if (selfReportingId.value) return
+  selfReportingId.value = appId
   try {
-    const resp = await api.get<{ items: HhMessage[] }>(
-      `/api/v1/candidate-portal/hh/negotiations/${negId}/messages`,
-    )
-    negMessages.value = { ...negMessages.value, [negId]: resp.items ?? [] }
-  } catch {
-    negMessages.value = { ...negMessages.value, [negId]: [] }
-  } finally {
-    negMessagesPending.value = null
-  }
-}
-
-async function withdrawNegotiation(negId: string) {
-  withdrawingId.value = negId
-  try {
-    await api.del(`/api/v1/candidate-portal/hh/negotiations/${negId}`)
-    toast.add({ title: t('candidate.preferences.hhWithdrawn'), color: 'success' })
-    if (negotiations.value?.items) {
-      negotiations.value.items = negotiations.value.items.filter((n) => n.id !== negId)
-    }
-  } catch (e) {
-    toast.add({
-      title: t('candidate.preferences.hhWithdrawFailed'),
-      description: extractApiErrorMessage(e),
-      color: 'error',
+    await api.patch(`/api/v1/candidate-portal/seeker-applications/${appId}/status`, {
+      status: newStatus,
     })
-  } finally {
-    withdrawingId.value = null
-  }
-}
-
-async function sendNegMessage(negId: string) {
-  const msg = (newMessages.value[negId] ?? '').trim()
-  if (!msg) return
-  sendingMessage.value = true
-  try {
-    await api.post(`/api/v1/candidate-portal/hh/negotiations/${negId}/messages`, { message: msg })
-    toast.add({ title: t('candidate.preferences.hhMessageSent'), color: 'success' })
-    newMessages.value = { ...newMessages.value, [negId]: '' }
-    // Refresh messages
-    const resp = await api.get<{ items: HhMessage[] }>(
-      `/api/v1/candidate-portal/hh/negotiations/${negId}/messages`,
-    )
-    negMessages.value = { ...negMessages.value, [negId]: resp.items ?? [] }
+    await refresh()
+    toast.add({
+      title: newStatus === 'self_reported_applied' ? '✅ Отклик записан!' : '💬 Ответ записан!',
+      color: 'success',
+    })
   } catch (e) {
     toast.add({ title: t('common.error'), description: extractApiErrorMessage(e), color: 'error' })
   } finally {
-    sendingMessage.value = false
+    selfReportingId.value = null
   }
+}
+
+const copiedId = ref<string | null>(null)
+
+function copyToClipboard(text: string, appId: string) {
+  navigator.clipboard.writeText(text).then(() => {
+    copiedId.value = appId
+    setTimeout(() => {
+      if (copiedId.value === appId) copiedId.value = null
+    }, 2000)
+  })
 }
 
 const {
@@ -286,7 +208,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       </div>
     </div>
 
-    <!-- Tab toggle: Platform / HH -->
+    <!-- Tab toggle: Platform / External -->
     <div
       class="flex rounded-lg overflow-hidden"
       style="border: 1px solid var(--line); width: fit-content"
@@ -305,163 +227,221 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       <button
         class="px-4 py-1.5 text-sm transition-colors"
         :style="
-          activeTab === 'hh'
+          activeTab === 'external'
             ? 'background: var(--ink); color: var(--bg);'
             : 'background: var(--surface); color: var(--ink-muted);'
         "
-        @click="activeTab = 'hh'"
+        @click="activeTab = 'external'"
       >
-        {{ t('candidate.preferences.hhNegotiations') }}
+        External (HH / Telegram)
       </button>
     </div>
 
-    <!-- HH Negotiations tab -->
-    <div v-if="activeTab === 'hh'">
-      <div v-if="negPending" class="flex justify-center py-12">
+    <!-- External Applications tab (HH.uz + Telegram channel jobs) -->
+    <div v-if="activeTab === 'external'" class="space-y-3">
+      <p class="text-xs" style="color: var(--ink-subtle)">
+        These jobs require you to apply directly. Your AI kit is ready — open the link, paste the
+        cover letter, then confirm below.
+      </p>
+
+      <div v-if="pending" class="flex justify-center py-12">
         <UIcon
           name="i-heroicons-arrow-path"
           class="w-6 h-6 animate-spin"
           style="color: var(--ink-subtle)"
         />
       </div>
-      <div v-else-if="!negotiations?.items?.length" class="flex flex-col items-center py-16 gap-3">
-        <UIcon
-          name="i-heroicons-document-text"
-          class="w-12 h-12"
-          style="color: var(--ink-subtle)"
-        />
-        <p
-          style="
-            font-family: 'Fraunces', serif;
-            font-size: 20px;
-            color: var(--ink);
-            font-weight: 400;
-          "
-        >
-          {{ t('candidate.preferences.hhNoNegotiations') }}
-        </p>
-      </div>
-      <div v-else class="space-y-2">
+
+      <template v-else>
         <div
-          v-for="neg in negotiations.items"
-          :key="neg.id"
+          v-for="app in (applications ?? []).filter(
+            (a) => a.source === 'hh.ru' || a.source === 'telegram_channel',
+          )"
+          :key="app.id"
           class="rounded-lg overflow-hidden"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
-          <div class="p-4 flex items-center justify-between gap-3">
+          <div class="p-4 flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <a
-                :href="neg.vacancy.alternate_url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="font-medium hover:underline"
-                style="color: var(--ink); font-size: 15px"
-              >
-                {{ neg.vacancy.name }}
-              </a>
+              <p class="font-medium" style="color: var(--ink); font-size: 15px">
+                {{ app.discoveredJob?.title ?? '—' }}
+              </p>
               <p class="text-sm mt-0.5" style="color: var(--ink-muted)">
-                {{ neg.vacancy.employer.name }}
-                <span v-if="neg.vacancy.area" style="color: var(--ink-subtle)">
-                  · {{ neg.vacancy.area.name }}</span
-                >
+                {{ app.discoveredJob?.company }}
               </p>
               <p class="text-xs mt-1" style="color: var(--ink-subtle)">
-                {{ formatRelativeTime(neg.created_at) }}
+                {{ formatRelativeTime(app.createdAt) }} ·
+                <span
+                  style="
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 9px;
+                    text-transform: uppercase;
+                  "
+                  >{{ app.source }}</span
+                >
               </p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <UBadge :color="negStateColor(neg.state.id)" variant="subtle" size="sm">
-                {{ neg.state.name }}
-              </UBadge>
+            <UBadge
+              :color="
+                app.status === 'self_reported_reply'
+                  ? 'success'
+                  : app.status === 'self_reported_applied'
+                    ? 'primary'
+                    : app.status === 'assisted_ready'
+                      ? 'warning'
+                      : 'neutral'
+              "
+              variant="subtle"
+              size="sm"
+            >
+              {{
+                app.status === 'assisted_ready'
+                  ? 'Kit Ready'
+                  : app.status === 'assisted_required'
+                    ? 'Building kit…'
+                    : app.status === 'self_reported_applied'
+                      ? '✅ Applied'
+                      : app.status === 'self_reported_reply'
+                        ? '💬 Got Reply'
+                        : capitalizeStatus(app.status)
+              }}
+            </UBadge>
+          </div>
+
+          <!-- Kit panel for assisted_ready -->
+          <div
+            v-if="app.status === 'assisted_ready' && app.applyKit"
+            class="px-4 pb-4 pt-3 space-y-3"
+            style="border-top: 1px solid var(--line-soft); background: var(--bg-elevated)"
+          >
+            <p
+              class="text-xs font-medium"
+              style="color: var(--ink-subtle); text-transform: uppercase; letter-spacing: 0.08em"
+            >
+              How to apply
+            </p>
+            <p class="text-xs whitespace-pre-line" style="color: var(--ink-muted)">
+              {{ app.applyKit.instructions }}
+            </p>
+
+            <p
+              class="text-xs font-medium mt-2"
+              style="color: var(--ink-subtle); text-transform: uppercase; letter-spacing: 0.08em"
+            >
+              Cover letter
+            </p>
+            <div
+              class="rounded-md p-3 text-xs whitespace-pre-line"
+              style="
+                background: var(--surface);
+                border: 1px solid var(--line-soft);
+                color: var(--ink-muted);
+                line-height: 1.6;
+              "
+            >
+              {{ app.applyKit.coverLetter }}
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-1">
               <UButton
-                size="xs"
-                variant="ghost"
-                :icon="
-                  expandedNegId === neg.id
-                    ? 'i-heroicons-chevron-up'
-                    : 'i-heroicons-chat-bubble-left-right'
-                "
-                :loading="negMessagesPending === neg.id"
-                @click="toggleNegMessages(neg.id)"
+                size="sm"
+                :icon="copiedId === app.id ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
+                variant="outline"
+                @click="copyToClipboard(app.applyKit!.coverLetter, app.id)"
               >
-                {{ t('candidate.preferences.hhMessages') }}
+                {{ copiedId === app.id ? 'Copied!' : 'Copy cover letter' }}
+              </UButton>
+              <a
+                :href="safeUrl(app.applyUrl ?? app.discoveredJob?.sourceUrl ?? '')"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="text-decoration: none"
+              >
+                <UButton size="sm" icon="i-heroicons-arrow-top-right-on-square">
+                  Open on {{ app.source === 'hh.ru' ? 'HH.uz' : 'Source' }}
+                </UButton>
+              </a>
+              <UButton
+                size="sm"
+                variant="ghost"
+                icon="i-heroicons-check-circle"
+                :loading="selfReportingId === app.id"
+                @click="selfReport(app.id, 'self_reported_applied')"
+              >
+                ✅ I applied
               </UButton>
               <UButton
-                size="xs"
+                size="sm"
                 variant="ghost"
-                color="error"
-                icon="i-heroicons-x-mark"
-                :loading="withdrawingId === neg.id"
-                @click="withdrawNegotiation(neg.id)"
+                icon="i-heroicons-chat-bubble-left"
+                :loading="selfReportingId === app.id"
+                @click="selfReport(app.id, 'self_reported_reply')"
               >
-                {{ t('candidate.preferences.hhWithdraw') }}
+                💬 Got a reply
               </UButton>
             </div>
           </div>
 
-          <!-- Message thread -->
+          <!-- Self-reported confirmation banner -->
           <div
-            v-if="expandedNegId === neg.id"
-            class="px-4 pb-4 pt-3 space-y-3"
+            v-else-if="
+              app.status === 'self_reported_applied' || app.status === 'self_reported_reply'
+            "
+            class="px-4 pb-3 pt-2"
             style="border-top: 1px solid var(--line-soft); background: var(--bg-elevated)"
           >
-            <div v-if="negMessagesPending === neg.id" class="flex justify-center py-4">
-              <UIcon
-                name="i-heroicons-arrow-path"
-                class="w-5 h-5 animate-spin"
-                style="color: var(--ink-subtle)"
-              />
+            <p class="text-xs" style="color: var(--ink-muted)">
+              {{
+                app.status === 'self_reported_reply'
+                  ? '💬 You reported receiving a reply. Good luck with the next step!'
+                  : "✅ You confirmed applying. We're tracking this externally."
+              }}
+            </p>
+            <p v-if="app.appliedAt" class="text-xs mt-1" style="color: var(--ink-subtle)">
+              {{ formatRelativeTime(app.appliedAt) }}
+            </p>
+            <div v-if="app.status === 'self_reported_applied'" class="mt-2">
+              <UButton
+                size="xs"
+                variant="ghost"
+                icon="i-heroicons-chat-bubble-left"
+                :loading="selfReportingId === app.id"
+                @click="selfReport(app.id, 'self_reported_reply')"
+              >
+                Got a reply? Mark it
+              </UButton>
             </div>
-            <template v-else>
-              <div
-                v-if="!negMessages[neg.id]?.length"
-                class="text-sm text-center py-4"
-                style="color: var(--ink-subtle)"
-              >
-                {{ t('candidate.preferences.hhNoMessages') }}
-              </div>
-              <div
-                v-for="msg in negMessages[neg.id]"
-                :key="msg.id"
-                class="flex gap-2"
-                :class="msg.author.participant_type === 'applicant' ? 'flex-row-reverse' : ''"
-              >
-                <div
-                  class="rounded-lg px-3 py-2 max-w-xs text-sm"
-                  :style="
-                    msg.author.participant_type === 'applicant'
-                      ? 'background: var(--accent, #5b6af5); color: #fff;'
-                      : 'background: var(--surface); border: 1px solid var(--line-soft); color: var(--ink);'
-                  "
-                >
-                  <p class="text-xs font-medium mb-1 opacity-70">{{ msg.author.name }}</p>
-                  <p>{{ msg.text }}</p>
-                  <p class="text-xs opacity-60 mt-1">{{ formatRelativeTime(msg.created_at) }}</p>
-                </div>
-              </div>
-              <div class="flex gap-2 pt-1">
-                <UInput
-                  v-model="newMessages[neg.id]"
-                  :placeholder="t('candidate.preferences.hhSendMessage')"
-                  class="flex-1"
-                  size="sm"
-                  @keydown.enter.prevent="sendNegMessage(neg.id)"
-                />
-                <UButton
-                  size="sm"
-                  icon="i-heroicons-paper-airplane"
-                  :loading="sendingMessage"
-                  :disabled="!(newMessages[neg.id] ?? '').trim()"
-                  @click="sendNegMessage(neg.id)"
-                />
-              </div>
-            </template>
           </div>
         </div>
-        <p class="text-xs text-center pt-1" style="color: var(--ink-subtle)">
-          {{ negotiations.found }} total
-        </p>
-      </div>
+
+        <div
+          v-if="
+            !(applications ?? []).filter(
+              (a) => a.source === 'hh.ru' || a.source === 'telegram_channel',
+            ).length
+          "
+          class="flex flex-col items-center py-16 gap-3"
+        >
+          <UIcon
+            name="i-heroicons-document-magnifying-glass"
+            class="w-12 h-12"
+            style="color: var(--ink-subtle)"
+          />
+          <p
+            style="
+              font-family: 'Fraunces', serif;
+              font-size: 20px;
+              color: var(--ink);
+              font-weight: 400;
+            "
+          >
+            No external applications yet
+          </p>
+          <p class="text-sm text-center max-w-sm" style="color: var(--ink-muted)">
+            When you match with HH.uz or Telegram channel jobs, your AI kit will appear here.
+          </p>
+        </div>
+      </template>
     </div>
 
     <!-- Platform tracker (wrap existing content) -->

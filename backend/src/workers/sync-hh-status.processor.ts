@@ -3,14 +3,8 @@ import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
 import { HhNegotiationsService } from '../integrations/hh/hh-negotiations.service';
-import { HhApplicantService } from '../integrations/hh/hh-applicant.service';
-import { HhOAuthService } from '../integrations/hh/hh-oauth.service';
 import { HhCandidateService } from '../integrations/hh/hh-candidate.service';
-import {
-  HH_EMPLOYER_STATE_MAP,
-  HH_CANDIDATE_STATE_MAP,
-} from '../integrations/hh/hh.constants';
-import { HhApplicantNegotiation } from '../integrations/hh/hh.types';
+import { HH_EMPLOYER_STATE_MAP } from '../integrations/hh/hh.constants';
 import { withRetry, runConcurrentCapped } from '../common/utils/async.utils';
 import { QUEUES } from './queue-names';
 
@@ -24,8 +18,6 @@ export class SyncHhStatusProcessor {
   constructor(
     private readonly db: PrismaService,
     private readonly hhNegotiations: HhNegotiationsService,
-    private readonly hhApplicant: HhApplicantService,
-    private readonly hhOAuth: HhOAuthService,
     private readonly hhCandidate: HhCandidateService,
   ) {}
 
@@ -33,7 +25,6 @@ export class SyncHhStatusProcessor {
   async handle(_job: Job) {
     await this.syncEmployerNegotiations();
     await this.syncInboundResponses();
-    await this.syncCandidateNegotiations();
   }
 
   private async syncEmployerNegotiations() {
@@ -185,108 +176,6 @@ export class SyncHhStatusProcessor {
       this.logger.log(
         { created: totalCreated },
         'HH inbound applications synced',
-      );
-    }
-  }
-
-  private async syncCandidateNegotiations() {
-    const TERMINAL = new Set(['rejected', 'hired', 'skipped', 'failed']);
-    let cursor: string | undefined;
-    let totalUpdated = 0;
-
-    while (true) {
-      const apps = await this.db.seekerApplication.findMany({
-        where: {
-          source: 'hh.ru',
-          hhNegotiationId: { not: null },
-          status: { notIn: [...TERMINAL] },
-        },
-        select: {
-          id: true,
-          candidateId: true,
-          hhNegotiationId: true,
-          status: true,
-        },
-        take: BATCH,
-        ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-        orderBy: { id: 'asc' },
-      });
-
-      if (!apps.length) break;
-
-      // Group by candidateId to fetch token once per candidate
-      const byCandidateId = new Map<string, typeof apps>();
-      for (const app of apps) {
-        const list = byCandidateId.get(app.candidateId) ?? [];
-        list.push(app);
-        byCandidateId.set(app.candidateId, list);
-      }
-
-      let updated = 0;
-      const candidateEntries = Array.from(byCandidateId.entries());
-      await runConcurrentCapped(
-        candidateEntries,
-        5,
-        async ([candidateId, candidateApps]) => {
-          let token: string;
-          try {
-            token = await this.hhOAuth.getCandidateToken(candidateId);
-          } catch {
-            return;
-          }
-
-          // Fetch all candidate negotiations, paginating until exhausted
-          const negotiations: HhApplicantNegotiation[] = [];
-          try {
-            let page = 0;
-            while (true) {
-              const resp = await withRetry(() =>
-                this.hhApplicant.getNegotiations(token, { per_page: 50, page }),
-              );
-              negotiations.push(...(resp.items ?? []));
-              if (page >= (resp.pages ?? 1) - 1) break;
-              page++;
-            }
-          } catch (err: any) {
-            this.logger.warn(
-              { candidateId, err: err.message },
-              'HH negotiations fetch failed during candidate sync',
-            );
-            return;
-          }
-
-          const negById = new Map(negotiations.map((n) => [n.id, n]));
-
-          for (const app of candidateApps) {
-            const neg = negById.get(app.hhNegotiationId!);
-            if (!neg) continue;
-            const newStatus = HH_CANDIDATE_STATE_MAP[neg.state.id];
-            if (!newStatus || newStatus === app.status) continue;
-            try {
-              await this.db.seekerApplication.update({
-                where: { id: app.id },
-                data: { status: newStatus },
-              });
-              updated++;
-            } catch (err: any) {
-              this.logger.warn(
-                { appId: app.id, err: err.message },
-                'Failed to update seeker application status',
-              );
-            }
-          }
-        },
-      );
-
-      totalUpdated += updated;
-      cursor = apps[apps.length - 1].id;
-      if (apps.length < BATCH) break;
-    }
-
-    if (totalUpdated) {
-      this.logger.log(
-        { updated: totalUpdated },
-        'HH candidate negotiation sync complete',
       );
     }
   }

@@ -67,20 +67,6 @@ export class HhChatService {
     return resp.data;
   }
 
-  /** GET /common/chats — list chats for applicant */
-  async listApplicantChats(
-    accessToken: string,
-    params?: { page?: number; per_page?: number; filter_unread?: boolean },
-  ): Promise<HhChatsResponse> {
-    const resp = await firstValueFrom(
-      this.http.get<HhChatsResponse>(`${this.baseUrl}/common/chats`, {
-        headers: this.authHeaders(accessToken),
-        params: { host: HH_HOST, per_page: 50, page: 0, ...params },
-      }),
-    );
-    return resp.data;
-  }
-
   /** GET /common/chats/{id}/messages */
   async getChatMessages(
     token: string,

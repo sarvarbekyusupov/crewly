@@ -349,7 +349,26 @@ export interface DiscoveredJob {
   application?: { id: string; status: string } | null
 }
 
-export type SeekerApplicationStatus = 'queued' | 'applied' | 'viewed' | 'interview' | 'rejected' | 'offer' | 'failed'
+export type SeekerApplicationStatus =
+  | 'queued'
+  | 'applied'
+  | 'viewed'
+  | 'interview'
+  | 'rejected'
+  | 'offer'
+  | 'failed'
+  | 'assisted_required'
+  | 'assisted_ready'
+  | 'self_reported_applied'
+  | 'self_reported_reply'
+  | 'skipped'
+
+export interface ApplyKit {
+  coverLetter: string
+  tailoredCvText: string
+  applyUrl: string
+  instructions: string
+}
 
 export interface SeekerApplication {
   id: string
@@ -359,6 +378,9 @@ export interface SeekerApplication {
   source: string
   coverLetter?: string
   hhNegotiationId?: string
+  applyMethod?: string
+  applyUrl?: string
+  applyKit?: ApplyKit
   error?: string
   appliedAt?: string
   createdAt: string

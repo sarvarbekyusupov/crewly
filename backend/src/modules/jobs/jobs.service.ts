@@ -36,6 +36,7 @@ export class JobsService {
       data: {
         companyId,
         createdByUserId: userId,
+        jobSource: dto.jobSource,
         title: dto.title,
         description: dto.description,
         priority: dto.priority,
@@ -227,6 +228,11 @@ export class JobsService {
     }
     if (job.hhVacancyId) {
       throw new BadRequestException('Job is already published on HH');
+    }
+    if ((job as any).jobSource === 'crewly') {
+      throw new BadRequestException(
+        'Crewly-native jobs are not published to HH',
+      );
     }
 
     const hhVacancyId = await this.hhVacancy.createVacancy({

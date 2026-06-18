@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const CreateJobSchema = z.object({
+  jobSource: z.enum(['hh', 'crewly']).default('hh'),
   title: z.string().min(3).max(200),
   description: z.string().min(50).max(10000),
   priority: z.enum(['low', 'normal', 'high', 'urgent']).default('normal'),

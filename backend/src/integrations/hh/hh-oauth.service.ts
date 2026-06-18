@@ -24,13 +24,6 @@ interface HhTokenResponse {
   refresh_token: string;
 }
 
-interface HhResumeMine {
-  id: string;
-  title: string;
-  alternate_url: string;
-  updated_at?: string;
-}
-
 // HH only allows refresh AFTER token expires: "token not expired" = 400 invalid_grant.
 // No buffer — refresh only when Date.now() >= expiresAt.
 
@@ -281,45 +274,6 @@ export class HhOAuthService {
         message: 'HH token refresh failed — please reconnect',
       });
     }
-  }
-
-  async getResumesForToken(accessToken: string): Promise<HhResumeMine[]> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ items: HhResumeMine[] }>(
-          `${this.baseUrl}/resumes/mine`,
-          {
-            params: { host: HH_HOST },
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'User-Agent': this.ua,
-              'HH-User-Agent': this.ua,
-            },
-          },
-        ),
-      );
-      return response.data.items ?? [];
-    } catch (err: any) {
-      this.logger.error(
-        {
-          status: err?.response?.status,
-          data: err?.response?.data,
-        },
-        'HH getResumesForToken failed',
-      );
-      throw err;
-    }
-  }
-
-  async saveResumeId(candidateId: string, hhResumeId: string): Promise<void> {
-    await this.db.candidate.update({
-      where: { id: candidateId },
-      data: { hhResumeId },
-    });
-    this.logger.log(
-      { candidateId, hhResumeId },
-      'HH resume ID saved for candidate',
-    );
   }
 
   /** Clears only OAuth token fields — preserves hhResumeId. Use on token revocation. */
