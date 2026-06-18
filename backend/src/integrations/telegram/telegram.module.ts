@@ -12,6 +12,7 @@ import { TelegramChannelMonitorService } from './telegram-channel-monitor.servic
       { name: QUEUES.ADVANCE_SCREENING },
       { name: QUEUES.SCORE_SEEKER_JOBS },
       { name: QUEUES.AUTO_APPLY },
+      { name: QUEUES.DISCOVER_JOBS },
     ),
   ],
   providers: [TelegramBotService, TelegramChannelMonitorService],

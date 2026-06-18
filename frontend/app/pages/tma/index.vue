@@ -17,10 +17,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
 
-useHead({
-  title: 'Crewly TMA',
-  script: [{ src: 'https://telegram.org/js/telegram-web-app.js' }],
-})
+useHead({ title: 'Crewly TMA' })
 
 const router = useRouter()
 const { isTma, init, getInitData } = useTma()
@@ -59,9 +56,24 @@ async function retryAuth() {
   await doAuth()
 }
 
+function waitForTelegramSdk(): Promise<void> {
+  return new Promise((resolve) => {
+    if (window.Telegram?.WebApp !== undefined) {
+      resolve()
+      return
+    }
+    const script = document.querySelector<HTMLScriptElement>('script[src*="telegram-web-app"]')
+    if (script) {
+      script.addEventListener('load', () => resolve(), { once: true })
+      script.addEventListener('error', () => resolve(), { once: true })
+    } else {
+      setTimeout(resolve, 1000)
+    }
+  })
+}
+
 onMounted(async () => {
-  // Small delay for Telegram SDK script to load
-  await new Promise((r) => setTimeout(r, 300))
+  await waitForTelegramSdk()
   await doAuth()
 })
 </script>

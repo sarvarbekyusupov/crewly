@@ -91,8 +91,9 @@ export class CronService implements OnModuleInit {
         },
       );
 
+      // area 2759 = Tashkent on hh.uz
       await this.discoverJobsQueue.add(
-        { source: 'hh.ru', maxPages: 5 },
+        { source: 'hh.ru', location: '2759', maxPages: 5 },
         {
           ...INGEST_JOB_OPTIONS,
           repeat: { cron: '30 */4 * * *' },

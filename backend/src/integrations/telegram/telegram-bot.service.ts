@@ -21,6 +21,7 @@ import { S3Service } from '../storage/s3.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
 import { TelegramChannelMonitorService } from './telegram-channel-monitor.service';
+import { PromptRunnerService } from '../llm/prompt-runner.service';
 
 type OutgoingMessage = {
   text?: string;
@@ -58,10 +59,13 @@ export class TelegramBotService implements OnModuleInit {
     private readonly i18n: I18nService,
     private readonly channelMonitor: TelegramChannelMonitorService,
     private readonly jwt: JwtService,
+    private readonly llm: PromptRunnerService,
     @InjectQueue(QUEUES.PARSE_CANDIDATE) private readonly parseQueue: Queue,
     @InjectQueue(QUEUES.ADVANCE_SCREENING)
     private readonly screeningQueue: Queue,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
+    @InjectQueue(QUEUES.DISCOVER_JOBS)
+    private readonly discoverJobsQueue: Queue,
   ) {
     const token = config.get<string>('TELEGRAM_BOT_TOKEN');
     if (!token) {
@@ -145,16 +149,16 @@ export class TelegramBotService implements OnModuleInit {
       `✅ Завершили интервью (Ready): *${readyCount}*\n\n` +
       `Выберите раздел ниже для управления:`;
 
+    const publicUrl =
+      this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
     const keyboard = new InlineKeyboard()
       .text('📋 Новые кандидаты', JSON.stringify({ a: 'v_new', p: 0 }))
       .text('💬 На интервью', JSON.stringify({ a: 'v_scr', p: 0 }))
-      .row()
-      .webApp(
-        '🖥️ Веб-панель (TMA)',
-        `${this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru'}/tma`,
-      )
-      .row()
-      .text('🔄 Обновить', JSON.stringify({ a: 'dash' }));
+      .row();
+    if (publicUrl.startsWith('https://')) {
+      keyboard.webApp('🖥️ Веб-панель (TMA)', `${publicUrl}/tma`).row();
+    }
+    keyboard.text('🔄 Обновить', JSON.stringify({ a: 'dash' }));
 
     return { text, keyboard };
   }
@@ -245,39 +249,44 @@ export class TelegramBotService implements OnModuleInit {
         }
       }
 
-      // Default start: list active jobs if any
-      try {
-        const activeJobs = await this.db.job.findMany({
-          where: { status: 'active', deletedAt: null },
-          include: { company: true },
-          take: 5,
-        });
-
-        if (activeJobs.length > 0) {
-          const keyboard = new InlineKeyboard();
-          activeJobs.forEach((job) => {
-            keyboard
-              .text(
-                `${job.title} (${job.company.name})`,
-                JSON.stringify({ a: 'sel_job', i: job.id }),
-              )
-              .row();
-          });
-
-          const welcomeJobsMsg = this.i18n.t('bot.default_welcome_jobs', {
-            lang,
-          });
-          await ctx.reply(welcomeJobsMsg, { reply_markup: keyboard });
-          return;
+      // Referral deep-link: ref_<referrerChatId>
+      if (match && match.startsWith('ref_')) {
+        const referrerChatId = match.slice(4);
+        if (referrerChatId && referrerChatId !== chatId) {
+          this.logger.log(
+            { chatId, referrerChatId },
+            'Candidate joined via referral',
+          );
+          // Store referral state so it's picked up when candidate registers
+          await this.setPendingJob(chatId, `ref:${referrerChatId}`);
         }
-      } catch (err) {
-        this.logger.error(err, 'Failed to fetch active jobs for /start');
+        // Fall through to candidate-first welcome
       }
 
-      const welcomeNoJobsMsg = this.i18n.t('bot.default_welcome_no_jobs', {
-        lang,
+      // Candidate-first welcome
+      const publicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      const canUseWebApp = publicUrl.startsWith('https://');
+
+      const welcomeText =
+        lang === 'uz'
+          ? `👋 Salom! Men *Crewly* — Toshkentdagi ish topishingizga yordam beradigan AI-yordamchiman.\n\n🎯 *Rezyumengizni yuboring* (PDF) — men sizga mos ish o'rinlarini topaman.\n📝 Rezyume yo'qmi? /setup buyrug'i orqali bir necha savolga javob bering.\n\n📋 Barcha buyruqlar: /help`
+          : lang === 'en'
+            ? `👋 Hi! I'm *Crewly* — your AI career assistant for finding jobs in Tashkent.\n\n🎯 *Send your CV* (PDF) and I'll find matching jobs for you.\n📝 No PDF? Use /setup to fill in a quick profile instead.\n\n📋 All commands: /help`
+            : `👋 Привет! Я *Crewly* — ваш AI-помощник по карьере в Ташкенте.\n\n🎯 *Отправьте резюме* (PDF) — найду подходящие вакансии.\n📝 Нет PDF? Команда /setup — заполните профиль за 2 минуты.\n\n📋 Все команды: /help`;
+
+      const keyboard = new InlineKeyboard();
+      if (canUseWebApp) {
+        keyboard.webApp(
+          lang === 'en' ? '📱 Open App' : '📱 Открыть приложение',
+          `${publicUrl}/tma`,
+        );
+      }
+
+      await ctx.reply(welcomeText, {
+        parse_mode: 'Markdown',
+        ...(canUseWebApp ? { reply_markup: keyboard } : {}),
       });
-      await ctx.reply(welcomeNoJobsMsg);
     });
 
     // Manager dashboard commands
@@ -621,6 +630,7 @@ export class TelegramBotService implements OnModuleInit {
     // Handle PDF resume uploads
     this.bot.on('message:document', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
       const doc = ctx.message.document;
       const fileName = doc.file_name ?? '';
       const mimeType = doc.mime_type ?? '';
@@ -694,9 +704,15 @@ export class TelegramBotService implements OnModuleInit {
               rawResumeText: rawText,
               resumeFileUrl: s3Url || candidate.resumeFileUrl,
               parsedResume: Prisma.DbNull,
+              lastActiveAt: new Date(),
             },
           });
         } else {
+          // Check if this new user came via referral
+          const refPending = await this.getPendingJob(chatId);
+          const referrerChatId = refPending?.startsWith('ref:')
+            ? refPending.slice(4)
+            : null;
           candidate = await this.db.candidate.create({
             data: {
               telegramUserId: BigInt(chatId),
@@ -704,6 +720,11 @@ export class TelegramBotService implements OnModuleInit {
               rawResumeText: rawText,
               resumeFileUrl: s3Url,
               parsedResume: Prisma.DbNull,
+              consentSource: referrerChatId
+                ? `telegram_referral:${referrerChatId}`
+                : 'telegram_cv',
+              consentGivenAt: new Date(),
+              lastActiveAt: new Date(),
             },
           });
         }
@@ -719,6 +740,7 @@ export class TelegramBotService implements OnModuleInit {
             { candidateId: candidate.id },
             LLM_JOB_OPTIONS,
           );
+          await this.triggerJobDiscovery(candidate.id);
           const existingSeekerApp = await this.db.seekerApplication.findUnique({
             where: {
               candidateId_discoveredJobId: {
@@ -768,6 +790,7 @@ export class TelegramBotService implements OnModuleInit {
             { candidateId: candidate.id },
             LLM_JOB_OPTIONS,
           );
+          await this.triggerJobDiscovery(candidate.id);
           return;
         }
 
@@ -814,11 +837,12 @@ export class TelegramBotService implements OnModuleInit {
           },
         });
 
-        // Trigger parse & matching
+        // Trigger parse, matching, and job discovery
         await this.parseQueue.add(
           { candidateId: candidate.id },
           LLM_JOB_OPTIONS,
         );
+        await this.triggerJobDiscovery(candidate.id);
 
         // Create conversation
         const conversation = await this.db.conversation.create({
@@ -1106,6 +1130,7 @@ export class TelegramBotService implements OnModuleInit {
     // Candidate: /subscribe — enable job alerts
     this.bot.command('subscribe', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
       const lang = this.getLang(ctx);
 
       const candidate = await this.db.candidate.findFirst({
@@ -1140,6 +1165,7 @@ export class TelegramBotService implements OnModuleInit {
     // Candidate: /unsubscribe — disable job alerts
     this.bot.command('unsubscribe', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
 
       await this.db.candidate.updateMany({
         where: { telegramUserId: BigInt(chatId), deletedAt: null },
@@ -1154,6 +1180,7 @@ export class TelegramBotService implements OnModuleInit {
     // Candidate: /mymatches — show top scored job matches
     this.bot.command('mymatches', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
       const lang = this.getLang(ctx);
 
       const candidate = await this.db.candidate.findFirst({
@@ -1212,6 +1239,7 @@ export class TelegramBotService implements OnModuleInit {
     // Candidate: /myapps — show application statuses
     this.bot.command('myapps', async (ctx) => {
       const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
       const lang = this.getLang(ctx);
 
       const candidate = await this.db.candidate.findFirst({
@@ -1267,10 +1295,498 @@ export class TelegramBotService implements OnModuleInit {
       await ctx.reply(text, { parse_mode: 'Markdown' });
     });
 
+    // Candidate: /help — command menu
+    this.bot.command('help', async (ctx) => {
+      const lang = this.getLang(ctx);
+      const text =
+        lang === 'uz'
+          ? `📋 *Buyruqlar ro'yxati:*\n\n` +
+            `📎 *Rezyume yuborish* — PDF faylni yuboring\n` +
+            `/setup — CV yo'q bo'lsa, anketani to'ldiring\n` +
+            `/mymatches — mos ish o'rinlarini ko'rish\n` +
+            `/myapps — ariza holatlari\n` +
+            `/rewrite — AI rezyumeni qayta yozadi\n` +
+            `/prep — intervyuga tayyorgarlik\n` +
+            `/feedback — rad etilish sabablarini tushuntirish\n` +
+            `/subscribe — yangi mos vakansiyalar haqida xabarnoma\n` +
+            `/unsubscribe — xabarnomani o'chirish\n` +
+            `/refer — do'stingizni taklif qiling`
+          : lang === 'en'
+            ? `📋 *Commands:*\n\n` +
+              `📎 *Send CV* — just send a PDF file\n` +
+              `/setup — no PDF? Fill a quick profile\n` +
+              `/mymatches — see your top job matches\n` +
+              `/myapps — check application statuses\n` +
+              `/rewrite — AI rewrites your CV for top job\n` +
+              `/prep — interview preparation tips\n` +
+              `/feedback — understand rejection reasons\n` +
+              `/subscribe — get alerts for new matches\n` +
+              `/unsubscribe — turn off alerts\n` +
+              `/refer — invite a friend`
+            : `📋 *Команды:*\n\n` +
+              `📎 *Отправить резюме* — просто пришлите PDF\n` +
+              `/setup — нет PDF? Заполните анкету\n` +
+              `/mymatches — лучшие совпадения вакансий\n` +
+              `/myapps — статусы откликов\n` +
+              `/rewrite — AI переписывает резюме под вакансию\n` +
+              `/prep — подготовка к интервью\n` +
+              `/feedback — объяснение причин отказов\n` +
+              `/subscribe — уведомления о новых вакансиях\n` +
+              `/unsubscribe — отключить уведомления\n` +
+              `/refer — пригласить друга`;
+
+      await ctx.reply(text, { parse_mode: 'Markdown' });
+    });
+
+    // Candidate: /setup — 5-question onboarding (no CV required)
+    this.bot.command('setup', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const lang = this.getLang(ctx);
+
+      const existing = await this.getPendingJob(chatId);
+      const refSuffix = existing?.startsWith('ref:') ? `|${existing}` : '';
+      await this.setPendingJob(chatId, `onboard:waiting${refSuffix}`);
+
+      const msg =
+        lang === 'uz'
+          ? `📝 Ajoyib! Quyidagi ma'lumotlarni *bir xabarda* yuboring:\n\n1. To'liq ismingiz\n2. Qaysi lavozimni qidiryapsiz?\n3. Asosiy ko'nikmalaringiz (vergul bilan)\n4. Tajriba yillari\n5. Kutilgan ish haqi (UZS yoki USD/oy)`
+          : lang === 'en'
+            ? `📝 Great! Send the following info *in one message*:\n\n1. Your full name\n2. What role are you looking for?\n3. Your main skills (comma-separated)\n4. Years of experience\n5. Expected monthly salary (UZS or USD)`
+            : `📝 Отлично! Напишите *одним сообщением*:\n\n1. Ваше полное имя\n2. Какую должность ищете?\n3. Ваши навыки (через запятую)\n4. Лет опыта\n5. Желаемая зарплата (UZS или USD/месяц)`;
+
+      await ctx.reply(msg, { parse_mode: 'Markdown' });
+    });
+
+    // Candidate: /rewrite — AI rewrites CV targeting top job match
+    this.bot.command('rewrite', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
+      const lang = this.getLang(ctx);
+
+      const candidate = await this.db.candidate.findFirst({
+        where: { telegramUserId: BigInt(chatId), deletedAt: null },
+        select: {
+          id: true,
+          fullName: true,
+          rawResumeText: true,
+          skills: true,
+          currentPosition: true,
+          yearsExperience: true,
+        },
+      });
+
+      if (!candidate?.rawResumeText) {
+        await ctx.reply(
+          lang === 'en'
+            ? 'Please send your CV first (PDF or /setup).'
+            : 'Сначала отправьте резюме (PDF или /setup).',
+        );
+        return;
+      }
+
+      const topMatch = await this.db.seekerJobMatch.findFirst({
+        where: { candidateId: candidate.id, score: { gte: 40 } },
+        include: { discoveredJob: true },
+        orderBy: { score: 'desc' },
+      });
+
+      if (!topMatch) {
+        await ctx.reply(
+          lang === 'en'
+            ? 'No job matches yet. Check back after /mymatches finds jobs for you.'
+            : 'Пока нет вакансий для оптимизации. Попробуйте позже после /mymatches.',
+        );
+        return;
+      }
+
+      const statusMsg = await ctx.reply(
+        lang === 'en'
+          ? '✍️ Rewriting your CV for the top match...'
+          : '✍️ Переписываю резюме под лучшую вакансию...',
+      );
+
+      try {
+        const job = topMatch.discoveredJob;
+        const result = await this.llm.run(
+          'TelegramBot:rewriteCV',
+          '1.0',
+          'rewrite_cv_for_job',
+          [
+            {
+              role: 'user',
+              content: `Rewrite this candidate's CV summary to match the target job. Be concise, professional, in the same language as the CV.
+
+Candidate CV:
+"""
+${candidate.rawResumeText.slice(0, 3000)}
+"""
+
+Target job: ${job.title} at ${job.company}
+Job description: ${(job.description ?? '').slice(0, 1000)}
+Required skills: ${(job.skills ?? []).join(', ')}
+
+Write:
+1. A 3-4 sentence professional summary targeted at this job
+2. A bullet list of 5-6 most relevant skills/achievements from their CV
+3. One sentence on why they're a strong fit
+
+Keep it honest — only use info from the CV.`,
+            },
+          ],
+          {
+            system: 'You are a professional CV writer. Be concise and honest.',
+            maxTokens: 1000,
+            temperature: 0.3,
+            skipAgentIdentity: true,
+          },
+        );
+
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          `✅ *CV — ${job.title} (${job.company})*\n\n${result.output}`,
+          { parse_mode: 'Markdown' },
+        );
+      } catch (err: any) {
+        this.logger.error({ chatId, error: err.message }, 'CV rewrite failed');
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          lang === 'en'
+            ? 'Rewrite failed. Try again later.'
+            : 'Ошибка. Попробуйте позже.',
+        );
+      }
+    });
+
+    // Candidate: /prep [n] — interview prep for nth job match (default: top match)
+    this.bot.command('prep', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
+      const lang = this.getLang(ctx);
+      const arg = ctx.match?.trim();
+      const matchIndex = arg ? Math.max(1, parseInt(arg, 10)) - 1 : 0;
+
+      const candidate = await this.db.candidate.findFirst({
+        where: { telegramUserId: BigInt(chatId), deletedAt: null },
+        select: { id: true, rawResumeText: true, skills: true },
+      });
+
+      if (!candidate) {
+        await ctx.reply(
+          lang === 'en'
+            ? 'No profile found. Send your CV first.'
+            : 'Профиль не найден. Сначала отправьте резюме.',
+        );
+        return;
+      }
+
+      const matches = await this.db.seekerJobMatch.findMany({
+        where: { candidateId: candidate.id, score: { gte: 40 } },
+        include: { discoveredJob: true },
+        orderBy: { score: 'desc' },
+        take: matchIndex + 1,
+      });
+
+      if (!matches[matchIndex]) {
+        await ctx.reply(
+          lang === 'en'
+            ? `No match #${matchIndex + 1} found. Use /mymatches to see available jobs.`
+            : `Вакансия #${matchIndex + 1} не найдена. Используйте /mymatches.`,
+        );
+        return;
+      }
+
+      const job = matches[matchIndex].discoveredJob;
+      const statusMsg = await ctx.reply(
+        lang === 'en'
+          ? `⏳ Preparing interview tips for ${job.title}...`
+          : `⏳ Готовлю советы для интервью на ${job.title}...`,
+      );
+
+      try {
+        const result = await this.llm.run(
+          'TelegramBot:interviewPrep',
+          '1.0',
+          'interview_prep',
+          [
+            {
+              role: 'user',
+              content: `Generate interview preparation for this candidate applying to this job. Respond in ${lang === 'en' ? 'English' : lang === 'uz' ? 'Uzbek' : 'Russian'}.
+
+Job: ${job.title} at ${job.company}
+Description: ${(job.description ?? '').slice(0, 800)}
+Required skills: ${(job.skills ?? []).join(', ')}
+
+Candidate skills: ${(candidate.skills ?? []).join(', ')}
+${candidate.rawResumeText ? `CV excerpt: ${candidate.rawResumeText.slice(0, 800)}` : ''}
+
+Provide:
+1. 5 likely interview questions (specific to this role)
+2. A brief answer tip for each
+3. One key strength to highlight
+4. One potential weakness to prepare for`,
+            },
+          ],
+          {
+            system: 'You are a career coach. Be specific and practical.',
+            maxTokens: 1200,
+            temperature: 0.4,
+            skipAgentIdentity: true,
+          },
+        );
+
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          `🎯 *Подготовка к интервью: ${job.title}*\n\n${result.output}`,
+          { parse_mode: 'Markdown' },
+        );
+      } catch (err: any) {
+        this.logger.error(
+          { chatId, error: err.message },
+          'Interview prep failed',
+        );
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          lang === 'en'
+            ? 'Failed. Try again later.'
+            : 'Ошибка. Попробуйте позже.',
+        );
+      }
+    });
+
+    // Candidate: /feedback — AI explains likely rejection reasons
+    this.bot.command('feedback', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
+      const lang = this.getLang(ctx);
+
+      const candidate = await this.db.candidate.findFirst({
+        where: { telegramUserId: BigInt(chatId), deletedAt: null },
+        select: {
+          id: true,
+          rawResumeText: true,
+          skills: true,
+          yearsExperience: true,
+        },
+      });
+
+      if (!candidate) {
+        await ctx.reply(
+          lang === 'en'
+            ? 'No profile found. Send your CV first.'
+            : 'Профиль не найден. Сначала отправьте резюме.',
+        );
+        return;
+      }
+
+      const rejectedApps = await this.db.application.findMany({
+        where: {
+          candidateId: candidate.id,
+          status: { in: ['rejected_by_ai', 'rejected_by_client'] },
+        },
+        include: { job: { select: { title: true, requiredSkills: true } } },
+        orderBy: { updatedAt: 'desc' },
+        take: 3,
+      });
+
+      const statusMsg = await ctx.reply(
+        lang === 'en'
+          ? '🔍 Analyzing your profile...'
+          : '🔍 Анализирую ваш профиль...',
+      );
+
+      try {
+        const context = rejectedApps.length
+          ? `Recent rejections:\n${rejectedApps.map((a) => `- ${a.job.title}: skills needed: ${a.job.requiredSkills.join(', ')}`).join('\n')}`
+          : 'No rejections yet — analyzing profile for general improvement.';
+
+        const result = await this.llm.run(
+          'TelegramBot:feedback',
+          '1.0',
+          'candidate_feedback',
+          [
+            {
+              role: 'user',
+              content: `Analyze this candidate's profile and provide honest, constructive feedback. Respond in ${lang === 'en' ? 'English' : lang === 'uz' ? 'Uzbek' : 'Russian'}.
+
+Candidate:
+- Skills: ${(candidate.skills ?? []).join(', ')}
+- Experience: ${candidate.yearsExperience ?? 'unknown'} years
+${candidate.rawResumeText ? `- CV: ${candidate.rawResumeText.slice(0, 1000)}` : ''}
+
+${context}
+
+Provide:
+1. Top 2-3 specific reasons why they may be getting rejected (or risks to address)
+2. Top 2 concrete improvements to make to their profile/CV
+3. One type of role where they'd be most competitive right now`,
+            },
+          ],
+          {
+            system:
+              'You are a candid career advisor. Be honest and actionable, not generic.',
+            maxTokens: 900,
+            temperature: 0.3,
+            skipAgentIdentity: true,
+          },
+        );
+
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          `💡 *Анализ профиля:*\n\n${result.output}`,
+          { parse_mode: 'Markdown' },
+        );
+      } catch (err: any) {
+        this.logger.error(
+          { chatId, error: err.message },
+          'Feedback analysis failed',
+        );
+        await ctx.api.editMessageText(
+          chatId,
+          statusMsg.message_id,
+          lang === 'en'
+            ? 'Analysis failed. Try again later.'
+            : 'Ошибка анализа. Попробуйте позже.',
+        );
+      }
+    });
+
+    // Candidate: /refer — generate referral deep link
+    this.bot.command('refer', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      this.touchCandidate(chatId);
+      const lang = this.getLang(ctx);
+
+      const botUsername = await this.getBotUsername();
+      if (!botUsername) {
+        await ctx.reply(
+          lang === 'en' ? 'Bot not configured.' : 'Бот не настроен.',
+        );
+        return;
+      }
+
+      const refLink = `https://t.me/${botUsername}?start=ref_${chatId}`;
+      const msg =
+        lang === 'uz'
+          ? `🔗 Do'stingizga ushbu havolani yuboring:\n${refLink}\n\nUlarga AI-karera yordamchisini tavsiya qiling!`
+          : lang === 'en'
+            ? `🔗 Share this link with a friend:\n${refLink}\n\nHelp them find jobs with AI in Tashkent!`
+            : `🔗 Поделитесь ссылкой с другом:\n${refLink}\n\nПомогите им найти работу в Ташкенте с помощью AI!`;
+
+      await ctx.reply(msg);
+    });
+
+    // Admin: /stats — show the 3 roadmap metrics
+    this.bot.command('stats', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const adminChatId = this.config.get<string>('ADMIN_TELEGRAM_CHAT_ID');
+
+      if (!adminChatId || chatId !== adminChatId) {
+        await ctx.reply('Access denied.');
+        return;
+      }
+
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const [total, active7d, subscribed, referrals, channels, jobs] =
+        await Promise.all([
+          this.db.candidate.count({
+            where: { telegramUserId: { not: null }, deletedAt: null },
+          }),
+          this.db.candidate.count({
+            where: {
+              telegramUserId: { not: null },
+              deletedAt: null,
+              lastActiveAt: { gte: sevenDaysAgo },
+            },
+          }),
+          this.db.candidate.count({
+            where: {
+              telegramUserId: { not: null },
+              deletedAt: null,
+              minMatchScore: { not: null },
+            },
+          }),
+          this.db.candidate.count({
+            where: {
+              telegramUserId: { not: null },
+              deletedAt: null,
+              consentSource: { startsWith: 'telegram_referral:' },
+            },
+          }),
+          this.db.telegramChannel.count({ where: { isActive: true } }),
+          this.db.discoveredJob.count({ where: { status: 'active' } }),
+        ]);
+
+      const returnRate = total > 0 ? Math.round((active7d / total) * 100) : 0;
+
+      const text =
+        `📊 *Crewly Stats*\n\n` +
+        `👤 Total candidates: *${total}*\n` +
+        `🔄 Active last 7d: *${active7d}* (${returnRate}% return rate)\n` +
+        `🔔 Subscribed to alerts: *${subscribed}*\n` +
+        `🔗 Via referral: *${referrals}*\n\n` +
+        `📡 Monitored channels: *${channels}*\n` +
+        `💼 Active jobs in feed: *${jobs}*`;
+
+      await ctx.reply(text, { parse_mode: 'Markdown' });
+    });
+
+    // Admin: /addchannel <channel_id> — seed a Telegram channel for job monitoring
+    this.bot.command('addchannel', async (ctx) => {
+      const chatId = String(ctx.chat.id);
+      const adminChatId = this.config.get<string>('ADMIN_TELEGRAM_CHAT_ID');
+
+      if (!adminChatId || chatId !== adminChatId) {
+        await ctx.reply('Access denied.');
+        return;
+      }
+
+      const arg = ctx.match?.trim();
+      if (!arg) {
+        await ctx.reply(
+          'Usage: /addchannel <numeric_channel_id>\nExample: /addchannel -1001234567890',
+        );
+        return;
+      }
+
+      try {
+        const channelId = BigInt(arg);
+        await this.db.telegramChannel.upsert({
+          where: { channelId },
+          create: { channelId, channelName: arg, isActive: true },
+          update: { isActive: true },
+        });
+        await ctx.reply(`✅ Channel ${arg} added to monitoring.`);
+      } catch {
+        await ctx.reply(`❌ Invalid channel ID: ${arg}`);
+      }
+    });
+
     this.bot.on('message:text', async (ctx) => {
       const chatId = String(ctx.chat.id);
       const text = ctx.message.text;
       const messageId = String(ctx.message.message_id);
+
+      // Handle onboarding questionnaire response
+      const pending = await this.getPendingJob(chatId);
+      if (pending?.startsWith('onboard:waiting')) {
+        const referrerChatId = pending.includes('|ref:')
+          ? pending.split('|ref:')[1]
+          : null;
+        await this.handleOnboardingResponse(
+          chatId,
+          text,
+          ctx,
+          referrerChatId ?? undefined,
+        );
+        return;
+      }
 
       if (this.onMessage) {
         await this.onMessage(chatId, text, messageId).catch((err) => {
@@ -1279,22 +1795,8 @@ export class TelegramBotService implements OnModuleInit {
       }
     });
 
-    if (this.config.get('NODE_ENV') === 'production') {
-      const webhookUrl = this.config.get<string>('TELEGRAM_WEBHOOK_URL');
-      const webhookSecret =
-        this.config.get<string>('TELEGRAM_WEBHOOK_SECRET') ?? '';
-      if (webhookUrl) {
-        await this.bot.api.setWebhook(webhookUrl, {
-          secret_token: webhookSecret,
-        });
-        this.logger.log(`Telegram webhook auto-set to ${webhookUrl}`);
-      } else {
-        this.logger.warn(
-          'TELEGRAM_WEBHOOK_URL not set — webhook not configured in production',
-        );
-      }
-    } else {
-      // Dev: long polling
+    if (this.config.get('NODE_ENV') !== 'production') {
+      // Dev: long polling (webhook is set by WebhooksController in production)
       this.bot.start({ drop_pending_updates: true }).catch((err) => {
         this.logger.error(err, 'Telegram polling error');
       });
@@ -1308,6 +1810,10 @@ export class TelegramBotService implements OnModuleInit {
     type: string;
     payload: any;
   }) {
+    if (event.type === 'scoring_complete') {
+      await this.notifyNewMatches(event.candidateId);
+      return;
+    }
     if (event.type !== 'resume_parse_progress') return;
 
     // DB-backed lookup — survives restarts
@@ -1370,10 +1876,13 @@ export class TelegramBotService implements OnModuleInit {
 
         const publicUrl =
           this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
-        const keyboard = new InlineKeyboard().webApp(
-          this.i18n.t('bot.web_chat_btn', { lang }) ?? '🖥️ Веб-чат (TMA)',
-          `${publicUrl}/candidate/chat/${screening.applicationId}`,
-        );
+        const keyboard = new InlineKeyboard();
+        if (publicUrl.startsWith('https://')) {
+          keyboard.webApp(
+            this.i18n.t('bot.web_chat_btn', { lang }) ?? '🖥️ Веб-чат (TMA)',
+            `${publicUrl}/tma`,
+          );
+        }
 
         if (this.bot) {
           await this.bot.api.editMessageText(
@@ -1464,6 +1973,191 @@ export class TelegramBotService implements OnModuleInit {
       this.cachedBotUsername = me.username ?? null;
     }
     return this.cachedBotUsername;
+  }
+
+  private touchCandidate(chatId: string): void {
+    this.db.candidate
+      .updateMany({
+        where: { telegramUserId: BigInt(chatId), deletedAt: null },
+        data: { lastActiveAt: new Date() },
+      })
+      .catch(() => {});
+  }
+
+  private async notifyNewMatches(candidateId: string): Promise<void> {
+    const candidate = await this.db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { telegramUserId: true, minMatchScore: true },
+    });
+
+    if (!candidate?.telegramUserId || candidate.minMatchScore == null) return;
+
+    const threshold = candidate.minMatchScore;
+    const chatId = candidate.telegramUserId.toString();
+
+    const matches = await this.db.seekerJobMatch.findMany({
+      where: { candidateId, score: { gte: threshold } },
+      include: { discoveredJob: true },
+      orderBy: { score: 'desc' },
+      take: 3,
+    });
+
+    if (!matches.length) return;
+
+    const keyboard = new InlineKeyboard();
+    let text = `🎯 *Новые подходящие вакансии для вас:*\n\n`;
+
+    matches.forEach((m, i) => {
+      const j = m.discoveredJob;
+      text += `${i + 1}. *${j.title}* — ${j.company}\n   📍 ${j.location ?? '—'}  |  ${m.score}% совпадение\n\n`;
+      keyboard
+        .text(
+          `${i + 1}. Откликнуться`,
+          JSON.stringify({ a: 'tg_apply', i: j.id }),
+        )
+        .row();
+    });
+
+    text += `_Все совпадения: /mymatches_`;
+
+    try {
+      await this.bot.api.sendMessage(Number(chatId), text, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+      });
+      await this.db.candidate.update({
+        where: { id: candidateId },
+        data: { lastActiveAt: new Date() },
+      });
+    } catch (err: any) {
+      this.logger.warn(
+        { candidateId, error: err.message },
+        'Failed to notify candidate of new matches',
+      );
+    }
+  }
+
+  private async triggerJobDiscovery(candidateId: string): Promise<void> {
+    await this.discoverJobsQueue.add(
+      { candidateId, source: 'hh.ru', location: '2759', maxPages: 3 },
+      { ...LLM_JOB_OPTIONS, jobId: `discover-${candidateId}-${Date.now()}` },
+    );
+  }
+
+  private async handleOnboardingResponse(
+    chatId: string,
+    text: string,
+    ctx: any,
+    referrerChatId?: string,
+  ): Promise<void> {
+    const lang = this.getLang(ctx);
+    const statusMsg = await ctx.reply(
+      lang === 'en'
+        ? '⏳ Building your profile...'
+        : '⏳ Создаю ваш профиль...',
+    );
+
+    try {
+      const result = await this.llm.run(
+        'TelegramBot:parseOnboarding',
+        '1.0',
+        'parse_onboarding_answers',
+        [
+          {
+            role: 'user',
+            content: `Parse this job seeker's self-introduction into a structured profile. The text may be in Russian, Uzbek, or English.
+
+User text:
+"""
+${text.slice(0, 2000)}
+"""
+
+Return JSON only:
+{
+  "fullName": "string or null",
+  "desiredRole": "string or null",
+  "skills": ["skill1", "skill2"],
+  "experienceYears": number or null,
+  "salaryMinUzs": number or null
+}
+
+Salary conversion: 1 USD = 12750 UZS, 1 RUB = 140 UZS. If a range is given, use the lower bound as salaryMinUzs.`,
+          },
+        ],
+        {
+          system: 'You are a resume parser. Return only valid JSON, no prose.',
+          responseFormat: { type: 'json_object' },
+          maxTokens: 500,
+          temperature: 0,
+          skipAgentIdentity: true,
+        },
+      );
+
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(result.output);
+      } catch {
+        /* use empty */
+      }
+
+      const existing = await this.db.candidate.findFirst({
+        where: { telegramUserId: BigInt(chatId), deletedAt: null },
+      });
+
+      const upsertData = {
+        telegramUserId: BigInt(chatId),
+        telegramUsername: ctx.from?.username ?? null,
+        fullName: parsed.fullName ?? null,
+        currentPosition: parsed.desiredRole ?? null,
+        skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+        yearsExperience:
+          parsed.experienceYears != null ? parsed.experienceYears : null,
+        expectedSalaryUzs: parsed.salaryMinUzs
+          ? BigInt(Math.round(parsed.salaryMinUzs))
+          : null,
+        rawResumeText: text,
+        consentSource: referrerChatId
+          ? `telegram_referral:${referrerChatId}`
+          : 'telegram_setup',
+        consentGivenAt: new Date(),
+        lastActiveAt: new Date(),
+      };
+
+      let candidate;
+      if (existing) {
+        candidate = await this.db.candidate.update({
+          where: { id: existing.id },
+          data: upsertData,
+        });
+      } else {
+        candidate = await this.db.candidate.create({ data: upsertData });
+      }
+
+      await this.clearPendingJob(chatId);
+      await this.parseQueue.add({ candidateId: candidate.id }, LLM_JOB_OPTIONS);
+      await this.triggerJobDiscovery(candidate.id);
+
+      const reply =
+        lang === 'en'
+          ? `✅ Profile created! Searching for matching jobs...\n\n/mymatches — view your top job matches\n/subscribe — get alerts for new matches`
+          : lang === 'uz'
+            ? `✅ Profil yaratildi! Mos ish o'rinlarini qidiryapman...\n\n/mymatches — eng mos vakansiyalarni ko'rish\n/subscribe — yangi mos vakansiyalar haqida xabarnoma`
+            : `✅ Профиль создан! Ищу подходящие вакансии...\n\n/mymatches — посмотреть лучшие совпадения\n/subscribe — уведомления о новых вакансиях`;
+
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, reply);
+    } catch (err: any) {
+      this.logger.error(
+        { chatId, error: err.message },
+        'Onboarding parse failed',
+      );
+      await ctx.api.editMessageText(
+        chatId,
+        statusMsg.message_id,
+        lang === 'en'
+          ? 'Something went wrong. Try /setup again or send your CV as PDF.'
+          : 'Что-то пошло не так. Попробуйте /setup снова или отправьте резюме в формате PDF.',
+      );
+    }
   }
 
   private async setPendingJob(chatId: string, jobId: string): Promise<void> {

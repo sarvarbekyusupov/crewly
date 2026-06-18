@@ -4,6 +4,12 @@
   </div>
 </template>
 
+<script setup lang="ts">
+useHead({
+  script: [{ src: 'https://telegram.org/js/telegram-web-app.js' }],
+})
+</script>
+
 <style>
 :root {
   --tg-theme-bg-color: #ffffff;

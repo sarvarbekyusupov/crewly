@@ -69,19 +69,41 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
+          DEPLOY_TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DEPLOY_TG_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          DEPLOY_ADMIN_CHAT_ID: ${{ secrets.ADMIN_TELEGRAM_CHAT_ID }}
+          DEPLOY_GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: GITHUB_SHA,GITHUB_ACTOR,GITHUB_REPOSITORY_OWNER
+          envs: GITHUB_SHA,GITHUB_ACTOR,GITHUB_REPOSITORY_OWNER,DEPLOY_PUBLIC_URL,DEPLOY_TG_TOKEN,DEPLOY_TG_SECRET,DEPLOY_ADMIN_CHAT_ID,DEPLOY_GHCR_TOKEN
           script: |
             set -e
             cd /srv/crewly
+
+            # Ensure .env.production exists
+            touch .env.production
+
+            # Upsert required vars (remove old line, append new)
+            patch_env() {
+              local key=$1 val=$2
+              sed -i "/^${key}=/d" .env.production
+              printf '%s=%s\n' "$key" "$val" >> .env.production
+            }
+            patch_env NODE_ENV                "production"
+            patch_env PUBLIC_URL              "$DEPLOY_PUBLIC_URL"
+            patch_env TELEGRAM_BOT_TOKEN      "$DEPLOY_TG_TOKEN"
+            patch_env TELEGRAM_WEBHOOK_SECRET "$DEPLOY_TG_SECRET"
+            patch_env ADMIN_TELEGRAM_CHAT_ID  "$DEPLOY_ADMIN_CHAT_ID"
+
             export IMAGE_BACKEND=ghcr.io/$GITHUB_REPOSITORY_OWNER/crewly-backend:$GITHUB_SHA
             export IMAGE_FRONTEND=ghcr.io/$GITHUB_REPOSITORY_OWNER/crewly-frontend:$GITHUB_SHA
             echo "IMAGE_BACKEND=$IMAGE_BACKEND"   > .env.images
             echo "IMAGE_FRONTEND=$IMAGE_FRONTEND" >> .env.images
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+            printf '%s' "$DEPLOY_GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
             docker system prune -f
             docker image prune -af
             docker compose -f docker-compose.prod.yml --env-file .env.production --env-file .env.images pull
@@ -90,4 +112,11 @@ jobs:
             curl -sf http://localhost/health && echo "Deploy OK" || { docker compose -f docker-compose.prod.yml logs --tail=40; exit 1; }
             docker compose -f docker-compose.prod.yml exec -T backend ./node_modules/.bin/prisma migrate deploy || echo "WARNING: migrate deploy failed, check manually"
             docker compose -f docker-compose.prod.yml exec -T backend node prisma/dist/seed.js || echo "WARNING: seed failed, check manually"
+
+            # Verify Telegram webhook was registered
+            if [ -n "$DEPLOY_TG_TOKEN" ]; then
+              WEBHOOK_INFO=$(curl -sf "https://api.telegram.org/bot${DEPLOY_TG_TOKEN}/getWebhookInfo" || echo '{}')
+              echo "Telegram webhook info: $WEBHOOK_INFO"
+            fi
+
             docker image prune -f

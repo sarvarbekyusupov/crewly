@@ -28,6 +28,7 @@ RUN ./backend/node_modules/.bin/tsc \
     --esModuleInterop true --skipLibCheck \
     --rootDir backend/prisma --outDir backend/prisma/dist \
     backend/prisma/seed.ts
+RUN cp -r backend/src/i18n backend/dist/i18n
 
 # ── prod-only deps ────────────────────────────────────────────────────────────
 FROM base AS prod-deps

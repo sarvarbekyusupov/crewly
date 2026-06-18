@@ -74,7 +74,9 @@ import { QUEUES } from './workers/queue-names';
     I18nModule.forRoot({
       fallbackLanguage: 'ru',
       loaderOptions: {
-        path: path.join(__dirname, '../../i18n/'),
+        path: __filename.endsWith('.ts')
+          ? path.join(__dirname, 'i18n/')
+          : path.join(__dirname, '../../i18n/'),
         watch: true,
       },
       resolvers: [AcceptLanguageResolver],
