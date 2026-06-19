@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
 import { Prisma, DiscoveredJob } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NonRetryableError } from './errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
@@ -39,6 +40,7 @@ export class AutoApplyProcessor {
     private readonly applyKit: ApplyKitService,
     private readonly telegram: TelegramBotService,
     private readonly config: ConfigService,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   @Process()
@@ -380,7 +382,7 @@ export class AutoApplyProcessor {
       );
     }
 
-    await this.db.application.create({
+    const application = await this.db.application.create({
       data: {
         jobId: job.id,
         candidateId: candidate.id,
@@ -388,6 +390,13 @@ export class AutoApplyProcessor {
         status: 'matched',
         matchedAt: new Date(),
       },
+    });
+
+    this.emitter.emit('application.created', {
+      applicationId: application.id,
+      jobId: job.id,
+      companyId: job.companyId,
+      status: application.status,
     });
 
     await this.db.seekerApplication.update({

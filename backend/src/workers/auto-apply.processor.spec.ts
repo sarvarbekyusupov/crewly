@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AutoApplyProcessor } from './auto-apply.processor';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeekerAgent } from '../modules/agents/seeker.agent';
@@ -65,6 +66,7 @@ describe('AutoApplyProcessor', () => {
   let mockApplyKit: { build: jest.Mock };
   let mockLinkedIn: { apply: jest.Mock };
   let mockTelegram: { sendMessage: jest.Mock };
+  let mockEmitter: { emit: jest.Mock };
 
   beforeEach(async () => {
     mockDb = {
@@ -113,6 +115,7 @@ describe('AutoApplyProcessor', () => {
       apply: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
     };
     mockTelegram = { sendMessage: jest.fn().mockResolvedValue(undefined) };
+    mockEmitter = { emit: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -123,6 +126,7 @@ describe('AutoApplyProcessor', () => {
         { provide: ApplyKitService, useValue: mockApplyKit },
         { provide: TelegramBotService, useValue: mockTelegram },
         { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: EventEmitter2, useValue: mockEmitter },
       ],
     }).compile();
 
@@ -185,6 +189,10 @@ describe('AutoApplyProcessor', () => {
             applyMethod: 'native',
           }),
         }),
+      );
+      expect(mockEmitter.emit).toHaveBeenCalledWith(
+        'application.created',
+        expect.objectContaining({ applicationId: 'new-app-1' }),
       );
     });
 

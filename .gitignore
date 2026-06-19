@@ -28,6 +28,9 @@ Thumbs.db
 .idea/
 .vscode/settings.json
 
+# Claude Code session data
+.claude/
+
 # Docker image metadata
 .env.image
 
