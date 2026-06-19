@@ -2,7 +2,7 @@
 
 How Crewly finds Tashkent jobs and scores them against candidate profiles.
 
-Two external sources: **HH.uz** (structured API, public) and **Telegram channels** (unstructured posts → AI extraction). A third source **Crewly-native** (employer posts directly on Crewly) is in progress.
+Three sources: **HH.uz** (structured API, public), **Telegram channels** (unstructured posts → AI extraction), and **Crewly-native** (employer posts directly on Crewly — seam wired, full apply UX in progress).
 
 ---
 
@@ -169,6 +169,28 @@ source === 'linkedin'
   → Playwright automation → submit form
   → status: 'applied'
 ```
+
+---
+
+## Crewly-Native Jobs (Employer Posts)
+
+Employers can create jobs with `jobSource: 'crewly'` (default is `'hh'`). These jobs:
+
+- Are **not** published to HH.uz (`publishToHh` rejects with 400)
+- Can still be discovered and scored against candidates via `DiscoveredJob` records where `source: 'crewly'` and `externalId = Job.id`
+
+When a candidate applies to a crewly-native job, `AutoApplyProcessor` routes to `applyNative()`:
+
+```
+source === 'crewly'
+  → job = Job.findUnique({ id: discoveredJob.externalId })
+  → Application.create({ jobId, candidateId, companyId, status: 'matched' })
+  → SeekerApplication: status = 'applied', applyMethod = 'native'
+```
+
+The employer sees the candidate in their HR dashboard immediately (standard Application pipeline). No HH.uz or assisted flow involved.
+
+**Status:** Routing seam is live. Creating `DiscoveredJob` records for crewly-native jobs and the candidate-facing apply UX are the remaining pieces.
 
 ---
 

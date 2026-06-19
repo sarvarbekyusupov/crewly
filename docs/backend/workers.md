@@ -313,6 +313,17 @@ SeekerAgent.decideAndDraftApplication(candidate, job)
   → should_apply? (false → status: 'skipped')
   → cover_letter text
 
+if source === 'telegram_alert':
+  applyTelegram() → status: 'applied' + notify candidate
+
+if source === 'crewly':
+  // Crewly-native job: route straight to employer Application pipeline.
+  // discoveredJob.externalId = Job.id (set when employer creates native job).
+  job = db.job.findUnique({ id: discoveredJob.externalId })
+  db.application.create({ jobId, candidateId, companyId, status: 'matched' })
+  SeekerApplication.status = 'applied', applyMethod = 'native'
+  // Employer sees candidate in HR dashboard; no HH.uz involved.
+
 if source in ('hh.ru', 'telegram_channel'):
   // HH applicant API permanently closed.
   // Telegram channels have no apply API.
@@ -327,9 +338,6 @@ if source in ('hh.ru', 'telegram_channel'):
 if source === 'linkedin':
   LinkedInApplyService.apply(...) → Playwright automation
   SeekerApplication.status = 'applied'
-
-if source === 'telegram_alert':
-  applyTelegram() → status: 'applied' + notify candidate
 ```
 
 ---
