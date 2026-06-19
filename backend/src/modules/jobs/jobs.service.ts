@@ -17,6 +17,10 @@ import {
   INGEST_JOB_OPTIONS,
 } from '../../workers/queue-options';
 
+type AnyJob = Awaited<ReturnType<JobsService['findOne']>> & {
+  jobSource?: string;
+};
+
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
@@ -29,6 +33,8 @@ export class JobsService {
     @InjectQueue(QUEUES.PARSE_JOB) private readonly parseJobQueue: Queue,
     @InjectQueue(QUEUES.MATCH_CANDIDATES) private readonly matchQueue: Queue,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
+    @InjectQueue(QUEUES.SCORE_SEEKER_JOBS)
+    private readonly scoreSeekerQueue: Queue,
   ) {}
 
   async create(companyId: string, userId: string, dto: CreateJobDto) {
@@ -107,6 +113,16 @@ export class JobsService {
     ) {
       await this.parseJobQueue.add('parse', { jobId: id }, LLM_JOB_OPTIONS);
     }
+    // Sync native DiscoveredJob when title/description/skills change
+    if ((updated as AnyJob).jobSource === 'crewly') {
+      this.syncNativeDiscoveredJob(updated as AnyJob).catch((err) =>
+        this.logger.warn(
+          { jobId: id, err: err.message },
+          'Failed to sync native DiscoveredJob on update',
+        ),
+      );
+    }
+
     // Sync to HH if published there
     if (updated.hhVacancyId) {
       this.hhVacancy
@@ -145,6 +161,12 @@ export class JobsService {
     });
     await this.matchQueue.add('match', { jobId: id }, LLM_JOB_OPTIONS);
     this.emitter.emit('job.activated', { jobId: id, companyId });
+
+    if ((job as AnyJob).jobSource === 'crewly') {
+      await this.syncNativeDiscoveredJob(job as AnyJob);
+      await this.triggerCandidateScoring();
+    }
+
     return updated;
   }
 
@@ -193,6 +215,9 @@ export class JobsService {
           ),
         );
     }
+    if ((job as AnyJob).jobSource === 'crewly') {
+      await this.archiveNativeDiscoveredJob(id);
+    }
     return updated;
   }
 
@@ -216,6 +241,9 @@ export class JobsService {
             'HH delete failed on soft-delete',
           ),
         );
+    }
+    if ((job as AnyJob).jobSource === 'crewly') {
+      await this.archiveNativeDiscoveredJob(id);
     }
     return deleted;
   }
@@ -382,6 +410,72 @@ export class JobsService {
       });
 
     return { ...byStatus, ...(hhStats && { hh: hhStats }) };
+  }
+
+  private async syncNativeDiscoveredJob(job: AnyJob) {
+    const company = await this.db.company.findUnique({
+      where: { id: job.companyId },
+      select: { name: true },
+    });
+
+    const sourceUrl = `crewly:job:${job.id}`;
+
+    await this.db.discoveredJob.upsert({
+      where: { sourceUrl },
+      create: {
+        source: 'crewly',
+        externalId: job.id,
+        sourceUrl,
+        title: job.title,
+        company: company?.name ?? 'Crewly',
+        description: job.description,
+        skills: job.requiredSkills,
+        salaryMinUzs: job.salaryMinUzs ?? undefined,
+        salaryMaxUzs: job.salaryMaxUzs ?? undefined,
+        employmentType: job.employmentType ?? undefined,
+        workMode: job.workMode ?? undefined,
+        location: job.officeLocation ?? undefined,
+        status: 'active',
+        rawPayload: {},
+      },
+      update: {
+        title: job.title,
+        company: company?.name ?? 'Crewly',
+        description: job.description,
+        skills: job.requiredSkills,
+        salaryMinUzs: job.salaryMinUzs ?? undefined,
+        salaryMaxUzs: job.salaryMaxUzs ?? undefined,
+        employmentType: job.employmentType ?? undefined,
+        workMode: job.workMode ?? undefined,
+        location: job.officeLocation ?? undefined,
+        status: 'active',
+      },
+    });
+  }
+
+  private async archiveNativeDiscoveredJob(jobId: string) {
+    const sourceUrl = `crewly:job:${jobId}`;
+    await this.db.discoveredJob.updateMany({
+      where: { sourceUrl },
+      data: { status: 'archived' },
+    });
+  }
+
+  private async triggerCandidateScoring() {
+    const candidates = await this.db.candidate.findMany({
+      where: { deletedAt: null, doNotContact: false },
+      select: { id: true },
+    });
+    for (const { id } of candidates) {
+      await this.scoreSeekerQueue.add(
+        { candidateId: id, limit: 30 },
+        { ...LLM_JOB_OPTIONS, jobId: `score-${id}-native` },
+      );
+    }
+    this.logger.log(
+      { count: candidates.length },
+      'Queued scoring for candidates after native job activated',
+    );
   }
 
   async findOnePublic(id: string) {

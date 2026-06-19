@@ -307,7 +307,7 @@ export class TmaService {
       data: {
         candidateId,
         discoveredJobId: jobId,
-        source: 'telegram_tma',
+        source: job.source,
         status: 'queued',
       },
     });

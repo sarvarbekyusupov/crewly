@@ -12,6 +12,7 @@ import { QUEUES } from '../../workers/queue-names';
     BullModule.registerQueue({ name: QUEUES.PARSE_JOB }),
     BullModule.registerQueue({ name: QUEUES.MATCH_CANDIDATES }),
     BullModule.registerQueue({ name: QUEUES.SEND_OUTREACH }),
+    BullModule.registerQueue({ name: QUEUES.SCORE_SEEKER_JOBS }),
   ],
   controllers: [JobsController, PublicJobsController],
   providers: [JobsService],
