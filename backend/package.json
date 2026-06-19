@@ -131,7 +131,8 @@
       "<rootDir>/../test/jest-setup.ts"
     ],
     "moduleNameMapper": {
-      "^@crewly/(.*)$": "<rootDir>/../../packages/$1/src/index.ts"
+      "^@crewly/(.*)$": "<rootDir>/../../packages/$1/src/index.ts",
+      "^langfuse$": "<rootDir>/../test/__mocks__/langfuse.ts"
     }
   }
 }

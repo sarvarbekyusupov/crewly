@@ -97,6 +97,12 @@ export class AutoApplyProcessor {
       return;
     }
 
+    // Crewly-native jobs route straight to the employer Application pipeline
+    if (seekerApp.source === 'crewly') {
+      await this.applyNative(seekerApplicationId, candidate, discoveredJob);
+      return;
+    }
+
     // Seeker Agent decision and drafting
     const agentResult = await this.agent.decideAndDraftApplication(
       {
@@ -349,6 +355,54 @@ export class AutoApplyProcessor {
     this.logger.log(
       { seekerApplicationId },
       'Telegram alert application applied',
+    );
+  }
+
+  private async applyNative(
+    seekerApplicationId: string,
+    candidate: AutoApplyCandidate,
+    discoveredJob: DiscoveredJob,
+  ) {
+    if (!discoveredJob.externalId) {
+      throw new NonRetryableError(
+        `Crewly DiscoveredJob ${discoveredJob.id} missing externalId (expected Job.id)`,
+      );
+    }
+
+    const job = await this.db.job.findUnique({
+      where: { id: discoveredJob.externalId },
+      select: { id: true, companyId: true },
+    });
+
+    if (!job) {
+      throw new NonRetryableError(
+        `Crewly Job ${discoveredJob.externalId} not found`,
+      );
+    }
+
+    await this.db.application.create({
+      data: {
+        jobId: job.id,
+        candidateId: candidate.id,
+        companyId: job.companyId,
+        status: 'matched',
+        matchedAt: new Date(),
+      },
+    });
+
+    await this.db.seekerApplication.update({
+      where: { id: seekerApplicationId },
+      data: {
+        status: 'applied',
+        applyMethod: 'native',
+        appliedAt: new Date(),
+        error: null,
+      },
+    });
+
+    this.logger.log(
+      { seekerApplicationId },
+      'Crewly-native application created',
     );
   }
 
