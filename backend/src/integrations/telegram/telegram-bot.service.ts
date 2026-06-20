@@ -1872,6 +1872,10 @@ Provide:
         this.logger.error(err, 'Telegram polling error');
       });
       this.logger.log('Telegram bot started in polling mode');
+    } else {
+      // Production: webhook mode — must init bot info before handleUpdate is called
+      await this.bot.init();
+      this.logger.log('Telegram bot initialized for webhook mode');
     }
   }
 
