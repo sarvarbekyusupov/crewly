@@ -26,7 +26,7 @@ function selectCandidate() {
   <nav class="nav">
     <div class="nav-inner">
       <!-- Logo -->
-      <NuxtLink to="/" class="logo" @click="set('employer')">
+      <NuxtLink to="/" class="logo" @click="set('candidate')">
         <img
           src="/crewly-logo-horizontal.svg"
           alt="Crewly"
@@ -46,16 +46,16 @@ function selectCandidate() {
         <NuxtLink
           to="/"
           class="nav-a"
-          :class="{ on: audience === 'employer' }"
-          @click="set('employer')"
-          >Employers</NuxtLink
-        >
-        <NuxtLink
-          to="/candidate"
-          class="nav-a"
           :class="{ on: audience === 'candidate' }"
           @click="set('candidate')"
           >Candidates</NuxtLink
+        >
+        <NuxtLink
+          to="/employer"
+          class="nav-a"
+          :class="{ on: audience === 'employer' }"
+          @click="set('employer')"
+          >Employers</NuxtLink
         >
         <a href="#how-it-works" class="nav-a">How it works</a>
       </div>
@@ -76,21 +76,19 @@ function selectCandidate() {
           </ClientOnly>
         </button>
         <NuxtLink
+          v-if="audience === 'candidate' || !waitlistMode"
           :to="audience === 'employer' ? '/employer/login' : '/candidate/login'"
           class="btn btn-ghost"
           >Login</NuxtLink
         >
-        <template v-if="waitlistMode">
-          <a href="#waitlist" class="btn btn-primary">Join waitlist</a>
+
+        <template v-if="audience === 'employer'">
+          <a v-if="waitlistMode" href="#waitlist" class="btn btn-primary">Join waitlist</a>
+          <NuxtLink v-else to="/employer/signup" class="btn btn-primary">Start hiring</NuxtLink>
         </template>
-        <template v-else>
-          <NuxtLink v-if="audience === 'employer'" to="/employer/signup" class="btn btn-primary"
-            >Start hiring</NuxtLink
-          >
-          <NuxtLink v-else to="/candidate/login?mode=signup" class="btn btn-primary"
-            >Build profile</NuxtLink
-          >
-        </template>
+        <NuxtLink v-else to="/candidate/login?mode=signup" class="btn btn-primary"
+          >Build profile</NuxtLink
+        >
       </div>
 
       <!-- Mobile right: theme toggle + hamburger -->
@@ -129,47 +127,50 @@ function selectCandidate() {
         <NuxtLink
           to="/"
           class="mob-link"
-          :class="{ on: audience === 'employer' }"
-          @click="selectEmployer"
-          >Employers</NuxtLink
-        >
-        <NuxtLink
-          to="/candidate"
-          class="mob-link"
           :class="{ on: audience === 'candidate' }"
           @click="selectCandidate"
           >Candidates</NuxtLink
+        >
+        <NuxtLink
+          to="/employer"
+          class="mob-link"
+          :class="{ on: audience === 'employer' }"
+          @click="selectEmployer"
+          >Employers</NuxtLink
         >
         <a href="#how-it-works" class="mob-link" @click="mobileOpen = false">How it works</a>
         <div class="mob-divider" />
         <div class="mob-actions">
           <NuxtLink
+            v-if="audience === 'candidate' || !waitlistMode"
             :to="audience === 'employer' ? '/employer/login' : '/candidate/login'"
             class="btn btn-ghost mob-btn"
             @click="mobileOpen = false"
             >Login</NuxtLink
           >
-          <template v-if="waitlistMode">
-            <a href="#waitlist" class="btn btn-primary mob-btn" @click="mobileOpen = false"
+          <template v-if="audience === 'employer'">
+            <a
+              v-if="waitlistMode"
+              href="#waitlist"
+              class="btn btn-primary mob-btn"
+              @click="mobileOpen = false"
               >Join waitlist</a
             >
-          </template>
-          <template v-else>
             <NuxtLink
-              v-if="audience === 'employer'"
+              v-else
               to="/employer/signup"
               class="btn btn-primary mob-btn"
               @click="mobileOpen = false"
               >Start hiring</NuxtLink
             >
-            <NuxtLink
-              v-else
-              to="/candidate/login?mode=signup"
-              class="btn btn-primary mob-btn"
-              @click="mobileOpen = false"
-              >Build profile</NuxtLink
-            >
           </template>
+          <NuxtLink
+            v-else
+            to="/candidate/login?mode=signup"
+            class="btn btn-primary mob-btn"
+            @click="mobileOpen = false"
+            >Build profile</NuxtLink
+          >
         </div>
       </div>
     </Transition>

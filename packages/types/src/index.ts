@@ -406,6 +406,7 @@ export interface CandidatePreferences {
   hhOauthTokenSet: boolean
   linkedinOauthTokenSet: boolean
   resumeFileUrl?: string | null
+  telegramUserId?: string | null
 }
 
 export interface HhResumeViewItem {

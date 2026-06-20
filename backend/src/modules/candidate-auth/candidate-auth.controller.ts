@@ -160,6 +160,14 @@ export class CandidateAuthController {
     return this.candidateAuthService.getMe(candidate.id);
   }
 
+  @Get('me/telegram-link-code')
+  @Public()
+  @UseGuards(CandidateAuthGuard)
+  @SkipThrottle({ auth: true })
+  getTelegramLinkCode(@CurrentCandidate() candidate: { id: string }) {
+    return this.candidateAuthService.getCandidateTelegramLinkCode(candidate.id);
+  }
+
   @Post('forgot-password')
   @Public()
   @HttpCode(HttpStatus.OK)

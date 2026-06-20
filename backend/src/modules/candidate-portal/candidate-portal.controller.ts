@@ -166,6 +166,8 @@ export class CandidatePortalController {
       hhOauthTokenSet: !!p.hhOauthToken,
       linkedinOauthTokenSet: !!p.linkedinOauthToken,
       resumeFileUrl: p.resumeFileUrl,
+      telegramUserId:
+        p.telegramUserId != null ? String(p.telegramUserId) : null,
     }));
   }
 

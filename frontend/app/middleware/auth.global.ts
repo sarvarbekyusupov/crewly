@@ -1,8 +1,8 @@
-const WAITLIST_ALLOWED = ['/', '/candidate', '/terms']
+const WAITLIST_ALLOWED = ['/', '/employer', '/candidate', '/terms']
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { waitlistMode } = useRuntimeConfig().public
-  if (waitlistMode && !WAITLIST_ALLOWED.includes(to.path)) {
+  if (waitlistMode && !WAITLIST_ALLOWED.includes(to.path) && !to.path.startsWith('/candidate')) {
     return navigateTo('/')
   }
 
@@ -13,7 +13,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       const hasHint = import.meta.client && !!localStorage.getItem('staff_hint')
       if (!store.isAuthenticated && hasHint) await store.fetchMe()
       if (store.isAuthenticated) return navigateTo('/staff/dashboard')
-    } else if (to.path.startsWith('/candidate')) {
+    } else if (to.path === '/' || to.path.startsWith('/candidate')) {
       const store = useCandidateAuthStore()
       const hasHint = import.meta.client && !!localStorage.getItem('cand_hint')
       if (!store.isAuthenticated && hasHint) await store.fetchMe()

@@ -11,7 +11,7 @@ const dismissed = useState('annc_dismissed', () => false)
     </template>
     <template v-else>
       <span>Are you hiring? Crewly sources and screens candidates for you.</span>
-      <NuxtLink to="/" @click="set('employer')">See Crewly for employers →</NuxtLink>
+      <NuxtLink to="/employer" @click="set('employer')">See Crewly for employers →</NuxtLink>
     </template>
     <button class="banner-x" aria-label="Dismiss" @click="dismissed = true">✕</button>
   </div>

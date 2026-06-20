@@ -399,6 +399,37 @@ const [expectedSalaryUzs, expectedSalaryUzsProps] = defineField('expectedSalaryU
 const blacklistedCompanies = ref<string[]>([])
 const blacklistInput = ref('')
 
+// --- Telegram linking ---
+const telegramConnected = computed(() => !!prefs.value?.telegramUserId)
+const telegramLinkLoading = ref(false)
+const telegramBotUrl = ref<string | null>(null)
+
+async function getTelegramLinkCode() {
+  telegramLinkLoading.value = true
+  telegramBotUrl.value = null
+  try {
+    const res = await api.get<{ code: string; botUrl: string }>(
+      '/api/v1/candidate-auth/me/telegram-link-code',
+    )
+    telegramBotUrl.value = res.botUrl
+    const start = Date.now()
+    const poll = setInterval(async () => {
+      await refresh()
+      if (telegramConnected.value || Date.now() - start > 120_000) {
+        clearInterval(poll)
+        if (telegramConnected.value) {
+          telegramBotUrl.value = null
+          toast.add({ title: 'Telegram connected!', color: 'success' })
+        }
+        telegramLinkLoading.value = false
+      }
+    }, 3000)
+  } catch {
+    telegramLinkLoading.value = false
+    toast.add({ title: 'Failed to generate link', color: 'error' })
+  }
+}
+
 watch(
   prefs,
   (p) => {
@@ -770,6 +801,50 @@ const save = handleSubmit(async (values) => {
           <UIcon v-else name="i-heroicons-link" />
           <span>Connect LinkedIn</span>
         </button>
+      </section>
+
+      <!-- Section: Telegram -->
+      <section class="prefs-section">
+        <div class="prefs-section-head">
+          <UIcon name="i-heroicons-paper-airplane" class="prefs-section-icon" />
+          <h2 class="prefs-section-title">Telegram</h2>
+        </div>
+        <p class="prefs-section-desc">
+          Connect your Telegram account to receive job matches and updates in the bot.
+        </p>
+
+        <div v-if="telegramConnected" class="prefs-hh-identity">
+          <div class="prefs-li-avatar" style="background: #229ed9">✓</div>
+          <div class="prefs-hh-info">
+            <p class="prefs-hh-name">Telegram connected</p>
+            <p class="prefs-hh-meta">You'll receive notifications via the bot</p>
+          </div>
+          <span class="prefs-hh-status-dot" />
+        </div>
+
+        <div
+          v-if="telegramBotUrl"
+          class="mt-4 p-4 rounded-lg"
+          style="background: var(--ui-bg-muted)"
+        >
+          <p class="text-sm mb-3" style="color: var(--ui-text-muted)">
+            Open the bot and press <strong>Start</strong> to link your account:
+          </p>
+          <NuxtLink :to="telegramBotUrl" target="_blank" class="prefs-tg-btn">
+            Open Telegram bot →
+          </NuxtLink>
+        </div>
+
+        <UButton
+          v-if="!telegramConnected"
+          :loading="telegramLinkLoading"
+          variant="outline"
+          class="mt-4"
+          @click="getTelegramLinkCode"
+        >
+          <UIcon v-if="!telegramLinkLoading" name="i-heroicons-link" />
+          <span>{{ telegramBotUrl ? 'Refresh link' : 'Connect Telegram' }}</span>
+        </UButton>
       </section>
 
       <!-- Section: Blacklist -->
@@ -1245,5 +1320,22 @@ const save = handleSubmit(async (values) => {
 .prefs-li-connect-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.prefs-tg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #229ed9;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.prefs-tg-btn:hover {
+  background: #1a8bbf;
 }
 </style>

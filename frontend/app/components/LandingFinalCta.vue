@@ -14,17 +14,15 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
         <p v-if="props.audience === 'employer'">Join the waitlist and get early access.</p>
         <p v-else>Join the waitlist — we'll reach out to get you set up.</p>
 
-        <div v-if="waitlistMode" id="waitlist" class="cta-form-wrap">
-          <LandingWaitlistForm :audience="props.audience" />
-        </div>
-        <template v-else>
-          <NuxtLink v-if="props.audience === 'employer'" to="/employer/signup" class="btn-cta"
-            >Start hiring</NuxtLink
-          >
-          <NuxtLink v-else to="/candidate/login?mode=signup" class="btn-cta"
-            >Build my profile</NuxtLink
-          >
+        <template v-if="props.audience === 'employer'">
+          <div v-if="waitlistMode" id="waitlist" class="cta-form-wrap">
+            <LandingWaitlistForm audience="employer" />
+          </div>
+          <NuxtLink v-else to="/employer/signup" class="btn-cta">Start hiring</NuxtLink>
         </template>
+        <NuxtLink v-else to="/candidate/login?mode=signup" class="btn-cta"
+          >Build my profile</NuxtLink
+        >
       </div>
     </div>
   </section>

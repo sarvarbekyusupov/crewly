@@ -229,6 +229,35 @@ export class TelegramBotService implements OnModuleInit {
         return;
       }
 
+      // Candidate web account → Telegram link
+      if (match && match.startsWith('clink_')) {
+        const code = match.slice(6);
+        const secret = this.config.get<string>('JWT_ACCESS_SECRET');
+        try {
+          const payload = secret
+            ? this.jwt.verify<{ sub: string; type: string }>(code, { secret })
+            : null;
+          if (payload?.type === 'tg_link_candidate') {
+            await this.db.candidate.update({
+              where: { id: payload.sub },
+              data: { telegramUserId: BigInt(chatId) },
+            });
+            await ctx.reply(
+              '✅ Telegram успешно привязан к вашему аккаунту Crewly!',
+            );
+          } else {
+            await ctx.reply(
+              '❌ Недействительная или устаревшая ссылка. Попробуйте снова.',
+            );
+          }
+        } catch {
+          await ctx.reply(
+            '❌ Ссылка устарела (15 мин). Сгенерируйте новую в профиле.',
+          );
+        }
+        return;
+      }
+
       // Check if candidate deep-linked to a job
       if (match && match.startsWith('job_')) {
         const jobId = match.slice(4);
