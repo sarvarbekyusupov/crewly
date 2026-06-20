@@ -44,16 +44,18 @@ onMounted(() => {
       <template v-else>
         <div class="hero-badge">
           <span class="badge-dot" />
-          For candidates · waitlist open
+          For candidates · free, always
         </div>
         <h1>The right companies are already looking for you.</h1>
         <p class="hero-sub">
           Tell us what you're looking for. We surface you to top companies hiring your exact profile
           — no spam, no cold applications, no job boards.
         </p>
-        <form id="waitlist" class="hero-form" @submit.prevent>
-          <LandingWaitlistForm audience="candidate" />
-        </form>
+        <div class="hero-form">
+          <NuxtLink to="/candidate/login?mode=signup" class="hero-cta-btn"
+            >Build my profile</NuxtLink
+          >
+        </div>
         <p class="hero-micro"><b>1,200+ candidates</b> placed · Free, always</p>
       </template>
     </div>
@@ -295,6 +297,26 @@ h1 {
 .hero-micro b {
   color: var(--ld-t2);
   font-weight: 600;
+}
+
+.hero-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 24px;
+  border-radius: 8px;
+  background: var(--ld-acc);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Manrope', system-ui, sans-serif;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.hero-cta-btn:hover {
+  background: var(--ld-acc-h);
+  transform: translateY(-1px);
 }
 
 /* ── Demo card ── */

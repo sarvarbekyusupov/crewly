@@ -1,7 +1,7 @@
 export type Audience = 'employer' | 'candidate'
 
 export const useAudience = () => {
-  const cookie = useCookie<Audience>('crewly_audience', { default: () => 'employer' })
+  const cookie = useCookie<Audience>('crewly_audience', { default: () => 'candidate' })
   const audience = useState<Audience>('audience', () => cookie.value)
 
   const set = (a: Audience) => {

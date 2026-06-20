@@ -349,7 +349,7 @@ async function resendVerification() {
       />
 
       <!-- Logo -->
-      <NuxtLink to="/" class="relative z-10">
+      <NuxtLink to="/employer" class="relative z-10">
         <img
           src="/crewly-logo-horizontal-white.svg"
           alt="Crewly"

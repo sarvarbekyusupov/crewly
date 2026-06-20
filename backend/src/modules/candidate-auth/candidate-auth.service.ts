@@ -298,4 +298,19 @@ export class CandidateAuthService {
       }),
     ]);
   }
+
+  getCandidateTelegramLinkCode(candidateId: string): {
+    code: string;
+    botUrl: string;
+  } {
+    const secret = this.config.get<string>('JWT_ACCESS_SECRET');
+    if (!secret) throw new Error('JWT_ACCESS_SECRET not set');
+    const code = this.jwt.sign(
+      { sub: candidateId, type: 'tg_link_candidate' },
+      { secret, expiresIn: '15m' },
+    );
+    const botUsername =
+      this.config.get<string>('TELEGRAM_BOT_USERNAME') ?? 'crewly_bot';
+    return { code, botUrl: `https://t.me/${botUsername}?start=clink_${code}` };
+  }
 }
