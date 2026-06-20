@@ -80,6 +80,44 @@ export class ApplicationsService {
       },
     });
     if (!app) throw new NotFoundException('Application not found');
+
+    // First 3 applicants (by matchScore rank) are free; beyond that require entitlement
+    const rank = await this.db.application.count({
+      where: {
+        jobId: app.jobId,
+        companyId,
+        matchScore: { gt: app.matchScore ?? 0 },
+      },
+    });
+
+    if (rank >= 3) {
+      const entitlement = await this.db.companyEntitlement.findFirst({
+        where: {
+          companyId,
+          type: 'applicant_contacts',
+          AND: [
+            { OR: [{ jobId: app.jobId }, { jobId: null }] },
+            { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+          ],
+        },
+      });
+      if (!entitlement) {
+        return {
+          ...app,
+          contactsLocked: true,
+          candidate: {
+            ...app.candidate,
+            phone: null,
+            email: null,
+            linkedinUrl: null,
+            githubUrl: null,
+            telegramUserId: null,
+            telegramUsername: null,
+          },
+        };
+      }
+    }
+
     return app;
   }
 

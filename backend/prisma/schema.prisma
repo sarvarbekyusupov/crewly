@@ -37,6 +37,7 @@ model Company {
   placements   Placement[]
   invoices     Invoice[]
   llmCalls     LlmCall[]
+  entitlements CompanyEntitlement[]
 
   @@index([status], map: "idx_companies_status")
   @@map("companies")
@@ -521,9 +522,10 @@ model Invoice {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  company            Company            @relation(fields: [companyId], references: [id])
-  placement          Placement?         @relation(fields: [placementId], references: [id])
+  company            Company              @relation(fields: [companyId], references: [id])
+  placement          Placement?           @relation(fields: [placementId], references: [id])
   paymeTransactions  PaymeTransaction[]
+  entitlements       CompanyEntitlement[]
 
   @@index([companyId], map: "idx_invoices_company")
   @@index([status], map: "idx_invoices_status")
@@ -548,6 +550,22 @@ model PaymeTransaction {
 
   @@index([invoiceId, state], map: "idx_payme_tx_invoice_state")
   @@map("payme_transactions")
+}
+
+model CompanyEntitlement {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String    @map("company_id") @db.Uuid
+  jobId       String?   @map("job_id") @db.Uuid
+  type        String    // "applicant_contacts"
+  grantedAt   DateTime  @default(now()) @map("granted_at") @db.Timestamptz
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz
+  invoiceId   String?   @map("invoice_id") @db.Uuid
+
+  company Company  @relation(fields: [companyId], references: [id])
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([companyId, jobId], map: "idx_company_entitlements_company_job")
+  @@map("company_entitlements")
 }
 
 model LlmCall {

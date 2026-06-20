@@ -173,8 +173,6 @@ export class PaymeWebhookService {
           performTime: BigInt(performTime),
         },
       }),
-      // We don't call markPaid directly to avoid circular dependency or role checks
-      // but we can reuse the core logic
       this.db.invoice.update({
         where: { id: tx.invoiceId },
         data: {
@@ -184,6 +182,33 @@ export class PaymeWebhookService {
         },
       }),
     ]);
+
+    // Grant contact-info entitlement when a placement invoice is paid
+    if (tx.invoice.placementId) {
+      const placement = await this.db.placement.findUnique({
+        where: { id: tx.invoice.placementId },
+        select: { jobId: true },
+      });
+      if (placement) {
+        const exists = await this.db.companyEntitlement.findFirst({
+          where: {
+            companyId: tx.invoice.companyId,
+            jobId: placement.jobId,
+            type: 'applicant_contacts',
+          },
+        });
+        if (!exists) {
+          await this.db.companyEntitlement.create({
+            data: {
+              companyId: tx.invoice.companyId,
+              jobId: placement.jobId,
+              type: 'applicant_contacts',
+              invoiceId: tx.invoiceId,
+            },
+          });
+        }
+      }
+    }
 
     return {
       transaction: tx.id,
