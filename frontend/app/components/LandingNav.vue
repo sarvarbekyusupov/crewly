@@ -68,12 +68,10 @@ function selectCandidate() {
           :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
           @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
         >
-          <ClientOnly>
-            <UIcon
-              :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
-              style="width: 14px; height: 14px"
-            />
-          </ClientOnly>
+          <UIcon
+            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+            style="width: 14px; height: 14px"
+          />
         </button>
         <NuxtLink
           v-if="audience === 'candidate' || !waitlistMode"
@@ -99,12 +97,10 @@ function selectCandidate() {
           :aria-label="colorMode.value === 'dark' ? 'Light mode' : 'Dark mode'"
           @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
         >
-          <ClientOnly>
-            <UIcon
-              :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
-              style="width: 14px; height: 14px"
-            />
-          </ClientOnly>
+          <UIcon
+            :name="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'"
+            style="width: 14px; height: 14px"
+          />
         </button>
         <button
           type="button"
