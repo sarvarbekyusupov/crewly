@@ -33,6 +33,7 @@ interface TrackerItem {
   source: string
   matchScore: number | null
   applyUrl: string | null
+  coverLetter: string | null
   seekerApplicationId: string | null
   discoveredJobId: string | null
   sourceUrl: string | null
@@ -223,6 +224,7 @@ async function openPrep(app: SeekerApplication) {
   }
   prepPanelId.value = app.id
   prepExpandedQuestion.value = null
+  prepNotesMap.value[app.id] = prepNotesMap.value[app.id] ?? app.prepNotes ?? ''
 
   if (prepCache.value[app.id]) return
 
@@ -242,6 +244,26 @@ async function openPrep(app: SeekerApplication) {
   } finally {
     prepLoading.value = false
   }
+}
+
+const prepNotesMap = ref<Record<string, string>>({})
+const prepNotesSaving = ref(false)
+let prepNotesTimer: ReturnType<typeof setTimeout> | null = null
+
+function onPrepNotesInput(appId: string) {
+  if (prepNotesTimer) clearTimeout(prepNotesTimer)
+  prepNotesTimer = setTimeout(async () => {
+    prepNotesSaving.value = true
+    try {
+      await api.patch(`/api/v1/candidate-portal/seeker-applications/${appId}/prep-notes`, {
+        notes: prepNotesMap.value[appId] ?? '',
+      })
+    } catch {
+      // silent — notes save is best-effort
+    } finally {
+      prepNotesSaving.value = false
+    }
+  }, 800)
 }
 </script>
 
@@ -1086,6 +1108,31 @@ async function openPrep(app: SeekerApplication) {
                 {{ prepCache[prepPanelId]!.salaryNegotiationTip }}
               </p>
             </div>
+
+            <!-- Personal notes -->
+            <div class="prep-info-block">
+              <div class="flex items-center justify-between mb-1">
+                <p class="prep-cat-label">My Notes</p>
+                <span
+                  v-if="prepNotesSaving"
+                  class="text-[10px] font-mono"
+                  style="color: var(--ink-subtle)"
+                  >saving…</span
+                >
+              </div>
+              <textarea
+                :value="prepNotesMap[prepPanelId] ?? ''"
+                class="prep-notes-textarea"
+                placeholder="Add your own notes, questions, or talking points…"
+                rows="4"
+                @input="
+                  (e) => {
+                    prepNotesMap[prepPanelId!] = (e.target as HTMLTextAreaElement).value
+                    onPrepNotesInput(prepPanelId!)
+                  }
+                "
+              />
+            </div>
           </div>
         </div>
       </Transition>
@@ -1176,6 +1223,27 @@ async function openPrep(app: SeekerApplication) {
   border-radius: 8px;
   background: var(--bg-elevated);
   border: 1px solid var(--line-soft);
+}
+.prep-notes-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.prep-notes-textarea:focus {
+  border-color: var(--accent);
+}
+.prep-notes-textarea::placeholder {
+  color: var(--ink-subtle);
 }
 
 /* Prep panel transition */

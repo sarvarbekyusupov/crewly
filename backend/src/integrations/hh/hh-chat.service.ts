@@ -50,6 +50,20 @@ export class HhChatService {
     return t;
   }
 
+  /** GET /common/chats — list chats for the connected candidate (applicant token) */
+  async listChatsForApplicant(
+    token: string,
+    params?: { page?: number; per_page?: number },
+  ): Promise<HhChatsResponse> {
+    const resp = await firstValueFrom(
+      this.http.get<HhChatsResponse>(`${this.baseUrl}/common/chats`, {
+        headers: this.authHeaders(token),
+        params: { host: HH_HOST, per_page: 50, page: 0, ...params },
+      }),
+    );
+    return resp.data;
+  }
+
   /** GET /common/chats — list chats for employer */
   async listChats(params?: {
     page?: number;

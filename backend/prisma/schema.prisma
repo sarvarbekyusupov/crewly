@@ -707,6 +707,7 @@ model SeekerApplication {
   status          String    @default("queued")
   source          String
   coverLetter     String?   @map("cover_letter")
+  prepNotes       String?   @map("prep_notes")
   hhNegotiationId String?   @map("hh_negotiation_id")
   applyMethod     String    @default("assisted") @map("apply_method")
   applyUrl        String?   @map("apply_url")

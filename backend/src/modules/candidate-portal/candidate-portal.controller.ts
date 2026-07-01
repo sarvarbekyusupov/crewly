@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseGuards,
@@ -16,6 +17,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { SkipThrottle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectQueue } from '@nestjs/bull';
@@ -27,6 +29,7 @@ import { CandidatePortalService } from './candidate-portal.service';
 import { HhSuggestsService } from '../../integrations/hh/hh-suggests.service';
 import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
 import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
+import { HhChatService } from '../../integrations/hh/hh-chat.service';
 import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
 import { LinkedInOAuthService } from '../../integrations/linkedin/linkedin-oauth.service';
 import { CoverLetterService } from '../../integrations/apply/cover-letter.service';
@@ -82,6 +85,7 @@ export class CandidatePortalController {
     private readonly hhSuggests: HhSuggestsService,
     private readonly hhOAuth: HhOAuthService,
     private readonly hhApplicant: HhApplicantService,
+    private readonly hhChat: HhChatService,
     private readonly hhJobs: HhJobsAdapter,
     private readonly linkedInOAuth: LinkedInOAuthService,
     private readonly coverLetter: CoverLetterService,
@@ -344,6 +348,25 @@ export class CandidatePortalController {
     return { saved: true };
   }
 
+  @Patch('seeker-applications/:id/prep-notes')
+  @HttpCode(HttpStatus.OK)
+  async savePrepNotes(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(z.object({ notes: z.string().max(10_000) })))
+    body: { notes: string },
+  ) {
+    const app = await this.db.seekerApplication.findFirst({
+      where: { id, candidateId: candidate.id },
+    });
+    if (!app) throw new BadRequestException('Application not found');
+    await this.db.seekerApplication.update({
+      where: { id },
+      data: { prepNotes: body.notes },
+    });
+    return { saved: true };
+  }
+
   // ── HH OAuth ──────────────────────────────────────────────────────────────
 
   @Get('hh/oauth-url')
@@ -400,6 +423,56 @@ export class CandidatePortalController {
   ) {
     const token = await this.hhOAuth.getCandidateToken(candidate.id);
     return this.hhApplicant.getVacancy(token, vacancyId);
+  }
+
+  // ── HH Chats (candidate side) ──────────────────────────────────────────────
+
+  @Get('hh/chats')
+  async listHhChats(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhChat.listChatsForApplicant(token);
+  }
+
+  @Get('hh/chats/:id/messages')
+  async getHhChatMessages(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') chatId: string,
+    @Query('order') order?: 'next' | 'prev',
+    @Query('limit') limit?: string,
+    @Query('start_message_id') startMessageId?: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhChat.getChatMessages(token, chatId, {
+      order: order ?? 'prev',
+      limit: limit ? parseInt(limit, 10) : 50,
+      start_message_id: startMessageId,
+    });
+  }
+
+  @Post('hh/chats/:id/messages')
+  @HttpCode(HttpStatus.OK)
+  async sendHhChatMessage(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') chatId: string,
+    @Body(
+      new ZodValidationPipe(z.object({ text: z.string().min(1).max(4000) })),
+    )
+    body: { text: string },
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhChat.sendChatMessage(token, chatId, body.text, randomUUID());
+  }
+
+  @Put('hh/chats/:id/messages/:messageId/read')
+  @HttpCode(HttpStatus.OK)
+  async markHhMessageRead(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') chatId: string,
+    @Param('messageId') messageId: string,
+  ) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhChat.markMessageRead(token, chatId, messageId);
+    return { ok: true };
   }
 
   // ── HH Suggests ────────────────────────────────────────────────────────────

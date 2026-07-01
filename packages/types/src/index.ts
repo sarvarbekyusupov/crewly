@@ -381,6 +381,7 @@ export interface SeekerApplication {
   applyMethod?: string
   applyUrl?: string
   applyKit?: ApplyKit
+  prepNotes?: string | null
   error?: string
   appliedAt?: string
   createdAt: string

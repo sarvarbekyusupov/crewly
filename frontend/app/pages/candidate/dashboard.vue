@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DiscoveredJob, SeekerApplication, PaginatedResponse } from '~/types/api'
+import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import {
   scoringActive,
   resumeParseStatus,
@@ -15,12 +15,15 @@ const store = useCandidateAuthStore()
 const api = useCandidateApi()
 const toast = useToast()
 
-interface HrApplication {
+interface DashTrackerItem {
   id: string
+  type: 'seeker' | 'inbound'
+  jobTitle: string
+  company: string
   status: string
-  matchScore?: string
-  matchedAt?: string
-  job: { id: string; title: string; company: { name: string } }
+  coverLetter?: string | null
+  activityAt: string
+  createdAt: string
 }
 
 interface Profile {
@@ -37,7 +40,7 @@ interface Profile {
   minMatchScore?: number | null
 }
 
-const [profileRes, topJobsRes, seekerAppsRes, hrAppsRes] = await Promise.all([
+const [profileRes, topJobsRes, trackerRes] = await Promise.all([
   useAsyncData(
     'dash-profile',
     () => api.get<Profile>('/api/v1/candidate-portal/profile').catch(() => null),
@@ -56,27 +59,21 @@ const [profileRes, topJobsRes, seekerAppsRes, hrAppsRes] = await Promise.all([
     { lazy: true },
   ),
   useAsyncData(
-    'dash-seeker-apps',
+    'dash-tracker',
     () =>
       api
-        .get<SeekerApplication[]>('/api/v1/candidate-portal/seeker-applications')
-        .catch(() => [] as SeekerApplication[]),
-    { lazy: true },
-  ),
-  useAsyncData(
-    'dash-hr-apps',
-    () =>
-      api
-        .get<HrApplication[]>('/api/v1/candidate-portal/applications')
-        .catch(() => [] as HrApplication[]),
+        .get<{
+          items: DashTrackerItem[]
+          total: number
+        }>('/api/v1/candidate-portal/tracker/summary')
+        .catch(() => ({ items: [] as DashTrackerItem[], total: 0 })),
     { lazy: true },
   ),
 ])
 
 const profile = profileRes.data
 const topJobs = computed(() => topJobsRes.data.value?.data ?? [])
-const seekerApps = computed(() => seekerAppsRes.data.value ?? [])
-const hrApps = computed(() => hrAppsRes.data.value ?? [])
+const trackerItems = computed(() => trackerRes.data.value?.items ?? [])
 
 const { percent: completeness } = useProfileCompletion(profile)
 
@@ -143,33 +140,18 @@ interface UnifiedApp {
   appliedAt: string | undefined
 }
 
-const allApps = computed<UnifiedApp[]>(() => {
-  const seeker: UnifiedApp[] = seekerApps.value.map((a) => ({
-    id: a.id,
-    type: 'seeker',
-    company: a.discoveredJob?.company ?? '—',
-    title: a.discoveredJob?.title ?? '—',
-    status: a.status,
+const allApps = computed<UnifiedApp[]>(() =>
+  trackerItems.value.map((item) => ({
+    id: item.id,
+    type: item.type === 'seeker' ? 'seeker' : 'hr',
+    company: item.company,
+    title: item.jobTitle,
+    status: item.status,
     hasResume: true,
-    hasCoverLetter: !!a.coverLetter,
-    appliedAt: a.appliedAt ?? a.createdAt,
-  }))
-  const hr: UnifiedApp[] = hrApps.value.map((a) => ({
-    id: a.id,
-    type: 'hr',
-    company: a.job.company.name,
-    title: a.job.title,
-    status: a.status,
-    hasResume: true,
-    hasCoverLetter: false,
-    appliedAt: a.matchedAt,
-  }))
-  return [...seeker, ...hr].sort((a, b) => {
-    if (!a.appliedAt) return 1
-    if (!b.appliedAt) return -1
-    return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
-  })
-})
+    hasCoverLetter: !!item.coverLetter,
+    appliedAt: item.activityAt ?? item.createdAt,
+  })),
+)
 
 const tabCounts = computed(() => ({
   all: allApps.value.length,
