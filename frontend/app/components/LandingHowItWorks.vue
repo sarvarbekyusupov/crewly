@@ -22,8 +22,11 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Brief</div>
           <h3>We run the whole search for you</h3>
           <p>
-            No software to configure. Tell us the role once — we source, screen, and deliver a
-            shortlist ready to interview.
+            No software to configure, no onboarding calls, no ATS integration required. Tell us the
+            role once — seniority, must-have skills, compensation range, and culture fit criteria.
+            We source candidates from every channel, run AI-powered screening conversations, and
+            deliver a ranked shortlist with match scores and call summaries. Most clients receive
+            their first qualified shortlist within 3–5 business days.
           </p>
         </div>
         <div class="feat fade">
@@ -31,7 +34,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Pricing</div>
           <h3>15% of salary. Only when you hire.</h3>
           <p>
-            No setup fees. No monthly charge. You pay on a signed offer — not a penny before that.
+            No setup fees, no monthly subscription, no long-term contracts. You pay 15% of the
+            candidate's first-year salary — and only after they sign an offer and join your team. If
+            we don't find someone you want to hire, you owe nothing. We absorb the search cost and
+            the risk so you don't have to.
           </p>
         </div>
         <div class="feat fade">
@@ -39,8 +45,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Reach</div>
           <h3>Our pool. Your network. The open web.</h3>
           <p>
-            We search every channel in parallel — pre-screened pool, your ATS, and the web — into
-            one shortlist.
+            We search every channel simultaneously — our pre-screened talent pool, your internal ATS
+            and referral network, and the open web including LinkedIn and niche job boards across
+            Central Asia and beyond. Every candidate is ranked by fit score against your role's
+            specific requirements and delivered in one unified shortlist with interview-ready notes.
           </p>
         </div>
       </div>
@@ -52,8 +60,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Profile</div>
           <h3>Tell us what you're looking for</h3>
           <p>
-            Share your experience and what you want next. One conversation, no forms. Takes under 10
-            minutes.
+            Share your experience and what you want next in one conversation — no CV upload forms,
+            no LinkedIn prompts, no long questionnaires. Describe your background, salary
+            expectations, preferred locations, and what the right company looks like to you. Your
+            profile stays private by default and the whole setup takes under 10 minutes.
           </p>
         </div>
         <div class="feat fade">
@@ -61,8 +71,11 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Matching</div>
           <h3>We surface you to the right roles</h3>
           <p>
-            Our AI matches your profile to active openings at top companies. Only relevant, real
-            opportunities — no noise.
+            Our AI scores your profile against active openings at companies across Uzbekistan,
+            Central Asia, and remote-first teams worldwide. Every match is ranked by fit —
+            accounting for your required skills, salary expectations, location preferences, and
+            culture signals. You only hear about roles where you're genuinely competitive, not every
+            opening that shares a keyword with your CV.
           </p>
         </div>
         <div class="feat fade">
@@ -70,8 +83,10 @@ defineProps<{ audience: 'employer' | 'candidate' }>()
           <div class="feat-tag">Interviews</div>
           <h3>Meet companies that already want you</h3>
           <p>
-            You only hear from us when there's a genuine match. No cold outreach, no generic job
-            alerts.
+            You hear from us only when a company is actively hiring and your profile is a strong fit
+            for their open role. We make the introduction directly — companies have already reviewed
+            your profile before reaching out. That means faster response times, more relevant
+            conversations, and far fewer wasted interviews.
           </p>
         </div>
       </div>

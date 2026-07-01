@@ -11,8 +11,16 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
           Spend time with candidates who matter — not on sourcing.
         </h2>
         <h2 v-else>Your next role is one conversation away.</h2>
-        <p v-if="props.audience === 'employer'">Join the waitlist and get early access.</p>
-        <p v-else>Join the waitlist — we'll reach out to get you set up.</p>
+        <p v-if="props.audience === 'employer'">
+          Join the waitlist and get priority access as we onboard new companies. We review each role
+          briefing personally and launch searches within 24 hours of approval — no setup fees, no
+          commitment.
+        </p>
+        <p v-else>
+          Join the waitlist — profile setup takes under 10 minutes. We'll reach out personally as
+          soon as we have roles that match your background, salary expectations, and preferred
+          location.
+        </p>
 
         <template v-if="props.audience === 'employer'">
           <div v-if="waitlistMode" id="waitlist" class="cta-form-wrap">
