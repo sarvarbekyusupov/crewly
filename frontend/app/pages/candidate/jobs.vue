@@ -258,6 +258,7 @@ interface HhVacancyResult {
   id: string
   name: string
   alternate_url: string
+  apply_alternate_url?: string
   employer: { name: string }
   area?: { name: string }
   salary?: { from?: number; to?: number; currency?: string }
@@ -275,7 +276,42 @@ const LIVE_PER_PAGE = 20
 const similarResults = ref<HhVacancyResult[]>([])
 const similarFor = ref<string | null>(null)
 const similarPending = ref(false)
-const applyingHh = ref(new Set<string>())
+
+interface LiveScore {
+  score: number
+  reason: string
+}
+const liveScores = ref<Record<string, LiveScore>>({})
+const liveScorePending = ref(false)
+const liveMinScore = ref(0)
+
+const liveFilteredResults = computed(() => {
+  if (liveMinScore.value === 0 || !Object.keys(liveScores.value).length)
+    return liveSearchResults.value
+  return liveSearchResults.value.filter(
+    (j) => (liveScores.value[j.id]?.score ?? 0) >= liveMinScore.value,
+  )
+})
+
+async function scoreLiveResults(vacancies: HhVacancyResult[]) {
+  if (!vacancies.length) return
+  liveScorePending.value = true
+  try {
+    const res = await api.post<{ scores: { vacancyId: string; score: number; reason: string }[] }>(
+      '/api/v1/candidate-portal/hh/vacancies/score',
+      { vacancies },
+    )
+    const map: Record<string, LiveScore> = {}
+    for (const s of res.scores ?? []) {
+      map[s.vacancyId] = { score: s.score, reason: s.reason }
+    }
+    liveScores.value = map
+  } catch {
+    // silent — scores are additive, not blocking
+  } finally {
+    liveScorePending.value = false
+  }
+}
 
 const matchedResults = ref<HhVacancyResult[]>([])
 const matchedLoaded = ref(false)
@@ -284,8 +320,42 @@ const matchedTotal = ref(0)
 const matchedPage = ref(1)
 const MATCHED_PER_PAGE = 20
 
+const matchScores = ref<Record<string, LiveScore>>({})
+const matchScorePending = ref(false)
+const matchMinScore = ref(0)
+
+const matchFilteredResults = computed(() => {
+  if (matchMinScore.value === 0 || !Object.keys(matchScores.value).length)
+    return matchedResults.value
+  return matchedResults.value.filter(
+    (j) => (matchScores.value[j.id]?.score ?? 0) >= matchMinScore.value,
+  )
+})
+
+async function scoreMatchedResults(vacancies: HhVacancyResult[]) {
+  if (!vacancies.length) return
+  matchScorePending.value = true
+  try {
+    const res = await api.post<{ scores: { vacancyId: string; score: number; reason: string }[] }>(
+      '/api/v1/candidate-portal/hh/vacancies/score',
+      { vacancies },
+    )
+    const map: Record<string, LiveScore> = {}
+    for (const s of res.scores ?? []) {
+      map[s.vacancyId] = { score: s.score, reason: s.reason }
+    }
+    matchScores.value = map
+  } catch {
+    // silent
+  } finally {
+    matchScorePending.value = false
+  }
+}
+
 async function loadMatchedVacancies(p = 1) {
   matchedPending.value = true
+  matchScores.value = {}
+  matchMinScore.value = 0
   try {
     const resp = await api.get<{ items: HhVacancyResult[]; found: number }>(
       '/api/v1/candidate-portal/hh/resume/similar-vacancies',
@@ -294,6 +364,7 @@ async function loadMatchedVacancies(p = 1) {
     matchedResults.value = resp.items ?? []
     matchedTotal.value = resp.found ?? 0
     matchedLoaded.value = true
+    void scoreMatchedResults(matchedResults.value)
   } catch (e) {
     if (isHhNotConnected(e)) {
       toast.add({
@@ -351,31 +422,12 @@ async function toggleVacancyDetail(id: string) {
   }
 }
 
-async function applyOnHh(vacancyId: string) {
-  if (applyingHh.value.has(vacancyId)) return
-  applyingHh.value = new Set([...applyingHh.value, vacancyId])
-  try {
-    await api.post(`/api/v1/candidate-portal/hh/vacancies/${vacancyId}/apply`, {})
-    toast.add({ title: t('candidate.preferences.hhApplied'), color: 'success' })
-  } catch (e) {
-    if (isHhNotConnected(e)) {
-      toast.add({
-        title: 'Connect HH first',
-        description: 'Go to Preferences → HH to connect your account',
-        color: 'warning',
-      })
-    } else {
-      toast.add({
-        title: t('candidate.preferences.hhApplyFailed'),
-        description: extractApiErrorMessage(e),
-        color: 'error',
-      })
-    }
-  } finally {
-    const next = new Set(applyingHh.value)
-    next.delete(vacancyId)
-    applyingHh.value = next
-  }
+function cvBuilderUrl(job: HhVacancyResult) {
+  const p = new URLSearchParams({
+    jobTitle: job.name,
+    company: job.employer.name,
+  })
+  return `/candidate/cv-builder?${p.toString()}`
 }
 
 async function runLiveSearch(resetPage = true) {
@@ -394,6 +446,10 @@ async function runLiveSearch(resetPage = true) {
     )
     liveSearchResults.value = resp.items ?? []
     liveSearchTotal.value = resp.found ?? 0
+    liveScores.value = {}
+    liveMinScore.value = 0
+    // fire scoring in background — don't await
+    void scoreLiveResults(liveSearchResults.value)
   } catch (e) {
     if (isHhNotConnected(e)) {
       toast.add({
@@ -609,9 +665,30 @@ watchDebounced(
         </UButton>
       </div>
 
-      <p v-if="liveSearchTotal" class="text-xs" style="color: var(--ink-subtle)">
-        {{ liveSearchTotal }} results
-      </p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <p v-if="liveSearchTotal" class="text-xs" style="color: var(--ink-subtle)">
+          {{ liveSearchTotal }} results
+          <template v-if="liveMinScore > 0 && Object.keys(liveScores).length">
+            · {{ liveFilteredResults.length }} matching score ≥ {{ liveMinScore }}%
+          </template>
+        </p>
+        <div v-if="Object.keys(liveScores).length" class="flex items-center gap-2 ml-auto">
+          <span class="text-xs" style="color: var(--ink-muted); white-space: nowrap">
+            Score ≥ <strong>{{ liveMinScore }}%</strong>
+          </span>
+          <input
+            v-model.number="liveMinScore"
+            type="range"
+            min="0"
+            max="100"
+            step="10"
+            class="score-range"
+          />
+        </div>
+        <span v-if="liveScorePending" class="scanning-pill ml-auto">
+          <span class="scanning-dot-sm" />AI scoring…
+        </span>
+      </div>
 
       <div v-if="liveSearchPending" class="flex justify-center py-12">
         <UIcon
@@ -647,25 +724,45 @@ watchDebounced(
 
       <div v-else class="space-y-2">
         <div
-          v-for="job in liveSearchResults"
+          v-for="job in liveFilteredResults"
           :key="job.id"
           class="rounded-lg p-4"
           style="background: var(--surface); border: 1px solid var(--line-soft)"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <a
-                :href="job.alternate_url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="font-medium hover:underline"
-                style="color: var(--ink); font-size: 15px"
-              >
-                {{ job.name }}
-              </a>
+              <div class="flex items-center gap-2 flex-wrap">
+                <a
+                  :href="job.alternate_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-medium hover:underline"
+                  style="color: var(--ink); font-size: 15px"
+                >
+                  {{ job.name }}
+                </a>
+                <span
+                  v-if="liveScores[job.id]"
+                  class="live-score-badge"
+                  :style="{
+                    color: scoreBarColor(liveScores[job.id]!.score),
+                    background: scoreBg(liveScores[job.id]!.score),
+                  }"
+                >
+                  {{ liveScores[job.id]!.score }}%
+                </span>
+                <span v-else-if="liveScorePending" class="live-score-skeleton" />
+              </div>
               <p class="text-sm mt-0.5" style="color: var(--ink-muted)">
                 {{ job.employer.name }}
                 <span v-if="job.area" style="color: var(--ink-subtle)"> · {{ job.area.name }}</span>
+              </p>
+              <p
+                v-if="liveScores[job.id]?.reason"
+                class="text-xs mt-0.5 italic"
+                style="color: var(--ink-subtle)"
+              >
+                {{ liveScores[job.id]!.reason }}
               </p>
               <p
                 v-if="job.salary?.from || job.salary?.to"
@@ -687,14 +784,21 @@ watchDebounced(
               </p>
             </div>
             <div class="flex gap-2 shrink-0">
-              <UButton
-                size="xs"
-                icon="i-heroicons-paper-airplane"
-                :loading="applyingHh.has(job.id)"
-                @click="applyOnHh(job.id)"
+              <a
+                :href="job.apply_alternate_url ?? job.alternate_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="text-decoration: none"
               >
-                {{ t('candidate.preferences.hhApply') }}
-              </UButton>
+                <UButton size="xs" icon="i-heroicons-arrow-top-right-on-square">
+                  {{ t('candidate.preferences.hhApply') }}
+                </UButton>
+              </a>
+              <NuxtLink :to="cvBuilderUrl(job)" style="text-decoration: none">
+                <UButton size="xs" variant="ghost" icon="i-heroicons-document-text">
+                  CV Kit
+                </UButton>
+              </NuxtLink>
               <UButton
                 size="xs"
                 variant="ghost"
@@ -798,9 +902,31 @@ watchDebounced(
         />
       </div>
       <template v-else>
-        <p v-if="matchedTotal" class="text-xs" style="color: var(--ink-subtle)">
-          {{ matchedTotal }} {{ t('candidate.preferences.hhSimilarVacancies').toLowerCase() }}
-        </p>
+        <div class="flex items-center gap-3 flex-wrap">
+          <p v-if="matchedTotal" class="text-xs" style="color: var(--ink-subtle)">
+            {{ matchedTotal }} {{ t('candidate.preferences.hhSimilarVacancies').toLowerCase() }}
+            <template v-if="matchMinScore > 0 && Object.keys(matchScores).length">
+              · {{ matchFilteredResults.length }} matching score ≥ {{ matchMinScore }}%
+            </template>
+          </p>
+          <div v-if="Object.keys(matchScores).length" class="flex items-center gap-2 ml-auto">
+            <span class="text-xs" style="color: var(--ink-subtle)">Min score</span>
+            <input
+              v-model.number="matchMinScore"
+              type="range"
+              min="0"
+              max="90"
+              step="5"
+              class="score-slider"
+            />
+            <span class="text-xs font-mono" style="color: var(--ink-muted); min-width: 32px"
+              >{{ matchMinScore }}%</span
+            >
+          </div>
+          <span v-if="matchScorePending" class="scanning-pill ml-auto">
+            <span class="scanning-dot" />AI scoring…
+          </span>
+        </div>
         <div v-if="!matchedResults.length" class="flex flex-col items-center py-16 gap-3">
           <UIcon
             name="i-heroicons-magnifying-glass"
@@ -826,20 +952,40 @@ watchDebounced(
         </div>
         <div v-else class="space-y-2">
           <div
-            v-for="job in matchedResults"
+            v-for="job in matchFilteredResults"
             :key="job.id"
             class="rounded-lg overflow-hidden"
             style="background: var(--surface); border: 1px solid var(--line-soft)"
           >
             <div class="p-4 flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <button
-                  class="font-medium hover:underline text-left"
-                  style="color: var(--ink); font-size: 15px"
-                  @click="toggleVacancyDetail(job.id)"
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button
+                    class="font-medium hover:underline text-left"
+                    style="color: var(--ink); font-size: 15px"
+                    @click="toggleVacancyDetail(job.id)"
+                  >
+                    {{ job.name }}
+                  </button>
+                  <span
+                    v-if="matchScores[job.id]"
+                    class="live-score-badge"
+                    :style="{
+                      color: scoreBarColor(matchScores[job.id]!.score),
+                      background: scoreBg(matchScores[job.id]!.score),
+                    }"
+                  >
+                    {{ matchScores[job.id]!.score }}%
+                  </span>
+                  <span v-else-if="matchScorePending" class="live-score-skeleton" />
+                </div>
+                <p
+                  v-if="matchScores[job.id]?.reason"
+                  class="text-xs mt-0.5"
+                  style="color: var(--ink-subtle)"
                 >
-                  {{ job.name }}
-                </button>
+                  {{ matchScores[job.id]!.reason }}
+                </p>
                 <p class="text-sm mt-0.5" style="color: var(--ink-muted)">
                   {{ job.employer.name }}
                   <span v-if="job.area" style="color: var(--ink-subtle)">
@@ -856,14 +1002,21 @@ watchDebounced(
                 </p>
               </div>
               <div class="flex gap-2 shrink-0">
-                <UButton
-                  size="xs"
-                  icon="i-heroicons-paper-airplane"
-                  :loading="applyingHh.has(job.id)"
-                  @click="applyOnHh(job.id)"
+                <a
+                  :href="job.apply_alternate_url ?? job.alternate_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="text-decoration: none"
                 >
-                  {{ t('candidate.preferences.hhApply') }}
-                </UButton>
+                  <UButton size="xs" icon="i-heroicons-arrow-top-right-on-square">
+                    {{ t('candidate.preferences.hhApply') }}
+                  </UButton>
+                </a>
+                <NuxtLink :to="cvBuilderUrl(job)" style="text-decoration: none">
+                  <UButton size="xs" variant="ghost" icon="i-heroicons-document-text">
+                    CV Kit
+                  </UButton>
+                </NuxtLink>
                 <UButton
                   size="xs"
                   variant="ghost"
@@ -2081,5 +2234,35 @@ watchDebounced(
 .feed-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+/* Live search score badge */
+.live-score-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+.live-score-skeleton {
+  display: inline-block;
+  width: 44px;
+  height: 20px;
+  border-radius: 20px;
+  background: var(--bg-elevated);
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

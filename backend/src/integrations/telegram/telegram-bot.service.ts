@@ -2105,9 +2105,9 @@ Provide:
       select: { telegramUserId: true, minMatchScore: true },
     });
 
-    if (!candidate?.telegramUserId || candidate.minMatchScore == null) return;
+    if (!candidate?.telegramUserId) return;
 
-    const threshold = candidate.minMatchScore;
+    const threshold = Math.max(candidate.minMatchScore ?? 65, 65);
     const chatId = candidate.telegramUserId.toString();
 
     const matches = await this.db.seekerJobMatch.findMany({

@@ -6,6 +6,7 @@ import { CandidateAuthModule } from '../candidate-auth/candidate-auth.module';
 import { HhModule } from '../../integrations/hh/hh.module';
 import { LinkedInModule } from '../../integrations/linkedin/linkedin.module';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { ApplyModule } from '../../integrations/apply/apply.module';
 import { QUEUES } from '../../workers/queue-names';
 
 @Module({
@@ -14,6 +15,7 @@ import { QUEUES } from '../../workers/queue-names';
     HhModule,
     LinkedInModule,
     ConversationsModule,
+    ApplyModule,
     BullModule.registerQueue({ name: QUEUES.SCORE_SEEKER_JOBS }),
     BullModule.registerQueue({ name: QUEUES.AUTO_APPLY }),
     BullModule.registerQueue({ name: QUEUES.PARSE_CANDIDATE }),

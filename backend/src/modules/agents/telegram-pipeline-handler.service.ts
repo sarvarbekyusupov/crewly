@@ -160,10 +160,11 @@ export class TelegramPipelineHandler implements OnModuleInit {
       });
 
       if (!candidate?.telegramUserId) return;
-      // Only alert if candidate opted in (minMatchScore set)
-      if (candidate.minMatchScore == null) return;
 
-      const threshold = Math.max(candidate.minMatchScore, MIN_ALERT_SCORE);
+      const threshold = Math.max(
+        candidate.minMatchScore ?? MIN_ALERT_SCORE,
+        MIN_ALERT_SCORE,
+      );
 
       // Find top unnotified matches above threshold
       const matches = await this.db.seekerJobMatch.findMany({

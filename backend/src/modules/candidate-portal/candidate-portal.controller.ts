@@ -29,6 +29,8 @@ import { HhOAuthService } from '../../integrations/hh/hh-oauth.service';
 import { HhApplicantService } from '../../integrations/hh/hh-applicant.service';
 import { HhJobsAdapter } from '../../integrations/hh/hh-jobs.adapter';
 import { LinkedInOAuthService } from '../../integrations/linkedin/linkedin-oauth.service';
+import { CoverLetterService } from '../../integrations/apply/cover-letter.service';
+import { PromptRunnerService } from '../../integrations/llm/prompt-runner.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CandidateAuthGuard } from '../candidate-auth/guards/candidate-auth.guard';
 import { CurrentCandidate } from '../../common/decorators/current-candidate.decorator';
@@ -82,6 +84,8 @@ export class CandidatePortalController {
     private readonly hhApplicant: HhApplicantService,
     private readonly hhJobs: HhJobsAdapter,
     private readonly linkedInOAuth: LinkedInOAuthService,
+    private readonly coverLetter: CoverLetterService,
+    private readonly llm: PromptRunnerService,
     private readonly db: PrismaService,
     private readonly emitter: EventEmitter2,
     @InjectQueue(QUEUES.SCORE_SEEKER_JOBS) private readonly scoreQueue: Queue,
@@ -317,6 +321,29 @@ export class CandidatePortalController {
     );
   }
 
+  @Patch('seeker-applications/:id/cover-letter')
+  @HttpCode(HttpStatus.OK)
+  async saveCoverLetter(
+    @CurrentCandidate() candidate: { id: string },
+    @Param('id') id: string,
+    @Body(
+      new ZodValidationPipe(
+        z.object({ coverLetter: z.string().min(1).max(10_000) }),
+      ),
+    )
+    body: { coverLetter: string },
+  ) {
+    const app = await this.db.seekerApplication.findFirst({
+      where: { id, candidateId: candidate.id },
+    });
+    if (!app) throw new BadRequestException('Application not found');
+    await this.db.seekerApplication.update({
+      where: { id },
+      data: { coverLetter: body.coverLetter },
+    });
+    return { saved: true };
+  }
+
   // ── HH OAuth ──────────────────────────────────────────────────────────────
 
   @Get('hh/oauth-url')
@@ -523,5 +550,444 @@ export class CandidatePortalController {
       email: userInfo.email ?? null,
       picture: userInfo.picture ?? null,
     };
+  }
+
+  // ── HH Vacancy Batch Scoring ───────────────────────────────────────────────
+
+  @Post('hh/vacancies/score')
+  @HttpCode(HttpStatus.OK)
+  async scoreHhVacancies(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          vacancies: z
+            .array(
+              z.object({
+                id: z.string(),
+                name: z.string(),
+                employer: z.object({ name: z.string() }),
+                key_skills: z.array(z.object({ name: z.string() })).optional(),
+                experience: z.object({ name: z.string() }).optional(),
+                employment: z.object({ name: z.string() }).optional(),
+                snippet: z
+                  .object({ requirement: z.string().optional() })
+                  .optional(),
+              }),
+            )
+            .max(20),
+        }),
+      ),
+    )
+    body: {
+      vacancies: Array<{
+        id: string;
+        name: string;
+        employer: { name: string };
+        key_skills?: { name: string }[];
+        experience?: { name: string };
+        employment?: { name: string };
+        snippet?: { requirement?: string };
+      }>;
+    },
+  ) {
+    const c = await this.db.candidate.findUniqueOrThrow({
+      where: { id: candidate.id },
+      select: {
+        currentPosition: true,
+        yearsExperience: true,
+        skills: true,
+        preferredWorkMode: true,
+      },
+    });
+
+    const vacancyList = body.vacancies
+      .map(
+        (v, i) =>
+          `${i + 1}. ID:${v.id} | "${v.name}" at ${v.employer.name}` +
+          (v.experience ? ` | Exp: ${v.experience.name}` : '') +
+          (v.key_skills?.length
+            ? ` | Skills: ${v.key_skills.map((s) => s.name).join(', ')}`
+            : '') +
+          (v.snippet?.requirement
+            ? ` | Req: ${v.snippet.requirement.replace(/<[^>]+>/g, '').slice(0, 120)}`
+            : ''),
+      )
+      .join('\n');
+
+    const prompt = `You are a job-match scorer. Rate each vacancy 0-100 for fit with this candidate.
+
+Candidate:
+- Current role: ${c.currentPosition ?? 'Not specified'}
+- Years experience: ${c.yearsExperience ?? '?'}
+- Skills: ${c.skills.slice(0, 15).join(', ')}
+- Preferred work mode: ${c.preferredWorkMode ?? 'Any'}
+
+Vacancies:
+${vacancyList}
+
+Return ONLY a JSON array, no markdown:
+[{"vacancyId":"<id>","score":<0-100>,"reason":"<one short sentence>"},...]`;
+
+    const { output } = await this.llm.run(
+      'hh_vacancy_score',
+      'v1',
+      'hh_vacancy_score',
+      [{ role: 'user', content: prompt }],
+      {
+        maxTokens: 800,
+        temperature: 0.2,
+        responseFormat: { type: 'json_object' },
+      },
+      { related_entity_type: 'candidate', related_entity_id: candidate.id },
+    );
+
+    try {
+      const parsed = JSON.parse(output.trim());
+      const scores = Array.isArray(parsed)
+        ? parsed
+        : (parsed.scores ?? parsed.results ?? []);
+      return { scores };
+    } catch {
+      return { scores: [] };
+    }
+  }
+
+  // ── AI Generation ──────────────────────────────────────────────────────────
+
+  @Post('generate/cover-letter')
+  @HttpCode(HttpStatus.OK)
+  async generateCoverLetter(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          jobTitle: z.string().min(1).max(200),
+          company: z.string().min(1).max(200),
+          jobDescription: z.string().max(4000).optional().default(''),
+          jobSkills: z
+            .array(z.string().max(100))
+            .max(20)
+            .optional()
+            .default([]),
+        }),
+      ),
+    )
+    body: {
+      jobTitle: string;
+      company: string;
+      jobDescription: string;
+      jobSkills: string[];
+    },
+  ) {
+    const c = await this.db.candidate.findUniqueOrThrow({
+      where: { id: candidate.id },
+      select: {
+        fullName: true,
+        currentPosition: true,
+        yearsExperience: true,
+        city: true,
+        skills: true,
+      },
+    });
+
+    const text = await this.coverLetter.generate({
+      candidateName: c.fullName ?? 'Candidate',
+      currentPosition: c.currentPosition ?? undefined,
+      skills: c.skills,
+      yearsExperience: c.yearsExperience?.toString(),
+      city: c.city ?? undefined,
+      jobTitle: body.jobTitle,
+      company: body.company,
+      jobDescription: body.jobDescription,
+      jobSkills: body.jobSkills,
+      candidateId: candidate.id,
+    });
+
+    return { coverLetter: text };
+  }
+
+  @Post('generate/cv-summary')
+  @HttpCode(HttpStatus.OK)
+  async generateCvSummary(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({
+          jobTitle: z.string().min(1).max(200),
+          company: z.string().min(1).max(200),
+          jobDescription: z.string().max(4000).optional().default(''),
+        }),
+      ),
+    )
+    body: { jobTitle: string; company: string; jobDescription: string },
+  ) {
+    const c = await this.db.candidate.findUniqueOrThrow({
+      where: { id: candidate.id },
+      select: {
+        fullName: true,
+        currentPosition: true,
+        yearsExperience: true,
+        skills: true,
+        rawResumeText: true,
+        parsedResume: true,
+      },
+    });
+
+    const resumeContext = c.rawResumeText
+      ? c.rawResumeText.slice(0, 1200)
+      : c.parsedResume
+        ? JSON.stringify(c.parsedResume).slice(0, 1200)
+        : '';
+
+    const prompt = `Write a 3-4 sentence professional CV summary tailored to the target job below.
+
+Candidate profile:
+- Name: ${c.fullName ?? 'Candidate'}
+- Current role: ${c.currentPosition ?? 'Not specified'}
+- Experience: ${c.yearsExperience ?? 'Not specified'} years
+- Skills: ${c.skills.slice(0, 12).join(', ')}
+${resumeContext ? `- Resume excerpt: ${resumeContext}` : ''}
+
+Target job:
+- Title: ${body.jobTitle}
+- Company: ${body.company}
+${body.jobDescription ? `- Description: ${body.jobDescription.slice(0, 800)}` : ''}
+
+Rules:
+- 3-4 sentences only, present tense
+- Match keywords from the job description naturally
+- Do NOT invent experience not in the profile
+- Start with a strong professional identity statement`;
+
+    const { output } = await this.llm.run(
+      'cv_summary',
+      'v1',
+      'cv_summary',
+      [{ role: 'user', content: prompt }],
+      { maxTokens: 300, temperature: 0.5 },
+      { related_entity_type: 'candidate', related_entity_id: candidate.id },
+    );
+
+    return { cvSummary: output.trim() };
+  }
+
+  // ── Interview Prep ─────────────────────────────────────────────────────────
+
+  @Post('interview-prep')
+  @HttpCode(HttpStatus.OK)
+  async generateInterviewPrep(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z
+          .object({
+            seekerApplicationId: z.string().uuid().optional(),
+            discoveredJobId: z.string().uuid().optional(),
+          })
+          .refine((d) => d.seekerApplicationId || d.discoveredJobId, {
+            message: 'Provide seekerApplicationId or discoveredJobId',
+          }),
+      ),
+    )
+    body: { seekerApplicationId?: string; discoveredJobId?: string },
+  ) {
+    let jobId = body.discoveredJobId;
+
+    if (!jobId && body.seekerApplicationId) {
+      const app = await this.db.seekerApplication.findFirst({
+        where: { id: body.seekerApplicationId, candidateId: candidate.id },
+        select: { discoveredJobId: true },
+      });
+      if (!app) throw new BadRequestException('Application not found');
+      jobId = app.discoveredJobId;
+    }
+
+    const [c, job] = await Promise.all([
+      this.db.candidate.findUniqueOrThrow({
+        where: { id: candidate.id },
+        select: {
+          currentPosition: true,
+          yearsExperience: true,
+          skills: true,
+        },
+      }),
+      this.db.discoveredJob.findUniqueOrThrow({
+        where: { id: jobId },
+        select: { title: true, company: true, description: true, skills: true },
+      }),
+    ]);
+
+    const prompt = `You are an expert interview coach. Generate interview prep for this specific role.
+
+Candidate:
+- Current role: ${c.currentPosition ?? 'Not specified'}
+- Experience: ${c.yearsExperience ?? '?'} years
+- Skills: ${c.skills.slice(0, 12).join(', ')}
+
+Target role:
+- Title: ${job.title}
+- Company: ${job.company}
+- Required skills: ${job.skills.slice(0, 10).join(', ')}
+${job.description ? `- Description: ${job.description.slice(0, 600)}` : ''}
+
+Return a JSON object (no markdown) with this exact structure:
+{
+  "questions": [
+    { "category": "Technical", "question": "...", "tip": "..." },
+    { "category": "Technical", "question": "...", "tip": "..." },
+    { "category": "Technical", "question": "...", "tip": "..." },
+    { "category": "Behavioral", "question": "...", "tip": "..." },
+    { "category": "Behavioral", "question": "...", "tip": "..." },
+    { "category": "Behavioral", "question": "...", "tip": "..." },
+    { "category": "Role-specific", "question": "...", "tip": "..." },
+    { "category": "Role-specific", "question": "...", "tip": "..." },
+    { "category": "Salary & Logistics", "question": "...", "tip": "..." }
+  ],
+  "companyResearch": "2-3 sentences on what to research about ${job.company}",
+  "salaryNegotiationTip": "One specific sentence for this role"
+}`;
+
+    const { output } = await this.llm.run(
+      'interview_prep',
+      'v1',
+      'interview_prep',
+      [{ role: 'user', content: prompt }],
+      {
+        maxTokens: 1200,
+        temperature: 0.4,
+        responseFormat: { type: 'json_object' },
+      },
+      { related_entity_type: 'candidate', related_entity_id: candidate.id },
+    );
+
+    try {
+      return JSON.parse(output.trim());
+    } catch {
+      return { questions: [], companyResearch: '', salaryNegotiationTip: '' };
+    }
+  }
+
+  @Get('tracker/summary')
+  async getTrackerSummary(@CurrentCandidate() candidate: { id: string }) {
+    const [seekerApps, inboundApps] = await Promise.all([
+      this.db.seekerApplication.findMany({
+        where: { candidateId: candidate.id },
+        include: {
+          discoveredJob: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+              location: true,
+              sourceUrl: true,
+              workMode: true,
+              employmentType: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.db.application.findMany({
+        where: { candidateId: candidate.id },
+        include: {
+          job: {
+            select: {
+              id: true,
+              title: true,
+              workMode: true,
+              employmentType: true,
+              officeLocation: true,
+              company: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { matchedAt: 'desc' },
+      }),
+    ]);
+
+    type TrackerItem = {
+      id: string;
+      type: 'seeker' | 'inbound';
+      jobTitle: string;
+      company: string;
+      location: string | null;
+      workMode: string | null;
+      status: string;
+      source: string;
+      matchScore: number | string | null;
+      applyUrl: string | null;
+      coverLetter: string | null;
+      seekerApplicationId: string | null;
+      discoveredJobId: string | null;
+      sourceUrl: string | null;
+      applicationId: string | null;
+      outreachSentAt: Date | null;
+      respondedAt: Date | null;
+      interviewScheduledAt: Date | null;
+      rejectionReason: string | null;
+      activityAt: Date;
+      createdAt: Date;
+    };
+
+    const seekerItems: TrackerItem[] = seekerApps.map((a) => ({
+      id: a.id,
+      type: 'seeker',
+      jobTitle: a.discoveredJob?.title ?? 'Unknown position',
+      company: a.discoveredJob?.company ?? 'Unknown company',
+      location: a.discoveredJob?.location ?? null,
+      workMode: a.discoveredJob?.workMode ?? null,
+      status: a.status,
+      source: a.source ?? 'manual',
+      matchScore: null,
+      applyUrl: a.applyUrl ?? null,
+      coverLetter: a.coverLetter ?? null,
+      seekerApplicationId: a.id,
+      discoveredJobId: a.discoveredJobId ?? null,
+      sourceUrl: a.discoveredJob?.sourceUrl ?? null,
+      applicationId: null,
+      outreachSentAt: null,
+      respondedAt: null,
+      interviewScheduledAt: null,
+      rejectionReason: null,
+      activityAt: a.updatedAt,
+      createdAt: a.createdAt,
+    }));
+
+    const inboundItems: TrackerItem[] = inboundApps.map((a) => ({
+      id: a.id,
+      type: 'inbound',
+      jobTitle: a.job?.title ?? 'Unknown position',
+      company: a.job?.company?.name ?? 'Unknown company',
+      location: a.job?.officeLocation ?? null,
+      workMode: a.job?.workMode ?? null,
+      status: a.status,
+      source: 'crewly',
+      matchScore:
+        a.matchScore != null ? parseFloat(a.matchScore.toString()) : null,
+      applyUrl: null,
+      coverLetter: null,
+      seekerApplicationId: null,
+      discoveredJobId: null,
+      sourceUrl: null,
+      applicationId: a.id,
+      outreachSentAt: a.outreachSentAt ?? null,
+      respondedAt: a.respondedAt ?? null,
+      interviewScheduledAt: a.interviewScheduledAt ?? null,
+      rejectionReason: a.rejectionReason ?? null,
+      activityAt:
+        a.outreachSentAt ??
+        a.respondedAt ??
+        a.interviewScheduledAt ??
+        a.matchedAt ??
+        a.createdAt,
+      createdAt: a.matchedAt ?? a.createdAt,
+    }));
+
+    const items = [...seekerItems, ...inboundItems].sort(
+      (a, b) => (b.activityAt?.getTime() ?? 0) - (a.activityAt?.getTime() ?? 0),
+    );
+
+    return { items, total: items.length };
   }
 }

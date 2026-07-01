@@ -4,6 +4,12 @@ import { safeUrl } from '~/utils/safeUrl'
 import { capitalizeStatus } from '~/utils/candidate'
 import { formatRelativeTime } from '~/utils/formatters'
 
+interface InterviewPrepData {
+  questions: { category: string; question: string; tip: string }[]
+  companyResearch: string
+  salaryNegotiationTip: string
+}
+
 definePageMeta({ layout: 'candidate' })
 
 const { t } = useI18n()
@@ -12,7 +18,60 @@ const toast = useToast()
 
 useHead({ title: t('candidate.tracker.title') })
 
-const activeTab = ref<'platform' | 'external'>('platform')
+const activeTab = ref<'all' | 'platform' | 'external'>('all')
+
+// ── Unified tracker ─────────────────────────────────────────────────────────
+
+interface TrackerItem {
+  id: string
+  type: 'seeker' | 'inbound'
+  jobTitle: string
+  company: string
+  location: string | null
+  workMode: string | null
+  status: string
+  source: string
+  matchScore: number | null
+  applyUrl: string | null
+  seekerApplicationId: string | null
+  discoveredJobId: string | null
+  sourceUrl: string | null
+  applicationId: string | null
+  outreachSentAt: string | null
+  respondedAt: string | null
+  interviewScheduledAt: string | null
+  rejectionReason: string | null
+  activityAt: string
+  createdAt: string
+}
+
+const {
+  data: trackerData,
+  pending: trackerPending,
+  refresh: trackerRefresh,
+} = await useAsyncData(
+  'tracker-summary',
+  () =>
+    api
+      .get<{ items: TrackerItem[]; total: number }>('/api/v1/candidate-portal/tracker/summary')
+      .catch(() => ({ items: [] as TrackerItem[], total: 0 })),
+  { lazy: true },
+)
+
+const trackerItems = computed(() => trackerData.value?.items ?? [])
+
+function inboundStatusColor(status: string): 'warning' | 'primary' | 'info' | 'success' | 'error' {
+  const map: Record<string, 'warning' | 'primary' | 'info' | 'success' | 'error'> = {
+    matched: 'warning',
+    outreach_sent: 'primary',
+    responded: 'info',
+    interview_scheduled: 'success',
+    hired: 'success',
+    rejected: 'error',
+    withdrawn: 'error',
+  }
+  return map[status] ?? 'primary'
+}
 
 // ── Self-report actions ────────────────────────────────────────────────────
 
@@ -138,6 +197,52 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
     updatingId.value = null
   }
 }
+
+function groupBy<T>(arr: T[], key: (item: T) => string): Record<string, T[]> {
+  return arr.reduce(
+    (acc, item) => {
+      const k = key(item)
+      ;(acc[k] ??= []).push(item)
+      return acc
+    },
+    {} as Record<string, T[]>,
+  )
+}
+
+// ── Interview Prep ────────────────────────────────────────────────────────────
+
+const prepPanelId = ref<string | null>(null)
+const prepLoading = ref(false)
+const prepCache = ref<Record<string, InterviewPrepData>>({})
+const prepExpandedQuestion = ref<number | null>(null)
+
+async function openPrep(app: SeekerApplication) {
+  if (prepPanelId.value === app.id) {
+    prepPanelId.value = null
+    return
+  }
+  prepPanelId.value = app.id
+  prepExpandedQuestion.value = null
+
+  if (prepCache.value[app.id]) return
+
+  prepLoading.value = true
+  try {
+    const data = await api.post<InterviewPrepData>('/api/v1/candidate-portal/interview-prep', {
+      seekerApplicationId: app.id,
+    })
+    prepCache.value = { ...prepCache.value, [app.id]: data }
+  } catch (e) {
+    toast.add({
+      title: 'Could not generate prep',
+      description: extractApiErrorMessage(e),
+      color: 'error',
+    })
+    prepPanelId.value = null
+  } finally {
+    prepLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -208,11 +313,25 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       </div>
     </div>
 
-    <!-- Tab toggle: Platform / External -->
+    <!-- Tab toggle: All / Platform / External -->
     <div
       class="flex rounded-lg overflow-hidden"
       style="border: 1px solid var(--line); width: fit-content"
     >
+      <button
+        class="px-4 py-1.5 text-sm transition-colors"
+        :style="
+          activeTab === 'all'
+            ? 'background: var(--ink); color: var(--bg);'
+            : 'background: var(--surface); color: var(--ink-muted);'
+        "
+        @click="activeTab = 'all'"
+      >
+        All
+        <span v-if="trackerItems.length" class="ml-1.5 text-xs opacity-70">{{
+          trackerItems.length
+        }}</span>
+      </button>
       <button
         class="px-4 py-1.5 text-sm transition-colors"
         :style="
@@ -233,8 +352,96 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
         "
         @click="activeTab = 'external'"
       >
-        External (HH / Telegram)
+        External
       </button>
+    </div>
+
+    <!-- All Applications tab (unified view) -->
+    <div v-if="activeTab === 'all'" class="space-y-2">
+      <div v-if="trackerPending" class="flex justify-center py-12">
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="w-6 h-6 animate-spin"
+          style="color: var(--ink-subtle)"
+        />
+      </div>
+      <div
+        v-else-if="!trackerItems.length"
+        class="flex flex-col items-center gap-3 py-16"
+        style="color: var(--ink-subtle)"
+      >
+        <UIcon name="i-heroicons-clipboard-document-list" class="w-10 h-10" />
+        <p class="text-sm">No applications yet. Start applying or wait for inbound matches.</p>
+      </div>
+      <template v-else>
+        <div v-for="item in trackerItems" :key="item.id" class="tracker-unified-row">
+          <!-- Type badge -->
+          <span :class="item.type === 'inbound' ? 'type-badge inbound' : 'type-badge seeker'">
+            {{ item.type === 'inbound' ? 'Inbound' : 'Self-applied' }}
+          </span>
+
+          <!-- Job info -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate" style="color: var(--ink)">
+              {{ item.jobTitle }}
+            </p>
+            <p class="text-xs truncate" style="color: var(--ink-muted)">
+              {{ item.company }}
+              <span v-if="item.location"> · {{ item.location }}</span>
+              <span v-if="item.workMode"> · {{ item.workMode }}</span>
+            </p>
+          </div>
+
+          <!-- Source -->
+          <span class="text-xs shrink-0" style="color: var(--ink-subtle)">{{ item.source }}</span>
+
+          <!-- Match score (inbound only) -->
+          <span
+            v-if="item.type === 'inbound' && item.matchScore != null"
+            class="text-xs font-mono shrink-0"
+            style="color: var(--positive)"
+            >{{ Math.round(Number(item.matchScore)) }}%</span
+          >
+
+          <!-- Status badge -->
+          <UBadge
+            :color="
+              item.type === 'inbound' ? inboundStatusColor(item.status) : statusColor(item.status)
+            "
+            variant="soft"
+            size="xs"
+            class="shrink-0"
+          >
+            {{ capitalizeStatus(item.status) }}
+          </UBadge>
+
+          <!-- Time -->
+          <span class="text-xs shrink-0" style="color: var(--ink-subtle)">
+            {{ formatRelativeTime(item.activityAt) }}
+          </span>
+
+          <!-- Apply link (seeker with URL) -->
+          <a
+            v-if="item.type === 'seeker' && item.sourceUrl"
+            :href="safeUrl(item.sourceUrl)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-xs shrink-0"
+            style="color: var(--accent)"
+            >Open</a
+          >
+        </div>
+        <div class="pt-1">
+          <UButton
+            size="xs"
+            variant="ghost"
+            icon="i-heroicons-arrow-path"
+            :loading="trackerPending"
+            @click="() => trackerRefresh()"
+            >Refresh</UButton
+          >
+        </div>
+      </template>
     </div>
 
     <!-- External Applications tab (HH.uz + Telegram channel jobs) -->
@@ -630,17 +837,30 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
                       {{ c.label }}
                     </button>
                   </div>
-                  <a
-                    v-if="app.discoveredJob?.sourceUrl"
-                    :href="safeUrl(app.discoveredJob.sourceUrl)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="mt-2 flex items-center gap-1 text-xs hover:underline"
-                    style="color: var(--accent)"
-                  >
-                    <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
-                    View job
-                  </a>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <a
+                      v-if="app.discoveredJob?.sourceUrl"
+                      :href="safeUrl(app.discoveredJob.sourceUrl)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex items-center gap-1 text-xs hover:underline"
+                      style="color: var(--accent)"
+                    >
+                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
+                      View job
+                    </a>
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 text-xs hover:underline"
+                      :style="
+                        prepPanelId === app.id ? 'color: var(--accent)' : 'color: var(--ink-muted)'
+                      "
+                      @click="openPrep(app)"
+                    >
+                      <UIcon name="i-heroicons-academic-cap" class="w-3 h-3" />
+                      {{ prepPanelId === app.id ? 'Hide prep' : 'Interview prep' }}
+                    </button>
+                  </div>
                   <p
                     v-if="app.coverLetter"
                     class="mt-2 text-xs leading-relaxed line-clamp-3"
@@ -656,7 +876,7 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
       </div>
 
       <!-- List view -->
-      <div v-else class="space-y-3">
+      <div v-else-if="viewMode === 'list'" class="space-y-3">
         <div
           v-for="app in applications"
           :key="app.id"
@@ -729,6 +949,15 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
               >
                 {{ t('candidate.tracker.coverLetter') }}
               </UButton>
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-academic-cap"
+                :loading="prepLoading && prepPanelId === app.id"
+                @click="openPrep(app)"
+              >
+                Prep
+              </UButton>
             </div>
           </div>
 
@@ -749,6 +978,107 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
           </div>
         </div>
       </div>
+
+      <!-- Interview Prep Panel — outside v-if chain so it doesn't break v-else-if sequence -->
+      <Transition name="prep">
+        <div
+          v-if="prepPanelId"
+          class="mt-4 rounded-xl overflow-hidden"
+          style="background: var(--surface); border: 1px solid var(--line-soft)"
+        >
+          <div
+            class="flex items-center justify-between px-5 py-3"
+            style="border-bottom: 1px solid var(--line-soft); background: var(--bg-elevated)"
+          >
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-academic-cap" class="w-4 h-4" style="color: var(--accent)" />
+              <span class="text-sm font-semibold" style="color: var(--ink)">Interview Prep</span>
+              <span class="text-xs" style="color: var(--ink-muted)">
+                —
+                {{
+                  (applications ?? []).find((a) => a.id === prepPanelId)?.discoveredJob?.title ?? ''
+                }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="text-xs"
+              style="color: var(--ink-subtle)"
+              @click="prepPanelId = null"
+            >
+              Close
+            </button>
+          </div>
+
+          <div v-if="prepLoading" class="p-5 flex flex-col gap-3">
+            <USkeleton v-for="n in 4" :key="n" class="h-4 rounded w-full" />
+            <p class="text-xs text-center" style="color: var(--ink-subtle)">
+              Generating questions…
+            </p>
+          </div>
+
+          <div v-else-if="prepCache[prepPanelId]" class="p-5 flex flex-col gap-5">
+            <!-- Questions by category -->
+            <div
+              v-for="(questions, cat) in groupBy(
+                prepCache[prepPanelId]!.questions,
+                (q) => q.category,
+              )"
+              :key="cat"
+            >
+              <p class="prep-cat-label">{{ cat }}</p>
+              <div class="space-y-2 mt-2">
+                <div
+                  v-for="(q, idx) in questions"
+                  :key="idx"
+                  class="prep-q-item"
+                  @click="prepExpandedQuestion = prepExpandedQuestion === idx ? null : idx"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-sm" style="color: var(--ink); line-height: 1.5">
+                      {{ q.question }}
+                    </p>
+                    <UIcon
+                      :name="
+                        prepExpandedQuestion === idx
+                          ? 'i-heroicons-chevron-up'
+                          : 'i-heroicons-chevron-down'
+                      "
+                      class="w-4 h-4 shrink-0 mt-0.5"
+                      style="color: var(--ink-subtle)"
+                    />
+                  </div>
+                  <p
+                    v-if="prepExpandedQuestion === idx"
+                    class="text-xs mt-2 leading-relaxed"
+                    style="
+                      color: var(--accent);
+                      border-top: 1px solid var(--line-soft);
+                      padding-top: 8px;
+                    "
+                  >
+                    💡 {{ q.tip }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Company research + salary tip -->
+            <div v-if="prepCache[prepPanelId]!.companyResearch" class="prep-info-block">
+              <p class="prep-cat-label">Company Research</p>
+              <p class="text-sm mt-1" style="color: var(--ink-muted); line-height: 1.6">
+                {{ prepCache[prepPanelId]!.companyResearch }}
+              </p>
+            </div>
+            <div v-if="prepCache[prepPanelId]!.salaryNegotiationTip" class="prep-info-block">
+              <p class="prep-cat-label">Salary Negotiation</p>
+              <p class="text-sm mt-1" style="color: var(--ink-muted); line-height: 1.6">
+                {{ prepCache[prepPanelId]!.salaryNegotiationTip }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
     <!-- end platform tab wrapper -->
   </div>
@@ -810,5 +1140,77 @@ async function updateStatus(app: SeekerApplication, newStatus: string) {
   border-radius: 50%;
   background: var(--ink-subtle);
   animation: watch-pulse 2s ease-in-out infinite;
+}
+
+/* Interview prep panel */
+.prep-cat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-subtle);
+}
+.prep-q-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.prep-q-item:hover {
+  border-color: var(--line);
+}
+.prep-info-block {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-soft);
+}
+
+/* Prep panel transition */
+.prep-enter-active,
+.prep-leave-active {
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.prep-enter-from,
+.prep-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* Unified tracker row */
+.tracker-unified-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  transition: border-color 0.12s;
+}
+.tracker-unified-row:hover {
+  border-color: var(--line);
+}
+.type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  shrink: 0;
+  white-space: nowrap;
+}
+.type-badge.inbound {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.type-badge.seeker {
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+  color: var(--positive);
 }
 </style>

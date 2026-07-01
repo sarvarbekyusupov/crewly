@@ -135,6 +135,7 @@ export interface HhVacancyItem {
   id: string;
   name: string;
   alternate_url: string;
+  apply_alternate_url?: string;
   employer: { name: string; alternate_url?: string };
   area?: { name: string };
   salary?: { from?: number; to?: number; currency?: string };
