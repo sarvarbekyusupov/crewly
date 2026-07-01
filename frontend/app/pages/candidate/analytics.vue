@@ -113,10 +113,10 @@ const maxDailyCount = computed(() => Math.max(...chartDays.value.map((d) => d.co
           font-weight: 400;
         "
       >
-        Your Job Search Analytics
+        Job Search Analytics
       </h1>
       <p class="text-sm mt-1" style="color: var(--ink-muted)">
-        Track your application activity and funnel performance.
+        Applications, interviews, and conversion — all in one view.
       </p>
     </div>
 

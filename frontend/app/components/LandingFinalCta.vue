@@ -12,14 +12,12 @@ const waitlistMode = useRuntimeConfig().public.waitlistMode as boolean
         </h2>
         <h2 v-else>Your next role is one conversation away.</h2>
         <p v-if="props.audience === 'employer'">
-          Join the waitlist and get priority access as we onboard new companies. We review each role
-          briefing personally and launch searches within 24 hours of approval — no setup fees, no
-          commitment.
+          Join the waitlist for priority access. We review each brief personally and launch searches
+          within 24 hours — no setup fees, no commitment.
         </p>
         <p v-else>
-          Join the waitlist — profile setup takes under 10 minutes. We'll reach out personally as
-          soon as we have roles that match your background, salary expectations, and preferred
-          location.
+          Profile setup takes under 10 minutes. We'll reach out when there's a role that fits your
+          background and salary expectations.
         </p>
 
         <template v-if="props.audience === 'employer'">

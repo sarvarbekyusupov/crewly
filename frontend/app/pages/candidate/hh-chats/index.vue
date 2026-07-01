@@ -69,9 +69,7 @@ function formatDate(s?: string) {
       >
         Messages
       </h1>
-      <p class="mt-1 text-sm" style="color: var(--ink-muted)">
-        Your conversations with employers on HH.uz
-      </p>
+      <p class="mt-1 text-sm" style="color: var(--ink-muted)">Employer conversations on HH.uz</p>
     </div>
 
     <div v-if="pending" class="text-center py-16">
