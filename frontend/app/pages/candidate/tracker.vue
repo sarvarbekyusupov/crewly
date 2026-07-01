@@ -387,18 +387,20 @@ async function openPrep(app: SeekerApplication) {
             </p>
             <p class="text-xs truncate" style="color: var(--ink-muted)">
               {{ item.company }}
-              <span v-if="item.location"> · {{ item.location }}</span>
-              <span v-if="item.workMode"> · {{ item.workMode }}</span>
+              <span v-if="item.location" class="hidden sm:inline"> · {{ item.location }}</span>
+              <span v-if="item.workMode" class="hidden sm:inline"> · {{ item.workMode }}</span>
             </p>
           </div>
 
-          <!-- Source -->
-          <span class="text-xs shrink-0" style="color: var(--ink-subtle)">{{ item.source }}</span>
+          <!-- Source (hidden on mobile) -->
+          <span class="text-xs shrink-0 hidden sm:inline" style="color: var(--ink-subtle)">{{
+            item.source
+          }}</span>
 
-          <!-- Match score (inbound only) -->
+          <!-- Match score (inbound only, hidden on mobile) -->
           <span
             v-if="item.type === 'inbound' && item.matchScore != null"
-            class="text-xs font-mono shrink-0"
+            class="text-xs font-mono shrink-0 hidden sm:inline"
             style="color: var(--positive)"
             >{{ Math.round(Number(item.matchScore)) }}%</span
           >
@@ -420,16 +422,24 @@ async function openPrep(app: SeekerApplication) {
             {{ formatRelativeTime(item.activityAt) }}
           </span>
 
-          <!-- Apply link (seeker with URL) -->
-          <a
-            v-if="item.type === 'seeker' && item.sourceUrl"
-            :href="safeUrl(item.sourceUrl)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-xs shrink-0"
-            style="color: var(--accent)"
-            >Open</a
-          >
+          <!-- Actions -->
+          <div class="flex items-center gap-2 shrink-0">
+            <!-- Seeker: open source URL -->
+            <a
+              v-if="item.type === 'seeker' && item.sourceUrl"
+              :href="safeUrl(item.sourceUrl)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="tracker-action-link"
+              >Open</a
+            >
+            <!-- CV Kit link for both seeker and inbound -->
+            <NuxtLink
+              :to="`/candidate/cv-builder?jobTitle=${encodeURIComponent(item.jobTitle)}&company=${encodeURIComponent(item.company)}`"
+              class="tracker-action-link"
+              >CV Kit</NuxtLink
+            >
+          </div>
         </div>
         <div class="pt-1">
           <UButton
@@ -1212,5 +1222,24 @@ async function openPrep(app: SeekerApplication) {
 .type-badge.seeker {
   background: color-mix(in srgb, var(--positive) 12%, transparent);
   color: var(--positive);
+}
+.tracker-action-link {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+  opacity: 0.8;
+  transition: opacity 0.12s;
+}
+.tracker-action-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .tracker-unified-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 }
 </style>
