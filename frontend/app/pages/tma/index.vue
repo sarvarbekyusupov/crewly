@@ -2,14 +2,14 @@
   <div class="tma-entry">
     <div v-if="loading" class="center">
       <div class="spinner" />
-      <p>Загрузка...</p>
+      <p>{{ t('tma.loading') }}</p>
     </div>
 
     <div v-else-if="errorMsg" class="center error-card">
       <span class="icon">⚠️</span>
-      <h2>Ошибка входа</h2>
+      <h2>{{ t('tma.errorTitle') }}</h2>
       <p>{{ errorMsg }}</p>
-      <button class="btn" @click="doAuth">Попробовать снова</button>
+      <button class="btn" @click="doAuth">{{ t('tma.retry') }}</button>
     </div>
   </div>
 </template>
@@ -23,20 +23,31 @@ const route = useRoute()
 const { isTma, init, getInitData } = useTma()
 const candidateAuthStore = useCandidateAuthStore()
 const config = useRuntimeConfig()
+const { t, setLocale } = useI18n()
 
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)
+
+function detectAndSetLocale() {
+  const code = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code
+  if (!code) return
+  const lc = code.split('-')[0].toLowerCase()
+  if (lc === 'ru') setLocale('ru')
+  else if (lc === 'uz') setLocale('uz')
+  else setLocale('en')
+}
 
 async function doAuth() {
   loading.value = true
   errorMsg.value = null
 
+  detectAndSetLocale()
   init()
   const initData = getInitData()
 
   if (!initData) {
     loading.value = false
-    errorMsg.value = 'Откройте приложение из Telegram бота.'
+    errorMsg.value = t('tma.openFromBot')
     return
   }
 
@@ -52,14 +63,18 @@ async function doAuth() {
 
     await candidateAuthStore.fetchMe()
 
+    const isIncomplete =
+      result.candidate.isNewProfile ||
+      (!result.candidate.currentPosition && !result.candidate.skills.length)
+
+    if (isIncomplete) {
+      await router.replace('/candidate/onboarding')
+      return
+    }
+
     const to = route.query.to as string | undefined
     if (to?.startsWith('/candidate/')) {
       await router.replace(to)
-    } else if (
-      result.candidate.isNewProfile ||
-      (!result.candidate.currentPosition && !result.candidate.skills.length)
-    ) {
-      await router.replace('/candidate/onboarding')
     } else {
       await router.replace('/candidate/dashboard')
     }
@@ -70,7 +85,7 @@ async function doAuth() {
       return
     }
     loading.value = false
-    errorMsg.value = e?.data?.message ?? 'Не удалось войти. Попробуйте ещё раз.'
+    errorMsg.value = e?.data?.message ?? t('tma.loginFailed')
   }
 }
 

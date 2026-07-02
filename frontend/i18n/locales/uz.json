@@ -984,5 +984,12 @@
         "threeMonths": "3 oy"
       }
     }
+  },
+  "tma": {
+    "loading": "Yuklanmoqda…",
+    "errorTitle": "Kirish xatosi",
+    "openFromBot": "Iltimos, ilovani Telegram botdan oching.",
+    "retry": "Qayta urinish",
+    "loginFailed": "Kirib bo'lmadi. Qayta urinib ko'ring."
   }
 }

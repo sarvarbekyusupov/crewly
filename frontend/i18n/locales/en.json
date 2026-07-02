@@ -984,5 +984,12 @@
     "logout": "Log out",
     "ingestionQueued": "Ingestion queued",
     "jobDiscoveryQueued": "Job discovery queued"
+  },
+  "tma": {
+    "loading": "Loading…",
+    "errorTitle": "Login Error",
+    "openFromBot": "Please open this app from the Telegram bot.",
+    "retry": "Try Again",
+    "loginFailed": "Login failed. Please try again."
   }
 }

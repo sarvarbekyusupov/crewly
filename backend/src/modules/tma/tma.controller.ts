@@ -57,36 +57,6 @@ export class TmaController {
     return { candidate };
   }
 
-  // ── Candidate routes ────────────────────────────────────────────
-  @Get('candidate/feed')
-  @UseGuards(TmaAuthGuard)
-  @TmaRole('candidate')
-  getCandidateFeed(@Req() req: any) {
-    return this.tma.getCandidateFeed(req.tmaUser.id);
-  }
-
-  @Get('candidate/applications')
-  @UseGuards(TmaAuthGuard)
-  @TmaRole('candidate')
-  getCandidateApplications(@Req() req: any) {
-    return this.tma.getCandidateApplications(req.tmaUser.id);
-  }
-
-  @Get('candidate/jobs/:id')
-  @UseGuards(TmaAuthGuard)
-  @TmaRole('candidate')
-  getCandidateJobDetail(@Req() req: any, @Param('id') jobId: string) {
-    return this.tma.getCandidateJobDetail(req.tmaUser.id, jobId);
-  }
-
-  @Post('candidate/jobs/:id/apply')
-  @UseGuards(TmaAuthGuard)
-  @TmaRole('candidate')
-  @HttpCode(HttpStatus.OK)
-  applyToJob(@Req() req: any, @Param('id') jobId: string) {
-    return this.tma.applyToDiscoveredJob(req.tmaUser.id, jobId);
-  }
-
   // ── HR routes ────────────────────────────────────────────────────
   @Get('hr/pipeline')
   @UseGuards(TmaAuthGuard)

@@ -155,7 +155,7 @@ async function handleFinish() {
     const { triggerConfetti } = useConfetti()
     triggerConfetti()
     toast.add({ title: 'Profil sozlash tugadi!', color: 'success' })
-    router.push('/candidate/dashboard')
+    router.replace('/candidate/dashboard')
   } catch (e) {
     toast.add({
       title: 'Saqlashda xatolik',
