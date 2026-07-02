@@ -23,7 +23,9 @@
     "commandGroupJobs": "Vakansiyalar",
     "commandGroupCandidates": "Nomzodlar",
     "sourcing": "Sorsing",
-    "intelligence": "Analitika"
+    "intelligence": "Analitika",
+    "hhMessages": "HH Xabarlar",
+    "cvBuilder": "CV Yaratuvchi"
   },
   "auth": {
     "login": "Kirish",

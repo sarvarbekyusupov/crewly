@@ -23,7 +23,9 @@
     "commandGroupJobs": "Вакансии",
     "commandGroupCandidates": "Кандидаты",
     "sourcing": "Сорсинг",
-    "intelligence": "Аналитика"
+    "intelligence": "Аналитика",
+    "hhMessages": "HH Сообщения",
+    "cvBuilder": "Конструктор CV"
   },
   "auth": {
     "login": "Войти",

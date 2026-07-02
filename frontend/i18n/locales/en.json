@@ -23,7 +23,9 @@
     "commandGroupJobs": "Jobs",
     "commandGroupCandidates": "Candidates",
     "sourcing": "Sourcing",
-    "intelligence": "Intelligence"
+    "intelligence": "Intelligence",
+    "hhMessages": "HH Messages",
+    "cvBuilder": "CV Builder"
   },
   "auth": {
     "login": "Login",
