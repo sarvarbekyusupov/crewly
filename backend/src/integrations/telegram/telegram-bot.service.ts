@@ -2215,11 +2215,16 @@ Provide:
   private async notifyNewMatches(candidateId: string): Promise<void> {
     const candidate = await this.db.candidate.findUnique({
       where: { id: candidateId },
-      select: { telegramUserId: true, minMatchScore: true },
+      select: {
+        telegramUserId: true,
+        minMatchScore: true,
+        telegramLanguageCode: true,
+      },
     });
 
     if (!candidate?.telegramUserId) return;
 
+    const lang = candidate.telegramLanguageCode ?? 'ru';
     const threshold = Math.max(candidate.minMatchScore ?? 65, 65);
     const chatId = candidate.telegramUserId.toString();
 
@@ -2232,21 +2237,52 @@ Provide:
 
     if (!matches.length) return;
 
+    const header =
+      lang === 'uz'
+        ? `🎯 *Yangi mos vakansiyalar:*\n\n`
+        : lang === 'en'
+          ? `🎯 *New job matches for you:*\n\n`
+          : `🎯 *Новые подходящие вакансии для вас:*\n\n`;
+    const matchPctLabel =
+      lang === 'uz' ? 'mos' : lang === 'en' ? 'match' : 'совпадение';
+    const applyLabel =
+      lang === 'uz' ? 'Ariza berish' : lang === 'en' ? 'Apply' : 'Откликнуться';
+    const allMatchesLine =
+      lang === 'uz'
+        ? `_Barcha mos vakansiyalar: /mymatches_`
+        : lang === 'en'
+          ? `_All matches: /mymatches_`
+          : `_Все совпадения: /mymatches_`;
+
     const keyboard = new InlineKeyboard();
-    let text = `🎯 *Новые подходящие вакансии для вас:*\n\n`;
+    let text = header;
 
     matches.forEach((m, i) => {
       const j = m.discoveredJob;
-      text += `${i + 1}. *${j.title}* — ${j.company}\n   📍 ${j.location ?? '—'}  |  ${m.score}% совпадение\n\n`;
+      text += `${i + 1}. *${j.title}* — ${j.company}\n   📍 ${j.location ?? '—'}  |  ${m.score}% ${matchPctLabel}\n\n`;
       keyboard
         .text(
-          `${i + 1}. Откликнуться`,
+          `${i + 1}. ${applyLabel}`,
           JSON.stringify({ a: 'tg_apply', i: j.id }),
         )
         .row();
     });
 
-    text += `_Все совпадения: /mymatches_`;
+    text += allMatchesLine;
+
+    const notifyPublicUrl =
+      this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+    if (notifyPublicUrl.startsWith('https://')) {
+      const openLabel =
+        lang === 'uz'
+          ? '📱 Ilovani ochish'
+          : lang === 'en'
+            ? '📱 Open App'
+            : '📱 Открыть приложение';
+      keyboard
+        .row()
+        .webApp(openLabel, `${notifyPublicUrl}/tma?to=/candidate/jobs`);
+    }
 
     try {
       await this.bot.api.sendMessage(Number(chatId), text, {

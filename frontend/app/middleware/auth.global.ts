@@ -1,6 +1,11 @@
 const WAITLIST_ALLOWED = ['/', '/employer', '/candidate', '/terms']
 
 export default defineNuxtRouteMiddleware(async (to) => {
+  // TMA root redirect — must run before anything else
+  if (import.meta.client && to.path === '/' && window.Telegram?.WebApp?.initData) {
+    return navigateTo('/tma', { replace: true })
+  }
+
   const { waitlistMode } = useRuntimeConfig().public
   if (waitlistMode && !WAITLIST_ALLOWED.includes(to.path) && !to.path.startsWith('/candidate')) {
     return navigateTo('/')

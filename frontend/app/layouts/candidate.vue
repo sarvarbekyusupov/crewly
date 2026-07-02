@@ -16,17 +16,19 @@ const toast = useToast()
 
 const { isTma, init: initTma, showBackButton, hideBackButton } = useTma()
 
+const tmaBackHandler = () => router.back()
+
 const { connect, disconnect } = useCandidateEventStream()
 onMounted(() => {
   connect()
   if (isTma.value) {
     initTma()
-    showBackButton(() => router.back())
+    showBackButton(tmaBackHandler)
   }
 })
 onUnmounted(() => {
   disconnect()
-  if (isTma.value) hideBackButton()
+  if (isTma.value) hideBackButton(tmaBackHandler)
 })
 
 watch(resumeParseStatus, (status) => {
