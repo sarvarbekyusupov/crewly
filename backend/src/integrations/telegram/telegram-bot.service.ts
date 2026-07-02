@@ -1329,21 +1329,46 @@ export class TelegramBotService implements OnModuleInit {
       }
 
       const keyboard = new InlineKeyboard();
-      let text =
-        lang === 'en'
-          ? `🎯 *Your top job matches:*\n\n`
-          : `🎯 *Ваши лучшие совпадения:*\n\n`;
+      const matchHeader =
+        lang === 'uz'
+          ? `🎯 *Eng mos vakansiyalar:*\n\n`
+          : lang === 'en'
+            ? `🎯 *Your top job matches:*\n\n`
+            : `🎯 *Ваши лучшие совпадения:*\n\n`;
+      const applyLabel =
+        lang === 'uz'
+          ? 'Ariza berish'
+          : lang === 'en'
+            ? 'Apply'
+            : 'Откликнуться';
+      const matchPctLabel =
+        lang === 'uz' ? 'Mos' : lang === 'en' ? 'Match' : 'Совпадение';
+      let text = matchHeader;
 
       matches.forEach((m, i) => {
         const j = m.discoveredJob;
-        text += `${i + 1}. *${j.title}* — ${j.company}\n   📍 ${j.location ?? '—'}  |  Совпадение: *${m.score}%*\n\n`;
+        text += `${i + 1}. *${j.title}* — ${j.company}\n   📍 ${j.location ?? '—'}  |  ${matchPctLabel}: *${m.score}%*\n\n`;
         keyboard
           .text(
-            `${i + 1}. Откликнуться`,
+            `${i + 1}. ${applyLabel}`,
             JSON.stringify({ a: 'tg_apply', i: j.id }),
           )
           .row();
       });
+
+      const matchesPublicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      if (matchesPublicUrl.startsWith('https://')) {
+        const openLabel =
+          lang === 'uz'
+            ? '📱 Ilovani ochish'
+            : lang === 'en'
+              ? '📱 Open App'
+              : '📱 Открыть приложение';
+        keyboard
+          .row()
+          .webApp(openLabel, `${matchesPublicUrl}/tma?to=/candidate/jobs`);
+      }
 
       await ctx.reply(text, {
         reply_markup: keyboard,
@@ -1363,7 +1388,13 @@ export class TelegramBotService implements OnModuleInit {
       });
 
       if (!candidate) {
-        await ctx.reply('Профиль не найден. Отправьте резюме для начала.');
+        await ctx.reply(
+          lang === 'uz'
+            ? 'Profil topilmadi. Boshlash uchun rezyume yuboring.'
+            : lang === 'en'
+              ? 'No profile found. Send your CV to get started.'
+              : 'Профиль не найден. Отправьте резюме для начала.',
+        );
         return;
       }
 
@@ -1385,29 +1416,78 @@ export class TelegramBotService implements OnModuleInit {
         return;
       }
 
-      const statusLabel: Record<string, string> = {
-        screening: '💬 AI-интервью',
-        responded: '💬 AI-интервью',
-        matched: '✅ На согласовании',
-        queued_outreach: '📨 Отправка предложения',
-        screened_pass: '🟢 Прошёл интервью',
-        interview_scheduled: '📅 Интервью назначено',
-        rejected_by_client: '❌ Отказ',
-        rejected_by_ai: '❌ Не подошёл',
-        hired: '🎉 Нанят!',
+      const statusLabels: Record<string, Record<string, string>> = {
+        en: {
+          screening: '💬 AI Interview',
+          responded: '💬 AI Interview',
+          matched: '✅ Under Review',
+          queued_outreach: '📨 Sending Offer',
+          screened_pass: '🟢 Interview Passed',
+          interview_scheduled: '📅 Interview Scheduled',
+          rejected_by_client: '❌ Rejected',
+          rejected_by_ai: '❌ Not a Match',
+          hired: '🎉 Hired!',
+        },
+        uz: {
+          screening: '💬 AI suhbati',
+          responded: '💬 AI suhbati',
+          matched: "✅ Ko'rib chiqilmoqda",
+          queued_outreach: '📨 Taklif yuborilmoqda',
+          screened_pass: "🟢 Suhbatdan o'tdi",
+          interview_scheduled: '📅 Suhbat belgilandi',
+          rejected_by_client: '❌ Rad etildi',
+          rejected_by_ai: '❌ Mos kelmadi',
+          hired: '🎉 Qabul qilindi!',
+        },
+        ru: {
+          screening: '💬 AI-интервью',
+          responded: '💬 AI-интервью',
+          matched: '✅ На согласовании',
+          queued_outreach: '📨 Отправка предложения',
+          screened_pass: '🟢 Прошёл интервью',
+          interview_scheduled: '📅 Интервью назначено',
+          rejected_by_client: '❌ Отказ',
+          rejected_by_ai: '❌ Не подошёл',
+          hired: '🎉 Нанят!',
+        },
       };
+      const statusLabel = statusLabels[lang] ?? statusLabels['ru'];
 
-      let text =
-        lang === 'en'
-          ? `📋 *Your applications:*\n\n`
-          : `📋 *Ваши отклики:*\n\n`;
+      const appsHeader =
+        lang === 'uz'
+          ? `📋 *Arizalaringiz:*\n\n`
+          : lang === 'en'
+            ? `📋 *Your applications:*\n\n`
+            : `📋 *Ваши отклики:*\n\n`;
+      let text = appsHeader;
 
       apps.forEach((a, i) => {
         const label = statusLabel[a.status] ?? a.status;
         text += `${i + 1}. *${a.job.title}* — ${a.job.company.name}\n   ${label}\n\n`;
       });
 
-      await ctx.reply(text, { parse_mode: 'Markdown' });
+      const appsPublicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      const appsKeyboard = new InlineKeyboard();
+      if (appsPublicUrl.startsWith('https://')) {
+        const openLabel =
+          lang === 'uz'
+            ? '📱 Ilovani ochish'
+            : lang === 'en'
+              ? '📱 Open App'
+              : '📱 Открыть приложение';
+        appsKeyboard.webApp(
+          openLabel,
+          `${appsPublicUrl}/tma?to=/candidate/tracker`,
+        );
+      }
+
+      await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        ...(appsPublicUrl.startsWith('https://')
+          ? { reply_markup: appsKeyboard }
+          : {}),
+      });
     });
 
     // Candidate: /help — command menu
@@ -1450,7 +1530,25 @@ export class TelegramBotService implements OnModuleInit {
               `/unsubscribe — отключить уведомления\n` +
               `/refer — пригласить друга`;
 
-      await ctx.reply(text, { parse_mode: 'Markdown' });
+      const helpPublicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      const helpKeyboard = new InlineKeyboard();
+      if (helpPublicUrl.startsWith('https://')) {
+        const openLabel =
+          lang === 'uz'
+            ? '📱 Ilovani ochish'
+            : lang === 'en'
+              ? '📱 Open App'
+              : '📱 Открыть приложение';
+        helpKeyboard.webApp(openLabel, `${helpPublicUrl}/tma`);
+      }
+
+      await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        ...(helpPublicUrl.startsWith('https://')
+          ? { reply_markup: helpKeyboard }
+          : {}),
+      });
     });
 
     // Candidate: /setup — 5-question onboarding (no CV required)
@@ -2274,7 +2372,24 @@ Salary conversion: 1 USD = 12750 UZS, 1 RUB = 140 UZS. If a range is given, use 
             ? `✅ Profil yaratildi! Mos ish o'rinlarini qidiryapman...\n\n/mymatches — eng mos vakansiyalarni ko'rish\n/subscribe — yangi mos vakansiyalar haqida xabarnoma`
             : `✅ Профиль создан! Ищу подходящие вакансии...\n\n/mymatches — посмотреть лучшие совпадения\n/subscribe — уведомления о новых вакансиях`;
 
-      await ctx.api.editMessageText(chatId, statusMsg.message_id, reply);
+      const setupPublicUrl =
+        this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+      const setupKeyboard = new InlineKeyboard();
+      if (setupPublicUrl.startsWith('https://')) {
+        const openLabel =
+          lang === 'uz'
+            ? '📱 Ilovani ochish'
+            : lang === 'en'
+              ? '📱 Open App'
+              : '📱 Открыть приложение';
+        setupKeyboard.webApp(openLabel, `${setupPublicUrl}/tma`);
+      }
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, reply, {
+        parse_mode: 'Markdown',
+        ...(setupPublicUrl.startsWith('https://')
+          ? { reply_markup: setupKeyboard }
+          : {}),
+      });
     } catch (err: any) {
       this.logger.error(
         { chatId, error: err.message },
@@ -2285,7 +2400,9 @@ Salary conversion: 1 USD = 12750 UZS, 1 RUB = 140 UZS. If a range is given, use 
         statusMsg.message_id,
         lang === 'en'
           ? 'Something went wrong. Try /setup again or send your CV as PDF.'
-          : 'Что-то пошло не так. Попробуйте /setup снова или отправьте резюме в формате PDF.',
+          : lang === 'uz'
+            ? "Xato yuz berdi. /setup ni qayta sinab ko'ring yoki rezyumeni PDF formatida yuboring."
+            : 'Что-то пошло не так. Попробуйте /setup снова или отправьте резюме в формате PDF.',
       );
     }
   }
