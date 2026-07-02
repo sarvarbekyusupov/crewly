@@ -2019,6 +2019,26 @@ Provide:
       await this.bot.init();
       this.logger.log('Telegram bot initialized for webhook mode');
     }
+
+    // Set the global default menu button to open the TMA at /tma
+    const menuPublicUrl =
+      this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+    if (menuPublicUrl.startsWith('https://')) {
+      await this.bot.api
+        .setChatMenuButton({
+          menu_button: {
+            type: 'web_app',
+            text: 'Open App',
+            web_app: { url: `${menuPublicUrl}/tma` },
+          },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            { error: err.message },
+            'Failed to set bot menu button',
+          ),
+        );
+    }
   }
 
   @OnEvent('candidate.event')

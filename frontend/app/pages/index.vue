@@ -1,6 +1,33 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'landing', auth: 'guest' })
 
+if (import.meta.client) {
+  function waitForTelegramSdk(): Promise<void> {
+    return new Promise((resolve) => {
+      if (window.Telegram?.WebApp !== undefined) {
+        resolve()
+        return
+      }
+      let script = document.querySelector<HTMLScriptElement>('script[src*="telegram-web-app"]')
+      if (!script) {
+        script = document.createElement('script')
+        script.src = 'https://telegram.org/js/telegram-web-app.js'
+        document.head.appendChild(script)
+      }
+      script.addEventListener('load', () => resolve(), { once: true })
+      script.addEventListener('error', () => resolve(), { once: true })
+      setTimeout(resolve, 2000)
+    })
+  }
+
+  onMounted(async () => {
+    await waitForTelegramSdk()
+    if (window.Telegram?.WebApp?.initData) {
+      await navigateTo('/tma', { replace: true })
+    }
+  })
+}
+
 defineOgImageComponent('Default', {
   title: 'Find work and get hired',
   description:
