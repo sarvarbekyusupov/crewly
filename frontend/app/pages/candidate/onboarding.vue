@@ -5,6 +5,11 @@ const store = useOnboardingStore()
 const api = useCandidateApi()
 const router = useRouter()
 const toast = useToast()
+const { isTma, init, showBackButton, hideBackButton } = useTma()
+
+function tmaGoBack() {
+  store.prevStep()
+}
 
 const saving = ref(false)
 const autosaved = ref(false)
@@ -185,8 +190,27 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', handleKeydown))
-onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
+watch(
+  () => store.currentStep,
+  (step) => {
+    if (!isTma.value) return
+    hideBackButton(tmaGoBack)
+    if (step > 1) showBackButton(tmaGoBack)
+  },
+)
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+  if (isTma.value) {
+    init()
+    if (store.currentStep > 1) showBackButton(tmaGoBack)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+  if (isTma.value) hideBackButton(tmaGoBack)
+})
 </script>
 
 <template>

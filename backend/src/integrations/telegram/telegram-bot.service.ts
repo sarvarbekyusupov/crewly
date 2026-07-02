@@ -273,7 +273,21 @@ export class TelegramBotService implements OnModuleInit {
               lang,
               args: { title: job.title, companyName: job.company.name },
             });
-            await ctx.reply(deepLinkMsg, { parse_mode: 'Markdown' });
+            const jobPublicUrl =
+              this.config.get('PUBLIC_URL') || 'https://crewly.my-hr.ru';
+            const jobKeyboard = new InlineKeyboard();
+            if (jobPublicUrl.startsWith('https://')) {
+              jobKeyboard.webApp(
+                lang === 'en' ? '📱 Open App' : '📱 Открыть приложение',
+                `${jobPublicUrl}/tma`,
+              );
+            }
+            await ctx.reply(deepLinkMsg, {
+              parse_mode: 'Markdown',
+              ...(jobPublicUrl.startsWith('https://')
+                ? { reply_markup: jobKeyboard }
+                : {}),
+            });
             return;
           }
         } catch (err) {
