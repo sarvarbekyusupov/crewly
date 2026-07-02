@@ -9,19 +9,19 @@
       <span class="icon">⚠️</span>
       <h2>Ошибка входа</h2>
       <p>{{ errorMsg }}</p>
-      <button v-if="!isTma" class="btn" @click="retryAuth">Попробовать снова</button>
+      <button class="btn" @click="doAuth">Попробовать снова</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
-
 useHead({ title: 'Crewly TMA' })
 
 const router = useRouter()
 const { isTma, init, getInitData } = useTma()
-const tmaStore = useTmaStore()
+const candidateAuthStore = useCandidateAuthStore()
+const config = useRuntimeConfig()
 
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)
@@ -40,20 +40,29 @@ async function doAuth() {
   }
 
   try {
-    await tmaStore.authenticate(initData)
-    if (tmaStore.role === 'hr') {
-      await router.replace('/tma/hr')
-    } else {
-      await router.replace('/tma/candidate')
-    }
-  } catch {
-    loading.value = false
-    errorMsg.value = tmaStore.error ?? 'Не удалось войти. Попробуйте ещё раз.'
-  }
-}
+    const result = await $fetch<{
+      candidate: { isNewProfile: boolean; skills: string[]; currentPosition: string | null }
+    }>('/api/v1/tma/session-login', {
+      method: 'POST',
+      body: { initData },
+      baseURL: config.public.apiBase as string,
+      credentials: 'include',
+    })
 
-async function retryAuth() {
-  await doAuth()
+    await candidateAuthStore.fetchMe()
+
+    if (
+      result.candidate.isNewProfile ||
+      (!result.candidate.currentPosition && !result.candidate.skills.length)
+    ) {
+      await router.replace('/candidate/onboarding')
+    } else {
+      await router.replace('/candidate/dashboard')
+    }
+  } catch (e: any) {
+    loading.value = false
+    errorMsg.value = e?.data?.message ?? 'Не удалось войти. Попробуйте ещё раз.'
+  }
 }
 
 function waitForTelegramSdk(): Promise<void> {

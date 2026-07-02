@@ -14,9 +14,20 @@ const store = useCandidateAuthStore()
 const router = useRouter()
 const toast = useToast()
 
+const { isTma, init: initTma, showBackButton, hideBackButton } = useTma()
+
 const { connect, disconnect } = useCandidateEventStream()
-onMounted(connect)
-onUnmounted(disconnect)
+onMounted(() => {
+  connect()
+  if (isTma.value) {
+    initTma()
+    showBackButton(() => router.back())
+  }
+})
+onUnmounted(() => {
+  disconnect()
+  if (isTma.value) hideBackButton()
+})
 
 watch(resumeParseStatus, (status) => {
   if (status === 'parsing') {
@@ -124,7 +135,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
   <div class="h-screen overflow-hidden flex" style="background: var(--bg); color: var(--ink)">
     <!-- Mobile backdrop -->
     <div
-      v-if="sidebarOpen"
+      v-if="!isTma && sidebarOpen"
       class="fixed inset-0 z-30 lg:hidden"
       style="background: rgba(0, 0, 0, 0.35)"
       @click="sidebarOpen = false"
@@ -132,6 +143,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 
     <!-- Sidebar -->
     <aside
+      v-if="!isTma"
       class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:z-auto"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
       style="background: var(--bg-deep); border-right: 1px solid var(--line)"
@@ -260,6 +272,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Mobile topbar -->
       <header
+        v-if="!isTma"
         class="h-14 flex items-center justify-between px-4 shrink-0 lg:hidden"
         style="background: var(--bg-deep); border-bottom: 1px solid var(--line)"
       >
@@ -289,7 +302,8 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
       </header>
 
       <main
-        class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 flex flex-col"
+        class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex flex-col"
+        :class="isTma ? 'pb-4' : 'pb-20 lg:pb-8'"
         style="height: 0"
       >
         <slot />
@@ -297,6 +311,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKbd))
 
       <!-- Bottom Navigation for Mobile Viewports -->
       <div
+        v-if="!isTma"
         class="fixed bottom-0 left-0 right-0 z-30 lg:hidden flex justify-around items-center h-16 border-t px-2"
         style="background: var(--bg-deep); border-top: 1px solid var(--line)"
       >

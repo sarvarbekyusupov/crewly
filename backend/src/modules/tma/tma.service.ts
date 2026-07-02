@@ -13,6 +13,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QUEUES } from '../../workers/queue-names';
 import { LLM_JOB_OPTIONS } from '../../workers/queue-options';
+import { CandidateAuthService } from '../candidate-auth/candidate-auth.service';
 
 @Injectable()
 export class TmaService {
@@ -22,6 +23,7 @@ export class TmaService {
     private readonly db: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly candidateAuth: CandidateAuthService,
     @InjectQueue(QUEUES.AUTO_APPLY) private readonly autoApplyQueue: Queue,
     @InjectQueue(QUEUES.SEND_OUTREACH) private readonly outreachQueue: Queue,
   ) {}
@@ -161,6 +163,80 @@ export class TmaService {
         email: candidate.email,
         currentPosition: candidate.currentPosition,
         skills: candidate.skills,
+      },
+    };
+  }
+
+  async sessionLogin(
+    initData: string,
+    ip?: string,
+    ua?: string,
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    candidate: {
+      id: string;
+      fullName: string | null;
+      email: string | null;
+      currentPosition: string | null;
+      skills: string[];
+      isNewProfile: boolean;
+    };
+  }> {
+    const { valid, user } = this.validateInitData(initData);
+    if (!valid || !user?.id)
+      throw new UnauthorizedException('Invalid Telegram initData');
+
+    const tgIdBig = BigInt(String(user.id));
+    let isNewProfile = false;
+
+    let candidate = await this.db.candidate.findFirst({
+      where: { telegramUserId: tgIdBig, deletedAt: null },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        currentPosition: true,
+        skills: true,
+      },
+    });
+
+    if (!candidate) {
+      const firstName = user.first_name ?? '';
+      const lastName = user.last_name ?? '';
+      candidate = await this.db.candidate.create({
+        data: {
+          telegramUserId: tgIdBig,
+          telegramUsername: user.username ?? null,
+          fullName: [firstName, lastName].filter(Boolean).join(' ') || null,
+          consentStatus: 'implied',
+          consentSource: 'telegram_tma',
+          consentGivenAt: new Date(),
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          currentPosition: true,
+          skills: true,
+        },
+      });
+      isNewProfile = true;
+      this.logger.log(
+        { candidateId: candidate.id, telegramId: String(user.id) },
+        'Created candidate via TMA session-login',
+      );
+    }
+
+    const { accessToken, refreshToken } =
+      await this.candidateAuth.issueTokensForCandidate(candidate.id, ip, ua);
+
+    return {
+      accessToken,
+      refreshToken,
+      candidate: {
+        ...candidate,
+        isNewProfile,
       },
     };
   }

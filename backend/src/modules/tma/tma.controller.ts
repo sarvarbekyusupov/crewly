@@ -6,11 +6,28 @@ import {
   Param,
   UseGuards,
   Req,
+  Res,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { TmaService } from './tma.service';
 import { TmaAuthGuard, TmaRole } from './guards/tma-auth.guard';
+
+const C_ACCESS_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 15 * 60 * 1000,
+};
+
+const C_REFRESH_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  path: '/api/v1/candidate-auth/refresh',
+};
 
 @Controller('api/v1/tma')
 export class TmaController {
@@ -20,6 +37,24 @@ export class TmaController {
   @HttpCode(HttpStatus.OK)
   async auth(@Body() body: { initData: string }) {
     return this.tma.auth(body.initData);
+  }
+
+  @Post('session-login')
+  @HttpCode(HttpStatus.OK)
+  async sessionLogin(
+    @Body() body: { initData: string },
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, candidate } =
+      await this.tma.sessionLogin(
+        body.initData,
+        req.ip,
+        req.headers['user-agent'],
+      );
+    res.cookie('c_access_token', accessToken, C_ACCESS_COOKIE_OPTS);
+    res.cookie('c_refresh_token', refreshToken, C_REFRESH_COOKIE_OPTS);
+    return { candidate };
   }
 
   // ── Candidate routes ────────────────────────────────────────────

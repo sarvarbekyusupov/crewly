@@ -4,9 +4,11 @@ import { QUEUES } from '../../workers/queue-names';
 import { TmaService } from './tma.service';
 import { TmaController } from './tma.controller';
 import { TmaAuthGuard } from './guards/tma-auth.guard';
+import { CandidateAuthModule } from '../candidate-auth/candidate-auth.module';
 
 @Module({
   imports: [
+    CandidateAuthModule,
     BullModule.registerQueue(
       { name: QUEUES.AUTO_APPLY },
       { name: QUEUES.SEND_OUTREACH },

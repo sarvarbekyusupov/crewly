@@ -24,8 +24,9 @@ import { TelegramChannelMonitorService } from './telegram-channel-monitor.servic
 import { PromptRunnerService } from '../llm/prompt-runner.service';
 
 type OutgoingButton =
-  | { text: string; callbackData: string; url?: never }
-  | { text: string; url: string; callbackData?: never };
+  | { text: string; callbackData: string; url?: never; webApp?: never }
+  | { text: string; url: string; callbackData?: never; webApp?: never }
+  | { text: string; webApp: string; callbackData?: never; url?: never };
 
 type OutgoingMessage = {
   text?: string;
@@ -2038,21 +2039,21 @@ Provide:
 
     let reply_markup: InlineKeyboard | undefined;
 
+    const applyButton = (kb: InlineKeyboard, b: OutgoingButton) => {
+      if (b.webApp) kb.webApp(b.text, b.webApp);
+      else if (b.url) kb.url(b.text, b.url);
+      else kb.text(b.text, b.callbackData!);
+    };
+
     if (opts?.buttonRows?.length) {
       reply_markup = new InlineKeyboard();
       for (const row of opts.buttonRows) {
-        for (const b of row) {
-          if (b.url) reply_markup.url(b.text, b.url);
-          else reply_markup.text(b.text, b.callbackData!);
-        }
+        for (const b of row) applyButton(reply_markup, b);
         reply_markup.row();
       }
     } else if (opts?.buttons?.length) {
       reply_markup = new InlineKeyboard();
-      opts.buttons.forEach((b) => {
-        if (b.url) reply_markup!.url(b.text, b.url);
-        else reply_markup!.text(b.text, b.callbackData!);
-      });
+      opts.buttons.forEach((b) => applyButton(reply_markup!, b));
     }
 
     await this.bot.api.sendMessage(Number(chatId), text, {

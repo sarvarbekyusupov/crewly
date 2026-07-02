@@ -127,8 +127,17 @@ export class TelegramPipelineHandler implements OnModuleInit {
           return;
       }
 
+      const publicUrl = this.config.get<string>('PUBLIC_URL') ?? '';
+      const appUrl =
+        event.type === 'interview_scheduled' || event.type === 'offered'
+          ? `${publicUrl}/candidate/tracker`
+          : `${publicUrl}/candidate/dashboard`;
+
       await this.telegram.sendMessage(chatId, message, {
         parseMode: 'Markdown',
+        buttons: publicUrl
+          ? [{ text: '📱 Открыть в приложении', webApp: appUrl }]
+          : [],
       });
     } catch (err: any) {
       this.logger.error(
@@ -211,7 +220,18 @@ export class TelegramPipelineHandler implements OnModuleInit {
 
       text += `_/mymatches — посмотреть все совпадения_`;
 
-      await this.telegram.sendMessage(chatId, text, { parseMode: 'Markdown' });
+      const publicUrl = this.config.get<string>('PUBLIC_URL') ?? '';
+      await this.telegram.sendMessage(chatId, text, {
+        parseMode: 'Markdown',
+        buttons: publicUrl
+          ? [
+              {
+                text: '📱 Открыть вакансии',
+                webApp: `${publicUrl}/candidate/jobs`,
+              },
+            ]
+          : [],
+      });
 
       // Mark as notified
       await this.db.seekerJobMatch.updateMany({

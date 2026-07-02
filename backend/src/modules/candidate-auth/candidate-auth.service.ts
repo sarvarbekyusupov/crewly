@@ -40,6 +40,16 @@ export class CandidateAuthService {
     private readonly email: EmailService,
   ) {}
 
+  async issueTokensForCandidate(
+    candidateId: string,
+    ip?: string,
+    ua?: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.issueAccessToken(candidateId);
+    const refreshToken = await this.createRefreshToken(candidateId, ip, ua);
+    return { accessToken, refreshToken };
+  }
+
   private issueAccessToken(candidateId: string): string {
     return this.jwt.sign(
       { sub: candidateId, type: 'candidate_access' },
