@@ -55,7 +55,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
         to.query.oauth === '1' &&
         (to.path === '/candidate/onboarding' || to.path === '/candidate/dashboard')
       if (hasHint || isOAuthRedirect) await store.fetchMe()
-      if (!store.isAuthenticated) return navigateTo('/candidate/login')
+      if (!store.isAuthenticated) {
+        if (import.meta.client && window.Telegram?.WebApp?.initData) {
+          return navigateTo(`/tma?to=${encodeURIComponent(to.fullPath)}`)
+        }
+        return navigateTo('/candidate/login')
+      }
     }
     return
   }

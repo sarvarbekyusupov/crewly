@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import type { DiscoveredJob, PaginatedResponse } from '~/types/api'
 import {
   scoringActive,
@@ -106,21 +107,14 @@ async function triggerScoring() {
 }
 
 // ── Pass job ──────────────────────────────────────────────────────────────────
-const passedJobIds = ref<Set<string>>(new Set())
+const _passedJobArr = useLocalStorage<string[]>('candidate:skipped-jobs', [])
+const passedJobIds = computed(() => new Set(_passedJobArr.value))
 
-async function passJob(id: string, e: Event) {
+function passJob(id: string, e: Event) {
   e.preventDefault()
   e.stopPropagation()
-  passedJobIds.value = new Set([...passedJobIds.value, id])
-  try {
-    await api.post(`/api/v1/candidate-portal/discovered-jobs/${id}/skip`, {})
-  } catch (err) {
-    passedJobIds.value = new Set([...passedJobIds.value].filter((x) => x !== id))
-    toast.add({
-      title: t('common.error'),
-      description: extractApiErrorMessage(err),
-      color: 'error',
-    })
+  if (!_passedJobArr.value.includes(id)) {
+    _passedJobArr.value = [..._passedJobArr.value, id]
   }
 }
 
