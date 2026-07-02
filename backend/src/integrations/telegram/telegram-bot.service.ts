@@ -2299,9 +2299,17 @@ Provide:
           : lang === 'en'
             ? '📱 Open App'
             : '📱 Открыть приложение';
+      // webApp button for inline open (passes ?to= query param)
       keyboard
         .row()
         .webApp(openLabel, `${notifyPublicUrl}/tma?to=/candidate/jobs`);
+      // URL button as fallback: opens mini app via startapp= param (works in all Telegram clients)
+      const botUsername = await this.getBotUsername();
+      if (botUsername) {
+        keyboard
+          .row()
+          .url('🔗 t.me', `https://t.me/${botUsername}?startapp=jobs`);
+      }
     }
 
     try {

@@ -72,7 +72,21 @@ async function doAuth() {
       return
     }
 
-    const to = route.query.to as string | undefined
+    // Resolve deep-link target:
+    // 1. initDataUnsafe.start_param (for direct bot links: t.me/bot?startapp=xxx)
+    // 2. route.query.to (for inline webApp buttons: /tma?to=/candidate/jobs)
+    const START_PARAM_ROUTES: Record<string, string> = {
+      jobs: '/candidate/jobs',
+      tracker: '/candidate/tracker',
+      dashboard: '/candidate/dashboard',
+      inbox: '/candidate/inbox',
+      preferences: '/candidate/preferences',
+      profile: '/candidate/profile',
+    }
+    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param
+    const to =
+      (startParam && START_PARAM_ROUTES[startParam]) || (route.query.to as string | undefined)
+
     if (to?.startsWith('/candidate/')) {
       await router.replace(to)
     } else {
