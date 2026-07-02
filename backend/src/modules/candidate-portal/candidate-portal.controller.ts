@@ -425,6 +425,151 @@ export class CandidatePortalController {
     return this.hhApplicant.getVacancy(token, vacancyId);
   }
 
+  // ── HH Resume Management ─────────────────────────────────────────────────────
+
+  @Post('hh/resume-url')
+  @HttpCode(HttpStatus.OK)
+  async setHhResumeUrl(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(new ZodValidationPipe(z.object({ resumeUrl: z.string().min(1) })))
+    body: { resumeUrl: string },
+  ) {
+    const match = body.resumeUrl.match(/\/resume\/([a-zA-Z0-9]+)/);
+    if (!match) throw new BadRequestException('Invalid HH resume URL');
+    const hhResumeId = match[1];
+    await this.db.candidate.update({
+      where: { id: candidate.id },
+      data: { hhResumeId },
+    });
+    return { hhResumeId };
+  }
+
+  @Post('hh/resume/detect')
+  @HttpCode(HttpStatus.OK)
+  async detectHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const resumes = await this.hhApplicant.listMyResumes(token);
+    if (!resumes.length) return { found: false, total: 0 };
+    const first = resumes[0];
+    await this.db.candidate.update({
+      where: { id: candidate.id },
+      data: { hhResumeId: first.id },
+    });
+    return {
+      found: true,
+      resumeId: first.id,
+      title: first.title,
+      total: resumes.length,
+    };
+  }
+
+  @Post('hh/resume/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const resume = await this.hhApplicant.getResume(token, cand.hhResumeId);
+    const updateData: Record<string, unknown> = {};
+    if (resume.title) updateData.currentPosition = resume.title;
+    if (resume.skill_set?.length) updateData.skills = resume.skill_set;
+    if (resume.area?.name) updateData.city = resume.area.name;
+    if (resume.salary?.amount != null)
+      updateData.expectedSalaryUzs = resume.salary.amount;
+    if (resume.total_experience?.months != null)
+      updateData.yearsExperience = Math.round(
+        resume.total_experience.months / 12,
+      );
+    await this.db.candidate.update({
+      where: { id: candidate.id },
+      data: updateData,
+    });
+    return { synced: true };
+  }
+
+  @Post('hh/resume/publish')
+  @HttpCode(HttpStatus.OK)
+  async publishHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhApplicant.publishResume(token, cand.hhResumeId);
+    return { published: true };
+  }
+
+  @Put('hh/resume')
+  @HttpCode(HttpStatus.OK)
+  async updateHhResume(
+    @CurrentCandidate() candidate: { id: string },
+    @Body(
+      new ZodValidationPipe(
+        z.object({ skill_set: z.array(z.string()).optional() }),
+      ),
+    )
+    body: { skill_set?: string[] },
+  ) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhApplicant.updateResume(token, cand.hhResumeId, body);
+    return { updated: true };
+  }
+
+  @Post('hh/resume/hide')
+  @HttpCode(HttpStatus.OK)
+  async hideHhResume(@CurrentCandidate() candidate: { id: string }) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    await this.hhApplicant.hideResume(token, cand.hhResumeId);
+    return { hidden: true };
+  }
+
+  @Get('hh/resume/views')
+  async getHhResumeViews(@CurrentCandidate() candidate: { id: string }) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    const result = await this.hhApplicant.getResumeViews(
+      token,
+      cand.hhResumeId,
+    );
+    return { found: result.found };
+  }
+
+  @Get('hh/resume/similar-vacancies')
+  async getHhResumeSimilarVacancies(
+    @CurrentCandidate() candidate: { id: string },
+    @Query('page') page?: string,
+    @Query('per_page') per_page?: string,
+  ) {
+    const cand = await this.db.candidate.findUnique({
+      where: { id: candidate.id },
+      select: { hhResumeId: true },
+    });
+    if (!cand?.hhResumeId) throw new BadRequestException('No HH resume linked');
+    const token = await this.hhOAuth.getCandidateToken(candidate.id);
+    return this.hhApplicant.getResumeSimilarVacancies(token, cand.hhResumeId, {
+      page: page ? parseInt(page, 10) : 0,
+      per_page: per_page ? parseInt(per_page, 10) : 20,
+    });
+  }
+
   // ── HH Chats (candidate side) ──────────────────────────────────────────────
 
   @Get('hh/chats')
