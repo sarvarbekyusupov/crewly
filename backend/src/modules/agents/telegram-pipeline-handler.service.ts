@@ -3,7 +3,6 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { I18nService } from 'nestjs-i18n';
-import { InlineKeyboard } from 'grammy';
 import { ConfigService } from '@nestjs/config';
 import { TelegramBotService } from '../../integrations/telegram/telegram-bot.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -80,7 +79,9 @@ export class TelegramPipelineHandler implements OnModuleInit {
       const app = await this.db.application.findUnique({
         where: { id: event.applicationId },
         include: {
-          candidate: { select: { telegramUserId: true } },
+          candidate: {
+            select: { telegramUserId: true, telegramLanguageCode: true },
+          },
           job: {
             select: {
               title: true,
@@ -93,7 +94,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
       if (!app?.candidate?.telegramUserId) return;
 
       const chatId = app.candidate.telegramUserId.toString();
-      const lang = 'ru';
+      const lang = app.candidate.telegramLanguageCode ?? 'ru';
       const job = app.job.title;
       const company = app.job.company.name;
 
@@ -136,7 +137,12 @@ export class TelegramPipelineHandler implements OnModuleInit {
       await this.telegram.sendMessage(chatId, message, {
         parseMode: 'Markdown',
         buttons: publicUrl
-          ? [{ text: '📱 Открыть в приложении', webApp: appUrl }]
+          ? [
+              {
+                text: this.i18n.t('bot.open_notification', { lang }),
+                webApp: appUrl,
+              },
+            ]
           : [],
       });
     } catch (err: any) {
@@ -165,6 +171,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
         select: {
           telegramUserId: true,
           minMatchScore: true,
+          telegramLanguageCode: true,
         },
       });
 
@@ -201,36 +208,42 @@ export class TelegramPipelineHandler implements OnModuleInit {
       if (!matches.length) return;
 
       const chatId = candidate.telegramUserId.toString();
-      const keyboard = new InlineKeyboard();
-      let text = `🎯 *Новые подходящие вакансии для вас:*\n\n`;
+      const lang = candidate.telegramLanguageCode ?? 'ru';
+      let text = this.i18n.t('bot.new_matches_header', { lang });
 
       matches.forEach((m, i) => {
         const j = m.discoveredJob;
         const salaryStr = j.salaryMinUzs
           ? `  💰 ${Number(j.salaryMinUzs).toLocaleString()} UZS${j.salaryMaxUzs ? ` – ${Number(j.salaryMaxUzs).toLocaleString()}` : ''}`
           : '';
-        text += `${i + 1}. *${j.title}*\n   🏢 ${j.company}${j.location ? `  📍 ${j.location}` : ''}${salaryStr}\n   Совпадение: *${m.score}%*\n\n`;
-        keyboard
-          .text(
-            `${i + 1}. Откликнуться`,
-            JSON.stringify({ a: 'tg_apply', i: j.id }),
-          )
-          .row();
+        text += `${i + 1}. *${j.title}*\n   🏢 ${j.company}${j.location ? `  📍 ${j.location}` : ''}${salaryStr}\n   ${m.score}%\n\n`;
       });
 
-      text += `_/mymatches — посмотреть все совпадения_`;
+      text += this.i18n.t('bot.new_matches_footer', { lang });
 
       const publicUrl = this.config.get<string>('PUBLIC_URL') ?? '';
       await this.telegram.sendMessage(chatId, text, {
         parseMode: 'Markdown',
-        buttons: publicUrl
-          ? [
-              {
-                text: '📱 Открыть вакансии',
-                webApp: `${publicUrl}/candidate/jobs`,
-              },
-            ]
-          : [],
+        buttons: [
+          ...matches.map((m, i) => ({
+            text: this.i18n.t('bot.match_apply_btn', {
+              lang,
+              args: { n: i + 1 },
+            }),
+            callbackData: JSON.stringify({
+              a: 'tg_apply',
+              i: m.discoveredJob.id,
+            }),
+          })),
+          ...(publicUrl
+            ? [
+                {
+                  text: this.i18n.t('bot.open_in_app', { lang }),
+                  webApp: `${publicUrl}/candidate/jobs`,
+                },
+              ]
+            : []),
+        ],
       });
 
       // Mark as notified

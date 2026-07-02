@@ -41,6 +41,11 @@
     "notify_interview": "🗓 *{company}* kompaniyasidagi *{job}* lavozimiga suhbat belgilandi. Tafsilotlar uchun elektron pochtangizni tekshiring.",
     "notify_offer": "🎉 *{company}* kompaniyasidan *{job}* lavozimiga taklif oldingiz! Keyingi ko'rsatmalar yetkaziladi.",
     "notify_rejected": "Afsuski, *{company}* kompaniyasidagi *{job}* bo'yicha arizangiz tanlanmadi. Vaqtingiz uchun rahmat.",
-    "notify_hired": "🎊 Tabriklaymiz! Siz *{company}* kompaniyasiga ishga qabul qilindingiz. Keyingi qadamlar haqida tez orada xabar beriladi."
+    "notify_hired": "🎊 Tabriklaymiz! Siz *{company}* kompaniyasiga ishga qabul qilindingiz. Keyingi qadamlar haqida tez orada xabar beriladi.",
+    "new_matches_header": "🎯 *Siz uchun yangi vakansiyalar:*\n\n",
+    "new_matches_footer": "_/mymatches — barcha mosliklarni ko'rish_",
+    "match_apply_btn": "{n}. Ariza yuborish",
+    "open_in_app": "📱 Vakansiyalarni ko'rish",
+    "open_notification": "📱 Ilovada ochish"
   }
 }

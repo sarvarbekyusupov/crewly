@@ -201,6 +201,7 @@ model Candidate {
   phone                  String?
   telegramUserId         BigInt?   @map("telegram_user_id")
   telegramUsername       String?   @map("telegram_username")
+  telegramLanguageCode   String?   @map("telegram_language_code") @db.VarChar(10)
   linkedinUrl            String?   @map("linkedin_url")
   githubUrl              String?   @map("github_url")
   city                   String?

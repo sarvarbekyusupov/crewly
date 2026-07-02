@@ -205,4 +205,44 @@ export class AnalyticsController {
       })),
     };
   }
+
+  /**
+   * Outreach campaign funnel: delivered → responded → screened → placed.
+   */
+  @Get('outreach')
+  async outreach(@CurrentUser() user: AuthUser) {
+    const companyId: string = user.companyId;
+
+    const [delivered, responded, screened, placed] = await Promise.all([
+      this.db.application.count({
+        where: { companyId, outreachSentAt: { not: null } },
+      }),
+      this.db.application.count({
+        where: { companyId, respondedAt: { not: null } },
+      }),
+      this.db.application.count({
+        where: {
+          companyId,
+          status: { in: ['screening', 'in_review', 'offered', 'hired'] },
+        },
+      }),
+      this.db.application.count({
+        where: { companyId, status: { in: ['offered', 'hired'] } },
+      }),
+    ]);
+
+    const replyRate =
+      delivered > 0 ? Math.round((responded / delivered) * 1000) / 10 : 0;
+    const screenRate =
+      delivered > 0 ? Math.round((screened / delivered) * 1000) / 10 : 0;
+
+    return {
+      delivered,
+      responded,
+      screened,
+      placed,
+      replyRate,
+      screenRate,
+    };
+  }
 }

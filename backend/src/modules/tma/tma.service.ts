@@ -188,6 +188,7 @@ export class TmaService {
       throw new UnauthorizedException('Invalid Telegram initData');
 
     const tgIdBig = BigInt(String(user.id));
+    const langCode = this.normalizeLang(user.language_code);
     let isNewProfile = false;
 
     let candidate = await this.db.candidate.findFirst({
@@ -208,6 +209,7 @@ export class TmaService {
         data: {
           telegramUserId: tgIdBig,
           telegramUsername: user.username ?? null,
+          telegramLanguageCode: langCode,
           fullName: [firstName, lastName].filter(Boolean).join(' ') || null,
           consentStatus: 'implied',
           consentSource: 'telegram_tma',
@@ -226,6 +228,11 @@ export class TmaService {
         { candidateId: candidate.id, telegramId: String(user.id) },
         'Created candidate via TMA session-login',
       );
+    } else if (langCode) {
+      await this.db.candidate.update({
+        where: { id: candidate.id },
+        data: { telegramLanguageCode: langCode },
+      });
     }
 
     const { accessToken, refreshToken } =
@@ -538,6 +545,14 @@ export class TmaService {
           : null,
       },
     };
+  }
+
+  private normalizeLang(code?: string): string | null {
+    if (!code) return null;
+    const lc = code.split('-')[0].toLowerCase();
+    if (lc === 'uz') return 'uz';
+    if (lc === 'en') return 'en';
+    return 'ru';
   }
 
   private async assertHrOwnsApp(appId: string, userId: string) {

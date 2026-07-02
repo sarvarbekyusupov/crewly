@@ -41,6 +41,11 @@
     "notify_interview": "🗓 You have been invited for an interview for *{job}* at *{company}*. Check your email for details.",
     "notify_offer": "🎉 You received an offer for *{job}* at *{company}*! Further instructions will follow.",
     "notify_rejected": "Unfortunately, your application for *{job}* at *{company}* was not selected. Thank you for your time.",
-    "notify_hired": "🎊 Congratulations! You have been hired at *{company}*. You will be contacted shortly with next steps."
+    "notify_hired": "🎊 Congratulations! You have been hired at *{company}*. You will be contacted shortly with next steps.",
+    "new_matches_header": "🎯 *New job matches for you:*\n\n",
+    "new_matches_footer": "_/mymatches — see all matches_",
+    "match_apply_btn": "{n}. Apply",
+    "open_in_app": "📱 View jobs",
+    "open_notification": "📱 Open in app"
   }
 }

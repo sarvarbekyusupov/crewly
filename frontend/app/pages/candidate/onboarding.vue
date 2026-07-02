@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'empty', auth: 'guest' })
+definePageMeta({ layout: 'empty' })
 
 const store = useOnboardingStore()
 const api = useCandidateApi()

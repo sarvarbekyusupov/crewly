@@ -108,11 +108,24 @@ const { data: agentsRes } = useAsyncData(
   { watch: [selectedJobId] },
 )
 
+interface OutreachStats {
+  delivered: number
+  responded: number
+  screened: number
+  placed: number
+  replyRate: number
+  screenRate: number
+}
+const { data: outreachRes } = useAsyncData('analytics-outreach', () =>
+  api.get<OutreachStats>('/api/v1/analytics/outreach').catch(() => null),
+)
+
 const funnel = computed(() => funnelRes.value ?? [])
 const timing = computed(() => timingRes.value)
 const sourcing = computed(() => sourcingRes.value ?? [])
 const outcomes = computed(() => outcomesRes.value)
 const agents = computed(() => agentsRes.value)
+const outreach = computed(() => outreachRes.value)
 
 const STAGE_LABELS: Record<string, string> = {
   matched: 'Matched',
@@ -349,150 +362,97 @@ const sourcingTotal = computed(() => sourcing.value.reduce((s, r) => s + r.count
     </UCard>
 
     <!-- Outreach Campaign Analytics -->
-    <div class="mt-8 space-y-4">
+    <div v-if="outreach" class="mt-8 space-y-4">
       <h2 class="section-label">Outreach Campaign Analytics</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Metric 1 -->
         <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
           <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
-            <span>Automated Sourcing Emails Sent</span>
+            <span>Outreach Delivered</span>
             <UIcon name="i-heroicons-envelope" class="w-4 h-4 text-accent" />
           </div>
-          <p class="text-3xl font-serif text-ink">1,428</p>
-          <div class="flex items-center gap-1.5 text-xs text-positive">
-            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
-            <span>+14.2% from last month</span>
-          </div>
+          <p class="text-3xl font-serif text-ink">{{ outreach.delivered.toLocaleString() }}</p>
+          <p class="text-xs" style="color: var(--ink-subtle)">Total candidates contacted</p>
         </div>
 
-        <!-- Metric 2 -->
         <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
           <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
-            <span>Candidate Reply Rate</span>
+            <span>Reply Rate</span>
             <UIcon name="i-heroicons-chat-bubble-left-right" class="w-4 h-4 text-info" />
           </div>
-          <p class="text-3xl font-serif text-ink">42.8%</p>
-          <div class="flex items-center gap-1.5 text-xs text-positive">
-            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
-            <span>+3.5% conversion increase</span>
-          </div>
+          <p class="text-3xl font-serif text-ink">{{ outreach.replyRate }}%</p>
+          <p class="text-xs" style="color: var(--ink-subtle)">{{ outreach.responded }} replied</p>
         </div>
 
-        <!-- Metric 3 -->
         <div class="rounded-xl p-4 bg-surface border border-line-soft space-y-2">
           <div class="flex items-center justify-between text-xs" style="color: var(--ink-subtle)">
-            <span>Interview Booking Rate</span>
+            <span>Offers Placed</span>
             <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-positive" />
           </div>
-          <p class="text-3xl font-serif text-ink">18.4%</p>
-          <div class="flex items-center gap-1.5 text-xs text-positive">
-            <UIcon name="i-heroicons-arrow-trending-up" class="w-3.5 h-3.5" />
-            <span>+2.1% from baseline</span>
-          </div>
+          <p class="text-3xl font-serif text-ink">{{ outreach.placed.toLocaleString() }}</p>
+          <p class="text-xs" style="color: var(--ink-subtle)">
+            {{ outreach.screened }} screened qualified
+          </p>
         </div>
       </div>
 
-      <!-- Sourcing & Outreach Funnel Chart -->
+      <!-- Outreach Funnel -->
       <UCard>
-        <h3 class="text-sm font-semibold mb-4" style="color: var(--ink-muted)">
-          Outreach Funnel Progress
-        </h3>
-        <div class="space-y-4">
+        <h3 class="text-sm font-semibold mb-4" style="color: var(--ink-muted)">Outreach Funnel</h3>
+        <div
+          v-if="outreach.delivered === 0"
+          class="text-center py-4 text-sm"
+          style="color: var(--ink-subtle)"
+        >
+          No outreach data yet.
+        </div>
+        <div v-else class="space-y-4">
           <div
-            v-for="fun in [
-              { stage: 'Outreach Delivered', count: 1428, percent: 100, color: 'bg-accent' },
-              { stage: 'Campaign Responded', count: 611, percent: 42.8, color: 'bg-info' },
-              { stage: 'AI Screened (Qualified)', count: 263, percent: 18.4, color: 'bg-positive' },
-              { stage: 'Offer Placed', count: 48, percent: 3.3, color: 'bg-indigo-500' },
+            v-for="row in [
+              {
+                stage: 'Outreach Delivered',
+                count: outreach.delivered,
+                pct: 100,
+                color: 'bg-accent',
+              },
+              {
+                stage: 'Campaign Responded',
+                count: outreach.responded,
+                pct: outreach.replyRate,
+                color: 'bg-info',
+              },
+              {
+                stage: 'AI Screened (Qualified)',
+                count: outreach.screened,
+                pct: outreach.screenRate,
+                color: 'bg-positive',
+              },
+              {
+                stage: 'Offer Placed',
+                count: outreach.placed,
+                pct:
+                  outreach.delivered > 0
+                    ? Math.round((outreach.placed / outreach.delivered) * 1000) / 10
+                    : 0,
+                color: 'bg-indigo-500',
+              },
             ]"
-            :key="fun.stage"
+            :key="row.stage"
             class="space-y-1.5"
           >
             <div class="flex items-center justify-between text-xs">
-              <span class="font-medium text-ink">{{ fun.stage }}</span>
+              <span class="font-medium text-ink">{{ row.stage }}</span>
               <div class="flex items-center gap-2 font-mono text-ink-muted">
-                <span>{{ fun.count }} candidates</span>
+                <span>{{ row.count }} candidates</span>
                 <span class="text-ink-subtle">·</span>
-                <span class="font-semibold text-ink">{{ fun.percent }}%</span>
+                <span class="font-semibold text-ink">{{ row.pct }}%</span>
               </div>
             </div>
             <div class="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-500"
-                :class="fun.color"
-                :style="{ width: `${fun.percent}%` }"
+                :class="row.color"
+                :style="{ width: `${row.pct}%` }"
               />
-            </div>
-          </div>
-        </div>
-      </UCard>
-
-      <!-- Campaign A/B Test Dashboard Card -->
-      <UCard>
-        <div class="flex items-center justify-between pb-3 border-b border-line-soft mb-4">
-          <div>
-            <h3 class="text-sm font-semibold text-ink">Outreach Campaign A/B Testing</h3>
-            <p class="text-[11px] text-ink-subtle">
-              Compare conversion reply rates across different messaging vectors head-to-head.
-            </p>
-          </div>
-          <UBadge label="Active Experiment" size="xs" color="success" variant="subtle" />
-        </div>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-line-soft"
-        >
-          <!-- Column A -->
-          <div class="space-y-3.5 pr-0 md:pr-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-bold text-accent uppercase tracking-wider"
-                >Template A: Tech-Focused</span
-              >
-              <span class="text-xs font-mono font-bold text-ink">42.8% Reply Rate</span>
-            </div>
-            <p
-              class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft"
-            >
-              "Hi {name}, I saw your impressive skills in {skills}... Let's chat."
-            </p>
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[10px] text-ink-subtle">
-                <span>Outreach Sent: 714</span>
-                <span>Replies: 305</span>
-              </div>
-              <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
-                <div
-                  class="h-full bg-accent rounded-full animate-all duration-500"
-                  style="width: 42.8%"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Column B -->
-          <div class="space-y-3.5 pt-4 md:pt-0 pl-0 md:pl-6">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-mono font-bold text-info uppercase tracking-wider"
-                >Template B: Culture-Focused</span
-              >
-              <span class="text-xs font-mono font-bold text-ink">28.4% Reply Rate</span>
-            </div>
-            <p
-              class="text-[11px] text-ink-muted italic leading-normal p-3 bg-bg-deep rounded-lg border border-line-soft"
-            >
-              "Hi {name}, we love your remote autonomy goals and fit for our culture..."
-            </p>
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[10px] text-ink-subtle">
-                <span>Outreach Sent: 714</span>
-                <span>Replies: 202</span>
-              </div>
-              <div class="h-1.5 w-full rounded-full bg-bg-deep overflow-hidden">
-                <div
-                  class="h-full bg-info rounded-full animate-all duration-500"
-                  style="width: 28.4%"
-                />
-              </div>
             </div>
           </div>
         </div>
