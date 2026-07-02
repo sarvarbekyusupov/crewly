@@ -187,7 +187,19 @@ export class TmaService {
     if (!valid || !user?.id)
       throw new UnauthorizedException('Invalid Telegram initData');
 
-    const tgIdBig = BigInt(String(user.id));
+    // HR users sign up via web and connect Telegram there — block here
+    const telegramId = String(user.id);
+    const hrUser = await this.db.user.findFirst({
+      where: { telegramChatId: telegramId, deletedAt: null },
+      select: { id: true },
+    });
+    if (hrUser) {
+      throw new ForbiddenException(
+        'HR users cannot authenticate here. Please use /tma/hr',
+      );
+    }
+
+    const tgIdBig = BigInt(telegramId);
     const langCode = this.normalizeLang(user.language_code);
     let isNewProfile = false;
 

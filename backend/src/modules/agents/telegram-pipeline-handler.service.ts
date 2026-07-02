@@ -131,8 +131,8 @@ export class TelegramPipelineHandler implements OnModuleInit {
       const publicUrl = this.config.get<string>('PUBLIC_URL') ?? '';
       const appUrl =
         event.type === 'interview_scheduled' || event.type === 'offered'
-          ? `${publicUrl}/candidate/tracker`
-          : `${publicUrl}/candidate/dashboard`;
+          ? `${publicUrl}/tma?to=/candidate/tracker`
+          : `${publicUrl}/tma?to=/candidate/dashboard`;
 
       await this.telegram.sendMessage(chatId, message, {
         parseMode: 'Markdown',
@@ -239,7 +239,7 @@ export class TelegramPipelineHandler implements OnModuleInit {
             ? [
                 {
                   text: this.i18n.t('bot.open_in_app', { lang }),
-                  webApp: `${publicUrl}/candidate/jobs`,
+                  webApp: `${publicUrl}/tma?to=/candidate/jobs`,
                 },
               ]
             : []),

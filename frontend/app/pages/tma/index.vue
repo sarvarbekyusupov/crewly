@@ -19,6 +19,7 @@ definePageMeta({ layout: 'tma', robots: 'noindex, nofollow' })
 useHead({ title: 'Crewly TMA' })
 
 const router = useRouter()
+const route = useRoute()
 const { isTma, init, getInitData } = useTma()
 const candidateAuthStore = useCandidateAuthStore()
 const config = useRuntimeConfig()
@@ -51,7 +52,10 @@ async function doAuth() {
 
     await candidateAuthStore.fetchMe()
 
-    if (
+    const to = route.query.to as string | undefined
+    if (to?.startsWith('/candidate/')) {
+      await router.replace(to)
+    } else if (
       result.candidate.isNewProfile ||
       (!result.candidate.currentPosition && !result.candidate.skills.length)
     ) {
@@ -60,6 +64,11 @@ async function doAuth() {
       await router.replace('/candidate/dashboard')
     }
   } catch (e: any) {
+    const status = (e as any)?.response?.status ?? (e as any)?.statusCode
+    if (status === 403) {
+      await router.replace('/tma/hr')
+      return
+    }
     loading.value = false
     errorMsg.value = e?.data?.message ?? 'Не удалось войти. Попробуйте ещё раз.'
   }

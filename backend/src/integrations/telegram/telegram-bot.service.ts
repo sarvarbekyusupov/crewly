@@ -162,7 +162,7 @@ export class TelegramBotService implements OnModuleInit {
       .text('💬 На интервью', JSON.stringify({ a: 'v_scr', p: 0 }))
       .row();
     if (publicUrl.startsWith('https://')) {
-      keyboard.webApp('🖥️ Веб-панель (TMA)', `${publicUrl}/tma`).row();
+      keyboard.webApp('🖥️ Веб-панель (TMA)', `${publicUrl}/tma/hr`).row();
     }
     keyboard.text('🔄 Обновить', JSON.stringify({ a: 'dash' }));
 
@@ -1985,7 +1985,7 @@ Provide:
         if (publicUrl.startsWith('https://')) {
           keyboard.webApp(
             this.i18n.t('bot.web_chat_btn', { lang }) ?? '🖥️ Веб-чат (TMA)',
-            `${publicUrl}/tma`,
+            `${publicUrl}/tma?to=/candidate/tracker`,
           );
         }
 
