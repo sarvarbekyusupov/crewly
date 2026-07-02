@@ -1,5 +1,15 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'landing', auth: 'guest' })
+definePageMeta({
+  layout: 'landing',
+  auth: 'guest',
+  middleware: [
+    function () {
+      if (import.meta.client && window.Telegram?.WebApp?.initData) {
+        return navigateTo('/tma', { replace: true })
+      }
+    },
+  ],
+})
 
 defineOgImageComponent('Default', {
   title: 'Find work and get hired',
